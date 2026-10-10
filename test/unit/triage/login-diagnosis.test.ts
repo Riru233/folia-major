@@ -186,7 +186,7 @@ describe('login diagnosis in issue triage', () => {
 
         // 本机开发（页面和 API 都在本机、桌面浏览器）不算。
         const localDev = formatQrLoginDiagnosticReport({
-            generatedAt: NOW, appVersion: '0.7.18', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150 Safari/537.36',
+            generatedAt: NOW, appVersion: '0.7.18s', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/150 Safari/537.36',
             origin: 'http://localhost:5173', providerId: 'netease', methodId: null, failure: 'check-error', timeline: [],
             providerLines: ['runtime: web (remote API http://localhost:3000)'],
         });
@@ -198,7 +198,7 @@ describe('login diagnosis in issue triage', () => {
 
     it('closes reports from unofficial builds and labels them', async () => {
         const unofficial = formatQrLoginDiagnosticReport({
-            generatedAt: NOW, appVersion: '0.7.18', userAgent: 'Mozilla/5.0 Folia/0.7.18 Electron/43.7.5', build: 'unofficial (someone/folia-fork@abc1234)',
+            generatedAt: NOW, appVersion: '0.7.18s', userAgent: 'Mozilla/5.0 Folia/0.7.18s Electron/43.7.5', build: 'unofficial (someone/folia-fork@abc1234)',
             providerId: 'qq', methodId: 'qq', failure: 'check-error', timeline: [], providerLines: [],
         });
         const { plan } = await run({ title: '[QR login] qq login failed', body: unofficial }).result;
@@ -209,7 +209,7 @@ describe('login diagnosis in issue triage', () => {
 
     it('keeps self-hosted reports open unless the deployment itself is broken', async () => {
         const selfHosted = formatQrLoginDiagnosticReport({
-            generatedAt: NOW, appVersion: '0.7.18', userAgent: 'Mozilla/5.0 Chrome/150 Safari/537.36', build: 'self-hosted vercel (someone/folia-major@abc1234)',
+            generatedAt: NOW, appVersion: '0.7.18s', userAgent: 'Mozilla/5.0 Chrome/150 Safari/537.36', build: 'self-hosted vercel (someone/folia-major@abc1234)',
             origin: 'https://folia.example.com', providerId: 'qq', methodId: 'qq', failure: 'check-error', timeline: [], providerLines: [],
         });
         const { plan } = await run({ title: '[QR login] qq login failed', body: selfHosted }).result;
@@ -219,7 +219,7 @@ describe('login diagnosis in issue triage', () => {
 
     it('keeps reports from official builds open', async () => {
         const official = formatQrLoginDiagnosticReport({
-            generatedAt: NOW, appVersion: '0.7.18', userAgent: 'Mozilla/5.0 Folia/0.7.18 Electron/43.7.5', build: 'official (chthollyphile/folia-major@abc1234)',
+            generatedAt: NOW, appVersion: '0.7.18s', userAgent: 'Mozilla/5.0 Folia/0.7.18s Electron/43.7.5', build: 'official (chthollyphile/folia-major@abc1234)',
             providerId: 'qq', methodId: 'qq', failure: 'check-error', timeline: [], providerLines: [],
         });
         const { plan } = await run({ title: '[QR login] qq login failed', body: official }).result;
