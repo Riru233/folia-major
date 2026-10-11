@@ -1307,9 +1307,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   ].join(" ");
   const shellTransition = { duration: 0.24, ease: "easeOut" as const };
   const panelMotion = {
-    initial: { opacity: 0, y: 20, scale: 0.98,borderRadius: "50%" },
-    animate: { opacity: 1, y: 0, scale: 1,borderRadius: "68px" },
-    exit: { opacity: 0, y: 16, scale: 0.985,borderRadius: "50%" },
+    initial: { opacity: 0, scale: 1.05 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 1.05 },
   };
   const tabVariants = {
     enter: (direction: "left" | "right") => ({
@@ -1624,16 +1624,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   useGlass();
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      // 遮罩淡入淡出走背景色而不是元素 opacity：祖先 opacity < 1 会把 backdrop-filter 的
+      // 取样根截断在该祖先内，玻璃面板在动画期间拿不到背景，要等遮罩 opacity 落到 1 才突然出现。
+      initial={{ backgroundColor: "rgba(0,0,0,0)" }}
+      animate={{ backgroundColor: overlayBackground }}
+      exit={{ backgroundColor: "rgba(0,0,0,0)" }}
       transition={shellTransition}
       data-folia-keyboard-window="true"
       data-ponder-page-scope={
         activeTab === "help" ? "help-page" : "settings-page"
       }
       className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 sm:px-5 sm:py-12"
-      style={{ backgroundColor: overlayBackground }}
       onMouseDown={handleOverlayMouseDown}
       onClick={(event) => handleBackdropClose(event, onClose)}
     >
@@ -1641,7 +1642,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         data-glass
         {...panelMotion}
         transition={shellTransition}
-        className={`${glassBg} p-6 md:p-8  ${activeTab === "options" ? "w-full md:max-w-4xl md:w-[900px] h-[90vh] md:h-[85vh]" : "w-full md:max-w-lg"} relative shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
+        // transition 只留给 tab 切换时的尺寸/底色变化：transition-all 会把 transform、opacity
+        // 和 makeGlass 写入的 backdrop-filter 也交给 CSS 过渡，和 framer 的 WAAPI 动画互相拖拽，
+        // 表现为入场先缩一下再回弹、玻璃滞后出现。
+        className={`${glassBg} border ${borderColor} p-6 md:p-8 rounded-[58px] ${activeTab === "options" ? "w-full md:max-w-4xl md:w-[900px] h-[90vh] md:h-[85vh]" : "w-full md:max-w-lg"} relative shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-[width,height,max-width,background-color] duration-300`}
         onClick={(event) => event.stopPropagation()}
         style={{
           borderTop: isDaylight
