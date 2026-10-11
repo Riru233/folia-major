@@ -8,7 +8,7 @@
     "email": "chthollyphile@users.noreply.github.com"
   },
   "private": true,
-  "version": "0.7.19",
+  "version": "0.7.19.1014.2247",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "electron/main.cjs",
@@ -25,6 +25,7 @@
     "codemap": "node dev/mcp/ts-code-map/codemap.mjs",
     "folium:api": "node dev/folium/api-docs.mjs",
     "codemap:check": "node dev/mcp/ts-code-map/codemap.mjs --check",
+    "sync:official": "node dev/sync/syncOfficial.mjs",
     "test": "vitest run -c vitest.config.ts",
     "test:unit": "vitest run -c vitest.config.ts",
     "test:unit:watch": "vitest -c vitest.config.ts",
