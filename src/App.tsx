@@ -163,7 +163,7 @@ import { PlayerBottomBarLayoutContext } from './components/floating-player/Playe
 import { useFoliumHostBridge } from './mods/folium/hostBridge';
 import { useFoliumHostActions } from './mods/folium/hostActions';
 import { FoliumStageLayerSlot } from './mods/folium/registries/stageLayers';
-import { GlassFilterDefs } from './mods/useGlass.tsx';
+import { GlassFilterDefs } from './shinoinject/useGlass.tsx';
 
 const LOCAL_MUSIC_UPDATED_EVENT = 'folia-local-music-updated';
 const DEV_DEBUG_SHORTCUT_LABEL = 'Alt+Shift+D';
