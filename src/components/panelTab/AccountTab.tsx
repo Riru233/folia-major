@@ -88,7 +88,7 @@ const AccountTab: React.FC<AccountTabProps> = ({
                                 )}
                             </div>
                             <span className="block text-[10px] opacity-50">{omni.getProviderLabel(activeProviderId)}</span>
-                            <span className="text-[10px] font-mono opacity-40">ID: {String(activeUser.id)}</span>
+                            <span className="text-[12px] font-['Microsoft_YaHei','Microsoft_YaHei_UI',sans-serif] opacity-40">ID: {String(activeUser.id)}</span>
                         </div>
                     </div>
                     <button

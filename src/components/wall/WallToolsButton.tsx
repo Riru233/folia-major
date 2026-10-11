@@ -8,6 +8,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayerBottomBarBottomPx } from '../../hooks/usePlayerBottomBarBottomPx';
 import { SlideActionButton } from '../shared/SlideActionButton';
 import './WallToolsButton.css';
+import { useGlass } from '@/mods/useGlass';
 
 // src/components/wall/WallToolsButton.tsx
 // 海报墙右下角的工具按钮（Lattice 与 bravais 共用）：点按打开锚定的玻璃面板，向左滑打开命令面板。
@@ -346,7 +347,7 @@ export function WallToolsSurface({ idPrefix, label, isDaylight, entries, help, q
         checked: tintEnabled,
         onToggle: handleToggleLatticePosterTint,
     };
-
+    useGlass();
     return (
         <motion.div ref={rootRef} style={{ bottom: bottomPx }} className={`lattice-tools group ${isDaylight ? 'is-daylight' : ''}`}>
             <AnimatePresence initial={false}>
@@ -360,6 +361,7 @@ export function WallToolsSurface({ idPrefix, label, isDaylight, entries, help, q
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
                         className={quick.length > 0 ? 'lattice-tools-panel has-quick-actions' : 'lattice-tools-panel'}
+                        data-glass
                     >
                         {quick.length > 0 && <WallToolsQuickRow actions={quick} onDone={close} />}
                         {rows.map(entry => <WallToolsRow key={entry.id} entry={entry} onDone={close} />)}
