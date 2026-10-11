@@ -199,11 +199,20 @@ const VisualizerShell = forwardRef<HTMLDivElement, VisualizerShellProps>(
               event.stopPropagation();
               resolvedOnBack();
             }}
-            className="absolute top-6 left-6 z-30 h-12 w-12 rounded-full flex items-center justify-center transition-colors bg-black/20 hover:bg-white/10 text-white/60 pointer-events-auto"
+            className="absolute top-6 left-6 z-30 h-12 w-12 rounded-full flex items-center justify-center transition-colors bg-black/20 hover:bg-white/10  pointer-events-auto"
             style={{
-              backgroundColor: "rgba(0,0,0,0.4)",
-              borderTop: "1px solid rgba(255,255,255,0.12)",
-              borderBottom: "1px solid rgba(255,255,255,0.12)",
+              backgroundColor: resolvedIsDaylight
+                ? "rgba(255,255,255,0.4)"
+                : "rgba(0,0,0,0.4)",
+              borderTop: resolvedIsDaylight
+                ? "1px solid rgba(0,0,0,0.08)"
+                : "1px solid rgba(255,255,255,0.12)",
+              borderBottom: resolvedIsDaylight
+                ? "1px solid rgba(0,0,0,0.08)"
+                : "1px solid rgba(255,255,255,0.12)",
+              color: resolvedIsDaylight
+                ? "rgba(0,0,0,0.6)"
+                : "rgba(255,255,255,0.6)",
               outline: "1px solid rgba(40,40,40,0.2)",
               boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
             }}
