@@ -1,143 +1,178 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Copy, Maximize, Minimize, Minus, Radio, Square, X } from 'lucide-react';
-import { usePlayerChromeSettingsStore } from '../stores/usePlayerChromeSettingsStore';
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Copy,
+  Maximize,
+  Minimize,
+  Minus,
+  Radio,
+  Square,
+  X,
+} from "lucide-react";
+import { usePlayerChromeSettingsStore } from "../stores/usePlayerChromeSettingsStore";
 
 export default function WindowControls({
-    revealed,
-    isDaylight = false,
-    isMainWindowClickThroughEnabled = false,
-    hideFullscreenButton,
+  revealed,
+  isDaylight = false,
+  isMainWindowClickThroughEnabled = false,
+  hideFullscreenButton,
 }: {
-    revealed: boolean;
-    isDaylight?: boolean;
-    isMainWindowClickThroughEnabled?: boolean;
-    hideFullscreenButton: boolean;
+  revealed: boolean;
+  isDaylight?: boolean;
+  isMainWindowClickThroughEnabled?: boolean;
+  hideFullscreenButton: boolean;
 }) {
-    const { t } = useTranslation();
-    const [isMaximized, setIsMaximized] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const useNativeMacFullscreenButton = usePlayerChromeSettingsStore(state => state.useNativeMacFullscreenButton);
-    const electron = window.electron;
-    const isMac = electron?.platform === 'darwin';
-    const usesNativeFullscreen = isMac && (useNativeMacFullscreenButton || isFullscreen);
-    const isExpanded = usesNativeFullscreen ? isFullscreen : isMaximized;
+  const { t } = useTranslation();
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const useNativeMacFullscreenButton = usePlayerChromeSettingsStore(
+    (state) => state.useNativeMacFullscreenButton,
+  );
+  const electron = window.electron;
+  const isMac = electron?.platform === "darwin";
+  const usesNativeFullscreen =
+    isMac && (useNativeMacFullscreenButton || isFullscreen);
+  const isExpanded = usesNativeFullscreen ? isFullscreen : isMaximized;
 
-    useEffect(() => {
-        if (!electron) return;
-        let active = true;
-        let fullscreenEventReceived = false;
-        const unsubscribe = electron.onWindowFullscreenChanged(fullscreen => {
-            fullscreenEventReceived = true;
-            if (active) setIsFullscreen(fullscreen);
-        });
-        const checkMaximized = async () => {
-            const maximized = await electron.isWindowMaximized();
-            if (active) setIsMaximized(maximized);
-        };
-        const checkFullscreen = async () => {
-            const fullscreen = await electron.isWindowFullscreen();
-            if (active && !fullscreenEventReceived) setIsFullscreen(fullscreen);
-        };
-        void checkMaximized();
-        void checkFullscreen();
-        window.addEventListener('resize', checkMaximized);
-        return () => {
-            active = false;
-            unsubscribe?.();
-            window.removeEventListener('resize', checkMaximized);
-        };
-    }, [electron]);
+  useEffect(() => {
+    if (!electron) return;
+    let active = true;
+    let fullscreenEventReceived = false;
+    const unsubscribe = electron.onWindowFullscreenChanged((fullscreen) => {
+      fullscreenEventReceived = true;
+      if (active) setIsFullscreen(fullscreen);
+    });
+    const checkMaximized = async () => {
+      const maximized = await electron.isWindowMaximized();
+      if (active) setIsMaximized(maximized);
+    };
+    const checkFullscreen = async () => {
+      const fullscreen = await electron.isWindowFullscreen();
+      if (active && !fullscreenEventReceived) setIsFullscreen(fullscreen);
+    };
+    void checkMaximized();
+    void checkFullscreen();
+    window.addEventListener("resize", checkMaximized);
+    return () => {
+      active = false;
+      unsubscribe?.();
+      window.removeEventListener("resize", checkMaximized);
+    };
+  }, [electron]);
 
-    if (!electron) return null;
+  if (!electron) return null;
 
-    const remoteControlVisible = revealed && !isMainWindowClickThroughEnabled;
-    const standardControlsVisible = revealed && !isMainWindowClickThroughEnabled;
-    const remoteBtnClass = `flex items-center justify-center w-11 h-full transition-all duration-200 ${
-        remoteControlVisible
-            ? isDaylight
-                ? 'pointer-events-auto opacity-85 translate-y-0 hover:opacity-100 hover:bg-black/[0.05]'
-                : 'pointer-events-auto opacity-75 translate-y-0 hover:opacity-100 hover:bg-white/10'
-            : 'pointer-events-none opacity-0 -translate-y-1'
-    }`;
-    const btnClass = `flex items-center justify-center w-11 h-full transition-all duration-200 ${
-        standardControlsVisible
-            ? isDaylight
-                ? 'pointer-events-auto opacity-85 translate-y-0 hover:opacity-100 hover:bg-black/[0.05]'
-                : 'pointer-events-auto opacity-75 translate-y-0 hover:opacity-100 hover:bg-white/10'
-            : 'pointer-events-none opacity-0 -translate-y-1'
-    }`;
-    const closeBtnClass = `flex items-center justify-center w-11 h-full transition-all duration-200 ${
-        standardControlsVisible
-            ? isDaylight
-                ? 'pointer-events-auto opacity-85 translate-y-0 hover:opacity-100 hover:bg-red-500 hover:text-white'
-                : 'pointer-events-auto opacity-75 translate-y-0 hover:opacity-100 hover:bg-red-500 hover:text-white'
-            : 'pointer-events-none opacity-0 -translate-y-1'
-    }`;
+  const remoteControlVisible = revealed && !isMainWindowClickThroughEnabled;
+  const standardControlsVisible = revealed && !isMainWindowClickThroughEnabled;
+  const remoteBtnClass = `flex items-center justify-center w-9 h-[calc(100% - 6px)] mb-[6px] transition-allborder-y bg-[#73757aaa] hover:bg-[#307aa9aa] border-y-[#666] border-solid duration-200 text-white outline outline-1 outline-solid outline-[rgba(40,40,40,0.6)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)] ${
+    remoteControlVisible
+      ? isDaylight
+        ? "pointer-events-auto opacity-85 translate-y-0 hover:opacity-100"
+        : "pointer-events-auto opacity-75 translate-y-0 hover:opacity-100"
+      : "pointer-events-none opacity-0 -translate-y-1"
+  }`;
+  const btnClass = `flex items-center justify-center w-9 h-[calc(100% - 6px)] mb-[6px] bg-[#73757aaa] hover:bg-[#307aa9aa] transition-all border-y-[#666] border-solid duration-200 text-white outline outline-1 outline-solid outline-[rgba(40,40,40,0.6)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)] ${
+    standardControlsVisible
+      ? isDaylight
+        ? "pointer-events-auto opacity-85 translate-y-0 hover:opacity-100"
+        : "pointer-events-auto opacity-75 translate-y-0 hover:opacity-100"
+      : "pointer-events-none opacity-0 -translate-y-1"
+  }`;
+  const closeBtnClass = `flex items-center justify-center w-9 h-[calc(100% - 6px)] mb-[6px] mr-[3px] bg-red-300 transition-all border-y-[#666] border-solid duration-200 text-white outline outline-1 outline-solid outline-[rgba(40,40,40,0.6)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)] ${
+    standardControlsVisible
+      ? isDaylight
+        ? "pointer-events-auto opacity-85 translate-y-0 hover:opacity-100 hover:bg-red-600"
+        : "pointer-events-auto opacity-75 translate-y-0 hover:opacity-100 hover:bg-red-600"
+      : "pointer-events-none opacity-0 -translate-y-1"
+  }`;
 
-    return (
-        <div
-            className={`flex h-full ${isDaylight ? 'text-zinc-800' : 'text-[var(--text-primary)]'}`}
-            style={{
-                WebkitAppRegion: 'no-drag',
-                pointerEvents: 'none',
-            } as React.CSSProperties}
+  return (
+    <div
+      className={`flex h-full ${isDaylight ? "text-zinc-800" : "text-[var(--text-primary)]"}`}
+      style={
+        {
+          WebkitAppRegion: "no-drag",
+          pointerEvents: "none",
+        } as React.CSSProperties
+      }
+    >
+      <button
+        className={remoteBtnClass}
+        title={t("ui.remoteControl")}
+        tabIndex={remoteControlVisible ? 0 : -1}
+        onClick={() => void electron.openRemoteControl?.()}
+      >
+        <Radio size={15} />
+      </button>
+      {!hideFullscreenButton && (
+        <button
+          className={btnClass}
+          tabIndex={standardControlsVisible ? 0 : -1}
+          title={t(isFullscreen ? "ui.exitFullscreen" : "ui.enterFullscreen")}
+          aria-label={t(
+            isFullscreen ? "ui.exitFullscreen" : "ui.enterFullscreen",
+          )}
+          onClick={() => void electron.toggleFullscreenWindow()}
         >
-            <button
-                className={remoteBtnClass}
-                title={t('ui.remoteControl')}
-                tabIndex={remoteControlVisible ? 0 : -1}
-                onClick={() => void electron.openRemoteControl?.()}
-            >
-                <Radio size={15} />
-            </button>
-            {!hideFullscreenButton && (
-                <button
-                    className={btnClass}
-                    tabIndex={standardControlsVisible ? 0 : -1}
-                    title={t(isFullscreen ? 'ui.exitFullscreen' : 'ui.enterFullscreen')}
-                    aria-label={t(isFullscreen ? 'ui.exitFullscreen' : 'ui.enterFullscreen')}
-                    onClick={() => void electron.toggleFullscreenWindow()}
-                >
-                    {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
-                </button>
-            )}
-            <button
-                className={btnClass}
-                tabIndex={standardControlsVisible ? 0 : -1}
-                onClick={() => electron.minimizeWindow()}
-            >
-                <Minus size={16} />
-            </button>
-            <button
-                className={btnClass}
-                tabIndex={standardControlsVisible ? 0 : -1}
-                title={t(usesNativeFullscreen
-                    ? isExpanded ? 'ui.exitFullscreen' : 'ui.enterFullscreen'
-                    : isExpanded ? 'ui.restoreWindow' : 'ui.maximizeWindow')}
-                aria-label={t(usesNativeFullscreen
-                    ? isExpanded ? 'ui.exitFullscreen' : 'ui.enterFullscreen'
-                    : isExpanded ? 'ui.restoreWindow' : 'ui.maximizeWindow')}
-                onClick={async () => {
-                    if (usesNativeFullscreen) {
-                        await electron.toggleFullscreenWindow();
-                    } else {
-                        await electron.toggleMaximizeWindow();
-                        setIsMaximized(await electron.isWindowMaximized());
-                    }
-                }}
-            >
-                {usesNativeFullscreen
-                    ? isExpanded ? <Minimize size={13} /> : <Maximize size={13} />
-                    : isExpanded ? <Copy size={13} /> : <Square size={13} />}
-            </button>
-            <button
-                className={closeBtnClass}
-                tabIndex={standardControlsVisible ? 0 : -1}
-                onClick={() => electron.closeWindow()}
-            >
-                <X size={16} />
-            </button>
-        </div>
-    );
+          {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
+        </button>
+      )}
+      <button
+        className={btnClass}
+        tabIndex={standardControlsVisible ? 0 : -1}
+        onClick={() => electron.minimizeWindow()}
+      >
+        <Minus size={16} />
+      </button>
+      <button
+        className={btnClass}
+        tabIndex={standardControlsVisible ? 0 : -1}
+        title={t(
+          usesNativeFullscreen
+            ? isExpanded
+              ? "ui.exitFullscreen"
+              : "ui.enterFullscreen"
+            : isExpanded
+              ? "ui.restoreWindow"
+              : "ui.maximizeWindow",
+        )}
+        aria-label={t(
+          usesNativeFullscreen
+            ? isExpanded
+              ? "ui.exitFullscreen"
+              : "ui.enterFullscreen"
+            : isExpanded
+              ? "ui.restoreWindow"
+              : "ui.maximizeWindow",
+        )}
+        onClick={async () => {
+          if (usesNativeFullscreen) {
+            await electron.toggleFullscreenWindow();
+          } else {
+            await electron.toggleMaximizeWindow();
+            setIsMaximized(await electron.isWindowMaximized());
+          }
+        }}
+      >
+        {usesNativeFullscreen ? (
+          isExpanded ? (
+            <Minimize size={13} />
+          ) : (
+            <Maximize size={13} />
+          )
+        ) : isExpanded ? (
+          <Copy size={13} />
+        ) : (
+          <Square size={13} />
+        )}
+      </button>
+      <button
+        className={closeBtnClass}
+        tabIndex={standardControlsVisible ? 0 : -1}
+        onClick={() => electron.closeWindow()}
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
 }
