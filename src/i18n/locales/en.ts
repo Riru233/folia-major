@@ -3032,6 +3032,25 @@ export default {
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
       }
     },
+    "v0_7_19_1014_2247": {
+      "intro": "0.7.19s (Shino mod) builds on official 0.7.19: the Bravais home tool grid hints when a new version is found, IPC and external-link handling are hardened, liquid glass display issues at high blur are fixed, and liquid glass is faster so large panels stay smooth while resizing.",
+      "homeUpdateHint": {
+        "title": "Home Tool Grid Hints at a New Version",
+        "description": "Bravais now follows update status: with update checks on, a new version found, and nothing seen yet in Settings, a clickable \"New version found\" line appears under the settings tool cell (or an accent dot on the settings icon when the spine is too narrow for text); clicking it opens the help page just like the settings button. Opening Settings marks it seen and the hint disappears. Both home layouts share one update state."
+      },
+      "ipcSecurity": {
+        "title": "Hardened IPC and External Link Handling",
+        "description": "Only http(s) links are handed to the system now; custom schemes such as file:// and ms-settings: are blocked so untrusted URLs cannot trigger unexpected system protocol calls. The OBS browser-source status and KuGou API IPC channels also gained window-source checks, so other windows can no longer call them."
+      },
+      "liquidGlassBlurFix": {
+        "title": "Liquid Glass Fixed at High Blur",
+        "description": "The liquid glass filter chain is reordered (saturation and blur first, edge refraction last), fixing display issues that appeared when the blur level was turned up."
+      },
+      "liquidGlassPerf": {
+        "title": "Faster Liquid Glass",
+        "description": "Displacement maps are generated at a capped resolution, and repeated pixel-by-pixel rebuilds while a large panel keeps resizing are merged into one per throttling window instead of running every frame: resizing large windows or animated panels stays smooth, with no noticeable loss in glass quality."
+      }
+    },
     "v0_7_19": {
       "intro": "0.7.19 turns the artist and album pages in Bravais into Tempera-style posters. When an online song fails to play, Folia now tells you the real reason instead of always saying it was removed; word-by-word visualizers such as Tempera split Chinese and Japanese lyrics more naturally; and the web version starts up offline again.",
       "artistPoster": {
@@ -3059,8 +3078,23 @@ export default {
         "description": "On Android, opening Options or other overlays on the Bravais or Lattice wall no longer flashes the wall underneath. Fixed an occasional crash when resizing the window while Tempera is playing. The Sora background stops drawing while paused, and its stars hold still in static mode. The release notes window shown at startup now closes with Esc."
       }
     },
+    "v0_7_18s-shino": {
+      "intro": "0.7.18s (Shino mod) builds on official 0.7.18 with a stronger liquid glass experience: it restores missing liquid glass coverage on components affected by the 0.7.18 update, softens selected buttons, and adds liquid glass settings so you can tune refraction, blur, and saturation. Note: liquid glass is only supported on Windows.",
+      "liquidGlassFix": {
+        "title": "Liquid Glass Coverage Fixed",
+        "description": "Restores liquid glass on components that lost coverage after the 0.7.18 update, so frosted surfaces such as buttons and panels get a consistent glass look again."
+      },
+      "liquidGlassSoften": {
+        "title": "Softer Liquid Glass Buttons",
+        "description": "Selected buttons now have a softer glass treatment with smoother edge transitions, improving both the look and the feel of the interface."
+      },
+      "liquidGlassSettings": {
+        "title": "New Liquid Glass Settings",
+        "description": "Freely adjust liquid glass refraction strength, blur, and saturation to customize the glass texture to your taste. Note: liquid glass is only supported on Windows."
+      }
+    },
     "v0_7_18": {
-      "intro": "0.7.18 adds a play queue you can work with right from the wall tools in Bravais and Lattice, and both walls now share one tools panel. Several lyric visualizers use fewer resources, switching between local songs is smoother, QQ Music QR sign-in tells you what to do when your device limit is reached, and the desktop app now stores AI keys encrypted.",
+      "intro": "0.7.18 adds a play queue you can work with right from the wall tools in Bravais and Lattice, and both walls now share one tools panel. Several lyric visualizers use fewer resources, switching between local songs is smoother, QQ Music QR sign-in tells you what to do when your device limit is reached, and the desktop app now stores AI keys encrypted. Window animations now use an iOS 26-like gradient transition, and the side play queue gains a rotation effect.",
       "queueIsland": {
         "title": "Manage the Queue on the Wall",
         "description": "Open Wall tools in the bottom-right corner of Bravais or Lattice and choose Play queue to show the queue above the panel. Click a song to play it without leaving the page, drag the handle to reorder, hover to play next, move to the end or remove, save the queue as a local playlist, or clear it with a two-step confirm. Keyboard: ↑↓ to move, Alt+↑↓ to reorder, Delete to remove. Not available in Personal FM; while an external Stage is playing you can only pick songs."
@@ -3084,6 +3118,10 @@ export default {
       "aiKeySecure": {
         "title": "Encrypted AI Keys on Desktop",
         "description": "The desktop app now stores Gemini / OpenAI keys encrypted with the system's secure storage, and plain-text keys from older versions are migrated at startup. Saved keys are never shown again: leave the field blank to keep a key, type a new one to replace it, or use the separate Clear button. Testing the connection with a blank field uses the saved key."
+      },
+      "windowAnimation": {
+        "title": "Window Animation Adjusted",
+        "description": "Window animations now use a gradient transition similar to iOS 26, and the side play queue gains a rotation effect for a smoother, more natural switch."
       }
     },
     "v0_7_17": {
@@ -3114,7 +3152,7 @@ export default {
       }
     },
     "v0_7_16": {
-      "intro": "0.7.16 moves AMLL lyrics to the official API, finds far more AMLL lyrics for QQ Music songs, and lets manual matching search AMLL directly. It also adds Tab switching between home tabs and fixes missing album and artist links in local search results.",
+      "intro": "0.7.16 moves AMLL lyrics to the official API, finds far more AMLL lyrics for QQ Music songs, and lets manual matching search AMLL directly. It also adds Tab switching between home tabs and fixes missing album and artist links in local search results. The Shino mod additionally brings liquid glass to frosted surfaces such as buttons and the top bar, and restyles the window buttons after Windows 8 RP.",
       "amllSource": {
         "title": "AMLL Lyrics via the Official API",
         "description": "AMLL lyrics now come from the official AMLL API."
@@ -3130,6 +3168,14 @@ export default {
       "searchLinks": {
         "title": "Local Search Results Keep Their Links",
         "description": "If you search right after importing a folder, album and artist links in the results now fill in once the library finishes loading, without searching again."
+      },
+      "liquidGlass": {
+        "title": "Liquid Glass Added",
+        "description": "Liquid glass effects are now applied to frosted surfaces such as buttons and the top bar, giving the interface a richer glass texture."
+      },
+      "windowButtons": {
+        "title": "Window Buttons Restyled",
+        "description": "The window buttons have been adjusted to mimic the style of Windows 8 RP."
       }
     },
     "v0_7_15": {
