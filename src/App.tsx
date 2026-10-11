@@ -996,7 +996,9 @@ export default function App() {
         persistLastPlaybackCache,
         t,
         queueAddBehavior,
-    }), [currentSong, playQueue, persistLastPlaybackCache, t, queueAddBehavior]);
+        audioQuality,
+        userId: user?.id,
+    }), [currentSong, playQueue, persistLastPlaybackCache, t, queueAddBehavior, audioQuality, user?.id]);
 
     // --- Effects ---
 
@@ -1029,7 +1031,6 @@ export default function App() {
         handleStageExternalPlayRequest,
         shuffleQueue,
         clearQueue,
-        refreshPrefetchAfterQueueEdit,
     } = usePlaybackQueueController({
         isNowPlayingStageActive,
         shouldNavigateToPlayerOnTrackChange: currentView !== 'lattice',
@@ -2155,7 +2156,6 @@ export default function App() {
         moveQueueSong,
         clearQueue,
         saveCurrentQueueAsLocalPlaylist,
-        refreshPrefetchAfterQueueEdit,
     });
     const homeModel = useHomeModel({
         account: accountController,
