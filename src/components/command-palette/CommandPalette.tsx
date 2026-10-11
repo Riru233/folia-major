@@ -110,6 +110,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
     onQueryChange,
     onQueryCommit,
 }) => {
+    useGlass();
     const { t, i18n } = useTranslation();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [idlePlaceholderIndex, setIdlePlaceholderIndex] = useState(() => Math.floor(Math.random() * IDLE_PLACEHOLDER_COUNT));
@@ -385,7 +386,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             />
         );
     }
-    useGlass();
     return (
         <AnimatePresence>
             {isOpen && (
