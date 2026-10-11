@@ -120,7 +120,6 @@ export default function Lattice({
         () => ({ currentSong, playerState, currentTime, playbackDuration, canTogglePlayback }),
         [canTogglePlayback, currentSong, currentTime, playbackDuration, playerState],
     );
-
     return (
         <LatticeTransportContext.Provider value={transport}>
         <LatticePlaybackProvider actions={controls} currentSong={currentSong} queue={queue} lyrics={lyrics}

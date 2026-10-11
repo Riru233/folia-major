@@ -26,6 +26,8 @@ import { openAddToPlaylist, useAddToPlaylistStore } from '../stores/useAddToPlay
 import { usePlayerPanelTabShortcut } from '../hooks/usePlayerPanelTabShortcut';
 import { FOLIUM_PANEL_TAB_PREFIX, FoliumPanelTabBody, useFoliumPanelTabs } from '../mods/folium/registries/playerPanelTabs';
 import { countRender } from '../dev/renderCount';
+import { useGlass } from '@/shinoinject/useGlass';
+import { isWindowsPlatform } from '@/utils/platform';
 
 const TOUCH_GUIDE_DISPLAY_MS = 1400;
 
@@ -508,6 +510,8 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
         setToggleButtonDragFeedback(0);
         event.currentTarget.setPointerCapture?.(event.pointerId);
     };
+
+    useGlass();
     const handleToggleButtonPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
         const gesture = commandSlideRef.current;
         if (!canSlideOpenCommandPalette || !gesture || gesture.triggered) {
@@ -632,7 +636,22 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                             exit={{ opacity: 0, scale: 0.9 }}
                             data-testid="unified-panel-surface"
                             className={`pointer-events-auto w-80 ${glassBg} backdrop-blur-3xl rounded-3xl shadow-2xl flex flex-col mb-16 md:mb-2 overflow-y-auto hide-scrollbar`}
-                            style={{ color: theme.primaryColor, maxHeight: panelMaxHeight }}
+                            data-glass
+                            style={{
+                                color: theme.primaryColor,
+                                maxHeight: panelMaxHeight,
+                                backgroundColor: isDaylight
+                                    ? 'rgba(255,255,255,0.4)'
+                                    : 'rgba(0,0,0,0.4)',
+                                borderTop: isDaylight
+                                    ? '1px solid rgba(0,0,0,0.08)'
+                                    : '1px solid rgba(255,255,255,0.12)',
+                                borderBottom: isDaylight
+                                    ? '1px solid rgba(0,0,0,0.08)'
+                                    : '1px solid rgba(255,255,255,0.12)',
+                                outline: '1px solid rgba(40,40,40,0.2)',
+                                boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                            }}
                         >
                             <div className="p-5 flex flex-col">
                                 {/* Top: Cover Art */}
@@ -665,7 +684,9 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
 
                                     {/* 左上角：打开设置 */}
                                     {onOpenSettings && (
-                                        <div className={`absolute left-3 top-3 transition-all duration-200 ${
+                                        <div
+                                            data-glass
+                                            className={`absolute rounded-full left-3 top-3 transition-all duration-200 ${
                                             supportsHover
                                                 ? 'pointer-events-none group-hover:pointer-events-auto opacity-0 group-hover:opacity-100 -translate-x-3 -translate-y-3 group-hover:translate-x-0 group-hover:translate-y-0'
                                                 : `${isCoverActionsVisible ? 'pointer-events-auto opacity-100 translate-x-0 translate-y-0' : 'pointer-events-none opacity-0 -translate-x-3 -translate-y-3'}`
@@ -676,16 +697,35 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                                                     event.stopPropagation();
                                                     handleOpenSettings();
                                                 }}
-                                                className="w-11 h-11 rounded-full border border-white/15 bg-black/25 text-white/90 backdrop-blur-md flex items-center justify-center transition-all hover:bg-black/40 hover:text-white"
+                                                style={{
+                                                    background:
+                                                        'linear-gradient(to bottom,#bfc6e440 20%,#204d9b60 50%,#7df1fd40 80%)',
+                                                    borderTop: isDaylight
+                                                        ? '1px solid rgba(0, 89, 255, 0.08)'
+                                                        : '1px solid rgba(255,255,255,0.12)',
+                                                    borderBottom: isDaylight
+                                                        ? '1px solid rgba(0,0,0,0.08)'
+                                                        : '1px solid rgba(255,255,255,0.12)',
+                                                    outline: '1px solid rgba(40,40,40,0.2)',
+                                                    boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                                                }}
+                                                className="w-11 h-11 rounded-full border border-white/15 bg-black/25 text-white/90 flex items-center justify-center transition-all hover:bg-black/40 hover:text-white"
                                                 title={t('ui.options')}
                                             >
-                                                <Settings size={18} />
+                                                <Settings
+                                                    style={{
+                                                        filter: 'drop-shadow(1px 1px 2px #000)',
+                                                    }}
+                                                    size={18}
+                                                />
                                             </button>
                                         </div>
                                     )}
 
                                     {/* 右上角：播放页透明。不算高频，所以只占封面的空位，不占面板结构 */}
-                                    <div className={`absolute right-3 top-3 transition-all duration-200 ${
+                                    <div
+                                        data-glass
+                                        className={`absolute right-3 top-3 transition-all rounded-full duration-200 ${
                                         supportsHover
                                             ? 'pointer-events-none group-hover:pointer-events-auto opacity-0 group-hover:opacity-100 translate-x-3 -translate-y-3 group-hover:translate-x-0 group-hover:translate-y-0'
                                             : `${isCoverActionsVisible ? 'pointer-events-auto opacity-100 translate-x-0 translate-y-0' : 'pointer-events-none opacity-0 translate-x-3 -translate-y-3'}`
@@ -696,7 +736,20 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                                                 event.stopPropagation();
                                                 onToggleTransparentPlayerBackground(!transparentPlayerBackground);
                                             }}
-                                            className={`w-11 h-11 rounded-full border backdrop-blur-md flex items-center justify-center transition-all ${
+                                            disabled={isWindowsPlatform? true: false}    // Windows开启液态玻璃的场景不支持透明背景
+                                            style={{
+                                                background:
+                                                    isWindowsPlatform?'transparent':'linear-gradient(to bottom,#bfc6e440 20%,#204d9b60 50%,#7df1fd40 80%)',
+                                                borderTop: isDaylight
+                                                    ? '1px solid rgba(0,0,0,0.08)'
+                                                    : '1px solid rgba(255,255,255,0.12)',
+                                                borderBottom: isDaylight
+                                                    ? '1px solid rgba(0,0,0,0.08)'
+                                                    : '1px solid rgba(255,255,255,0.12)',
+                                                outline: '1px solid rgba(40,40,40,0.2)',
+                                                boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                                            }}
+                                            className={`w-11 h-11 rounded-full border flex items-center justify-center transition-all ${
                                                 transparentPlayerBackground
                                                     ? 'border-white/30 bg-white/85 text-zinc-900 hover:bg-white'
                                                     : 'border-white/15 bg-black/25 text-white/90 hover:bg-black/40 hover:text-white'
@@ -705,11 +758,18 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                                             aria-label={t('options.transparentPlayerBackground')}
                                             aria-pressed={transparentPlayerBackground}
                                         >
-                                            <MirrorRectangular size={18} />
+                                            <MirrorRectangular
+                                                style={{
+                                                    filter: 'drop-shadow(1px 1px 2px #000)',
+                                                }}
+                                                size={18}
+                                            />
                                         </button>
                                     </div>
 
-                                    <div className={`absolute left-3 bottom-3 transition-all duration-200 ${
+                                    <div
+                                        data-glass
+                                        className={`absolute left-3 bottom-3 transition-all rounded-full duration-200 ${
                                         supportsHover
                                             ? 'pointer-events-none group-hover:pointer-events-auto opacity-0 group-hover:opacity-100 -translate-x-3 translate-y-3 group-hover:translate-x-0 group-hover:translate-y-0'
                                             : `${isCoverActionsVisible ? 'pointer-events-auto opacity-100 translate-x-0 translate-y-0' : 'pointer-events-none opacity-0 -translate-x-3 translate-y-3'}`
@@ -720,7 +780,19 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                                                 event.stopPropagation();
                                                 handleNavigateHome();
                                             }}
-                                            className="w-11 h-11 rounded-full border border-white/15 bg-black/25 text-white/90 backdrop-blur-md flex items-center justify-center transition-all hover:bg-black/40 hover:text-white"
+                                            style={{
+                                                background:
+                                                    'linear-gradient(to bottom,#bfc6e440 20%,#204d9b60 50%,#7df1fd40 80%)',
+                                                borderTop: isDaylight
+                                                    ? '1px solid rgba(0,0,0,0.08)'
+                                                    : '1px solid rgba(255,255,255,0.12)',
+                                                borderBottom: isDaylight
+                                                    ? '1px solid rgba(0,0,0,0.08)'
+                                                    : '1px solid rgba(255,255,255,0.12)',
+                                                outline: '1px solid rgba(40,40,40,0.2)',
+                                                boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                                            }}
+                                            className="w-11 h-11 rounded-full border border-white/15 bg-black/25 text-white/90 flex items-center justify-center transition-all hover:bg-black/40 hover:text-white"
                                             title={t('ui.backToHome')}
                                         >
                                             <HomeIcon size={18} />
@@ -729,8 +801,9 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
 
                                     {showAddToPlaylistAction && (
                                         <div
+                                            data-glass
                                             title={addToPlaylistDisabledReason || t('localMusic.addToPlaylist')}
-                                            className={`absolute right-3 bottom-3 transition-all duration-200 ${
+                                            className={`absolute right-3 bottom-3 transition-all duration-200 rounded-full ${
                                             supportsHover
                                                 ? 'pointer-events-none group-hover:pointer-events-auto opacity-0 group-hover:opacity-100 translate-x-3 translate-y-3 group-hover:translate-x-0 group-hover:translate-y-0'
                                                 : `${isCoverActionsVisible ? 'pointer-events-auto opacity-100 translate-x-0 translate-y-0' : 'pointer-events-none opacity-0 translate-x-3 translate-y-3'}`
@@ -745,7 +818,19 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                                                     openAddToPlaylist();
                                                 }}
                                                 disabled={!canAddCurrentSongToPlaylist}
-                                                className="w-11 h-11 rounded-full border border-white/15 bg-black/25 text-white/90 backdrop-blur-md flex items-center justify-center transition-all hover:bg-black/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-black/25"
+                                                style={{
+                                                    background:
+                                                        'linear-gradient(to bottom,#bfc6e440 20%,#204d9b60 50%,#7df1fd40 80%)',
+                                                    borderTop: isDaylight
+                                                        ? '1px solid rgba(0,0,0,0.08)'
+                                                        : '1px solid rgba(255,255,255,0.12)',
+                                                    borderBottom: isDaylight
+                                                        ? '1px solid rgba(0,0,0,0.08)'
+                                                        : '1px solid rgba(255,255,255,0.12)',
+                                                    outline: '1px solid rgba(40,40,40,0.2)',
+                                                    boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                                                }}
+                                                className="w-11 h-11 rounded-full border border-white/15 bg-black/25 text-white/90 flex items-center justify-center transition-all hover:bg-black/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-black/25"
                                                 title={addToPlaylistDisabledReason || t('localMusic.addToPlaylist')}
                                                 aria-label={addToPlaylistDisabledReason || t('localMusic.addToPlaylist')}
                                             >
@@ -1028,6 +1113,8 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                             </div>
 
                             <button
+                                data-glass
+                                data-glass-jelly
                                 ref={toggleButtonRef}
                                 type="button"
                                 onPointerDown={handleToggleButtonPointerDown}
@@ -1035,7 +1122,21 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                                 onPointerUp={clearToggleButtonGesture}
                                 onPointerCancel={clearToggleButtonGesture}
                                 onClick={handleToggleButtonClick}
-                                style={{ touchAction: canSlideOpenCommandPalette ? 'none' : undefined }}
+                                style={{
+                                    touchAction: canSlideOpenCommandPalette ? 'none' : undefined,
+
+                                    backgroundColor: isDaylight
+                                        ? 'rgba(255,255,255,0.4)'
+                                        : 'rgba(0,0,0,0.4)',
+                                    borderTop: isDaylight
+                                        ? '1px solid rgba(0,0,0,0.08)'
+                                        : '1px solid rgba(255,255,255,0.12)',
+                                    borderBottom: isDaylight
+                                        ? '1px solid rgba(0,0,0,0.08)'
+                                        : '1px solid rgba(255,255,255,0.12)',
+                                    outline: '1px solid rgba(40,40,40,0.2)',
+                                    boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                                }}
                                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg backdrop-blur-md transform
                                     border-none absolute right-0 top-0 z-10 ${isOpen ? 'bg-white text-black' : (isDaylight ? 'bg-white/70 text-zinc-900' : 'bg-black/40 text-white')}`}
                             >

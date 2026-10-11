@@ -246,7 +246,7 @@ const AutomixModelsSection: React.FC<{ isDaylight: boolean }> = ({ isDaylight })
                                         style={{ width: `${percent}%`, backgroundColor: 'var(--text-primary)', opacity: 0.55 }}
                                     />
                                 </div>
-                                <div className="flex justify-between text-[10px] font-mono tabular-nums opacity-50" style={{ color: 'var(--text-secondary)' }}>
+                                <div className="flex justify-between text-[12px] font-['Microsoft_YaHei','Microsoft_YaHei_UI',sans-serif] tabular-nums opacity-50" style={{ color: 'var(--text-secondary)' }}>
                                     <span>{live?.host ?? ''}</span>
                                     <span>{percent.toFixed(0)}%</span>
                                 </div>
@@ -254,7 +254,7 @@ const AutomixModelsSection: React.FC<{ isDaylight: boolean }> = ({ isDaylight })
                         )}
 
                         {reasons.length > 0 && (
-                            <div className="text-[10px] font-mono leading-relaxed opacity-60 space-y-0.5" style={{ color: 'var(--text-secondary)' }}>
+                            <div className="text-[12px] font-['Microsoft_YaHei','Microsoft_YaHei_UI',sans-serif] leading-relaxed opacity-60 space-y-0.5" style={{ color: 'var(--text-secondary)' }}>
                                 {reasons.map((reason, index) => <div key={index} className="truncate">{reason}</div>)}
                             </div>
                         )}

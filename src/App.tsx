@@ -163,6 +163,7 @@ import { PlayerBottomBarLayoutContext } from './components/floating-player/Playe
 import { useFoliumHostBridge } from './mods/folium/hostBridge';
 import { useFoliumHostActions } from './mods/folium/hostActions';
 import { FoliumStageLayerSlot } from './mods/folium/registries/stageLayers';
+import { GlassFilterDefs } from './mods/useGlass.tsx';
 
 const LOCAL_MUSIC_UPDATED_EVENT = 'folia-local-music-updated';
 const DEV_DEBUG_SHORTCUT_LABEL = 'Alt+Shift+D';
@@ -2701,6 +2702,9 @@ export default function App() {
                 {renderAudioDeck('B', automix.registerDeckB)}
             </>}
         >
+
+            {/* 玻璃滤镜注入容器：全应用唯一，常驻不卸载，见 src/mods/useGlass.tsx。 */}
+            <GlassFilterDefs />
 
             {/* 首页层、Lattice 与两面墙共用的右下角工具按钮（WallToolsDock：交接时按钮节点不重建）。 */}
             <WallToolsDockHost host={wallToolsHost}>

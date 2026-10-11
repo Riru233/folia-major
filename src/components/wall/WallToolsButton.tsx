@@ -12,6 +12,7 @@ import { useWallToolsCommonActions } from './useWallToolsCommonActions';
 import { WallToolsQueueIsland } from './WallToolsQueueIsland';
 import { useWallToolsHost } from './wallToolsHost';
 import './WallToolsButton.css';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/wall/WallToolsButton.tsx
 // 海报墙右下角的工具按钮（Lattice 与 bravais 共用）：点按打开锚定的玻璃面板，向左滑打开命令面板。
@@ -152,7 +153,7 @@ export function WallToolsSurface({ idPrefix, label, isDaylight, locate, destinat
         checked: tintEnabled,
         onToggle: handleToggleLatticePosterTint,
     };
-
+    useGlass();
     return (
         <motion.div
             ref={rootRef}
@@ -172,8 +173,9 @@ export function WallToolsSurface({ idPrefix, label, isDaylight, locate, destinat
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.2, ease: 'easeOut' }}
                             onAnimationComplete={() => setIslandTrailsPanel(false)}
-                            className={quick.length > 0 ? 'lattice-tools-panel has-quick-actions' : 'lattice-tools-panel'}
-                        >
+                        className={quick.length > 0 ? 'lattice-tools-panel has-quick-actions' : 'lattice-tools-panel'}
+                        data-glass
+                    >
                             {quick.length > 0 && <WallToolsQuickRow actions={quick} onDone={close} />}
                             <WallToolsRow entry={common.volume} onDone={close} />
                             {rows.map(entry => <WallToolsRow key={entry.id} entry={entry} onDone={close} />)}

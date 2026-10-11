@@ -72,6 +72,7 @@ import { selectHomeLayoutSettingsSnapshot, useHomeLayoutSettingsStore } from '..
 import { setNavidromeEnabledState, useLibraryStore } from '../../stores/useLibraryStore';
 import { hasLibrarySuiteChoice } from '../../library/registry';
 import { useIsBravaisLibraryActive } from '../../library/app/bravaisLibraryActive';
+import { useGlass } from '@/shinoinject/useGlass';
 
 const DEFAULT_OPENAI_TEMPERATURE = '0.7';
 const AUR_PACKAGE_URL = 'https://aur.archlinux.org/packages/folia-major-bin';
@@ -1028,7 +1029,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         || 'Unknown server';
 
     // const isDaylight = theme?.name === 'Daylight Default'; // Deprecated, passed as prop
-    const glassBg = isDaylight ? 'bg-white' : 'bg-[#18181b]';
+    const glassBg = isDaylight ? 'bg-[#fffa]' : 'bg-[#18181baa]';
     const subviewPanelBg = isDaylight ? 'bg-zinc-50' : 'bg-[#18181b]';
     const borderColor = isDaylight ? 'border-black/5' : 'border-white/10';
     const textColor = isDaylight ? 'text-zinc-800' : 'text-zinc-100';
@@ -1072,9 +1073,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     ].join(' ');
     const shellTransition = { duration: 0.24, ease: 'easeOut' as const };
     const panelMotion = {
-        initial: { opacity: 0, y: 20, scale: 0.98 },
-        animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: 16, scale: 0.985 },
+        initial: { opacity: 0, scale: 1.05 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 1.05 },
     };
     const tabVariants = {
         enter: (direction: 'left' | 'right') => ({
@@ -1342,25 +1343,40 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     // a scrollTop write would abort the smooth scroll this starts.
     useSettingsInitialAnchor(initialAnchor, settingsAnchors, scrollToAnchor);
 
-
+    useGlass();
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            // 遮罩淡入淡出走背景色而不是元素 opacity：祖先 opacity < 1 会把 backdrop-filter 的
+            // 取样根截断在该祖先内，玻璃面板在动画期间拿不到背景，要等遮罩 opacity 落到 1 才突然出现。
+            initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
+            animate={{ backgroundColor: overlayBackground }}
+            exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
             transition={shellTransition}
             data-folia-keyboard-window="true"
             data-ponder-page-scope={activeTab === 'help' ? 'help-page' : 'settings-page'}
             className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 sm:px-5 sm:py-12"
-            style={{ backgroundColor: overlayBackground }}
             onMouseDown={handleOverlayMouseDown}
             onClick={(event) => handleBackdropClose(event, onClose)}
         >
             <motion.div
+                data-glass
                 {...panelMotion}
                 transition={shellTransition}
-                className={`${glassBg} border ${borderColor} p-6 md:p-8 rounded-3xl ${activeTab === 'options' ? 'w-full md:max-w-4xl md:w-[900px] h-[90vh] md:h-[85vh]' : 'w-full md:max-w-lg'} relative shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
+                // transition 只留给 tab 切换时的尺寸/底色变化：transition-all 会把 transform、opacity
+                // 和 makeGlass 写入的 backdrop-filter 也交给 CSS 过渡，和 framer 的 WAAPI 动画互相拖拽，
+                // 表现为入场先缩一下再回弹、玻璃滞后出现。
+                className={`${glassBg} border ${borderColor} p-6 md:p-8 rounded-[58px] ${activeTab === 'options' ? 'w-full md:max-w-4xl md:w-[900px] h-[90vh] md:h-[85vh]' : 'w-full md:max-w-lg'} relative shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-[width,height,max-width,background-color] duration-300`}
                 onClick={(event) => event.stopPropagation()}
+                style={{
+                    borderTop: isDaylight
+                        ? '1px solid rgba(0,0,0,0.08)'
+                        : '1px solid rgba(255,255,255,0.12)',
+                    borderBottom: isDaylight
+                        ? '1px solid rgba(0,0,0,0.08)'
+                        : '1px solid rgba(255,255,255,0.12)',
+                    outline: '1px solid rgba(40,40,40,0.2)',
+                    boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                }}
             >
                 {/* Decorative background blobs */}
                 <div className="absolute inset-0 pointer-events-none z-0">
@@ -1529,7 +1545,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 style={{ color: 'inherit' }}
                                                 aria-label={t('help.madeBy')}
                                             >
-                                                {t('help.madeBy')}
+                                                Project
+                                            </button>{' '}
+                                            <a href="https://github.com/Riru233/folia-major" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-white/30 hover:decoration-white">Riru233/folia-major</a>
+                                        </p>
+                                    </div>
+                                    <div className="relative mb-1">
+                                        <p className="text-sm opacity-60" style={{ color: 'var(--text-secondary)' }}>
+                                            <button
+                                                type="button"
+                                                onClick={handleAuthorLabelClick}
+                                                className="hover:opacity-100 transition-opacity"
+                                                style={{ color: 'inherit' }}
+                                                aria-label={t('help.madeBy')}
+                                            >
+                                                forked by
                                             </button>{' '}
                                             <a href="https://github.com/chthollyphile/folia-major" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-white/30 hover:decoration-white">chthollyphile/folia-major</a>
                                         </p>
