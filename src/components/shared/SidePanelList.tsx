@@ -127,9 +127,9 @@ export function SidePanelList<T>({
       {isOpen && (
         <motion.div
         data-glass
-          initial={{ opacity: 0, x: 60, scale: 0.95 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 60, scale: 0.95 }}
+          initial={{ opacity: 0, x: 60, scale: 0.3, rotateZ: 45 }}
+          animate={{ opacity: 1, x: 0, scale: 1, rotateZ: 0 }}
+          exit={{ opacity: 0, x: 60, scale: 0.3, rotateZ: 45 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           data-testid="side-panel-list"
           className="absolute right-6 top-24 w-80 max-w-[calc(100vw-3rem)] rounded-3xl z-[80] flex flex-col p-6 shadow-2xl border pointer-events-auto theme-glass-panel"
@@ -146,7 +146,7 @@ export function SidePanelList<T>({
               ? "1px solid rgba(0,0,0,0.08)"
               : "1px solid rgba(255,255,255,0.12)",
             outline: "1px solid rgba(40,40,40,0.2)",
-            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",transformOrigin: "bottom right"
           }}
         >
           {/* Header */}

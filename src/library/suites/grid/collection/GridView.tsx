@@ -1994,16 +1994,25 @@ export const GridView: React.FC<GridViewProps> = ({
         <AnimatePresence>
           {showCutInPanel && mode === "tracks" && collection && (
             <motion.div
+              data-glass
               data-wheel-scroll-region
               onWheelCapture={(event) => event.stopPropagation()}
               initial={{ opacity: 0, x: -60, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: -60, scale: 0.95 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute left-6 top-24 w-80 rounded-3xl z-[80] overflow-y-auto overscroll-contain hide-scrollbar flex flex-col p-6 shadow-2xl border backdrop-blur-2xl pointer-events-auto theme-glass-panel"
+              className="absolute left-6 top-24 w-80 rounded-3xl z-[80] overflow-y-auto overscroll-contain hide-scrollbar flex flex-col p-6 shadow-2xl border pointer-events-auto theme-glass-panel"
               style={{
                 bottom: bottomBarPanelBottomPx,
-                boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.2)",
+                borderTop: isDaylight
+                  ? "1px solid rgba(0,0,0,0.08)"
+                  : "1px solid rgba(255,255,255,0.12)",
+                borderBottom: isDaylight
+                  ? "1px solid rgba(0,0,0,0.08)"
+                  : "1px solid rgba(255,255,255,0.12)",
+                outline: "1px solid rgba(40,40,40,0.2)",
+                boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                transformOrigin: "bottom right",
               }}
             >
               {/* Cover Image */}
