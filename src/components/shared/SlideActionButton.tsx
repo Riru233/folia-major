@@ -16,29 +16,32 @@ import { useGlass } from "@/mods/useGlass";
 const TRIGGER_DISTANCE = 36;
 const MAX_DRAG = 44;
 export interface SlideActionButtonProps {
-  icon: LucideIcon;
-  /** Tooltip for the button itself, naming what a tap does. */
-  title: string;
-  onActivate: () => void;
-  slideIcon: LucideIcon;
-  /** Tooltip at the far end of the track, naming where the slide goes. */
-  slideTitle: string;
-  onSlide: () => void;
-  isDaylight: boolean;
-  accentColor: string;
-  disabled?: boolean;
+    icon: LucideIcon;
+    /** Tooltip for the button itself, naming what a tap does. */
+    title: string;
+    onActivate: () => void;
+    slideIcon: LucideIcon;
+    /** Tooltip at the far end of the track, naming where the slide goes. */
+    slideTitle: string;
+    onSlide: () => void;
+    isDaylight: boolean;
+    accentColor: string;
+    /** 拖满时按钮变成强调色底，上面图标的颜色（缺省白色；强调色可能本身就很浅，例如墙面工具按钮读 --text-on-accent）。 */
+    accentForeground?: string;
+    disabled?: boolean;
 }
 
 export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
-  icon: Icon,
-  title,
-  onActivate,
-  slideIcon: SlideIcon,
-  slideTitle,
-  onSlide,
-  isDaylight,
-  accentColor,
-  disabled = false,
+    icon: Icon,
+    title,
+    onActivate,
+    slideIcon: SlideIcon,
+    slideTitle,
+    onSlide,
+    isDaylight,
+    accentColor,
+    accentForeground = '#ffffff',
+    disabled = false,
 }) => {
   const [showGuideLine, setShowGuideLine] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -79,39 +82,38 @@ export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
     icon.style.color = "";
   };
 
-  const setDragFeedback = (deltaX: number) => {
-    const button = buttonRef.current;
-    if (!button) return;
-    const dragX = Math.max(-MAX_DRAG, Math.min(0, deltaX));
-    const progress = Math.min(1, Math.abs(dragX) / TRIGGER_DISTANCE);
-    button.style.transition = "none";
-    button.style.transform = `translateX(${dragX}px)`;
-    button.style.filter = `brightness(${1 + progress * 0.18})`;
-    const primaryIcon = button.querySelector("svg");
-    if (primaryIcon) {
-      primaryIcon.style.transform = `rotate(${progress * -180}deg)`;
-      primaryIcon.style.scale = String(1 - progress * 0.1);
-    }
-    if (progress >= 1) {
-      button.style.backgroundColor = accentColor;
-      button.style.color = "#ffffff";
-      button.style.boxShadow = `0 0 16px ${accentColor}66, 0 18px 42px rgba(0, 0, 0, ${0.24 + progress * 0.16})`;
-    } else {
-      button.style.backgroundColor = "";
-      button.style.color = "";
-      button.style.boxShadow = `0 18px 42px rgba(0, 0, 0, ${0.24 + progress * 0.16})`;
-    }
-    const fill = trackFillRef.current;
-    if (fill) {
-      fill.style.transition = "none";
-      fill.style.width = `${48 + Math.abs(dragX)}px`;
-      fill.style.backgroundColor = progress >= 1 ? accentColor : "";
-      fill.style.opacity = progress >= 1 ? "0.35" : "";
-    }
-    if (trackEndIconRef.current)
-      trackEndIconRef.current.style.transition = "none";
-    setDestinationFeedback(progress);
-  };
+    const setDragFeedback = (deltaX: number) => {
+        const button = buttonRef.current;
+        if (!button) return;
+        const dragX = Math.max(-MAX_DRAG, Math.min(0, deltaX));
+        const progress = Math.min(1, Math.abs(dragX) / TRIGGER_DISTANCE);
+        button.style.transition = 'none';
+        button.style.transform = `translateX(${dragX}px)`;
+        button.style.filter = `brightness(${1 + progress * 0.18})`;
+        const primaryIcon = button.querySelector('svg');
+        if (primaryIcon) {
+            primaryIcon.style.transform = `rotate(${progress * -180}deg)`;
+            primaryIcon.style.scale = String(1 - progress * 0.1);
+        }
+        if (progress >= 1) {
+            button.style.backgroundColor = accentColor;
+            button.style.color = accentForeground;
+            button.style.boxShadow = `0 0 16px ${accentColor}66, 0 18px 42px rgba(0, 0, 0, ${0.24 + progress * 0.16})`;
+        } else {
+            button.style.backgroundColor = '';
+            button.style.color = '';
+            button.style.boxShadow = `0 18px 42px rgba(0, 0, 0, ${0.24 + progress * 0.16})`;
+        }
+        const fill = trackFillRef.current;
+        if (fill) {
+            fill.style.transition = 'none';
+            fill.style.width = `${48 + Math.abs(dragX)}px`;
+            fill.style.backgroundColor = progress >= 1 ? accentColor : '';
+            fill.style.opacity = progress >= 1 ? '0.35' : '';
+        }
+        if (trackEndIconRef.current) trackEndIconRef.current.style.transition = 'none';
+        setDestinationFeedback(progress);
+    };
 
   const resetDragFeedback = (
     mode: "release" | "trigger" = "release",
