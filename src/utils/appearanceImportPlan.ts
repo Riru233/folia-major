@@ -17,9 +17,9 @@ import type { UrlBackgroundItem } from '../types';
 // auto-switch value can also flip "prefer custom theme" — a setting that is not in the config at
 // all and would otherwise change with no warning.
 
-export type ImportGroup = 'theme' | 'visualizer' | 'fonts' | 'background' | 'songTheme' | 'trackCard' | 'libraryWall';
+export type ImportGroup = 'theme' | 'visualizer' | 'fonts' | 'background' | 'songTheme' | 'trackCard' | 'libraryWall' | 'liquidGlass';
 
-export const IMPORT_GROUPS: ImportGroup[] = ['theme', 'visualizer', 'fonts', 'background', 'songTheme', 'trackCard', 'libraryWall'];
+export const IMPORT_GROUPS: ImportGroup[] = ['theme', 'visualizer', 'fonts', 'background', 'songTheme', 'trackCard', 'libraryWall', 'liquidGlass'];
 
 export interface ImportChange {
     group: ImportGroup;
@@ -143,6 +143,9 @@ const FIELD_GROUPS: Record<string, ImportGroup> = {
     libraryWallSeamStyle: 'libraryWall',
     libraryWallBackdropLyrics: 'libraryWall',
     libraryWallBackdropBlur: 'libraryWall',
+
+    // 液态玻璃的三个全局参数：一套玻璃的调参，和别的分组没有从属关系，单独成组。
+    liquidGlass: 'liquidGlass',
 };
 
 // Fields the import applies only when the incoming value is truthy, so an incoming null means "the

@@ -1,10 +1,51 @@
+import { isWindowsPlatform } from "@/utils/platform";
 /*
    液态玻璃
   */
 let uid = 0;
 const SVGNS = "http://www.w3.org/2000/svg";
+// 默认参数：出厂值就是这里，设置面板（useLiquidGlassSettingsStore）的兜底也读它。
 const global = { strength: 2.25, blur: 2, sat: 160 };
+export type LiquidGlassParams = typeof global;
+export const LIQUID_GLASS_DEFAULTS: LiquidGlassParams = { ...global };
+// 边缘扭曲（位移滤镜）与饱和度只有 Windows 平台才支持：非 Windows 上不建 <filter>，
+// backdrop-filter 不带 url(#lg-N) 也不写 saturate()，strength/sat 同时钉死不可调，blur 照常。
+export const LIQUID_GLASS_DISTORTION_SUPPORTED = isWindowsPlatform;
+// localStorage 键：面板读写同一组键；本模块启动时自行读回，
+// 保证设置面板还没被打开（store 尚未被 import）时玻璃也用的是用户调过的参数。
+export const LIQUID_GLASS_STORAGE_KEYS = {
+  strength: "liquidglass_strength",
+  blur: "liquidglass_blur",
+  sat: "liquidglass_sat",
+} as const;
+// 每个参数的量程：设置面板的滑杆和钳制共用同一份，UI 不会调出存不下的值。
+export const LIQUID_GLASS_PARAM_BOUNDS: Record<keyof LiquidGlassParams, { min: number; max: number }> = {
+  strength: { min: 0, max: 6 },
+  blur: { min: 0, max: 12 },
+  sat: { min: 0, max: 300 },
+};
 const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
+// 每个参数各自钳到自己的量程；非有限值（含缺失键）回落到默认值。
+// 非 Windows 平台边缘扭曲与饱和度不存在可调空间：读回、设置面板、外观导入三条路径都走这里，
+// 统一钉回固定值，state / localStorage / 实际渲染不会各说各话。
+export const clampLiquidGlassParam = <K extends keyof LiquidGlassParams>(key: K, value: number) => {
+  if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "strength") return LIQUID_GLASS_DEFAULTS.strength;
+  if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "sat") return 1;
+  const { min, max } = LIQUID_GLASS_PARAM_BOUNDS[key];
+  return Number.isFinite(value) ? clamp(value, min, max) : LIQUID_GLASS_DEFAULTS[key];
+};
+const readStoredParam = (key: keyof LiquidGlassParams) => {
+  if (typeof window === "undefined") return LIQUID_GLASS_DEFAULTS[key];
+  const saved = localStorage.getItem(LIQUID_GLASS_STORAGE_KEYS[key]);
+  return saved === null ? LIQUID_GLASS_DEFAULTS[key] : clampLiquidGlassParam(key, parseFloat(saved));
+};
+// 读回持久化值；store 的初始状态也走这里，两边永远一致。
+export const readStoredLiquidGlassParams = (): LiquidGlassParams => ({
+  strength: readStoredParam("strength"),
+  blur: readStoredParam("blur"),
+  sat: readStoredParam("sat"),
+});
+Object.assign(global, readStoredLiquidGlassParams());
 const smoothStep = (a: number, b: number, t: number) => {
   t = clamp((t - a) / (b - a), 0, 1);
   return t * t * (3 - 2 * t);
@@ -46,9 +87,10 @@ const getDefs = () => {
 
 type Glass = {
   el: HTMLElement;
-  filter: SVGFilterElement;
-  feImage: SVGFEImageElement;
-  feDisp: SVGFEDisplacementMapElement;
+  // 非 Windows 平台不建扭曲滤镜，这三个为空；update 据此跳过位移图并写纯 blur 的 backdrop。
+  filter: SVGFilterElement | null;
+  feImage: SVGFEImageElement | null;
+  feDisp: SVGFEDisplacementMapElement | null;
   id: string;
   bezelFrac: number;
   strength: number;
@@ -110,25 +152,32 @@ const buildDisplacementMap = (
 
 // 给元素挂液态玻璃滤镜（幂等）：同一元素只建一次，滤镜同步进文档，
 // 保证 backdrop-filter 写下的 url(#lg-N) 立即可解析，不存在悬空引用窗口。
+// 非 Windows 平台只登记玻璃记录、不建滤镜，backdrop 只剩 blur。
 export const makeGlass = (el: HTMLElement) => {
   const existing = glasses.get(el);
   if (existing) return existing;
-  const defs = getDefs();
   const id = "lg-" + uid++;
-  const filter = document.createElementNS(SVGNS, "filter");
-  filter.setAttribute("id", id);
-  filter.setAttribute("filterUnits", "userSpaceOnUse");
-  filter.setAttribute("color-interpolation-filters", "sRGB");
-  const feImage = document.createElementNS(SVGNS, "feImage");
-  feImage.setAttribute("result", "map");
-  feImage.setAttribute("preserveAspectRatio", "none");
-  const feDisp = document.createElementNS(SVGNS, "feDisplacementMap");
-  feDisp.setAttribute("in", "SourceGraphic");
-  feDisp.setAttribute("in2", "map");
-  feDisp.setAttribute("xChannelSelector", "R");
-  feDisp.setAttribute("yChannelSelector", "G");
-  filter.append(feImage, feDisp);
-  defs.appendChild(filter);
+  // 只有 Windows 才建位移滤镜；非 Windows 平台连 <filter> 都不落文档，url(#lg-N) 自然无从解析。
+  let filter: SVGFilterElement | null = null;
+  let feImage: SVGFEImageElement | null = null;
+  let feDisp: SVGFEDisplacementMapElement | null = null;
+  if (LIQUID_GLASS_DISTORTION_SUPPORTED) {
+    const defs = getDefs();
+    filter = document.createElementNS(SVGNS, "filter");
+    filter.setAttribute("id", id);
+    filter.setAttribute("filterUnits", "userSpaceOnUse");
+    filter.setAttribute("color-interpolation-filters", "sRGB");
+    feImage = document.createElementNS(SVGNS, "feImage");
+    feImage.setAttribute("result", "map");
+    feImage.setAttribute("preserveAspectRatio", "none");
+    feDisp = document.createElementNS(SVGNS, "feDisplacementMap");
+    feDisp.setAttribute("in", "SourceGraphic");
+    feDisp.setAttribute("in2", "map");
+    feDisp.setAttribute("xChannelSelector", "R");
+    feDisp.setAttribute("yChannelSelector", "G");
+    filter.append(feImage, feDisp);
+    defs.appendChild(filter);
+  }
 
   const g: Glass = {
     el,
@@ -143,27 +192,33 @@ export const makeGlass = (el: HTMLElement) => {
       const w = Math.round(el.offsetWidth),
         h = Math.round(el.offsetHeight);
       if (!w || !h) return;
-      const cs = getComputedStyle(el);
-      let radius = parseFloat(cs.borderRadius) || 0;
-      radius = Math.min(radius, w / 2, h / 2);
-      const bezel = (Math.min(w, h) / 2) * this.bezelFrac;
-      const { url, scale } = buildDisplacementMap(
-        w,
-        h,
-        radius,
-        bezel,
-        this.strength,
-        this.zoom * global.strength,
-      );
-      filter.setAttribute("width", String(w));
-      filter.setAttribute("height", String(h));
-      feImage.setAttribute("width", String(w));
-      feImage.setAttribute("height", String(h));
-      filter.setAttribute("x", "0");
-      filter.setAttribute("y", "0");
-      feImage.setAttribute("href", url);
-      feDisp.setAttribute("scale", scale.toFixed(2));
-      const backdrop = `url(#${id}) blur(${global.blur}px) saturate(${global.sat}%)`;
+      const { filter: curFilter, feImage: curFeImage, feDisp: curFeDisp } = this;
+      // 非 Windows 平台没有扭曲滤镜：整段位移图（逐像素画 canvas）直接跳过。
+      if (curFilter && curFeImage && curFeDisp) {
+        const cs = getComputedStyle(el);
+        let radius = parseFloat(cs.borderRadius) || 0;
+        radius = Math.min(radius, w / 2, h / 2);
+        const bezel = (Math.min(w, h) / 2) * this.bezelFrac;
+        const { url, scale } = buildDisplacementMap(
+          w,
+          h,
+          radius,
+          bezel,
+          this.strength,
+          this.zoom * global.strength,
+        );
+        curFilter.setAttribute("width", String(w));
+        curFilter.setAttribute("height", String(h));
+        curFeImage.setAttribute("width", String(w));
+        curFeImage.setAttribute("height", String(h));
+        curFilter.setAttribute("x", "0");
+        curFilter.setAttribute("y", "0");
+        curFeImage.setAttribute("href", url);
+        curFeDisp.setAttribute("scale", scale.toFixed(2));
+      }
+      const backdrop = curFilter
+        ? `url(#${id}) blur(${global.blur}px) saturate(${global.sat}%)`
+        : `blur(${global.blur}px)`;
       el.style.backdropFilter = backdrop;
       // lib.dom 没有 webkitBackdropFilter，用 setProperty 写 -webkit 别名，保持原来的双写行为。
       el.style.setProperty("-webkit-backdrop-filter", backdrop);
@@ -172,4 +227,27 @@ export const makeGlass = (el: HTMLElement) => {
   new ResizeObserver(() => g.update()).observe(el);
   glasses.set(el, g);
   return g;
+};
+
+// 设置变更后重刷所有已挂玻璃。走 [data-glass] 查询而不是自持注册表：
+// WeakMap 无法遍历，而新 Set 强引用会让卸载的面板泄漏；querySelectorAll 只看在文档内的元素。
+// 位移图是逐像素画的，拖滑杆一帧会来多次，所以用 rAF 合并到每帧最多刷一次。
+let refreshQueued = false;
+const refreshAllGlasses = () => {
+  if (refreshQueued) return;
+  refreshQueued = true;
+  requestAnimationFrame(() => {
+    refreshQueued = false;
+    document
+      .querySelectorAll<HTMLElement>("[data-glass]")
+      .forEach((el) => glasses.get(el)?.update());
+  });
+};
+
+// 应用一组玻璃参数（设置面板的 setter / 导入路径调它）：就地改 global 并重刷在场的玻璃。
+export const applyLiquidGlassParams = (next: Partial<LiquidGlassParams>) => {
+  if (next.strength !== undefined) global.strength = clampLiquidGlassParam("strength", next.strength);
+  if (next.blur !== undefined) global.blur = clampLiquidGlassParam("blur", next.blur);
+  if (next.sat !== undefined) global.sat = clampLiquidGlassParam("sat", next.sat);
+  refreshAllGlasses();
 };
