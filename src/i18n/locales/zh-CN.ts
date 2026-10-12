@@ -2813,7 +2813,7 @@ export default {
     "linuxManualUpdateNotice": "提示：Linux 不支持自动更新。请下载完整的 deb、rpm 或 tar.gz 包手动升级；仅正式版且通过 AUR 安装的用户可使用包管理器升级 folia-major-bin。",
     "manualUpdateNotice": "提示：当前平台暂不支持自动更新，请下载安装包手动覆盖更新。",
     "versionCopiedHint": "点击复制版本信息",
-    "unofficialBuildNotice": "非官方构建：这个版本既不是 Folia 仓库的 CI 构建的，也不是文档里的自部署方式（Docker、Vercel、Cloudflare），可能经过他人修改或缺少后端服务。遇到问题请先联系提供者，官方版本请从 GitHub Releases 下载。",
+    "unofficialBuildNotice": "本项目为Shino构建的液态玻璃版本，与官方存在部分稳定性差异，仅属于深度魔改版本。官方版本请从 GitHub Releases 下载。",
     "selfHostedBuildNotice": "自部署版本：由部署者自行构建并托管，音乐平台的后端服务也由部署者配置。遇到问题请先联系部署者；确认是 Folia 本身的问题再到 GitHub 反馈。",
     "versionCopiedToast": "已复制",
     "stageConnected": "Stage 已连接",
