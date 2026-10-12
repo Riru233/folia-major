@@ -125,8 +125,7 @@ const BravaisStage: React.FC<LibrarySuiteStageProps> = ({
     const seamRef = useRef<HTMLDivElement>(null);
     const seamContentRef = useRef<HTMLDivElement>(null);
     const tabRef = useRef<HTMLButtonElement>(null);
-    const posterFadeRef = useRef<HTMLDivElement>(null);
-    const frameRefs = useMemo(() => ({ left: leftRef, right: rightRef, seam: seamRef, seamContent: seamContentRef, tab: tabRef, posterFade: posterFadeRef }), []);
+    const frameRefs = useMemo(() => ({ left: leftRef, right: rightRef, seam: seamRef, seamContent: seamContentRef, tab: tabRef }), []);
     const { stateRef: frameRef, renderFrame } = useBravaisFrame(frameRefs);
     const { wallLook, seamLook } = useBravaisWallLook(reportPlayerOcclusion, reportPlayerBackdrop);
     const view = useBravaisViewport(rootRef);
@@ -543,7 +542,6 @@ const BravaisStage: React.FC<LibrarySuiteStageProps> = ({
                 seamRef={seamRef}
                 contentRef={seamContentRef}
                 tabRef={tabRef}
-                posterFadeRef={posterFadeRef}
                 variant={seam.rendered.variant}
                 targetVariant={seamTarget.variant}
                 leaving={seam.leaving}
