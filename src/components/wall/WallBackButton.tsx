@@ -63,6 +63,7 @@ export default function WallBackButton({
   return (
     <button
       data-glass
+      data-glass-jelly
       type="button"
       className={className}
       onClick={onBack}

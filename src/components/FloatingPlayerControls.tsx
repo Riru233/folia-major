@@ -432,6 +432,7 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
             <motion.div
               layout
               data-glass
+              data-glass-jelly
               transition={{ layout: CONTROL_LAYOUT_SPRING }}
               onClick={handleClick}
               // 用原生 pointer 事件而不是 framer-motion 的 drag：位移已经由 playerBottomBarLiveOffset

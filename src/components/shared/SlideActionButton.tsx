@@ -223,6 +223,7 @@ export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
       </div>
       <button
         data-glass
+        data-glass-jelly
         ref={buttonRef}
         type="button"
         disabled={disabled}

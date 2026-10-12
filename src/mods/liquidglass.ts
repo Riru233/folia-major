@@ -251,3 +251,244 @@ export const applyLiquidGlassParams = (next: Partial<LiquidGlassParams>) => {
   if (next.sat !== undefined) global.sat = clampLiquidGlassParam("sat", next.sat);
   refreshAllGlasses();
 };
+
+/* —— 拖拽果冻（data-glass-jelly 注入）——
+   pointerdown 命中带 data-glass-jelly 的元素即开会话，指针从按下点拖出的距离 d 驱动形变：
+   translate 与 scale 增量都走饱和曲线 T = max·d/(d+k)（增量随 d 反二次衰减，d 越大越接近临界值）；
+   scale 沿拖动轴拉伸、垂直轴压缩（垂直向下拖 → scaleX 略减、scaleY 略增），均带临界值。
+   形变量经弹簧平滑，松手后目标归零，弹簧把元素带回原状。
+   每帧 rAF 直写 transform（不进 React state）；framer / 拖拽组件可能随时改写
+   el.style.transform，写前按 lastWritten 比对，外部改写收编为新的 base 再叠果冻项。 */
+
+const JELLY_TMAX = 18; // translate 饱和值（px）
+const JELLY_TK = 90; // 半饱和距离：拖 90px 达到 TMAX/2
+const JELLY_MMAX = 0.3; // 沿轴拉伸临界值（scale 最多到 1+MMAX）
+const JELLY_MK = 80; // 拉伸半饱和距离
+const JELLY_PERP = 0.35; // 垂直拖动分量的压缩系数（拖动轴放大时，垂直轴按此比例回缩）
+const JELLY_POS_K = 200; // 拖拽跟手用的平移弹簧：稍软，形变平滑逼近目标
+const JELLY_POS_C = 24;
+const JELLY_STR_K = 260; // 拖拽跟手用的缩放弹簧：略硬，形变跟手
+const JELLY_STR_C = 27;
+// 回弹（松手后）位移用弹簧：调回弹速度改这组 k（临界阻尼附近 c ≈ 2√k，k = ω²，ω 越大回位越快）。
+// 验证：松手后 0.1s 内回到原状、无过冲甩尾；回不完加大 k，甩尾加大 c。
+const JELLY_POS_K_BACK = 6000; // 回弹平移弹簧（最远 18px）
+const JELLY_POS_C_BACK = 100;
+// 回弹缩放不用弹簧，改走 ease-out 动画曲线（先快后慢、末速为 0）：m 从松手值按曲线回 0。
+// 调回缩快慢改 JELLY_STR_BACK_DUR（须 ≤0.1s 回弹预算）；换曲线改 jellyEaseOut
+// （如换 ease-out 二次：1 - (1-t)**2，起步更平缓）。
+const JELLY_STR_BACK_DUR = 0.1; // 缩放回缩时长（s）
+const JELLY_STEP = 1 / 120; // 定步长积分（s）
+const JELLY_MAX_SUBSTEPS = 8;
+const JELLY_REST_OFF = 0.05; // 贴住目标的静止判定（px）
+const JELLY_REST_M = 0.004;
+const JELLY_REST_V = 0.6; // 弹簧速度静止判定
+const JELLY_REST_MV = 0.01;
+
+// 饱和曲线：f(0)=0，f'(0)=max/k 最大，随 d 衰减 ~1/d²，f→max。鼠标越远 translate/scale 越大但增量越小。
+const jellySaturate = (d: number, max: number, k: number) => (max * d) / (d + k);
+
+// 半隐式欧拉一步：a = -k·(x - target) - c·v。
+const jellyIntegrate = (x: number, v: number, target: number, dt: number, k: number, c: number) => {
+  const a = k * (target - x) - c * v;
+  const v2 = v + a * dt;
+  return [x + v2 * dt, v2] as const;
+};
+
+// ease-out 曲线（三次）：p=0 时 0、p=1 时 1，起步快末尾慢，导数末端为 0（回缩无甩尾）。
+const jellyEaseOut = (p: number) => 1 - (1 - p) ** 3;
+
+// 单指针单元素会话；模块级状态，不进 React state。
+let jellyInstalled = false;
+let jEl: HTMLElement | null = null;
+let jPointerId = -1;
+let jDragging = false;
+let jStartPX = 0;
+let jStartPY = 0;
+let jPx = 0; // 当前指针位置
+let jPy = 0;
+let jTheta = 0; // 拖动方向（rad），d 太小时保持上次方向
+let jOx = 0;
+let jVoX = 0;
+let jOy = 0;
+let jVoY = 0;
+let jM = 0; // 拉伸量：按 jTheta 方向分解成 scaleX/scaleY（无 rotate），见 jellyWrite
+let jVm = 0;
+let jStrT = 0; // 回弹缩放曲线已推进时间（s）
+let jStrFrom = 0; // 回弹缩放曲线起点（松手瞬间的 m）
+let jTOx = 0;
+let jTOy = 0;
+let jTM = 0;
+let jBase = ""; // 外部写在 el.style.transform 上的值（framer / 拖拽组件）
+let jLastWritten: string | null = null;
+let jRaf = 0;
+let jLastFrame = 0;
+let jAcc = 0;
+
+const jellyStopLoop = () => {
+  if (jRaf) cancelAnimationFrame(jRaf);
+  jRaf = 0;
+  jLastFrame = 0;
+  jAcc = 0;
+};
+
+// 收摊：停帧、清会话、transform 还原 base（空则清空），下一轮 pointerdown 重新收编外部值。
+const jellyFinish = () => {
+  jellyStopLoop();
+  const el = jEl;
+  jEl = null;
+  jDragging = false;
+  jPointerId = -1;
+  jOx = jVoX = jOy = jVoY = jM = jVm = 0;
+  jStrT = jStrFrom = 0;
+  jTOx = jTOy = jTM = 0;
+  jTheta = 0;
+  jLastWritten = null;
+  if (el?.isConnected) el.style.transform = jBase;
+};
+
+// 弹簧是否贴住目标（静止）：按住不动时贴住目标即停帧省电，松手后目标为 0 即回原状。
+const jellyAtRest = () =>
+  Math.abs(jOx - jTOx) < JELLY_REST_OFF &&
+  Math.abs(jOy - jTOy) < JELLY_REST_OFF &&
+  Math.abs(jM - jTM) < JELLY_REST_M &&
+  Math.abs(jVoX) < JELLY_REST_V &&
+  Math.abs(jVoY) < JELLY_REST_V &&
+  Math.abs(jVm) < JELLY_REST_MV;
+
+// 按当前指针位置算形变目标：位移向量 = 指针 - 按下点，方向定角度，模长走饱和曲线。
+const jellyUpdateTarget = () => {
+  const dx = jPx - jStartPX;
+  const dy = jPy - jStartPY;
+  const d = Math.hypot(dx, dy);
+  if (d < 1) {
+    // 没拖动：目标归零，松手感（纯点按不会出现形变，天然免误触门槛）。
+    jTOx = jTOy = 0;
+    jTM = 0;
+    return;
+  }
+  jTheta = Math.atan2(dy, dx);
+  const t = jellySaturate(d, JELLY_TMAX, JELLY_TK);
+  jTOx = (dx / d) * t;
+  jTOy = (dy / d) * t;
+  jTM = jellySaturate(d, JELLY_MMAX, JELLY_MK);
+};
+
+// 每帧写入：先收编外部 transform，再合成 base + translate + 方向性 scale（无 rotate / skew）。
+const jellyWrite = () => {
+  const el = jEl;
+  if (!el || !el.isConnected) {
+    jellyFinish();
+    return;
+  }
+  const cur = el.style.transform;
+  if (cur !== jLastWritten) jBase = cur; // 外部改写（framer layout / 拖拽组件 inline transform）
+  if (Math.abs(jOx) < 0.01 && Math.abs(jOy) < 0.01 && Math.abs(jM) < 0.001) {
+    // 形变为零：还原 base，不留无意义的 transform 壳。
+    el.style.transform = jBase;
+    jLastWritten = jBase;
+    return;
+  }
+  // 拖到哪个方向，形变就偏向哪个方向：把拖动单位向量分解到 x/y 轴做纯缩放——
+  // 沿拖动分量放大、垂直分量压缩，不引入 rotate / skew。
+  // θ=0（拖右）：scaleX↑ scaleY↓；θ=90°（拖下）：scaleX↓ scaleY↑；θ=45°：两轴等比微增。
+  const ux = Math.abs(Math.cos(jTheta));
+  const uy = Math.abs(Math.sin(jTheta));
+  const sx = 1 + jM * (ux - JELLY_PERP * uy);
+  const sy = 1 + jM * (uy - JELLY_PERP * ux);
+  el.style.transform = `${jBase ? jBase + " " : ""}translate(${jOx.toFixed(2)}px, ${jOy.toFixed(2)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+  jLastWritten = el.style.transform;
+};
+
+const jellyFrame = (t: number) => {
+  jRaf = 0;
+  const dtMs = jLastFrame ? Math.min(t - jLastFrame, 64) : JELLY_STEP * 1000;
+  jLastFrame = t;
+  jAcc += dtMs / 1000;
+  let steps = 0;
+  // 松手后：位移切回弹弹簧；缩放不走弹簧，改按 ease-out 曲线回缩（拖拽中缩放仍用跟手弹簧）。
+  const back = !jDragging;
+  const pk = back ? JELLY_POS_K_BACK : JELLY_POS_K;
+  const pc = back ? JELLY_POS_C_BACK : JELLY_POS_C;
+  while (jAcc >= JELLY_STEP && steps < JELLY_MAX_SUBSTEPS) {
+    [jOx, jVoX] = jellyIntegrate(jOx, jVoX, jTOx, JELLY_STEP, pk, pc);
+    [jOy, jVoY] = jellyIntegrate(jOy, jVoY, jTOy, JELLY_STEP, pk, pc);
+    if (!back) [jM, jVm] = jellyIntegrate(jM, jVm, jTM, JELLY_STEP, JELLY_STR_K, JELLY_STR_C);
+    jAcc -= JELLY_STEP;
+    steps++;
+  }
+  if (back) {
+    // 缩放 ease-out 回缩：p 从 0→1，m = 松手值·(1 - easeOut(p))；vm 取解析导数供静止判定。
+    jStrT = Math.min(jStrT + dtMs / 1000, JELLY_STR_BACK_DUR);
+    const p = jStrT / JELLY_STR_BACK_DUR;
+    jM = jStrFrom * (1 - jellyEaseOut(p));
+    jVm = (-jStrFrom * 3 * (1 - p) ** 2) / JELLY_STR_BACK_DUR;
+  }
+  if (steps >= JELLY_MAX_SUBSTEPS) jAcc = 0;
+  if (!jDragging && jellyAtRest()) {
+    jellyFinish(); // 松手后弹回原状，收摊还原 base
+    return;
+  }
+  jellyWrite();
+  if (jDragging && jellyAtRest()) {
+    jellyStopLoop(); // 按住不动：形变已贴目标，停帧；再动由 pointermove 拉起
+    return;
+  }
+  jRaf = requestAnimationFrame(jellyFrame);
+};
+
+const jellyEnsureLoop = () => {
+  if (!jRaf) {
+    jLastFrame = 0;
+    jRaf = requestAnimationFrame(jellyFrame);
+  }
+};
+
+const jellyOnPointerDown = (e: PointerEvent) => {
+  if (jDragging || typeof window === "undefined") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  // data-glass-jelly 是果冻注入开关：命中该属性的玻璃才参与拖拽果冻。
+  const el = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-glass-jelly]") : null;
+  if (!el) return;
+  if (jEl) jellyFinish(); // 上一会话还有尾巴（如松手前又按下），先收干净
+  jEl = el;
+  jPointerId = e.pointerId;
+  jDragging = true;
+  jStartPX = jPx = e.clientX;
+  jStartPY = jPy = e.clientY;
+  jOx = jVoX = jOy = jVoY = jM = jVm = 0;
+  jStrT = jStrFrom = 0;
+  jTOx = jTOy = jTM = 0;
+  jTheta = 0;
+  jBase = el.style.transform;
+  jLastWritten = el.style.transform;
+};
+
+const jellyOnPointerMove = (e: PointerEvent) => {
+  if (!jDragging || e.pointerId !== jPointerId || !jEl?.isConnected) return;
+  jPx = e.clientX;
+  jPy = e.clientY;
+  jellyUpdateTarget();
+  jellyEnsureLoop();
+};
+
+const jellyEndPointer = () => {
+  if (!jDragging) return;
+  jDragging = false;
+  jPointerId = -1;
+  jTOx = jTOy = jTM = 0; // 松手：目标归零，位移弹簧 + 缩放曲线把元素带回原状
+  jStrT = 0; // 缩放回缩曲线从松手瞬间的 m 出发
+  jStrFrom = jM;
+  jellyEnsureLoop();
+};
+
+// 由 useGlass 在 commit 后调一次（幂等）：挂 window 级指针监听。
+export const installGlassJelly = () => {
+  if (jellyInstalled || typeof window === "undefined") return;
+  jellyInstalled = true;
+  window.addEventListener("pointerdown", jellyOnPointerDown, { capture: true });
+  window.addEventListener("pointermove", jellyOnPointerMove, { passive: true });
+  window.addEventListener("pointerup", jellyEndPointer);
+  window.addEventListener("pointercancel", jellyEndPointer);
+  window.addEventListener("blur", jellyEndPointer);
+  document.addEventListener("visibilitychange", jellyEndPointer);
+};
