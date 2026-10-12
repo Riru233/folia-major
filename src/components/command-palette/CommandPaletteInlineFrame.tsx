@@ -69,6 +69,7 @@ const CommandPaletteInlineFrame: React.FC<CommandPaletteInlineFrameProps> = ({
         >
           <div
             data-glass
+            data-glass-jelly
             className="relative rounded-full border shadow-2xl theme-glass-panel"
             style={{
               backgroundColor: isDaylight
