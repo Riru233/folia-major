@@ -33,6 +33,7 @@ const GROUP_LABEL_KEYS: Record<ImportGroup, string> = {
     songTheme: 'options.importGroupSongTheme',
     trackCard: 'options.importGroupTrackCard',
     libraryWall: 'options.importGroupLibraryWall',
+    liquidGlass: 'options.importGroupLiquidGlass',
 };
 
 const DERIVED_LABEL_KEYS: Record<string, string> = {
@@ -94,6 +95,8 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
     libraryWallSeamStyle: 'options.bravaisSeamStyle',
     libraryWallBackdropLyrics: 'options.bravaisBackdropLyrics',
     libraryWallBackdropBlur: 'options.bravaisBackdropBlur',
+    // 液态玻璃整组复用图形设置里的分组标题；三个子项由 settingLabelLookup 解析到各自的滑杆文案。
+    liquidGlass: 'options.liquidGlassSection',
 };
 
 // The per-renderer tunings borrow the renderer's own display name instead of inventing one.
