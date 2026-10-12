@@ -186,6 +186,7 @@ const VisualizerShell = forwardRef<HTMLDivElement, VisualizerShellProps>(
       >
         {resolvedOnBack && (
           <motion.button
+          data-glass
             type="button"
             aria-label={t("ui.backToHome")}
             initial={false}
