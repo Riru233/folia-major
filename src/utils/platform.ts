@@ -2,9 +2,15 @@
 // One place to answer "is this a Mac", so keyboard handling and the shortcut hints the user reads
 // can never disagree about it. Detection is by user agent because the renderer runs both in a
 // browser and in Electron, and `window.electron?.platform` only exists in the latter.
-
 export const isMacPlatform = typeof navigator !== 'undefined'
     && navigator.userAgent.toLowerCase().includes('mac');
+
+// Linux desktop, not Android. Android's user agent also contains "Linux" (e.g. "Linux; Android 14"),
+// so a bare `includes('linux')` misreports phones and tablets as desktop Linux — which would hide
+// the player-page native blur toggle there for a renderer problem it does not have.
+export const isLinuxPlatform = typeof navigator !== 'undefined'
+    && navigator.userAgent.toLowerCase().includes('linux')
+    && !navigator.userAgent.toLowerCase().includes('android');
 
 /**
  * The modifier a shortcut declared as `ctrl` actually uses here: Cmd on macOS, Ctrl elsewhere.
@@ -22,3 +28,7 @@ export const isSecondaryModifierPressed = (event: KeyboardEvent): boolean => (
 
 /** Label for the primary modifier, for shortcut hints shown in the UI. */
 export const PRIMARY_MODIFIER_LABEL = isMacPlatform ? 'Cmd' : 'Ctrl';
+
+
+export const isWindowsPlatform = typeof navigator !== 'undefined'
+    && navigator.userAgent.toLowerCase().includes('windows')

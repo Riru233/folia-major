@@ -7,6 +7,7 @@ import { useTypographySettingsStore } from '../../stores/useTypographySettingsSt
 import { useThemeSettingsStore } from '../../stores/useThemeSettingsStore';
 import { useStageSettingsStore } from '../../stores/useStageSettingsStore';
 import { useLibraryWallLookStore } from '../../stores/useLibraryWallLookStore';
+import { useLiquidGlassSettingsStore } from '../../stores/useLiquidGlassSettingsStore';
 
 // src/services/obs/visualSettingsConfig.ts
 // Everything compressConfig serializes except the theme. Reads the live settings store, so both
@@ -17,6 +18,7 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
   const storeThemeSettings = useThemeSettingsStore.getState();
   const storeTypographySettings = useTypographySettingsStore.getState();
   const storeVisualizer = useVisualizerSettingsStore.getState();
+  const storeLiquidGlass = useLiquidGlassSettingsStore.getState();
   // The song-theme automation flags live in theme preferences, not the settings store. The overlay
   // ignores them, but a copied OBS URL is also a restore payload (the import box accepts one), so
   // dropping them here would silently lose both toggles on re-import. Auto-generate is ANDed with
@@ -106,6 +108,12 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     libraryWallSeamStyle: useLibraryWallLookStore.getState().seamStyle,
     libraryWallBackdropLyrics: useLibraryWallLookStore.getState().backdropLyrics,
     libraryWallBackdropBlur: useLibraryWallLookStore.getState().backdropBlur,
+    // 液态玻璃的三个全局参数：视觉调参，随共享外观一起走（2026-10-12）。
+    liquidGlass: {
+      strength: storeLiquidGlass.strength,
+      blur: storeLiquidGlass.blur,
+      sat: storeLiquidGlass.sat,
+    },
   };
 }
 

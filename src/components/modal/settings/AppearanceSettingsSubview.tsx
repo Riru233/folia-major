@@ -37,6 +37,7 @@ import { usePlayerChromeSettingsStore } from '../../../stores/usePlayerChromeSet
 import { useThemeSettingsStore } from '../../../stores/useThemeSettingsStore';
 import { useStageSettingsStore } from '../../../stores/useStageSettingsStore';
 import { useLibraryWallLookStore } from '../../../stores/useLibraryWallLookStore';
+import { useLiquidGlassSettingsStore } from '../../../stores/useLiquidGlassSettingsStore';
 import { isLibraryWallSeamStyle } from '../../../utils/libraryWallSeamStyle';
 
 // src/components/modal/settings/AppearanceSettingsSubview.tsx
@@ -613,6 +614,22 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
             }
             if (has('libraryWallBackdropBlur')) {
                 useLibraryWallLookStore.getState().setBackdropBlur(Boolean(config.libraryWallBackdropBlur));
+            }
+            // 液态玻璃的三个参数。逐个认数字再交给 setter：整包对象里混进 null / 字符串时，
+            // 跳过那一项而不是钳出一个导入方没写过的值；三个都没有就什么都不做。
+            if (has('liquidGlass') && config.liquidGlass && typeof config.liquidGlass === 'object') {
+                const glass = config.liquidGlass as Record<string, unknown>;
+                const finite = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : undefined);
+                const strength = finite(glass.strength);
+                const blur = finite(glass.blur);
+                const sat = finite(glass.sat);
+                if (strength !== undefined || blur !== undefined || sat !== undefined) {
+                    useLiquidGlassSettingsStore.getState().handleSetLiquidGlassParams({
+                        ...(strength !== undefined ? { strength } : {}),
+                        ...(blur !== undefined ? { blur } : {}),
+                        ...(sat !== undefined ? { sat } : {}),
+                    });
+                }
             }
 
             setStatusMessage({ type: 'success', text: t('options.importSuccess') });
