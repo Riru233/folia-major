@@ -1545,7 +1545,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 style={{ color: 'inherit' }}
                                                 aria-label={t('help.madeBy')}
                                             >
-                                                {t('help.madeBy')}
+                                                Project
+                                            </button>{' '}
+                                            <a href="https://github.com/Riru233/folia-major" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-white/30 hover:decoration-white">Riru233/folia-major</a>
+                                        </p>
+                                    </div>
+                                    <div className="relative mb-1">
+                                        <p className="text-sm opacity-60" style={{ color: 'var(--text-secondary)' }}>
+                                            <button
+                                                type="button"
+                                                onClick={handleAuthorLabelClick}
+                                                className="hover:opacity-100 transition-opacity"
+                                                style={{ color: 'inherit' }}
+                                                aria-label={t('help.madeBy')}
+                                            >
+                                                forked by
                                             </button>{' '}
                                             <a href="https://github.com/chthollyphile/folia-major" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline decoration-white/30 hover:decoration-white">chthollyphile/folia-major</a>
                                         </p>

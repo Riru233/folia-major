@@ -2906,8 +2906,23 @@ export default {
         "description": "Setelah masuk, playlist pribadi buatan Anda kini dapat memuat lagu dengan paging sungguhan. Backend yang di-host sendiri harus memakai qq-music-api 3.1.2 atau lebih baru; backend lama beralih otomatis, dan playlist yang tidak dapat dibaca kini menjelaskan bahwa playlist itu tidak publik, alih-alih tampil kosong tanpa keterangan."
       }
     },
+    "v0_7_18s-shino": {
+      "intro": "0.7.18s (mod Shino) dibangun di atas 0.7.18 resmi dengan pengalaman liquid glass yang lebih kuat: memulihkan cakupan liquid glass yang hilang pada komponen terdampak pembaruan 0.7.18, melembutkan tombol terpilih, serta menambahkan pengaturan liquid glass agar Anda bisa menyesuaikan refraksi, blur, dan saturasi. Catatan: liquid glass hanya didukung di Windows.",
+      "liquidGlassFix": {
+        "title": "Cakupan Liquid Glass Diperbaiki",
+        "description": "Memulihkan liquid glass pada komponen yang kehilangan cakupan setelah pembaruan 0.7.18, sehingga permukaan buram seperti tombol dan panel kembali mendapat tampilan kaca yang konsisten."
+      },
+      "liquidGlassSoften": {
+        "title": "Tombol Liquid Glass Lebih Lembut",
+        "description": "Tombol terpilih kini mendapat perlakuan kaca yang lebih lembut dengan transisi tepi yang lebih halus, meningkatkan tampilan sekaligus kenyamanan antarmuka."
+      },
+      "liquidGlassSettings": {
+        "title": "Pengaturan Liquid Glass Baru",
+        "description": "Bebas menyesuaikan kekuatan refraksi, blur, dan saturasi liquid glass untuk mengkustomisasi tekstur kaca sesuai selera. Catatan: liquid glass hanya didukung di Windows."
+      }
+    },
     "v0_7_18": {
-      "intro": "0.7.18 menambahkan antrean putar yang bisa langsung diatur dari alat dinding di Bravais dan Lattice, dan kedua dinding kini memakai panel alat yang sama. Beberapa visualizer lirik lebih hemat sumber daya, perpindahan antar lagu lokal lebih mulus, login QR QQ Music menjelaskan langkahnya saat batas perangkat tercapai, dan aplikasi desktop kini menyimpan kunci AI secara terenkripsi.",
+      "intro": "0.7.18 menambahkan antrean putar yang bisa langsung diatur dari alat dinding di Bravais dan Lattice, dan kedua dinding kini memakai panel alat yang sama. Beberapa visualizer lirik lebih hemat sumber daya, perpindahan antar lagu lokal lebih mulus, login QR QQ Music menjelaskan langkahnya saat batas perangkat tercapai, dan aplikasi desktop kini menyimpan kunci AI secara terenkripsi. Animasi jendela kini memakai transisi gradien ala iOS 26, dan antrean putar samping mendapat efek rotasi.",
       "queueIsland": {
         "title": "Atur Antrean dari Dinding",
         "description": "Buka Alat dinding di pojok kanan bawah Bravais atau Lattice lalu pilih Antrean putar untuk menampilkan antrean di atas panel. Klik lagu untuk memutarnya tanpa pindah halaman, seret pegangan untuk mengurutkan, arahkan kursor untuk putar berikutnya, pindah ke akhir, atau hapus, simpan antrean sebagai playlist lokal, atau kosongkan dengan konfirmasi dua langkah. Keyboard: ↑↓ untuk berpindah, Alt+↑↓ untuk menggeser, Delete untuk menghapus. Tidak tersedia di FM Pribadi; saat Stage eksternal sedang memutar, Anda hanya bisa memilih lagu."
@@ -2931,6 +2946,10 @@ export default {
       "aiKeySecure": {
         "title": "Kunci AI Terenkripsi di Desktop",
         "description": "Aplikasi desktop kini menyimpan kunci Gemini / OpenAI secara terenkripsi dengan penyimpanan aman sistem, dan kunci teks biasa dari versi lama dipindahkan saat aplikasi dimulai. Kunci yang tersimpan tidak ditampilkan lagi: kosongkan kolom untuk mempertahankannya, ketik kunci baru untuk menggantinya, atau gunakan tombol Hapus tersendiri. Uji koneksi dengan kolom kosong memakai kunci yang tersimpan."
+      },
+      "windowAnimation": {
+        "title": "Animasi Jendela Disesuaikan",
+        "description": "Animasi jendela kini memakai transisi gradien menyerupai iOS 26, dan antrean putar samping mendapat efek rotasi untuk perpindahan yang lebih mulus dan alami."
       }
     },
     "v0_7_17": {
@@ -2961,7 +2980,7 @@ export default {
       }
     },
     "v0_7_16": {
-      "intro": "0.7.16 memindahkan lirik AMLL ke API resmi, menemukan jauh lebih banyak lirik AMLL untuk lagu QQ Music, dan memungkinkan pencocokan manual mencari langsung di AMLL. Rilis ini juga menambahkan perpindahan tab beranda dengan Tab serta memperbaiki tautan album dan artis yang hilang di hasil pencarian lokal.",
+      "intro": "0.7.16 memindahkan lirik AMLL ke API resmi, menemukan jauh lebih banyak lirik AMLL untuk lagu QQ Music, dan memungkinkan pencocokan manual mencari langsung di AMLL. Rilis ini juga menambahkan perpindahan tab beranda dengan Tab serta memperbaiki tautan album dan artis yang hilang di hasil pencarian lokal. Mod Shino juga menambahkan liquid glass pada permukaan buram seperti tombol dan bilah atas, serta mengubah gaya tombol jendela menyerupai Windows 8 RP.",
       "amllSource": {
         "title": "Lirik AMLL lewat API Resmi",
         "description": "Lirik AMLL kini diambil dari API resmi AMLL."
@@ -2977,6 +2996,14 @@ export default {
       "searchLinks": {
         "title": "Tautan Hasil Pencarian Lokal Tidak Lagi Hilang",
         "description": "Jika Anda mencari tepat setelah mengimpor folder, tautan album dan artis di hasilnya kini terisi setelah pustaka selesai dimuat, tanpa perlu mencari ulang."
+      },
+      "liquidGlass": {
+        "title": "Liquid Glass Ditambahkan",
+        "description": "Efek liquid glass kini diterapkan pada permukaan buram seperti tombol dan bilah atas, memberi tekstur kaca yang lebih kaya pada antarmuka."
+      },
+      "windowButtons": {
+        "title": "Tombol Jendela Diganti Gaya",
+        "description": "Tombol jendela telah disesuaikan untuk menyerupai gaya Windows 8 RP."
       }
     },
     "v0_7_15": {

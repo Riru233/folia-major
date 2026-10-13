@@ -2811,7 +2811,7 @@ export default {
     "linuxManualUpdateNotice": "Linux does not support automatic updates. Download the complete deb, rpm, or tar.gz package to upgrade manually; only stable AUR installations should upgrade folia-major-bin through the package manager.",
     "manualUpdateNotice": "Note: Automatic update is not supported on this platform. Please download the package manually.",
     "versionCopiedHint": "Click to copy version info",
-    "unofficialBuildNotice": "This project is a liquid glass version built by Shino. It has some stability differences from the official version and is only a heavily modified version. For the official version, please download it from GitHub Releases.",
+    "unofficialBuildNotice": "Unofficial build: this version was neither built by the Folia repository's CI nor deployed through a documented self-hosting setup (Docker, Vercel, Cloudflare), and may be modified or missing its backend services. Please contact whoever provided it first; official builds are on GitHub Releases.",
     "selfHostedBuildNotice": "Self-hosted: built and hosted by whoever deployed it, including the music platform backends. Please contact the deployer first, and report on GitHub once it is clearly a Folia problem.",
     "versionCopiedToast": "Copied",
     "stageConnected": "Stage connected",
@@ -3019,8 +3019,23 @@ export default {
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
       }
     },
+    "v0_7_18s-shino": {
+      "intro": "0.7.18s (Shino mod) builds on official 0.7.18 with a stronger liquid glass experience: it restores missing liquid glass coverage on components affected by the 0.7.18 update, softens selected buttons, and adds liquid glass settings so you can tune refraction, blur, and saturation. Note: liquid glass is only supported on Windows.",
+      "liquidGlassFix": {
+        "title": "Liquid Glass Coverage Fixed",
+        "description": "Restores liquid glass on components that lost coverage after the 0.7.18 update, so frosted surfaces such as buttons and panels get a consistent glass look again."
+      },
+      "liquidGlassSoften": {
+        "title": "Softer Liquid Glass Buttons",
+        "description": "Selected buttons now have a softer glass treatment with smoother edge transitions, improving both the look and the feel of the interface."
+      },
+      "liquidGlassSettings": {
+        "title": "New Liquid Glass Settings",
+        "description": "Freely adjust liquid glass refraction strength, blur, and saturation to customize the glass texture to your taste. Note: liquid glass is only supported on Windows."
+      }
+    },
     "v0_7_18": {
-      "intro": "0.7.18 adds a play queue you can work with right from the wall tools in Bravais and Lattice, and both walls now share one tools panel. Several lyric visualizers use fewer resources, switching between local songs is smoother, QQ Music QR sign-in tells you what to do when your device limit is reached, and the desktop app now stores AI keys encrypted.",
+      "intro": "0.7.18 adds a play queue you can work with right from the wall tools in Bravais and Lattice, and both walls now share one tools panel. Several lyric visualizers use fewer resources, switching between local songs is smoother, QQ Music QR sign-in tells you what to do when your device limit is reached, and the desktop app now stores AI keys encrypted. Window animations now use an iOS 26-like gradient transition, and the side play queue gains a rotation effect.",
       "queueIsland": {
         "title": "Manage the Queue on the Wall",
         "description": "Open Wall tools in the bottom-right corner of Bravais or Lattice and choose Play queue to show the queue above the panel. Click a song to play it without leaving the page, drag the handle to reorder, hover to play next, move to the end or remove, save the queue as a local playlist, or clear it with a two-step confirm. Keyboard: ↑↓ to move, Alt+↑↓ to reorder, Delete to remove. Not available in Personal FM; while an external Stage is playing you can only pick songs."
@@ -3044,6 +3059,10 @@ export default {
       "aiKeySecure": {
         "title": "Encrypted AI Keys on Desktop",
         "description": "The desktop app now stores Gemini / OpenAI keys encrypted with the system's secure storage, and plain-text keys from older versions are migrated at startup. Saved keys are never shown again: leave the field blank to keep a key, type a new one to replace it, or use the separate Clear button. Testing the connection with a blank field uses the saved key."
+      },
+      "windowAnimation": {
+        "title": "Window Animation Adjusted",
+        "description": "Window animations now use a gradient transition similar to iOS 26, and the side play queue gains a rotation effect for a smoother, more natural switch."
       }
     },
     "v0_7_17": {
@@ -3074,7 +3093,7 @@ export default {
       }
     },
     "v0_7_16": {
-      "intro": "0.7.16 moves AMLL lyrics to the official API, finds far more AMLL lyrics for QQ Music songs, and lets manual matching search AMLL directly. It also adds Tab switching between home tabs and fixes missing album and artist links in local search results.",
+      "intro": "0.7.16 moves AMLL lyrics to the official API, finds far more AMLL lyrics for QQ Music songs, and lets manual matching search AMLL directly. It also adds Tab switching between home tabs and fixes missing album and artist links in local search results. The Shino mod additionally brings liquid glass to frosted surfaces such as buttons and the top bar, and restyles the window buttons after Windows 8 RP.",
       "amllSource": {
         "title": "AMLL Lyrics via the Official API",
         "description": "AMLL lyrics now come from the official AMLL API."
@@ -3090,6 +3109,14 @@ export default {
       "searchLinks": {
         "title": "Local Search Results Keep Their Links",
         "description": "If you search right after importing a folder, album and artist links in the results now fill in once the library finishes loading, without searching again."
+      },
+      "liquidGlass": {
+        "title": "Liquid Glass Added",
+        "description": "Liquid glass effects are now applied to frosted surfaces such as buttons and the top bar, giving the interface a richer glass texture."
+      },
+      "windowButtons": {
+        "title": "Window Buttons Restyled",
+        "description": "The window buttons have been adjusted to mimic the style of Windows 8 RP."
       }
     },
     "v0_7_15": {

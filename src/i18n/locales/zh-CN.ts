@@ -2813,7 +2813,7 @@ export default {
     "linuxManualUpdateNotice": "提示：Linux 不支持自动更新。请下载完整的 deb、rpm 或 tar.gz 包手动升级；仅正式版且通过 AUR 安装的用户可使用包管理器升级 folia-major-bin。",
     "manualUpdateNotice": "提示：当前平台暂不支持自动更新，请下载安装包手动覆盖更新。",
     "versionCopiedHint": "点击复制版本信息",
-    "unofficialBuildNotice": "本项目为Shino构建的液态玻璃版本，与官方存在部分稳定性差异，仅属于深度魔改版本。官方版本请从 GitHub Releases 下载。",
+    "unofficialBuildNotice": "非官方构建：这个版本既不是 Folia 仓库的 CI 构建的，也不是文档里的自部署方式（Docker、Vercel、Cloudflare），可能经过他人修改或缺少后端服务。遇到问题请先联系提供者，官方版本请从 GitHub Releases 下载。",
     "selfHostedBuildNotice": "自部署版本：由部署者自行构建并托管，音乐平台的后端服务也由部署者配置。遇到问题请先联系部署者；确认是 Folia 本身的问题再到 GitHub 反馈。",
     "versionCopiedToast": "已复制",
     "stageConnected": "Stage 已连接",
@@ -3018,8 +3018,23 @@ export default {
         "description": "登录后，自己创建的不公开歌单也能读取歌曲，并支持真正的分页加载。自建后端需要升级到 qq-music-api 3.1.2 或更新版本；旧后端会自动回退，读不到时会明确提示「不是公开歌单」，不再静默显示为空。"
       }
     },
+    "v0_7_18s-shino": {
+      "intro": "0.7.18s 魔改版在官方 0.7.18 基础上强化了液态玻璃体验：修复部分组件缺失的液态玻璃覆盖，为部分按钮追加软化效果，并新增可自由调整折射、模糊与饱和度的液态玻璃设置。温馨提示：液态玻璃仅支持 Windows 系统。",
+      "liquidGlassFix": {
+        "title": "液态玻璃修复",
+        "description": "修复 0.7.18 更新后部分组件缺少液态玻璃覆盖的情况，让按钮、面板等毛玻璃场景重新获得统一的液态玻璃效果。"
+      },
+      "liquidGlassSoften": {
+        "title": "液态玻璃组件软化",
+        "description": "对部分按钮增加软化处理，边缘过渡更柔和，提升页面整体观感与操作体验。"
+      },
+      "liquidGlassSettings": {
+        "title": "新增液态玻璃设置",
+        "description": "可以自由调整液态玻璃的折射强度、模糊与饱和度，按自己的喜好定制玻璃质感。温馨提示：液态玻璃仅支持 Windows 系统。"
+      }
+    },
     "v0_7_18": {
-      "intro": "0.7.18 给 Bravais 与 Lattice 的墙面工具加上可以直接操作的播放队列，工具面板也统一成同一套布局；多个歌词可视化模式更省资源，本地歌曲连续播放切歌更顺，QQ 扫码遇到登录设备超限会直接告诉你怎么处理，桌面版的 AI 密钥改为加密保存。",
+      "intro": "0.7.18 给 Bravais 与 Lattice 的墙面工具加上可以直接操作的播放队列，工具面板也统一成同一套布局；多个歌词可视化模式更省资源，本地歌曲连续播放切歌更顺，QQ 扫码遇到登录设备超限会直接告诉你怎么处理，桌面版的 AI 密钥改为加密保存。窗口动画调整为类似 iOS 26 的渐变过渡，侧边播放列表增加旋转效果。",
       "queueIsland": {
         "title": "墙面上直接管理播放队列",
         "description": "在 Bravais 或 Lattice 右下角的「墙面工具」里点「播放队列」，面板上方会展开队列：点歌直接播放、不跳页，拖动手柄排序，悬停可下一首播放、移到末尾或移除，还能存为本地歌单或两步确认清空。键盘可用 ↑↓ 移动、Alt+↑↓ 挪动、Delete 移除。私人 FM 下不可用，外部舞台播放时只能点歌。"
@@ -3043,6 +3058,10 @@ export default {
       "aiKeySecure": {
         "title": "桌面版 AI 密钥加密保存",
         "description": "桌面版的 Gemini / OpenAI 密钥改用系统的安全存储加密保存，旧版本留下的明文会在启动时自动迁移。保存后不再回显，留空即保持不变，替换需输入新密钥，清除是单独的按钮；测试连接时留空会使用已保存的密钥。"
+      },
+      "windowAnimation": {
+        "title": "窗口动画调整",
+        "description": "窗口动画调整为类似 iOS 26 的渐变过渡效果，侧边播放列表增加旋转效果，切换时更顺滑自然。"
       }
     },
     "v0_7_17": {
@@ -3073,7 +3092,7 @@ export default {
       }
     },
     "v0_7_16": {
-      "intro": "0.7.16 把 AMLL 歌词切到官方接口，QQ 音乐歌曲能找到的 AMLL 歌词更多，手动匹配也能直接搜 AMLL；另外新增首页用 Tab 切换页签，并修复本地搜索结果缺少专辑与歌手链接的问题。",
+      "intro": "0.7.16 把 AMLL 歌词切到官方接口，QQ 音乐歌曲能找到的 AMLL 歌词更多，手动匹配也能直接搜 AMLL；另外新增首页用 Tab 切换页签，并修复本地搜索结果缺少专辑与歌手链接的问题。魔改版还在按钮、顶栏等多个毛玻璃场景增加了液态玻璃效果，窗口按钮也调整为模仿 Windows 8 RP 的样式。",
       "amllSource": {
         "title": "AMLL 歌词改用官方接口",
         "description": "AMLL 歌词改为从 AMLL 官方接口获取。"
@@ -3089,6 +3108,14 @@ export default {
       "searchLinks": {
         "title": "本地搜索结果的链接不再缺失",
         "description": "刚导入文件夹就搜索时，结果里的专辑与歌手链接会在曲库加载完后自动补上，不必重新搜索。"
+      },
+      "liquidGlass": {
+        "title": "增加液态玻璃",
+        "description": "在按钮、顶栏等多个毛玻璃场景增加了液态玻璃的效果，界面质感更强。"
+      },
+      "windowButtons": {
+        "title": "窗口按钮变更",
+        "description": "窗口按钮进行了调整，模仿 Windows 8 RP 的样式。"
       }
     },
     "v0_7_15": {
