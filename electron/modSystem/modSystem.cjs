@@ -18,6 +18,7 @@
 
 'use strict';
 
+const { createRemoteUiBridge } = require('./remoteUiBridge.cjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -213,7 +214,7 @@ const publicSignatureState = (signature) => ({
     signedAt: signature?.signedAt ?? null,
 });
 
-const createModSystem = ({ app, BrowserWindow, getMainWindow, getLocaleKey, isFeatureEnabled }) => {
+const createModSystem = ({ app, BrowserWindow, getMainWindow, getRemoteWindow, getRemoteEntryUrl, getLocaleKey, isFeatureEnabled }) => {
     let store = null;
     try {
         store = new Store({ name: 'mod-system' });
@@ -1372,7 +1373,11 @@ const createModSystem = ({ app, BrowserWindow, getMainWindow, getLocaleKey, isFe
         }
     };
 
-    const notifyStateChanged = () => sendToRenderer(IPC.fStateChanged, listMods());
+    const remoteUiBridge = createRemoteUiBridge({ getRemoteWindow, getRemoteEntryUrl, listClients: listClientDescriptors, invokeRpc: invokeModRpc });
+    const notifyStateChanged = () => {
+        sendToRenderer(IPC.fStateChanged, listMods());
+        remoteUiBridge.notify();
+    };
 
     const probeFfmpeg = () => {
         if (!ffmpegProbePromise) {
@@ -1408,6 +1413,7 @@ const createModSystem = ({ app, BrowserWindow, getMainWindow, getLocaleKey, isFe
     pruneStagingDirectory();
 
     const registerIpc = () => {
+        remoteUiBridge.register(ipcMain);
         const handle = (channel, handler) => {
             try {
                 ipcMain.removeHandler(channel);
