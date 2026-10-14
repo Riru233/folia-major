@@ -75,6 +75,10 @@ skill 只负责地图和编译器都推不出来的东西：口头术语到名�
   路径：`skills/prepare-folia-release/SKILL.md`
   用于进入稳定版本发布流程：汇总上个稳定版本以来的用户可感知变化，更新新功能介绍、桌面与 Docker 版本元数据，并生成可手动粘贴的 Markdown release note。
 
+- `sync-official-version`
+  路径：`skills/sync-official-version/SKILL.md`
+  用于官方 chthollyphile/folia-major 发新版本时把上游提交合入本地 main：从 docs/upstream-sync.json 基线到目标提交计算范围，按时间顺序逐条 cherry-pick 保留原作者，冲突时取上游并叠回本地液态玻璃改动，完成后更新基线并验证。
+
 全局沟通规则：
 
 - 不需要使用skills的时候，不要读取它们。

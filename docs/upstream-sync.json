@@ -1,0 +1,9 @@
+{
+  "remote": "https://github.com/chthollyphile/folia-major.git",
+  "branch": "main",
+  "lastSynced": "607771d593e5b50e39defcb964928672b48310cb",
+  "lastSyncedSubject": "release: v0.7.19",
+  "lastSyncedDate": "2026-10-13",
+  "syncedAt": "2026-10-14",
+  "note": "同步基线：本地 main 已按时间顺序逐条 cherry-pick 该提交及之前的官方提交（含 0.7.18 的 96102de..2fdf038、0.7.19 的 c34aa2b..607771d 两个范围，均跳过 merge）。下次同步从它的子提交开始。"
+}
