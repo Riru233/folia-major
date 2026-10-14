@@ -27,6 +27,7 @@ import { usePlayerPanelTabShortcut } from '../hooks/usePlayerPanelTabShortcut';
 import { FOLIUM_PANEL_TAB_PREFIX, FoliumPanelTabBody, useFoliumPanelTabs } from '../mods/folium/registries/playerPanelTabs';
 import { countRender } from '../dev/renderCount';
 import { useGlass } from '@/shinoinject/useGlass';
+import { isWindowsPlatform } from '@/utils/platform';
 
 const TOUCH_GUIDE_DISPLAY_MS = 1400;
 
@@ -735,9 +736,10 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                                                 event.stopPropagation();
                                                 onToggleTransparentPlayerBackground(!transparentPlayerBackground);
                                             }}
+                                            disabled={isWindowsPlatform? true: false}    // Windows开启液态玻璃的场景不支持透明背景
                                             style={{
                                                 background:
-                                                    'linear-gradient(to bottom,#bfc6e440 20%,#204d9b60 50%,#7df1fd40 80%)',
+                                                    isWindowsPlatform?'transparent':'linear-gradient(to bottom,#bfc6e440 20%,#204d9b60 50%,#7df1fd40 80%)',
                                                 borderTop: isDaylight
                                                     ? '1px solid rgba(0,0,0,0.08)'
                                                     : '1px solid rgba(255,255,255,0.12)',
