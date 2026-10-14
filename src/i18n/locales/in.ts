@@ -2919,6 +2919,25 @@ export default {
         "description": "Setelah masuk, playlist pribadi buatan Anda kini dapat memuat lagu dengan paging sungguhan. Backend yang di-host sendiri harus memakai qq-music-api 3.1.2 atau lebih baru; backend lama beralih otomatis, dan playlist yang tidak dapat dibaca kini menjelaskan bahwa playlist itu tidak publik, alih-alih tampil kosong tanpa keterangan."
       }
     },
+    "v0_7_19_1014_2247": {
+      "intro": "0.7.19s (mod Shino) dibangun di atas 0.7.19 resmi: kotak alat beranda Bravais kini menandai adanya versi baru, penanganan IPC dan tautan eksternal diperkuat, masalah tampilan liquid glass pada blur tinggi diperbaiki, dan liquid glass dioptimalkan agar panel besar tetap lancar saat diubah ukurannya.",
+      "homeUpdateHint": {
+        "title": "Kotak Alat Beranda Menandai Versi Baru",
+        "description": "Bravais kini mengikuti status pembaruan: saat pemeriksaan pembaruan aktif, versi baru ditemukan, dan belum pernah dilihat di Pengaturan, sebuah baris \"Versi baru ditemukan\" yang bisa diklik muncul di bawah kotak alat pengaturan (atau titik warna aksen di pojok kanan atas ikon pengaturan saat punggung tidak muat teks); mengkliknya membuka halaman bantuan sama seperti tombol pengaturan. Membuka Pengaturan menandainya sudah dilihat dan petunjuk pun hilang. Kedua tata letak beranda memakai satu status pembaruan yang sama."
+      },
+      "ipcSecurity": {
+        "title": "Penanganan IPC dan Tautan Eksternal Diperkuat",
+        "description": "Hanya tautan http(s) yang diserahkan ke sistem; skema kustom seperti file:// dan ms-settings: diblokir agar URL tidak tepercaya tidak memicu pemanggilan protokol sistem yang tidak diinginkan. Kanal IPC status browser source OBS dan API KuGou juga mendapat pemeriksaan sumber jendela, sehingga jendela lain tidak lagi bisa memakainya."
+      },
+      "liquidGlassBlurFix": {
+        "title": "Liquid Glass Diperbaiki pada Blur Tinggi",
+        "description": "Rantai filter liquid glass disusun ulang (saturasi dan blur lebih dulu, refraksi tepi terakhir), memperbaiki masalah tampilan yang muncul saat tingkat blur dinaikkan."
+      },
+      "liquidGlassPerf": {
+        "title": "Liquid Glass Lebih Cepat",
+        "description": "Peta pergeseran dibuat pada resolusi berbatas, dan pembangunan ulang piksel demi piksel yang berulang saat panel besar terus mengubah ukuran digabung menjadi satu per jendela pengatur waktu alih-alih berjalan tiap frame: mengubah ukuran jendela besar atau panel beranimasi tetap lancar, tanpa penurunan kualitas kaca yang terasa."
+      }
+    },
     "v0_7_19": {
       "intro": "0.7.19 mengubah halaman artis dan album di Bravais menjadi poster bergaya Tempera. Saat lagu online gagal diputar, Folia kini menyebutkan alasan sebenarnya, tidak lagi selalu menyebutnya dihapus; visualizer per kata seperti Tempera memotong lirik Tionghoa dan Jepang dengan lebih wajar; dan versi web kembali bisa dibuka tanpa jaringan.",
       "artistPoster": {

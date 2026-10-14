@@ -3032,6 +3032,25 @@ export default {
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
       }
     },
+    "v0_7_19_1014_2247": {
+      "intro": "0.7.19s (Shino mod) builds on official 0.7.19: the Bravais home tool grid hints when a new version is found, IPC and external-link handling are hardened, liquid glass display issues at high blur are fixed, and liquid glass is faster so large panels stay smooth while resizing.",
+      "homeUpdateHint": {
+        "title": "Home Tool Grid Hints at a New Version",
+        "description": "Bravais now follows update status: with update checks on, a new version found, and nothing seen yet in Settings, a clickable \"New version found\" line appears under the settings tool cell (or an accent dot on the settings icon when the spine is too narrow for text); clicking it opens the help page just like the settings button. Opening Settings marks it seen and the hint disappears. Both home layouts share one update state."
+      },
+      "ipcSecurity": {
+        "title": "Hardened IPC and External Link Handling",
+        "description": "Only http(s) links are handed to the system now; custom schemes such as file:// and ms-settings: are blocked so untrusted URLs cannot trigger unexpected system protocol calls. The OBS browser-source status and KuGou API IPC channels also gained window-source checks, so other windows can no longer call them."
+      },
+      "liquidGlassBlurFix": {
+        "title": "Liquid Glass Fixed at High Blur",
+        "description": "The liquid glass filter chain is reordered (saturation and blur first, edge refraction last), fixing display issues that appeared when the blur level was turned up."
+      },
+      "liquidGlassPerf": {
+        "title": "Faster Liquid Glass",
+        "description": "Displacement maps are generated at a capped resolution, and repeated pixel-by-pixel rebuilds while a large panel keeps resizing are merged into one per throttling window instead of running every frame: resizing large windows or animated panels stays smooth, with no noticeable loss in glass quality."
+      }
+    },
     "v0_7_19": {
       "intro": "0.7.19 turns the artist and album pages in Bravais into Tempera-style posters. When an online song fails to play, Folia now tells you the real reason instead of always saying it was removed; word-by-word visualizers such as Tempera split Chinese and Japanese lyrics more naturally; and the web version starts up offline again.",
       "artistPoster": {
