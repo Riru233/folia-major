@@ -85,6 +85,14 @@ const getDefs = () => {
   return defs;
 };
 
+// 位移图分辨率长边封顶（px）：modal 等大元素逐像素重建是 O(w·h)，按原尺寸成图会掉帧。
+// 边缘折射场是低频的，降采样后由 feImage（preserveAspectRatio=none）拉伸回元素尺寸，视觉无感；
+// 几何与位移仍在元素 px 坐标系计算（feDisplacementMap 的 scale 单位是元素 px，不随降采样变化）。
+const MAX_DISPLACE_DIM = 512;
+// 长宽连续变化（modal 拖角/动画 resize）的重建节流窗口（ms）：窗口内多次触发合并成一次，
+// 窗口末尾尾补一次保证最终尺寸正确；同尺寸的参数变更（设置滑杆）不走这道门，仍然即时重建。
+const REBUILD_GAP = 64;
+
 type Glass = {
   el: HTMLElement;
   // 非 Windows 平台不建扭曲滤镜，这三个为空；update 据此跳过位移图并写纯 blur 的 backdrop。
@@ -95,36 +103,47 @@ type Glass = {
   bezelFrac: number;
   strength: number;
   zoom: number;
+  builtW: number; // 上次成图时的元素尺寸（尺寸变化节流的比对基准）
+  builtH: number;
+  builtKey: string; // 上次成图的指纹（尺寸 + 影响位移图的参数），相同则跳过重建
+  builtAt: number; // 上次成图时刻（performance.now，节流窗口基准）
+  rebuildTimer: number; // 尺寸变化节流的尾补定时器 id
+  rebuild(): void;
+  scheduleRebuild(): void;
   update(): void;
 };
 // 同一元素只允许建一次玻璃：调用点写在组件渲染体里，每次渲染都会再跑一遍，
 // 不去重就会反复换 backdrop-filter 的 id（旧 id 悬空 → 玻璃消失 → 频闪）并泄漏 observer。
 const glasses = new WeakMap<HTMLElement, Glass>();
 const buildDisplacementMap = (
-  w: number,
+  w: number, // 元素尺寸：几何与位移都用这个坐标系（feDisp 的 scale 单位 = 元素 px）
   h: number,
+  bw: number, // 位移图实际分辨率（长边封顶，≤ 元素尺寸）
+  bh: number,
   radius: number,
   bezel: number,
   strength: number,
   zoom: number,
 ) => {
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = bw;
+  canvas.height = bh;
   const ctx = canvas.getContext("2d");
   // 位移图必须有 2d context 才画得出来，拿不到就直接失败，别静默产出空滤镜。
   if (!ctx) throw new Error("[liquidglass] 2d canvas context unavailable");
-  const img = ctx.createImageData(w, h);
-  const raw = new Float32Array(w * h * 2);
+  const img = ctx.createImageData(bw, bh);
+  const raw = new Float32Array(bw * bh * 2);
   let maxD = 0.0001;
   const hw = w / 2,
     hh = h / 2;
   const k = strength * global.strength; // 边缘折射位移上限（px）由 bezel 决定
+  const stepX = w / bw, // 位移图像素 → 元素像素
+    stepY = h / bh;
 
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const cx = x + 0.5 - hw,
-        cy = y + 0.5 - hh;
+  for (let y = 0; y < bh; y++) {
+    for (let x = 0; x < bw; x++) {
+      const cx = (x + 0.5) * stepX - hw,
+        cy = (y + 0.5) * stepY - hh;
       const d = roundedRectSDF(cx, cy, hw, hh, radius);
       let m = smoothStep(-bezel, 0, d); // 0=深处 → 1=边缘
       m = m * m; // 平滑衰减，中心几乎无形变
@@ -132,7 +151,7 @@ const buildDisplacementMap = (
       // 边缘折射（幅度与元素大小无关）+ 整体放大（放大镜模式）
       const dx = -(cx / len) * m * k * bezel - cx * zoom;
       const dy = -(cy / len) * m * k * bezel - cy * zoom;
-      const i = (y * w + x) * 2;
+      const i = (y * bw + x) * 2;
       raw[i] = dx;
       raw[i + 1] = dy;
       maxD = Math.max(maxD, Math.abs(dx), Math.abs(dy));
@@ -188,20 +207,29 @@ export const makeGlass = (el: HTMLElement) => {
     bezelFrac: parseFloat(el.dataset.bezel || "0.5"),
     strength: parseFloat(el.dataset.strength || "0.5"),
     zoom: parseFloat(el.dataset.zoom || "0"),
-    update() {
+    builtW: 0,
+    builtH: 0,
+    builtKey: "",
+    builtAt: 0,
+    rebuildTimer: 0,
+    // 在元素当前尺寸上逐像素重建成图（贵的那步，O(w·h) + PNG 编码），成功后刷新指纹与时刻。
+    rebuild() {
       const w = Math.round(el.offsetWidth),
         h = Math.round(el.offsetHeight);
       if (!w || !h) return;
       const { filter: curFilter, feImage: curFeImage, feDisp: curFeDisp } = this;
-      // 非 Windows 平台没有扭曲滤镜：整段位移图（逐像素画 canvas）直接跳过。
       if (curFilter && curFeImage && curFeDisp) {
         const cs = getComputedStyle(el);
         let radius = parseFloat(cs.borderRadius) || 0;
         radius = Math.min(radius, w / 2, h / 2);
         const bezel = (Math.min(w, h) / 2) * this.bezelFrac;
+        // 大元素按长边封顶降采样成图，feImage 再拉伸回元素尺寸。
+        const k = Math.min(1, MAX_DISPLACE_DIM / Math.max(w, h));
         const { url, scale } = buildDisplacementMap(
           w,
           h,
+          Math.max(1, Math.round(w * k)),
+          Math.max(1, Math.round(h * k)),
           radius,
           bezel,
           this.strength,
@@ -216,12 +244,53 @@ export const makeGlass = (el: HTMLElement) => {
         curFeImage.setAttribute("href", url);
         curFeDisp.setAttribute("scale", scale.toFixed(2));
       }
+      this.builtW = w;
+      this.builtH = h;
+      this.builtKey = `${w}x${h}|${this.strength}|${this.zoom}|${global.strength}`;
+      this.builtAt = performance.now();
+    },
+    // 长宽变化的节流入口：窗口内只排一次尾补（窗口到期才成图），窗口已过则同步成图。
+    // 首图（builtKey 为空）不节流：保证挂上玻璃的第一帧位移图就是对的。
+    scheduleRebuild() {
+      if (this.rebuildTimer) return;
+      const wait = REBUILD_GAP - (performance.now() - this.builtAt);
+      if (wait <= 0 || !this.builtKey) {
+        this.rebuild();
+        return;
+      }
+      this.rebuildTimer = window.setTimeout(() => {
+        this.rebuildTimer = 0;
+        this.rebuild();
+      }, wait);
+    },
+    update() {
+      const w = Math.round(el.offsetWidth),
+        h = Math.round(el.offsetHeight);
+      if (!w || !h) return;
+      const { filter: curFilter, feImage: curFeImage, feDisp: curFeDisp } = this;
+      // 滤镜区域与 backdrop 每次同步写（都是 O(1) 属性写）：区域落后于元素尺寸会让边缘
+      // 露出没有滤镜的带状区；位移图本体（逐像素重建，贵）交给 scheduleRebuild 节流换新。
+      if (curFilter && curFeImage && curFeDisp) {
+        curFilter.setAttribute("width", String(w));
+        curFilter.setAttribute("height", String(h));
+        curFeImage.setAttribute("width", String(w));
+        curFeImage.setAttribute("height", String(h));
+        curFilter.setAttribute("x", "0");
+        curFilter.setAttribute("y", "0");
+      }
+      // 非 Windows 平台没有扭曲滤镜：只剩这段纯 blur 的 backdrop（顺带保证 blur/sat 拖滑杆即时生效）。
       const backdrop = curFilter
-        ? `url(#${id}) blur(${global.blur}px) saturate(${global.sat}%)`
+        ? `saturate(${global.sat}%) blur(${global.blur}px) url(#${id})`
         : `blur(${global.blur}px)`;
       el.style.backdropFilter = backdrop;
       // lib.dom 没有 webkitBackdropFilter，用 setProperty 写 -webkit 别名，保持原来的双写行为。
       el.style.setProperty("-webkit-backdrop-filter", backdrop);
+      if (!curFilter || !curFeImage || !curFeDisp) return;
+      const key = `${w}x${h}|${this.strength}|${this.zoom}|${global.strength}`;
+      if (key === this.builtKey) return; // 尺寸与建图参数都没变，无事可做
+      // 尺寸变了 → 节流重建（modal 动画 resize 不再每帧逐像素画）；同尺寸只是参数变 → 即时重建。
+      if (w !== this.builtW || h !== this.builtH) this.scheduleRebuild();
+      else this.rebuild();
     },
   };
   new ResizeObserver(() => g.update()).observe(el);
