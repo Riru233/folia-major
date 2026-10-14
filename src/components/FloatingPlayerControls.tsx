@@ -28,6 +28,7 @@ import type {
   PlayerControlSlotActionId,
   PlayerControlSlotContext,
 } from "./floating-player/playerControlSlotActions";
+import { usePlayerOverlayObstacle } from "../hooks/usePlayerOverlayLayout";
 import { useGlass } from "../shinoinject/useGlass.tsx";
 
 export interface TrackNavigation {
@@ -141,6 +142,8 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
   onCommitBottomBarOffset,
 }) => {
   const { t } = useTranslation();
+  const { ref: layoutRef, invalidate: invalidateLayout } =
+    usePlayerOverlayObstacle("player-controls", "playback", !isHidden);
   // const isDaylight = theme?.name === 'Daylight Default'; // Deprecated, passed as prop
   const glassBgExpanded = isDaylight
     ? "bg-white/60 border border-white/20 shadow-xl"
@@ -405,9 +408,11 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                         : "max-w-[min(calc(32rem_+_var(--folium-player-bar-extra,0px)),100vw)] px-4"
                     }`}
         style={{ bottom: bottomBarBottomPx }}
+        onUpdate={invalidateLayout}
       >
         <motion.div
           className="w-full flex justify-center transition-all duration-300 pointer-events-none"
+          onUpdate={invalidateLayout}
           initial={false}
           animate={{
             opacity: isHidden ? 0 : 1,
@@ -430,6 +435,9 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
             }}
           >
             <motion.div
+              ref={layoutRef}
+              onUpdate={invalidateLayout}
+              onLayoutAnimationComplete={invalidateLayout}
               layout
               data-glass
               data-glass-jelly

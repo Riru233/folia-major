@@ -28,6 +28,7 @@ import { FOLIUM_PANEL_TAB_PREFIX, FoliumPanelTabBody, useFoliumPanelTabs } from 
 import { countRender } from '../dev/renderCount';
 import { useGlass } from '@/shinoinject/useGlass';
 import { isWindowsPlatform } from '@/utils/platform';
+import { usePlayerOverlayObstacle } from '../hooks/usePlayerOverlayLayout';
 
 const TOUCH_GUIDE_DISPLAY_MS = 1400;
 
@@ -621,9 +622,13 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, [isCoverActionsVisible, supportsHover]);
 
+    const { ref: layoutRef, invalidate: invalidateLayout } = usePlayerOverlayObstacle('player-panel', 'panel');
+    const { ref: toggleLayoutRef } = usePlayerOverlayObstacle('panel-toggle', 'panel');
+
     return (
         <motion.div
             style={{ bottom: bottomBarBottomPx }}
+            onUpdate={invalidateLayout}
             className="absolute right-0 z-[60] flex flex-col items-end gap-4 pointer-events-none"
             onClick={(e) => e.stopPropagation()}
         >
@@ -631,6 +636,8 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
+                            ref={layoutRef}
+                            onUpdate={invalidateLayout}
                             initial={{ opacity: 0, scale: 0.9, originY: 1, originX: 1 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
@@ -1050,6 +1057,8 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
                         }
                         transition={{ duration: 0.24, ease: 'easeOut' }}
                         data-testid="panel-toggle"
+                        ref={toggleLayoutRef}
+                        onUpdate={invalidateLayout}
                         style={{ bottom: bottomBarBottomPx }}
                         className="pointer-events-auto fixed right-0 z-[60] pr-4 md:pr-8 group w-20 flex justify-end"
                         onMouseEnter={handleToggleButtonMouseEnter}

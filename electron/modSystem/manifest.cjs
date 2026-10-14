@@ -30,6 +30,7 @@ const KNOWN_EXPERIMENTAL = new Set([
     'omni.hooks',
     'ponder.targets',
     'remote.ui',
+    'player.layout',
 ]);
 
 /*
