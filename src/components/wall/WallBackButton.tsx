@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import "./WallBackButton.css";
-import { useGlass } from "@/mods/useGlass";
+import { useGlass } from "@/shinoinject/useGlass";
 
 // src/components/wall/WallBackButton.tsx
 // 海报墙左上角的返回按钮（.lattice-back：40px 圆、白 8%、模糊），Lattice 与 bravais 共用。

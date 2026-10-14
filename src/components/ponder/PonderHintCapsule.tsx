@@ -4,7 +4,7 @@ import { Lightbulb } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ponderPointerX, ponderPointerY } from "../../stores/motionSignals";
 import type { Theme } from "../../types";
-import { useGlass } from "@/mods/useGlass";
+import { useGlass } from "@/shinoinject/useGlass";
 
 // src/components/ponder/PonderHintCapsule.tsx
 // 跟随光标的「按 G 思索」提示。不可点击，不参与布局。

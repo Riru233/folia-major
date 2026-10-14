@@ -7,7 +7,7 @@ import type { SyntaxSuggestion } from "./syntax/suggest";
 import type { GridFilterAction } from "./gridFilterQuery";
 import CommandPaletteSyntaxHints from "./CommandPaletteSyntaxHints";
 import { gridSearchPanelMotion } from "../shared/gridSearchPanelMotion";
-import { useGlass } from "@/mods/useGlass";
+import { useGlass } from "@/shinoinject/useGlass";
 
 // src/components/command-palette/CommandPaletteInlineFrame.tsx
 // The palette wearing a surface's own filter box instead of its overlay.

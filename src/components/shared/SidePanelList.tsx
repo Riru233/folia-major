@@ -9,7 +9,7 @@ import {
   getSongCoverUrl,
 } from "../../services/onlineMusic/songMetadata";
 import { useSidePanelBottomPx } from "../../hooks/usePlayerBottomBarBottomPx";
-import { useGlass } from "@/mods/useGlass";
+import { useGlass } from "@/shinoinject/useGlass";
 
 export interface SidePanelListProps<T> {
   isOpen: boolean;

@@ -17,7 +17,7 @@ import CommandPaletteAllCommandsList from './CommandPaletteAllCommandsList';
 import { setIsCommandFilterOpen } from '../../stores/useAppViewStore';
 import { isGridFilterSyntaxAvailable, resolveGridFilterAction } from './gridFilterQuery';
 import { FILTER_VIEW_COMMAND_ID } from './commands/filterViewCommand';
-import { useGlass } from '@/mods/useGlass';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/command-palette/CommandPalette.tsx
 // Full-screen command input overlay with autocomplete and keyboard execution.

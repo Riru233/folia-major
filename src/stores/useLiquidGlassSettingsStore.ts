@@ -6,7 +6,7 @@ import {
     clampLiquidGlassParam,
     readStoredLiquidGlassParams,
     type LiquidGlassParams,
-} from '../mods/liquidglass';
+} from '../shinoinject/liquidglass';
 
 // src/stores/useLiquidGlassSettingsStore.ts
 // 液态玻璃的三个全局参数：折射强度 strength、模糊 blur、饱和度 sat（见 src/mods/liquidglass.ts）。

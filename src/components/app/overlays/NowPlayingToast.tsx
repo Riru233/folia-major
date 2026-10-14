@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { Theme } from "../../../types";
 import { useTransitionBorderCue } from "./now-playing-toast/useTransitionBorderCue";
 import { usePlayerBottomBarBottomPx } from "../../../hooks/usePlayerBottomBarBottomPx";
-import { useGlass } from "@/mods/useGlass";
+import { useGlass } from "@/shinoinject/useGlass";
 useGlass;
 
 // src/components/app/overlays/NowPlayingToast.tsx
