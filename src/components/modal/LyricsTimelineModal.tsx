@@ -8,7 +8,7 @@ import {
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LyricData, Theme } from "../../types";
-import {useGlass} from "@/mods/useGlass.tsx";
+import {useGlass} from "@/shinoinject/useGlass";
 
 interface LyricsTimelineModalProps {
   isOpen: boolean;

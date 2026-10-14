@@ -72,7 +72,7 @@ import { selectHomeLayoutSettingsSnapshot, useHomeLayoutSettingsStore } from '..
 import { setNavidromeEnabledState, useLibraryStore } from '../../stores/useLibraryStore';
 import { hasLibrarySuiteChoice } from '../../library/registry';
 import { useIsBravaisLibraryActive } from '../../library/app/bravaisLibraryActive';
-import { useGlass } from '@/mods/useGlass';
+import { useGlass } from '@/shinoinject/useGlass';
 
 const DEFAULT_OPENAI_TEMPERATURE = '0.7';
 const AUR_PACKAGE_URL = 'https://aur.archlinux.org/packages/folia-major-bin';

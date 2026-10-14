@@ -115,7 +115,7 @@ import {
   useLibraryBrowseSessionStore,
 } from "../../../core/state/useLibraryBrowseSessionStore";
 import { useLocalTrackSortStore } from "../../../core/state/useLocalTrackSortStore";
-import { useGlass } from "@/mods/useGlass";
+import { useGlass } from "@/shinoinject/useGlass";
 
 interface GridViewProps {
   title: string;

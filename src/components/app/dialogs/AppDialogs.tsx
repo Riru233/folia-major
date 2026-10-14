@@ -10,7 +10,7 @@ import SettingsModal from "../../modal/SettingsModal";
 import ConfirmDialog from "../../shared/ConfirmDialog";
 import type { AppDialogsModel } from "./buildAppDialogsModel";
 import { countRender } from "../../../dev/renderCount";
-import { useGlass } from "../../../mods/useGlass.tsx";
+import { useGlass } from "../../../shinoinject/useGlass.tsx";
 
 // Centralized app-level dialog and toast renderer for the player shell.
 type AppDialogsProps = {

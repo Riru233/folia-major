@@ -28,7 +28,7 @@ import type {
   PlayerControlSlotActionId,
   PlayerControlSlotContext,
 } from "./floating-player/playerControlSlotActions";
-import { useGlass } from "../mods/useGlass.tsx";
+import { useGlass } from "../shinoinject/useGlass.tsx";
 
 export interface TrackNavigation {
   /** 当前曲目的稳定身份，用于识别「确实换歌了」；相邻两首同名时标题字符串不变，不能拿标题判断 */

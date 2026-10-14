@@ -26,7 +26,7 @@ import { openAddToPlaylist, useAddToPlaylistStore } from '../stores/useAddToPlay
 import { usePlayerPanelTabShortcut } from '../hooks/usePlayerPanelTabShortcut';
 import { FOLIUM_PANEL_TAB_PREFIX, FoliumPanelTabBody, useFoliumPanelTabs } from '../mods/folium/registries/playerPanelTabs';
 import { countRender } from '../dev/renderCount';
-import { useGlass } from '@/mods/useGlass.tsx';
+import { useGlass } from '@/shinoinject/useGlass';
 
 const TOUCH_GUIDE_DISPLAY_MS = 1400;
 

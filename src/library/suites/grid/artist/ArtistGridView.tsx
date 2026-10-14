@@ -55,7 +55,7 @@ import { deriveProgressiveLoadingState } from '../shared/progressiveGrid';
 import { useProgressiveItemEntrance } from '../shared/useProgressiveItemEntrance';
 import { ArtistGridInfoCutInPanel } from './ArtistGridInfoCutInPanel';
 import { setStatusMessage } from '../../../../stores/useStatusMessageStore';
-import { useGlass } from '@/mods/useGlass';
+import { useGlass } from '@/shinoinject/useGlass';
 /*
  * ArtistGridView.tsx
  *

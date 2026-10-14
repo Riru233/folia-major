@@ -12,7 +12,7 @@ import { BravaisSeamFlipText } from './BravaisSeamFlip';
 import { useBravaisReducedTransitions } from './bravaisMotion';
 import { bravaisPopMotion, bravaisRevealMotion } from './bravaisSeamMotion';
 import './bravaisCollection.css';
-import { useGlass } from '@/mods/useGlass';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/library/suites/bravais/BravaisSeamCollection.tsx
 // 完整信息条里集合层的那几块（设计稿 §10.1 放置原则、§10.2、§10.6）：

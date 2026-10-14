@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
-import { useGlass } from "@/mods/useGlass";
+import { useGlass } from "@/shinoinject/useGlass";
 
 // src/components/shared/SlideActionButton.tsx
 // The player-style round action button with a second action on a leftward slide: tap the button for

@@ -14,7 +14,7 @@ import { useThemeSettingsStore } from "../../../stores/useThemeSettingsStore";
 import { usePlayerChromeSettingsStore } from "../../../stores/usePlayerChromeSettingsStore";
 import { useVisualizerSettingsStore } from "../../../stores/useVisualizerSettingsStore";
 import { useLiquidGlassSettingsStore } from "../../../stores/useLiquidGlassSettingsStore";
-import { LIQUID_GLASS_PARAM_BOUNDS } from "../../../mods/liquidglass";
+import { LIQUID_GLASS_PARAM_BOUNDS } from "../../../shinoinject/liquidglass";
 import { isLinuxPlatform, isWindowsPlatform } from "@/utils/platform";
 
 // src/components/modal/settings/GraphicsSettingsSubview.tsx
