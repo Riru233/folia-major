@@ -31,6 +31,7 @@ const KNOWN_EXPERIMENTAL = new Set([
     'ponder.targets',
     'remote.ui',
     'player.layout',
+    'remote.actions',
 ]);
 
 /*
