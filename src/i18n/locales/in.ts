@@ -2940,8 +2940,8 @@ export default {
         "description": "Setelah masuk, playlist pribadi buatan Anda kini dapat memuat lagu dengan paging sungguhan. Backend yang di-host sendiri harus memakai qq-music-api 3.1.2 atau lebih baru; backend lama beralih otomatis, dan playlist yang tidak dapat dibaca kini menjelaskan bahwa playlist itu tidak publik, alih-alih tampil kosong tanpa keterangan."
       }
     },
-    "v0_7_19_1014_2247": {
-      "intro": "0.7.19s (mod Shino) dibangun di atas 0.7.19 resmi: kotak alat beranda Bravais kini menandai adanya versi baru, penanganan IPC dan tautan eksternal diperkuat, masalah tampilan liquid glass pada blur tinggi diperbaiki, dan liquid glass dioptimalkan agar panel besar tetap lancar saat diubah ukurannya.",
+    "v0_7_20_1016_1900": {
+      "intro": "0.7.20s (mod Shino) dibangun di atas 0.7.20 resmi: kotak alat beranda Bravais kini menandai adanya versi baru, penanganan IPC dan tautan eksternal diperkuat, masalah tampilan liquid glass pada blur tinggi diperbaiki, dan liquid glass dioptimalkan agar panel besar tetap lancar saat diubah ukurannya.",
       "homeUpdateHint": {
         "title": "Kotak Alat Beranda Menandai Versi Baru",
         "description": "Bravais kini mengikuti status pembaruan: saat pemeriksaan pembaruan aktif, versi baru ditemukan, dan belum pernah dilihat di Pengaturan, sebuah baris \"Versi baru ditemukan\" yang bisa diklik muncul di bawah kotak alat pengaturan (atau titik warna aksen di pojok kanan atas ikon pengaturan saat punggung tidak muat teks); mengkliknya membuka halaman bantuan sama seperti tombol pengaturan. Membuka Pengaturan menandainya sudah dilihat dan petunjuk pun hilang. Kedua tata letak beranda memakai satu status pembaruan yang sama."
@@ -2957,6 +2957,33 @@ export default {
       "liquidGlassPerf": {
         "title": "Liquid Glass Lebih Cepat",
         "description": "Peta pergeseran dibuat pada resolusi berbatas, dan pembangunan ulang piksel demi piksel yang berulang saat panel besar terus mengubah ukuran digabung menjadi satu per jendela pengatur waktu alih-alih berjalan tiap frame: mengubah ukuran jendela besar atau panel beranimasi tetap lancar, tanpa penurunan kualitas kaca yang terasa."
+      }
+    },
+    "v0_7_20": {
+      "intro": "0.7.20 melengkapi QQ Music dengan rekomendasi, suka, simpan, dan pengeditan playlist; menambahkan \"Lewati lagu yang tidak dapat diputar\"; membuat ekspor video desktop andal untuk file besar dan di Linux; menghadirkan pemisahan stem di Mac Intel; dan memungkinkan mod menambahkan halaman sendiri di beranda.",
+      "qqMusic": {
+        "title": "QQ Music Kian Lengkap",
+        "description": "Setelah masuk ke QQ Music, kini tersedia rekomendasi harian, FM Pribadi, dan playlist rekomendasi (playlist rekomendasi juga bisa dilihat tanpa masuk). Anda bisa menyukai lagu, menyimpan playlist dan album, serta menambah atau menghapus lagu di playlist buatan sendiri; menghapus lagu dari \"Disukai\" berarti batal menyukainya. Jika lagu yang gagal diputar mungkin terhalang keanggotaan atau wilayah, Folia menyebutkannya sebagai kemungkinan penyebab. QQ belum mendukung \"tidak suka\", jadi tombol tempat sampah di FM Pribadi dinonaktifkan."
+      },
+      "autoSkip": {
+        "title": "Lewati Lagu yang Tidak Dapat Diputar",
+        "description": "Sakelar baru \"Lewati lagu yang tidak dapat diputar\" (nonaktif secara bawaan) ada di kartu antrean pada pengaturan pemutaran. Jika aktif, lagu yang memerlukan keanggotaan atau pembelian, hanya pratinjau, diblokir di wilayah Anda, atau gagal karena alasan yang tidak diketahui akan menghitung mundur lalu melompat ke lagu berikutnya, sama seperti lagu yang dihapus. Lagu yang memerlukan login dan masalah jaringan tetap berhenti menunggu Anda. Sakelar ini juga bisa diubah dari palet perintah."
+      },
+      "videoExport": {
+        "title": "Ekspor Video Lebih Andal",
+        "description": "Ekspor video di desktop kini menulis ke disk selama merekam, sehingga file besar seperti 4K tidak lagi gagal di langkah terakhir. Folia juga merekam halamannya sendiri secara langsung: di Linux (termasuk Wayland) sumber rekaman tidak lagi gagal ditemukan, jendela yang tertutup tetap terekam dengan benar, dan perekaman 4K berjalan dengan frame rate jauh lebih tinggi. File MP4 hasil ekspor kini menampilkan durasi yang benar."
+      },
+      "automixIntelMac": {
+        "title": "Pemisahan Stem di Mac Intel",
+        "description": "Model pemisahan stem yang dipakai automix kini berjalan di Mac Intel (macOS 13 atau lebih baru), dan pemisahan sedikit lebih cepat di platform lain."
+      },
+      "modHomePages": {
+        "title": "Mod Bisa Menambah Halaman Beranda",
+        "description": "Folium 1.5: mod bisa menambahkan halaman sendiri di beranda, berdampingan dengan tab bawaan. Mod dapat membaca dan mengubah volume, bisu, dan mode ulang, melihat dan memutar dari antrean, serta menanggapi kegagalan pemutaran. Panel mod menampilkan ruang yang dipakai tiap mod dan bisa mengosongkan cache-nya; dropdown di pengaturan mod kini seragam dengan bagian lain Folia. Mod dari kanal Beta komunitas ditandai ungu dan memberi peringatan sebelum diaktifkan."
+      },
+      "stabilityFixes": {
+        "title": "Penyempurnaan dan Perbaikan",
+        "description": "Ubin pengaturan di beranda Bravais kini memberi tahu saat ada versi baru. Pencarian dari beranda Bravais tidak lagi menampilkan halaman hasil kosong dan tidak lagi mencari di platform yang salah saat memakai KuGou atau QQ. Label Tionghoa vertikal tidak lagi bertumpuk di beberapa distribusi Linux, dan poster artis atau album tidak lagi berkedip ke warna bawaan saat dibalik. Aplikasi desktop memperketat pemeriksaan keamanan untuk tautan eksternal dan komunikasi internal, dan kunci AI hanya dikirim ke alamat tempat kunci itu disimpan."
       }
     },
     "v0_7_19": {

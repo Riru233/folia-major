@@ -8,7 +8,7 @@
     "email": "chthollyphile@users.noreply.github.com"
   },
   "private": true,
-  "version": "0.7.19.1014.2247",
+  "version": "0.7.20.1016.1900",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "electron/main.cjs",
