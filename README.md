@@ -1,3 +1,5 @@
+通知: 0.7.20暂时没有液态玻璃的第三方版本，想用的自己构建
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/b5d0e863-48be-497b-b0e9-4bd8d8ce9bf0" alt="Folia" width="100%" />
 </p>
@@ -40,8 +42,13 @@ Folia是一个以全屏沉浸式歌词播放为核心的在线音乐播放器，
 ## 快速下载
 
 > [!TIP]
+> Official
 > - **GitHub**：[Latest Release](https://github.com/chthollyphile/folia-major/releases/latest)，提供 Windows / macOS / Linux 全平台安装包。
 > - **网盘**：[夸克网盘](https://pan.quark.cn/s/6e4c6fa3bc6f) · [百度云](https://pan.baidu.com/s/1f0x3g-8PMcNCO-TJ5z1rPw?pwd=flia)（提取码 `flia`），适合国内网络，仅提供 Windows 与 Apple silicon 的正式版安装包。
+>
+> 改版
+> - **GitHub**: [Latest Release](https://github.com/Riru233/folia-major/releases/latest)，提供 Windows / macOS / Linux 全平台安装包。
+> - **网盘**：[飞书/豆包](https://www.doubao.com/drive/shr/ImoMf5Hf6l9HvbdSBrxcwSFPnYd)
 >
 > 更多获取方式（Web 部署、Docker、AUR、Flatpak）见下方 [获取方式](#获取方式)。
 
