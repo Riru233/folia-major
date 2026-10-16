@@ -1,9 +1,9 @@
 {
   "remote": "https://github.com/chthollyphile/folia-major.git",
   "branch": "main",
-  "lastSynced": "4942587ba8bfa30ac1a77bda63db532896d80e37",
-  "lastSyncedSubject": "release: v0.7.19s",
-  "lastSyncedDate": "2026-10-13",
-  "syncedAt": "2026-10-14",
+  "lastSynced": "1b39fd868e2ddda95788f1baa839c032f3e7a285",
+  "lastSyncedSubject": "release: v0.7.20",
+  "lastSyncedDate": "2026-10-16",
+  "syncedAt": "2026-10-16",
   "note": "Shino提交：Windows液态玻璃性能优化、追加首页提示新版本的逻辑。"
 }
