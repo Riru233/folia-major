@@ -33,6 +33,7 @@ import { qqExplore } from './qqExplore';
 import { areQqSongsLiked, withQqVipType } from './qqAccount';
 import { requestQqPreviewSource } from './qqPreview';
 import { noteQqBackendDeclaration, resetQqBackendDeclaration } from './qqBackendDeclaration';
+import { keepQqSessionFresh, resetQqSessionRefresh, stopQqSessionRefresh } from './qqSessionRefresh';
 import { OnlineRequestTimeout } from '../failure/onlineRequestLimit';
 import { errorFields, errorMessage } from '../../../utils/errorText';
 
@@ -118,6 +119,7 @@ export const resetQqProviderRuntimeCache = (): void => {
     ownedPlaylistRouteMissing = false;
     lastLoginStatusCheck = null;
     playlistRound = null;
+    resetQqSessionRefresh();
 };
 
 /**
@@ -472,6 +474,8 @@ const getLoginStatus = async (): Promise<ProviderUser | null> => {
             return null;
         }
         const user = await withQqVipType(normalizeQqUser(profile));
+        // 登录还在：Serverless 后端的会话要在到期前续（qqSessionRefresh.ts），先等通道探测说出会话存法。
+        void refreshDeclaredChannels().then(keepQqSessionFresh);
         // The acceptance test account returned a profile without a display name, so the profile itself is the signal.
         noteLoginStatusCheck(diagnosticLine`signed in (user id ${user.id ? 'present' : 'missing'}, nickname ${user.nickname ? 'present' : 'missing'})`);
         console.info('[QQProvider] login-status:profile', {
@@ -494,6 +498,7 @@ const getLoginStatus = async (): Promise<ProviderUser | null> => {
 // The request takes the session as it is when it is made (`requestQq`); the session leaves the
 // page at once, before the first wait and whatever the backend answers.
 const logout = async (): Promise<void> => {
+    stopQqSessionRefresh();
     const told = hasQqSession()
         ? requestQq('logout').catch(error => {
             console.warn('[QQProvider] logout:error', error);
