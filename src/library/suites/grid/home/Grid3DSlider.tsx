@@ -353,12 +353,10 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
             const tValue = Math.min(pixelDist / maxDist, 1);
 
             const scale = peakScale - (peakScale - minScale) * tValue;
-            const opacity = Math.max(0.15, 1.0 - 0.85 * tValue);
             const y = -6 * (1 - tValue);
             const z = Math.max(1, Math.round(10 - 9 * tValue));
 
             el.style.transform = `scale(${scale}) translateY(${y}px)`;
-            el.style.opacity = String(opacity);
             el.style.zIndex = String(z);
         }
 
@@ -836,45 +834,89 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                             {item.coverUrl && loadedIndices.has(index) ? (
                                                 <img src={getSizedCoverUrl(item.coverUrl, coverSize)} alt={typeof displayName === 'string' ? displayName : ''} loading="lazy" decoding="async" className="w-full h-full object-cover pointer-events-none select-none" />
                                             ) : (
-                                                <div className="w-full h-full bg-zinc-800/20 flex items-center justify-center">
+                                                <div className="w-full h-full  flex items-center justify-center">
                                                     <Disc size={64} className="opacity-20" />
                                                 </div>
                                             )}
                                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
                                         </div>
-                                    ) : (
-                                        <div
-                                            className="rounded-xl border p-4 flex flex-col items-center backdrop-blur-md shadow-lg hover:shadow-2xl theme-polaroid-card"
-                                            style={{ width: coverSize }}
-                                        >
-                                            <div className="w-full aspect-square rounded-lg overflow-hidden bg-zinc-800/20 relative shadow-inner mb-4 flex items-center justify-center">
-                                                {item.coverUrl && loadedIndices.has(index) ? (
-                                                    <img src={getSizedCoverUrl(item.coverUrl, coverSize)} alt={typeof displayName === 'string' ? displayName : ''} loading="lazy" decoding="async" className="w-full h-full object-cover pointer-events-none select-none" />
-                                                ) : (
-                                                    <Disc size={64} className="opacity-20" />
-                                                )}
+                                    ) : (() => {
+                                        // 卡片
+                                        const cardSurfaceClassName = "rounded-xl border p-4 flex flex-col items-center theme-polaroid-card";
+                                        const cardSurfaceStyle: React.CSSProperties = {
+                                            width: coverSize,
+                                            backgroundColor: isDaylight
+                                                ? "rgba(255,255,255,0.4)"
+                                                : "rgba(0,0,0,0.4)",
+                                            borderTop: isDaylight
+                                                ? "1px solid rgba(0,0,0,0.08)"
+                                                : "1px solid rgba(255,255,255,0.12)",
+                                            borderBottom: isDaylight
+                                                ? "1px solid rgba(0,0,0,0.08)"
+                                                : "1px solid rgba(255,255,255,0.12)",
+                                            outline: "1px solid rgba(40,40,40,0.2)",
+                                            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                                            color: 'var(--text-primary)',
+                                        };
+                                        const renderCardBody = (reflection = false) => (
+                                            <>
+                                                <div
+                                                    className="w-full aspect-square rounded-lg overflow-hidden relative shadow-inner mb-4 flex items-center justify-center"
+                                                >
+                                                    {item.coverUrl && loadedIndices.has(index) ? (
+                                                        <img src={getSizedCoverUrl(item.coverUrl, coverSize)} alt={typeof displayName === 'string' ? displayName : ''} loading="lazy" decoding="async" className="w-full h-full object-cover pointer-events-none select-none" />
+                                                    ) : (
+                                                        <Disc size={64} className="opacity-20" />
+                                                    )}
+                                                </div>
+                                                <div className="w-full text-left pt-2 min-w-0">
+                                                    <h3 className="font-bold text-sm truncate max-w-full tracking-tight">
+                                                        {displayName}
+                                                    </h3>
+                                                    {secondaryText && (
+                                                        <p
+                                                            className={`text-xs opacity-50 max-w-full mt-1 font-medium ${folderPath ? 'line-clamp-2 break-words' : 'truncate'}`}
+                                                            title={folderPath || undefined}
+                                                        >
+                                                            {secondaryText}
+                                                        </p>
+                                                    )}
+                                                    {summaryText && (
+                                                        <p className="text-[10px] leading-snug opacity-45 mt-2 line-clamp-2">
+                                                            {summaryText}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </>
+                                        );
+                                        // 加倒影：整张卡片镜像后裁成上窄下宽的梯形（封面同样是梯形）并向下渐隐（不改布局，随卡片一起缩放/位移）。
+                                        return (
+                                            <div className="relative" style={{ width: coverSize }}>
+                                                <div
+                                                    data-glass data-glass-light
+                                                    className={`${cardSurfaceClassName} shadow-lg hover:shadow-2xl`}
+                                                    style={cardSurfaceStyle}
+                                                >
+                                                    {renderCardBody()}
+                                                </div>
+                                                <div
+                                                    aria-hidden="true"
+                                                    className={`pointer-events-none select-none absolute inset-x-0 top-full ${cardSurfaceClassName}`}
+                                                    style={{
+                                                        ...cardSurfaceStyle,
+                                                        boxShadow: 'none',
+                                                        opacity: isDaylight ? 0.35 : 0.5,
+                                                        transform: 'scaleY(-1)',
+                                                        transformOrigin: 'center',
+                                                        WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent 72%)',
+                                                        maskImage: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent 72%)',
+                                                    }}
+                                                >
+                                                    {renderCardBody(true)}
+                                                </div>
                                             </div>
-
-                                            <div className="w-full text-left pt-2 min-w-0">
-                                                <h3 className="font-bold text-sm truncate max-w-full tracking-tight">
-                                                    {displayName}
-                                                </h3>
-                                                {secondaryText && (
-                                                    <p
-                                                        className={`text-xs opacity-50 max-w-full mt-1 font-medium ${folderPath ? 'line-clamp-2 break-words' : 'truncate'}`}
-                                                        title={folderPath || undefined}
-                                                    >
-                                                        {secondaryText}
-                                                    </p>
-                                                )}
-                                                {summaryText && (
-                                                    <p className="text-[10px] leading-snug opacity-45 mt-2 line-clamp-2">
-                                                        {summaryText}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </div>
                             );
                         })}

@@ -58,12 +58,12 @@ export default function WallBackButton({
   useGlass();
   const revealed = useCornerReveal(concealed);
   const className = concealed
-    ? `lattice-back is-concealed${revealed ? " is-revealed" : ""}`
+    ? `lattice-back is-concealed ${revealed ? " is-revealed" : ""}`
     : "lattice-back";
   return (
     <button
-      data-glass
-      data-glass-jelly data-glass-light
+      data-glass data-glass-light
+      data-glass-jelly
       type="button"
       className={className}
       onClick={onBack}

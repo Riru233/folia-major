@@ -131,7 +131,7 @@ body {
 
 /* Polaroid Card theme-adaptive styles */
 .theme-polaroid-card {
-  background-color: color-mix(in srgb, var(--bg-color) 95%, transparent) !important;
+  /* background-color: color-mix(in srgb, var(--bg-color) 95%, transparent) !important; */
   border-color: color-mix(in srgb, var(--text-primary) 5%, transparent) !important;
   color: var(--text-primary) !important;
   transition: all 0.3s ease;

@@ -630,7 +630,9 @@ const lightStart = (el: HTMLElement, clientX: number, clientY: number) => {
   }
   const layer = document.createElement("div");
   layer.setAttribute("aria-hidden", "true");
-  layer.style.cssText = `position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:0;opacity:0;transition:opacity ${LIGHT_FADE_MS}ms ease;`;
+  layer.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity ${LIGHT_FADE_MS}ms ease;`;
+  // 光晕层要贴着容器的圆角裁剪；inline !important 才能压过 Lattice 把墙内所有子元素压成直角的 !important 重置。
+  layer.style.setProperty("border-radius", "inherit", "important");
   lightLayer = layer;
   lightRange = parseLightRange(el);
   lightPaint(el, clientX, clientY);

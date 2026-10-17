@@ -557,11 +557,12 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 data-glass
                 data-glass-blur="0"
                 aria-hidden="true"
-                className={`absolute top-0 bottom-0 z-10 rounded-full shadow-sm pointer-events-none bg-[#0d4ae155] ${thumbDragging ? "shadow-[2px_2px_8px_88px_rgba(255,255,255,0.4)] bg-transparent z-888" : ""} ${isDaylight ? "border-y border-black/[0.08]" : "border-y border-white/[0.12]"} outline outline-1 outline-[rgba(40,40,40,0.2)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]`}
+                className={`absolute top-0 bottom-0 z-10 rounded-full shadow-sm pointer-events-none bg-[#0d4ae155] ${thumbDragging ? "bg-transparent z-888" : ""} ${isDaylight ? "border-y border-black/[0.08]" : "border-y border-white/[0.12]"} outline outline-1 outline-[rgba(40,40,40,0.2)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]`}
                 style={{
                   left: thumbLeft,
                   width: thumbWidth,
                   pointerEvents: "none",
+                  boxShadow: thumbDragging? "0 0 4px #000,0 0 8px #fffa" : ""
                   // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的液态玻璃。
                 }}
                 animate={{ scale: thumbScale }}
