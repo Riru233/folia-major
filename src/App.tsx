@@ -168,7 +168,7 @@ import { PlayerBottomBarLayoutContext } from './components/floating-player/Playe
 import { useFoliumHostBridge } from './mods/runtime/hostBridge';
 import { useFoliumHostActions } from './mods/runtime/hostActions';
 import { FoliumStageLayerSlot } from './mods/folium/registries/stageLayers';
-import { addressDifference, addressKind, cleanPrivateError } from './utils/privateText/privateText';
+import { errorFields } from './utils/errorText';
 import { runsOnWindows } from './utils/platform';
 import { GlassFilterDefs } from './shinoinject/useGlass.tsx';
 
@@ -311,7 +311,7 @@ export default function App() {
             const songs = await navidromeApi.getStarred2(config) ?? [];
             setStarredNavidromeSongIds(new Set(songs.map(song => song.id)));
         } catch (error) {
-            console.warn('[App] Failed to load Navidrome favorites:', cleanPrivateError(error));
+            console.warn('[App] Failed to load Navidrome favorites:', error);
         }
     }, [navidromeEnabled]);
 
@@ -772,7 +772,7 @@ export default function App() {
                     : t('status.dataSynced'),
             });
         } catch (error) {
-            console.warn('[OmniSync] Provider data sync failed', { providerId, ...cleanPrivateError(error) });
+            console.warn('[OmniSync] Provider data sync failed', { providerId, ...errorFields(error) });
             setStatusMsg({ type: 'error', text: t('status.syncFailed') });
         } finally {
             setIsProviderSyncing(false);
@@ -1047,7 +1047,7 @@ export default function App() {
                 return;
             }
         } catch (error) {
-            console.warn('[CatalogNavigation] Failed to resolve artist:', cleanPrivateError(error));
+            console.warn('[CatalogNavigation] Failed to resolve artist:', error);
         }
         setStatusMsg({ type: 'error', text: t('search.catalogUnavailable') });
     }, [navigateToCollection, setStatusMsg, t]);
@@ -1064,7 +1064,7 @@ export default function App() {
                 return;
             }
         } catch (error) {
-            console.warn('[CatalogNavigation] Failed to resolve album:', cleanPrivateError(error));
+            console.warn('[CatalogNavigation] Failed to resolve album:', error);
         }
         setStatusMsg({ type: 'error', text: t('search.catalogUnavailable') });
     }, [navigateToCollection, setStatusMsg, t]);
@@ -1669,7 +1669,7 @@ export default function App() {
             await document.documentElement.requestFullscreen();
             return true;
         } catch (error) {
-            console.warn('[CommandPalette] Failed to toggle browser fullscreen:', cleanPrivateError(error));
+            console.warn('[CommandPalette] Failed to toggle browser fullscreen:', error);
             return false;
         }
     }, []);
@@ -2094,7 +2094,7 @@ export default function App() {
                 return;
             }
         } catch (error) {
-            console.warn('[CatalogNavigation] Failed to resolve player album:', cleanPrivateError(error));
+            console.warn('[CatalogNavigation] Failed to resolve player album:', error);
         }
         setStatusMsg({ type: 'error', text: t('search.catalogUnavailable') });
     }, [navigateToCollection, setStatusMsg, t]);
@@ -2113,7 +2113,7 @@ export default function App() {
                 return;
             }
         } catch (error) {
-            console.warn('[CatalogNavigation] Failed to resolve player artist:', cleanPrivateError(error));
+            console.warn('[CatalogNavigation] Failed to resolve player artist:', error);
         }
         setStatusMsg({ type: 'error', text: t('search.catalogUnavailable') });
     }, [navigateToCollection, setStatusMsg, t]);
@@ -2419,9 +2419,8 @@ export default function App() {
                 if (automix.isActiveDeck(e.currentTarget) && e.currentTarget.getAttribute('src') !== audioSrc) {
                     console.error('[Audio] the active deck is loading something other than the current source', {
                         deck,
-                        loading: addressKind(e.currentTarget.getAttribute('src')),
-                        audioSrc: addressKind(audioSrc),
-                        differsIn: addressDifference(e.currentTarget.getAttribute('src'), audioSrc),
+                        loading: e.currentTarget.getAttribute('src')?.slice(-40) ?? null,
+                        audioSrc: audioSrc?.slice(-40) ?? null,
                     });
                 }
             }}
