@@ -178,6 +178,14 @@ const BACKGROUND_MODE_GLYPHS: Record<string, React.ReactNode> = {
             <path d="M5.5 16.5h.01M18 15.5h.01M7 7h.01" strokeWidth="2.2" opacity="0.5" />
         </>
     ),
+    // 透明：整幅封面铺满画面，无叠色无模糊
+    transparent: (
+        <>
+            <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+            <path d="M5.5 16l4-4.5 3 3 3.5-4 3.5 4.2" opacity="0.7" />
+            <circle cx="9" cy="8.5" r="1.3" opacity="0.7" />
+        </>
+    ),
 };
 
 type ModeGlyphProps = {

@@ -20,7 +20,10 @@ describe('local grid Ponder target contract', () => {
 
     it('GridView 按本地和在线来源声明不同的左侧操作目标', () => {
         const gridView = source('library/suites/grid/collection/GridView.tsx');
-        expect(gridView).toContain("isLocalCollection ? 'local-folder-actions' : 'online-collection-actions'");
+        // 引号风格与换行在本地 fork 中可能被重排，断言保持引号/空白无关。
+        expect(gridView).toMatch(
+            /isLocalCollection[\s\S]*?['"]local-folder-actions['"][\s\S]*?['"]online-collection-actions['"]/,
+        );
         expect(findPonderTarget('local-folder-actions')?.hoverSelector).toBe('[data-ponder="local-folder-actions"]');
         expect(findPonderTarget('online-collection-actions')?.hoverSelector).toBe('[data-ponder="online-collection-actions"]');
     });

@@ -809,6 +809,7 @@ export default {
       "background-latent-both": { "title": "Latent: Mixed", "description": "Show both shader layers" },
       "background-url": { "title": "Background: Embedded Background", "description": "Switch background to embedded webpage mode" },
       "background-sora": { "title": "Background: Sora", "description": "Switch background to Sora starfield" },
+      "background-transparent": { "title": "Background: Transparent", "description": "Switch background to a fully transparent layout" },
       "settings-toggle-transparent": { "title": "Toggle transparency", "description": "Toggle transparent player background" },
       "settings-toggle-daylight": { "title": "Toggle light/dark", "description": "Toggle theme daylight/midnight mode" },
       "settings-toggle-player-back-button": { "title": "Always show player back button", "description": "Toggle whether the player page back button stays visible" },
@@ -2132,6 +2133,8 @@ export default {
     "visualizerBackgroundModeLatent": "Latent",
     "visualizerBackgroundModeUrl": "Embed",
     "visualizerBackgroundModeSora": "Sora",
+    "visualizerBackgroundModeTransparent": "Transparent",
+    "visualizerBackgroundModeTransparentDesc": "Fills the background layer with the song cover, with Monet's color wash and blur removed and nothing layered on top.",
     "urlBackgroundSettings": "Embedded Background",
     "urlBackgroundSettingsDesc": "Display a webpage as the player background. Note: some websites block being embedded in an iframe and may not display.",
     "urlBackgroundNotePlaceholder": "Note (for easy identification)",
@@ -3053,24 +3056,7 @@ export default {
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
       }
     },
-    "v0_7_20_1016_1900": {
-      "intro": "0.7.20s (Shino mod) builds on official 0.7.20: the Bravais home tool grid hints when a new version is found, IPC and external-link handling are hardened, liquid glass display issues at high blur are fixed, and liquid glass is faster so large panels stay smooth while resizing.",
-      "homeUpdateHint": {
-        "title": "Home Tool Grid Hints at a New Version",
-        "description": "Bravais now follows update status: with update checks on, a new version found, and nothing seen yet in Settings, a clickable \"New version found\" line appears under the settings tool cell (or an accent dot on the settings icon when the spine is too narrow for text); clicking it opens the help page just like the settings button. Opening Settings marks it seen and the hint disappears. Both home layouts share one update state."
-      },
-      "ipcSecurity": {
-        "title": "Hardened IPC and External Link Handling",
-        "description": "Only http(s) links are handed to the system now; custom schemes such as file:// and ms-settings: are blocked so untrusted URLs cannot trigger unexpected system protocol calls. The OBS browser-source status and KuGou API IPC channels also gained window-source checks, so other windows can no longer call them."
-      },
-      "liquidGlassBlurFix": {
-        "title": "Liquid Glass Fixed at High Blur",
-        "description": "The liquid glass filter chain is reordered (saturation and blur first, edge refraction last), fixing display issues that appeared when the blur level was turned up."
-      },
-      "liquidGlassPerf": {
-        "title": "Faster Liquid Glass",
-        "description": "Displacement maps are generated at a capped resolution, and repeated pixel-by-pixel rebuilds while a large panel keeps resizing are merged into one per throttling window instead of running every frame: resizing large windows or animated panels stays smooth, with no noticeable loss in glass quality."
-      }
+    "v0_7_20s-shino": {
     },
     "v0_7_20": {
       "intro": "0.7.20 fills in QQ Music with recommendations, likes, favorites and playlist editing; adds \"Skip songs that can't be played\"; makes desktop video export reliable for large files and on Linux; brings stem separation to Intel Macs; and lets mods add their own pages to the home screen.",
@@ -3097,6 +3083,25 @@ export default {
       "stabilityFixes": {
         "title": "Polish and Fixes",
         "description": "The Bravais home settings tile now tells you when a new version is available. Searching from the Bravais home no longer shows an empty result page, and no longer searches the wrong platform on KuGou or QQ. Vertical Chinese labels no longer pile up on some Linux distributions, and artist or album posters no longer flash the default colors as they flip away. The desktop app tightens security checks on external links and internal messaging, and AI keys are only sent to the address they were saved for."
+      }
+    },
+    "v0_7_19s-shino": {
+      "intro": "0.7.19s (Shino mod) builds on official 0.7.19: the Bravais home tool grid hints when a new version is found, IPC and external-link handling are hardened, liquid glass display issues at high blur are fixed, and liquid glass is faster so large panels stay smooth while resizing.",
+      "homeUpdateHint": {
+        "title": "Home Tool Grid Hints at a New Version",
+        "description": "Bravais now follows update status: with update checks on, a new version found, and nothing seen yet in Settings, a clickable \"New version found\" line appears under the settings tool cell (or an accent dot on the settings icon when the spine is too narrow for text); clicking it opens the help page just like the settings button. Opening Settings marks it seen and the hint disappears. Both home layouts share one update state."
+      },
+      "ipcSecurity": {
+        "title": "Hardened IPC and External Link Handling",
+        "description": "Only http(s) links are handed to the system now; custom schemes such as file:// and ms-settings: are blocked so untrusted URLs cannot trigger unexpected system protocol calls. The OBS browser-source status and KuGou API IPC channels also gained window-source checks, so other windows can no longer call them."
+      },
+      "liquidGlassBlurFix": {
+        "title": "Liquid Glass Fixed at High Blur",
+        "description": "The liquid glass filter chain is reordered (saturation and blur first, edge refraction last), fixing display issues that appeared when the blur level was turned up."
+      },
+      "liquidGlassPerf": {
+        "title": "Faster Liquid Glass",
+        "description": "Displacement maps are generated at a capped resolution, and repeated pixel-by-pixel rebuilds while a large panel keeps resizing are merged into one per throttling window instead of running every frame: resizing large windows or animated panels stays smooth, with no noticeable loss in glass quality."
       }
     },
     "v0_7_19": {

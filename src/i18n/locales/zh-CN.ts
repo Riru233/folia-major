@@ -809,6 +809,7 @@ export default {
       "background-latent-both": { "title": "背景切换到隐现：混合", "description": "同时显示 隐现 像素与流体层" },
       "background-url": { "title": "背景切换到 嵌入背景", "description": "切换背景到嵌入网页模式" },
       "background-sora": { "title": "背景切换：空", "description": "将背景切换到星空 (Sora)" },
+      "background-transparent": { "title": "背景切换到 透明", "description": "将背景切换为完全透明" },
       "settings-toggle-transparent": { "title": "透明化", "description": "切换播放器背景透明度" },
       "settings-toggle-daylight": { "title": "切换明暗", "description": "切换主题日夜模式" },
       "settings-toggle-player-back-button": { "title": "始终显示播放页返回按钮", "description": "切换播放页左上角返回按钮的常驻显示" },
@@ -2133,6 +2134,8 @@ export default {
     "visualizerBackgroundModeLatent": "隐现",
     "visualizerBackgroundModeUrl": "嵌入",
     "visualizerBackgroundModeSora": "空",
+    "visualizerBackgroundModeTransparent": "透明",
+    "visualizerBackgroundModeTransparentDesc": "以歌曲封面铺满背景层，去掉莫奈的叠色与模糊，不额外叠加其他元素。",
     "urlBackgroundSettings": "嵌入背景",
     "urlBackgroundSettingsDesc": "将网页显示为播放页背景。注意：部分网站禁止被嵌入其他页面中显示，可能无法正常加载。",
     "urlBackgroundNotePlaceholder": "备注（方便查看）",
@@ -3052,24 +3055,7 @@ export default {
         "description": "登录后，自己创建的不公开歌单也能读取歌曲，并支持真正的分页加载。自建后端需要升级到 qq-music-api 3.1.2 或更新版本；旧后端会自动回退，读不到时会明确提示「不是公开歌单」，不再静默显示为空。"
       }
     },
-    "v0_7_20_1016_1900": {
-      "intro": "0.7.20s 魔改版在官方 0.7.20 基础上更新：Bravais 首页工具格提示发现新版本；IPC 与外部链接处理的安全加固；修复高模糊度下液态玻璃的显示问题；液态玻璃性能优化，大面板调整尺寸不再掉帧。",
-      "homeUpdateHint": {
-        "title": "首页工具格提示发现新版本",
-        "description": "Bravais 首页接入更新状态：开启更新检查、发现新版本且还没在设置里查看时，设置工具格下方会出现一行可点的「发现新版本」（书脊放不下文字时改为设置图标右上角的强调色圆点），点击与点设置一样打开帮助页；打开设置看过后提示自动消失。Bravais 与经典网格两种首页共用同一套更新状态。"
-      },
-      "ipcSecurity": {
-        "title": "IPC 与外部链接处理的安全加固",
-        "description": "外部链接只有 http(s) 会交给系统打开，file://、ms-settings: 等自定义协议一律拦截，避免不可信 URL 触发非预期的系统协议调用；OBS 浏览器源状态与酷狗 API 请求等 IPC 通道补上窗口来源校验，其它窗口无法再冒用调用。"
-      },
-      "liquidGlassBlurFix": {
-        "title": "高模糊度下液态玻璃修复",
-        "description": "调整液态玻璃的滤镜链顺序（先饱和度与模糊、最后边缘折射），修复把模糊度调高后液态玻璃显示异常的问题。"
-      },
-      "liquidGlassPerf": {
-        "title": "液态玻璃性能优化",
-        "description": "位移图按分辨率上限生成；面板等大元素连续改变尺寸时，逐像素重建按节流窗口合并，不再每帧重画：大窗口或面板动画改尺寸更流畅，玻璃画质无可感知变化。"
-      }
+    "v0_7_20s": {
     },
     "v0_7_20": {
       "intro": "0.7.20 让 QQ 音乐补上了推荐、红心、收藏和歌单编辑；新增「无法播放时自动跳过」；桌面版的视频导出更可靠，大视频和 Linux 下都能正常录制；Intel Mac 也能用上人声分离；模组可以在首页添加自己的页面。",
@@ -3096,6 +3082,25 @@ export default {
       "stabilityFixes": {
         "title": "更稳定的细节",
         "description": "Bravais 首页的设置格在有新版本时会提示；在 Bravais 首页搜索不再一直显示无结果，也不再在酷狗、QQ 下搜错平台；修复部分 Linux 发行版上竖排中文标签叠在一起；歌手 / 专辑海报翻走时不再闪回默认配色。桌面版收紧了外部链接与内部通信的安全检查，AI 密钥只会发往保存时的地址。"
+      }
+    },
+    "v0_7_19s": {
+      "intro": "0.7.19s 魔改版在官方 0.7.19 基础上更新：主要强化液态玻璃和修改普通布局。",
+      "homeUpdateHint": {
+        "title": "首页工具格提示发现新版本",
+        "description": "Bravais 首页接入更新状态：开启更新检查、发现新版本且还没在设置里查看时，设置工具格下方会出现一行可点的「发现新版本」（书脊放不下文字时改为设置图标右上角的强调色圆点），点击与点设置一样打开帮助页；打开设置看过后提示自动消失。Bravais 与经典网格两种首页共用同一套更新状态。"
+      },
+      "ipcSecurity": {
+        "title": "IPC 与外部链接处理的安全加固",
+        "description": "外部链接只有 http(s) 会交给系统打开，file://、ms-settings: 等自定义协议一律拦截，避免不可信 URL 触发非预期的系统协议调用；OBS 浏览器源状态与酷狗 API 请求等 IPC 通道补上窗口来源校验，其它窗口无法再冒用调用。"
+      },
+      "liquidGlassBlurFix": {
+        "title": "高模糊度下液态玻璃修复",
+        "description": "调整液态玻璃的滤镜链顺序（先饱和度与模糊、最后边缘折射），修复把模糊度调高后液态玻璃显示异常的问题。"
+      },
+      "liquidGlassPerf": {
+        "title": "液态玻璃性能优化",
+        "description": "位移图按分辨率上限生成；面板等大元素连续改变尺寸时，逐像素重建按节流窗口合并，不再每帧重画：大窗口或面板动画改尺寸更流畅，玻璃画质无可感知变化。"
       }
     },
     "v0_7_19": {

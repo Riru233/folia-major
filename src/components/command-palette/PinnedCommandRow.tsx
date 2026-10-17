@@ -44,7 +44,7 @@ const PinnedCommandRow: React.FC<PinnedCommandRowProps> = ({
         return (
           <button
             data-glass
-            data-glass-jelly
+            data-glass-jelly data-glass-light
             key={`${index}-${command.id}`}
             type="button"
             disabled={isExecuting}

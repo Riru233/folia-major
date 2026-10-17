@@ -1124,7 +1124,7 @@ const UnifiedPanel: React.FC<UnifiedPanelProps> = ({
 
                             <button
                                 data-glass
-                                data-glass-jelly
+                                data-glass-jelly data-glass-light
                                 ref={toggleButtonRef}
                                 type="button"
                                 onPointerDown={handleToggleButtonPointerDown}

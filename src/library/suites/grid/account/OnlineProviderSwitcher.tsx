@@ -10,6 +10,7 @@ import {
     PLAYER_BOTTOM_BAR_BASE_OFFSET_PX,
     resolvePlayerBottomComponentBottomPx,
 } from '../../../../utils/playerBottomBarLayout';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/library/suites/grid/account/OnlineProviderSwitcher.tsx
 
@@ -69,7 +70,7 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
     const previousProviderIdRef = useRef(activeProviderId);
     const visibleProviders = providers.filter(provider => provider.availability.reason !== 'runtime-unavailable');
     const activeProvider = visibleProviders.find(provider => provider.providerId === activeProviderId) || visibleProviders[0];
-    const surfaceClass = isDaylight ? 'bg-white text-zinc-900' : 'bg-zinc-950 text-white';
+    const surfaceClass = isDaylight ? 'bg-[#fff6] text-zinc-900 border-black/[0.08]' : 'bg-[#0006] text-white border-white/[0.12]';
 
     /**
      * 默认高度保留原 CSS（`bottom-4 md:bottom-6`），只有真的产生抬升量时才写内联 bottom。
@@ -142,6 +143,7 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
     }, [open]);
 
     if (!activeProvider) return null;
+    useGlass();
 
     return (
         <div
@@ -149,7 +151,7 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
             data-testid="online-provider-switcher"
             className="pointer-events-auto absolute bottom-4 right-4 z-[100] md:bottom-6 md:right-6"
         >
-            <div className={`flex items-center rounded-full p-0.5 shadow-lg md:p-1.5 ${surfaceClass}`}>
+            <div data-glass data-glass-jelly data-glass-light className={`flex items-center rounded-full p-0.5 shadow-lg md:p-1.5 ${surfaceClass} border-y outline outline-1 outline-black/20 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]`}>
                 <button
                     type="button"
                     onClick={() => setOpen(value => !value)}
@@ -189,12 +191,14 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
             <AnimatePresence>
                 {open && (
                     <motion.div
+                        data-glass
+                        data-glass-light
                         role="menu"
                         initial={{ opacity: 0, y: 8, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 6, scale: 0.97 }}
                         transition={{ duration: 0.16 }}
-                        className={`absolute bottom-[calc(100%+0.75rem)] right-0 w-72 max-w-[calc(100vw-2rem)] origin-bottom-right rounded-3xl p-3 shadow-2xl md:w-80 ${surfaceClass}`}
+                        className={`absolute bottom-[calc(100%+0.75rem)] right-0 w-72 max-w-[calc(100vw-2rem)] origin-bottom-right rounded-3xl p-3 shadow-2xl md:w-80 ${surfaceClass}  border-y outline outline-1 outline-black/20 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]`}
                     >
                         <div className="px-3 pb-3 pt-1 text-xs font-medium opacity-50">{t('home.onlineProvider')}</div>
                         <button
@@ -216,7 +220,7 @@ const OnlineProviderSwitcher: React.FC<OnlineProviderSwitcherProps> = ({
                             return (
                                 <div
                                     key={provider.providerId}
-                                    className={`mb-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors last:mb-0 ${active ? (isDaylight ? 'bg-black/5' : 'bg-white/8') : ''} ${configured ? (isDaylight ? 'hover:bg-black/8' : 'hover:bg-white/12') : 'cursor-not-allowed opacity-40'}`}
+                                    className={`mb-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors last:mb-0 ${active ? (isDaylight ? 'bg-[#000a]' : 'bg-[$fffa]') : ''} ${configured ? (isDaylight ? 'hover:bg-black/8' : 'hover:bg-white/12') : 'cursor-not-allowed opacity-40'}`}
                                 >
                                     <button
                                         type="button"

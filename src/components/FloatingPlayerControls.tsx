@@ -440,7 +440,7 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
               onLayoutAnimationComplete={invalidateLayout}
               layout
               data-glass
-              data-glass-jelly
+              data-glass-jelly data-glass-light
               transition={{ layout: CONTROL_LAYOUT_SPRING }}
               onClick={handleClick}
               // 用原生 pointer 事件而不是 framer-motion 的 drag：位移已经由 playerBottomBarLiveOffset

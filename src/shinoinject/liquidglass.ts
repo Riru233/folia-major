@@ -103,6 +103,12 @@ type Glass = {
   bezelFrac: number;
   strength: number;
   zoom: number;
+  // 每元素覆盖：带 data-glass-blur / data-glass-strength / data-glass-sat（值是数字）的玻璃
+  // 固定用自身值，未设置（null）时回落到全局 global 参数。仅在元素同时带 data-glass 时存在
+  // （只有 [data-glass] 会走 makeGlass），所以这三个属性离开 data-glass 不生效。
+  blurOverride: number | null;
+  strengthOverride: number | null;
+  satOverride: number | null;
   builtW: number; // 上次成图时的元素尺寸（尺寸变化节流的比对基准）
   builtH: number;
   builtKey: string; // 上次成图的指纹（尺寸 + 影响位移图的参数），相同则跳过重建
@@ -169,6 +175,14 @@ const buildDisplacementMap = (
   return { url: canvas.toDataURL(), scale };
 };
 
+// 解析每元素参数覆盖：属性缺失或非有限数时返回 null（回落全局），否则钳到该参数量程。
+// 非 Windows 平台上 strength / sat 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
+const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParams) => {
+  if (raw === undefined) return null;
+  const parsed = parseFloat(raw);
+  return Number.isFinite(parsed) ? clampLiquidGlassParam(key, parsed) : null;
+};
+
 // 给元素挂液态玻璃滤镜（幂等）：同一元素只建一次，滤镜同步进文档，
 // 保证 backdrop-filter 写下的 url(#lg-N) 立即可解析，不存在悬空引用窗口。
 // 非 Windows 平台只登记玻璃记录、不建滤镜，backdrop 只剩 blur。
@@ -207,6 +221,9 @@ export const makeGlass = (el: HTMLElement) => {
     bezelFrac: parseFloat(el.dataset.bezel || "0.5"),
     strength: parseFloat(el.dataset.strength || "0.5"),
     zoom: parseFloat(el.dataset.zoom || "0"),
+    blurOverride: parseGlassOverride(el.dataset.glassBlur, "blur"),
+    strengthOverride: parseGlassOverride(el.dataset.glassStrength, "strength"),
+    satOverride: parseGlassOverride(el.dataset.glassSat, "sat"),
     builtW: 0,
     builtH: 0,
     builtKey: "",
@@ -218,6 +235,8 @@ export const makeGlass = (el: HTMLElement) => {
         h = Math.round(el.offsetHeight);
       if (!w || !h) return;
       const { filter: curFilter, feImage: curFeImage, feDisp: curFeDisp } = this;
+      // 每元素覆盖 data-glass-strength 优先于全局；它参与位移图（k = strength·全局），故进指纹。
+      const effGlobalStrength = this.strengthOverride ?? global.strength;
       if (curFilter && curFeImage && curFeDisp) {
         const cs = getComputedStyle(el);
         let radius = parseFloat(cs.borderRadius) || 0;
@@ -233,7 +252,7 @@ export const makeGlass = (el: HTMLElement) => {
           radius,
           bezel,
           this.strength,
-          this.zoom * global.strength,
+          this.zoom * effGlobalStrength,
         );
         curFilter.setAttribute("width", String(w));
         curFilter.setAttribute("height", String(h));
@@ -246,7 +265,7 @@ export const makeGlass = (el: HTMLElement) => {
       }
       this.builtW = w;
       this.builtH = h;
-      this.builtKey = `${w}x${h}|${this.strength}|${this.zoom}|${global.strength}`;
+      this.builtKey = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}`;
       this.builtAt = performance.now();
     },
     // 长宽变化的节流入口：窗口内只排一次尾补（窗口到期才成图），窗口已过则同步成图。
@@ -279,14 +298,18 @@ export const makeGlass = (el: HTMLElement) => {
         curFilter.setAttribute("y", "0");
       }
       // 非 Windows 平台没有扭曲滤镜：只剩这段纯 blur 的 backdrop（顺带保证 blur/sat 拖滑杆即时生效）。
+      // 每元素覆盖（data-glass-blur / -sat / -strength）优先于全局，未设置时回落 global。
+      const blur = this.blurOverride ?? global.blur;
+      const sat = this.satOverride ?? global.sat;
+      const effGlobalStrength = this.strengthOverride ?? global.strength;
       const backdrop = curFilter
-        ? `saturate(${global.sat}%) blur(${global.blur}px) url(#${id})`
-        : `blur(${global.blur}px)`;
+        ? `saturate(${sat}%) blur(${blur}px) url(#${id})`
+        : `blur(${blur}px)`;
       el.style.backdropFilter = backdrop;
       // lib.dom 没有 webkitBackdropFilter，用 setProperty 写 -webkit 别名，保持原来的双写行为。
       el.style.setProperty("-webkit-backdrop-filter", backdrop);
       if (!curFilter || !curFeImage || !curFeDisp) return;
-      const key = `${w}x${h}|${this.strength}|${this.zoom}|${global.strength}`;
+      const key = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}`;
       if (key === this.builtKey) return; // 尺寸与建图参数都没变，无事可做
       // 尺寸变了 → 节流重建（modal 动画 resize 不再每帧逐像素画）；同尺寸只是参数变 → 即时重建。
       if (w !== this.builtW || h !== this.builtH) this.scheduleRebuild();
@@ -560,4 +583,101 @@ export const installGlassJelly = () => {
   window.addEventListener("pointercancel", jellyEndPointer);
   window.addEventListener("blur", jellyEndPointer);
   document.addEventListener("visibilitychange", jellyEndPointer);
+};
+
+/* —— 拖拽光效（data-glass-light 注入）——
+   pointerdown 命中带 data-glass-light 的元素（或其任意子元素）时，在该容器内挂一层铺满 inset:0 的光晕，
+   光点中心跟随指针（换算成元素自身布局坐标），半径取自属性值（px，缺省 LIGHT_DEFAULT_RANGE），
+   松手淡出后摘掉节点，不残留 DOM。不依赖 data-glass；可与 data-glass-jelly 叠加（形变 + 光晕）。
+   光晕颜色走 CSS 变量 --lg-light-color（在容器上定义即可），缺省为柔和白光。 */
+
+const LIGHT_DEFAULT_RANGE = 160; // 属性缺省时的发光半径（px）
+const LIGHT_FALLBACK_COLOR = "rgba(255,255,255,0.6)"; // --lg-light-color 未定义时的颜色
+const LIGHT_FADE_MS = 200; // 淡入 / 淡出时长（ms）
+
+let lightInstalled = false;
+let lightEl: HTMLElement | null = null;
+let lightLayer: HTMLDivElement | null = null;
+let lightPointerId = -1;
+let lightRange = LIGHT_DEFAULT_RANGE;
+let lightForcedRelative = false;
+
+// 属性值即发光半径；无值 / 非数 / ≤0 时回落到默认值，同时封顶避免离谱入参。
+const parseLightRange = (el: HTMLElement) => {
+  const raw = parseFloat(el.dataset.glassLight || "");
+  return Number.isFinite(raw) && raw > 0 ? Math.min(raw, 4000) : LIGHT_DEFAULT_RANGE;
+};
+
+// 指针视口坐标 → 元素自身布局坐标（除以视觉缩放，兼容 scale-90 这类 transform）。
+const lightLocalPoint = (el: HTMLElement, clientX: number, clientY: number) => {
+  const rect = el.getBoundingClientRect();
+  const sx = rect.width ? el.offsetWidth / rect.width : 1;
+  const sy = rect.height ? el.offsetHeight / rect.height : 1;
+  return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
+};
+
+// 把光点挪到指针处：径向渐变铺满容器，range 之外透明，所以 radius 大于到最远角的距离时即覆盖整个容器。
+const lightPaint = (el: HTMLElement, clientX: number, clientY: number) => {
+  if (!lightLayer) return;
+  const { x, y } = lightLocalPoint(el, clientX, clientY);
+  lightLayer.style.background = `radial-gradient(circle ${lightRange}px at ${x}px ${y}px, var(--lg-light-color, ${LIGHT_FALLBACK_COLOR}), transparent ${lightRange}px)`;
+};
+
+const lightStart = (el: HTMLElement, clientX: number, clientY: number) => {
+  if (getComputedStyle(el).position === "static") {
+    el.style.position = "relative"; // 光晕层要相对容器定位；原本非 static 的不碰它
+    lightForcedRelative = true;
+  }
+  const layer = document.createElement("div");
+  layer.setAttribute("aria-hidden", "true");
+  layer.style.cssText = `position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:0;opacity:0;transition:opacity ${LIGHT_FADE_MS}ms ease;`;
+  lightLayer = layer;
+  lightRange = parseLightRange(el);
+  lightPaint(el, clientX, clientY);
+  el.appendChild(layer);
+  void layer.offsetWidth; // 先落地再拉透明度，保证有淡入过渡
+  layer.style.opacity = "1";
+};
+
+// 收摊：淡出光晕层、还原临时 position、清会话；淡出结束再摘节点（可被下一次会话覆盖，互不影响）。
+const lightEnd = () => {
+  const el = lightEl;
+  lightEl = null;
+  lightPointerId = -1;
+  if (lightLayer) {
+    const layer = lightLayer;
+    lightLayer = null;
+    layer.style.opacity = "0";
+    window.setTimeout(() => layer.remove(), LIGHT_FADE_MS + 40);
+  }
+  if (el && lightForcedRelative) el.style.position = "";
+  lightForcedRelative = false;
+};
+
+const lightOnPointerDown = (e: PointerEvent) => {
+  if (typeof window === "undefined") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const el = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-glass-light]") : null;
+  if (!el) return;
+  if (lightEl) lightEnd(); // 上一会话还挂着（松手前又按下），先收干净
+  lightEl = el;
+  lightPointerId = e.pointerId;
+  lightStart(el, e.clientX, e.clientY);
+};
+
+const lightOnPointerMove = (e: PointerEvent) => {
+  if (!lightEl || e.pointerId !== lightPointerId || !lightEl.isConnected) return;
+  lightPaint(lightEl, e.clientX, e.clientY);
+};
+
+// 由 useGlass 在 commit 后调一次（幂等）：挂 window 级指针监听，带 data-glass-light 的元素才参与。
+export const installGlassLight = () => {
+  if (lightInstalled || typeof window === "undefined") return;
+  lightInstalled = true;
+  window.addEventListener("pointerdown", lightOnPointerDown, { capture: true });
+  window.addEventListener("pointermove", lightOnPointerMove, { passive: true });
+  window.addEventListener("pointerup", lightEnd);
+  window.addEventListener("pointercancel", lightEnd);
+  window.addEventListener("blur", lightEnd);
+  document.addEventListener("visibilitychange", lightEnd);
 };

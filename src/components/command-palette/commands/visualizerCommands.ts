@@ -187,5 +187,16 @@ export const visualizerCommands: CommandPaletteCommand[] = [
             context.visualizer.setVisualizerBackgroundMode('sora');
             return true;
         },
+    },
+    {
+        id: 'background-transparent',
+        group: 'visualizer',
+        title: 'Background: Transparent',
+        description: 'Switch background to a fully transparent layout',
+        keywords: ['transparent background', 'no background', 'clear background', '透明背景', '无背景', '空背景', '背景切换到 透明', '背景切换到透明'],
+        execute: (_input, context) => {
+            context.visualizer.setVisualizerBackgroundMode('transparent');
+            return true;
+        },
     }
 ];

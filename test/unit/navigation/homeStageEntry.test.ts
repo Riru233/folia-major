@@ -142,6 +142,7 @@ describe('home stage entry source contracts', () => {
         expect(content).toContain('onOpenStagePlayer?: () => void;');
         expect(content).toContain('{stageEnabled && (');
         expect(content).toContain("onClick={() => onOpenStagePlayer?.()}");
-        expect(content).toContain("t('home.stage')");
+        // 引号风格在本地 fork 中可能被重排为双引号，断言保持引号无关。
+        expect(content).toMatch(/t\(['"]home\.stage['"]\)/);
     });
 });
