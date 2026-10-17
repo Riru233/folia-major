@@ -3057,6 +3057,27 @@ export default {
       }
     },
     "v0_7_20s-shino": {
+      "intro": "0.7.20s (Shino mod) spreads liquid glass across the whole interface: the main interface is rebuilt around the liquid glass aesthetic, so interactions feel closer to real glass.",
+      "mainUiRedesign": {
+        "title": "Main Interface Rebuilt in Liquid Glass",
+        "description": "The main interface is redesigned around the liquid glass aesthetic, so panels, controls, and the background blend together more naturally and consistently."
+      },
+      "pressGlow": {
+        "title": "Press Glow and Flowing Light",
+        "description": "Pressing a control lights up a flowing shimmer and a soft outward glow, making the press feedback clearer and more tactile."
+      },
+      "navBarMagnifier": {
+        "title": "Glass Navigation Bar with Magnifier",
+        "description": "The navigation bar gains a glass treatment; pressing or dragging on it shows a magnifier effect so the target under the pointer is easier to pick."
+      },
+      "glassCoverage": {
+        "title": "Liquid Glass Covers More of the App",
+        "description": "Liquid glass now reaches as many surfaces and components as possible, filling in the places that previously had no glass look."
+      },
+      "transparentLyricPoster": {
+        "title": "Transparent Lyric Poster Style",
+        "description": "The lyric poster gains a transparent style that uses the song cover as the player background directly, for a more immersive view."
+      }
     },
     "v0_7_20": {
       "intro": "0.7.20 fills in QQ Music with recommendations, likes, favorites and playlist editing; adds \"Skip songs that can't be played\"; makes desktop video export reliable for large files and on Linux; brings stem separation to Intel Macs; and lets mods add their own pages to the home screen.",

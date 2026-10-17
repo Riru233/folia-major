@@ -2944,6 +2944,27 @@ export default {
       }
     },
     "v0_7_20s-shino": {
+      "intro": "0.7.20s (mod Shino) menyebarkan liquid glass ke seluruh antarmuka: antarmuka utama dibangun ulang dengan estetika liquid glass, sehingga interaksinya terasa lebih mirip kaca sungguhan.",
+      "mainUiRedesign": {
+        "title": "Antarmuka Utama Dibangun Ulang dengan Liquid Glass",
+        "description": "Antarmuka utama didesain ulang mengikuti estetika liquid glass, sehingga panel, kontrol, dan latar menyatu lebih alami dan konsisten."
+      },
+      "pressGlow": {
+        "title": "Cahaya Mengalir dan Pendar Saat Ditekan",
+        "description": "Saat kontrol ditekan, muncul cahaya mengalir dan pendar lembut ke luar, membuat umpan balik tekanan lebih jelas dan terasa."
+      },
+      "navBarMagnifier": {
+        "title": "Bilah Navigasi Kaca dengan Kaca Pembesar",
+        "description": "Bilah navigasi mendapat sentuhan kaca; saat ditekan atau diseret, muncul efek kaca pembesar sehingga sasaran di bawah kursor lebih mudah dipilih."
+      },
+      "glassCoverage": {
+        "title": "Liquid Glass Menjangkau Lebih Banyak Bagian",
+        "description": "Efek liquid glass kini menjangkau sebanyak mungkin permukaan dan komponen, mengisi bagian yang sebelumnya tidak berkesan kaca."
+      },
+      "transparentLyricPoster": {
+        "title": "Gaya Poster Lirik Transparan",
+        "description": "Poster lirik mendapat gaya transparan yang langsung memakai sampul lagu sebagai latar pemutar, untuk tampilan yang lebih imersif."
+      }
     },
     "v0_7_20": {
       "intro": "0.7.20 melengkapi QQ Music dengan rekomendasi, suka, simpan, dan pengeditan playlist; menambahkan \"Lewati lagu yang tidak dapat diputar\"; membuat ekspor video desktop andal untuk file besar dan di Linux; menghadirkan pemisahan stem di Mac Intel; dan memungkinkan mod menambahkan halaman sendiri di beranda.",
