@@ -95,7 +95,6 @@
       "build/thumbar/*.png"
     ],
     "asarUnpack": [
-      "electron/analysis/htdemucs_runner.py",
       "node_modules/@koromix/koffi-*/**/*.node",
       "node_modules/@lox-audioserver/node-librespot/prebuilds/**/*.node"
     ],
@@ -103,6 +102,13 @@
       {
         "from": "build/ffmpeg/${os}-${arch}",
         "to": "ffmpeg-audio"
+      },
+      {
+        "from": "build/mnn/${os}-${arch}",
+        "to": "mnn",
+        "filter": [
+          "*folia_mnn.*"
+        ]
       },
       {
         "from": "build/icon.png",
@@ -228,7 +234,6 @@
     "koffi": "^3.3.1",
     "kugoumusicapi": "https://github.com/MakcRe/KuGouMusicApi/archive/refs/tags/v1.6.0.tar.gz",
     "music-metadata": "^11.16.1",
-    "onnxruntime-node": "^1.30.0",
     "ws": "^8.21.3",
     "youtubei.js": "18.1.0"
   },
