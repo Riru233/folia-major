@@ -115,7 +115,8 @@
         "from": "models",
         "to": "models",
         "filter": [
-          "beat_this-small-wgsl.bin"
+          "beat_this-wgsl.bin",
+          "htdemucs-wgsl.bin"
         ]
       },
       {

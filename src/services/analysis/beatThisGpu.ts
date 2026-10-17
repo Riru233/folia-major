@@ -23,6 +23,11 @@
 // on the GPU and in the worker, only while in use: two idle minutes and the worker is dropped, the
 // same rhythm as the analysis worker in electron/analysis/host.cjs.
 //
+// The same worker, device and queue run htdemucs for the beat FX's drum stem (runHtdemucsGpu, one
+// 3.9 s segment a request): a third model on the one device, loaded on first use and dropped with the
+// rest. A segment is ~135 ms of GPU on an M4, cut like a chunk, so a track's separation interleaves
+// with beat_this requests a segment at a time instead of holding them for its whole length.
+//
 // Every failure answers null and the caller runs the chunks on the CPU instead, if it may. A failure to
 // get a device at all is remembered for the session - that is the machine, not the moment - while
 // a lost device or a failed run only drops this worker, and the next track tries a fresh one.
@@ -37,13 +42,20 @@ const IDLE_MS = 120_000;
 const CHUNK_FRAMES = 1500;
 
 /**
- * Which export a run is for: final0, automix's download (and the CPU fallback's), or small0, bundled
- * with the app for the beat FX. Same kernels, different widths. The worker builds each on its one
- * device the first time it is asked for and keeps both until the idle drop: with both features on, a
- * track change asks for small0 and automix's look-ahead for final0, and reloading on every switch
- * would re-read 41MB and rebuild every pipeline beside the visualizer for nothing.
+ * Which Beat This! export a run is for: final0, shipped with the app, which automix and the beat FX
+ * both run (and the CPU fallback reads). One name now - small0, which the beat FX once ran, is gone -
+ * kept so the worker's messages say which model beside htdemucs.
  */
-export type BeatThisModel = 'beat_this' | 'beat_this_small';
+export type BeatThisModel = 'beat_this';
+
+/** Every model the GPU worker builds: Beat This! and htdemucs. */
+type GpuModel = BeatThisModel | 'htdemucs';
+
+/**
+ * The samples per channel of one htdemucs segment (HTDEMUCS_SEGMENT in htdemucsWgsl/runtime.ts),
+ * written out for the same reason as CHUNK_FRAMES.
+ */
+export const HTDEMUCS_GPU_SEGMENT = 172032;
 
 interface Reply {
     id: number;
@@ -71,14 +83,14 @@ interface Logits {
 
 let worker: Worker | null = null;
 /** Per model: resolves once the worker has it built; absent when it must be asked for again. */
-const ready = new Map<BeatThisModel, Promise<boolean>>();
+const ready = new Map<GpuModel, Promise<boolean>>();
 /** Set when this machine cannot run the WebGPU path at all - no worker, adapter or device - for the session. */
 let unsupported = false;
 /**
  * Models whose pipelines this device would not build, for the session. Kept per model so one export
- * failing does not take the GPU from the other: small0 failing must not send automix to the CPU.
+ * failing does not take the GPU from the other: htdemucs failing must not send Beat This! to the CPU.
  */
-const failedModels = new Set<BeatThisModel>();
+const failedModels = new Set<GpuModel>();
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let nextId = 0;
 /**
@@ -142,11 +154,13 @@ const spawn = (): Worker | null => {
     return worker;
 };
 
-const start = async (model: BeatThisModel): Promise<boolean> => {
-    const fetchWeights = window.electron?.getBeatThisGpuWeights;
+const start = async (model: GpuModel): Promise<boolean> => {
+    const fetchWeights = model === 'htdemucs'
+        ? window.electron?.getHtdemucsGpuWeights
+        : window.electron?.getBeatThisGpuWeights && (() => window.electron!.getBeatThisGpuWeights!(model));
     if (typeof fetchWeights !== 'function') return false;
-    // Not there is the ordinary state until final0 is downloaded; asked again on the next track.
-    const found = await fetchWeights(model);
+    // Not there only in a checkout without the models (both ship in the installer); asked again on the next track.
+    const found = await fetchWeights();
     if (!found || !spawn()) return false;
 
     const reply = await ask({ kind: 'load', model, weights: found.weights, manifest: found.manifest }, [found.weights.buffer]);
@@ -232,12 +246,8 @@ export const runPercussiveEnergyGpu = (mel: { data: Float32Array; frames: number
     return run;
 };
 
-const runNow = async (
-    chunks: Array<{ data: Float32Array; frames: number }>,
-    model: BeatThisModel,
-    percussiveOf?: { data: Float32Array; frames: number },
-): Promise<Logits | null> => {
-    if (unsupported || failedModels.has(model)) return null;
+/** The worker with `model` built on it, loading it first if need be; false when it cannot be had now. */
+const ensureLoaded = async (model: GpuModel): Promise<boolean> => {
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = null;
     let loading = ready.get(model);
@@ -248,8 +258,44 @@ const runNow = async (
     // A start that threw or failed is not kept, or every later run would rethrow or repeat it.
     if (!(await loading.catch(() => false))) {
         if (ready.get(model) === loading) ready.delete(model);
-        return null;
+        return false;
     }
+    return true;
+};
+
+/**
+ * One htdemucs segment's drum stem from the WebGPU runtime: `left` and `right` of exactly
+ * HTDEMUCS_GPU_SEGMENT samples at 44.1 kHz in, the drums' two channels out. Null when htdemucs_gpu is
+ * not installed, this machine cannot run it, or the run failed - there is no CPU path behind this.
+ */
+export const runHtdemucsGpu = (left: Float32Array, right: Float32Array): Promise<{ left: Float32Array; right: Float32Array } | null> => {
+    if (unsupported || failedModels.has('htdemucs') || typeof window === 'undefined' || typeof Worker === 'undefined') return Promise.resolve(null);
+    if (left.length !== HTDEMUCS_GPU_SEGMENT || right.length !== HTDEMUCS_GPU_SEGMENT) return Promise.resolve(null);
+    const run = queue.then(async () => {
+        if (unsupported || failedModels.has('htdemucs') || !(await ensureLoaded('htdemucs'))) return null;
+        // Copied, not transferred: the caller still owns the track it cut these from.
+        const l = Float32Array.from(left);
+        const r = Float32Array.from(right);
+        const reply = await ask({ kind: 'separate', left: l, right: r }, [l.buffer, r.buffer]);
+        if (reply.error) {
+            console.warn(`[beat-this-gpu] htdemucs run failed: ${reply.error}`);
+            drop();
+            return null;
+        }
+        if (worker) idleTimer = setTimeout(drop, IDLE_MS);
+        return reply.result as { left: Float32Array; right: Float32Array };
+    });
+    queue = run.catch(() => null);
+    return run;
+};
+
+const runNow = async (
+    chunks: Array<{ data: Float32Array; frames: number }>,
+    model: BeatThisModel,
+    percussiveOf?: { data: Float32Array; frames: number },
+): Promise<Logits | null> => {
+    if (unsupported || failedModels.has(model)) return null;
+    if (!(await ensureLoaded(model))) return null;
     // Copied, not transferred: the caller still owns the spectrogram it chunked.
     const data = chunks.map(chunk => Float32Array.from(chunk.data.subarray(0, chunk.frames * 128)));
     const percussive = percussiveOf
