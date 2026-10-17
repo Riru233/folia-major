@@ -256,7 +256,7 @@ export function useAutomixDecks({
         void refreshModelAvailability().then((present) => {
             console.log(
                 `[Automix] models on disk at startup: beat_this ${present.beat_this ? 'yes' : 'no'},`
-                + ` htdemucs ${present.htdemucs ? 'yes' : 'no'}`,
+                + ` htdemucs ${present.htdemucs ? 'yes' : 'no'}, htdemucs_gpu ${present.htdemucs_gpu ? 'yes' : 'no'}`,
             );
         });
     }, []);
