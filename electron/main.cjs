@@ -17,6 +17,7 @@ const { applyTileMemoryBudget } = require('./tileMemoryBudget.cjs');
 const {
   REMOTE_CONTROL_HIDE_TITLEBAR_SETTING_KEY,
   REMOTE_CONTROL_CLICK_THROUGH_SETTING_KEY,
+  REMOTE_CONTROL_EXPAND_COVER_SETTING_KEY,
   readRemoteControlWindowSettings,
   shouldShowRemoteUnlockTrayItem,
   applyRemoteControlMouseIgnore,
@@ -2193,6 +2194,7 @@ let remoteControlAlwaysOnTop = false;
 let remoteControlSkipTaskbarEnabled = false;
 let remoteControlHideTitlebarEnabled = false;
 let remoteControlClickThroughEnabled = false;
+let remoteControlExpandCoverEnabled = true;
 let mainWindowAlwaysOnTop = false;
 let mainWindowClickThroughEnabled = false;
 let mainWindowClickThroughUnlockHover = false;
@@ -2374,6 +2376,7 @@ function getPublicSettings() {
     [REMOTE_CONTROL_SKIP_TASKBAR_SETTING_KEY]: readStoredBoolean(REMOTE_CONTROL_SKIP_TASKBAR_SETTING_KEY, false),
     [REMOTE_CONTROL_HIDE_TITLEBAR_SETTING_KEY]: readStoredBoolean(REMOTE_CONTROL_HIDE_TITLEBAR_SETTING_KEY, false),
     [REMOTE_CONTROL_CLICK_THROUGH_SETTING_KEY]: readStoredBoolean(REMOTE_CONTROL_CLICK_THROUGH_SETTING_KEY, false),
+    [REMOTE_CONTROL_EXPAND_COVER_SETTING_KEY]: readStoredBoolean(REMOTE_CONTROL_EXPAND_COVER_SETTING_KEY, true),
     [MAIN_WINDOW_ALWAYS_ON_TOP_SETTING_KEY]: readStoredBoolean(MAIN_WINDOW_ALWAYS_ON_TOP_SETTING_KEY, false),
     [TRANSPARENT_PLAYER_BACKGROUND_SETTING_KEY]: readStoredBoolean(TRANSPARENT_PLAYER_BACKGROUND_SETTING_KEY, false),
     [DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY]: readStoredBoolean(DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY, false),
@@ -2452,6 +2455,7 @@ remoteControlSkipTaskbarEnabled = readStoredBoolean(REMOTE_CONTROL_SKIP_TASKBAR_
   const remoteWindowSettings = readRemoteControlWindowSettings(readStoredBoolean);
   remoteControlHideTitlebarEnabled = remoteWindowSettings.hideTitlebar;
   remoteControlClickThroughEnabled = remoteWindowSettings.clickThrough;
+  remoteControlExpandCoverEnabled = remoteWindowSettings.expandCover;
 }
 mainWindowAlwaysOnTop = readStoredBoolean(MAIN_WINDOW_ALWAYS_ON_TOP_SETTING_KEY, false);
 
@@ -2853,11 +2857,12 @@ function buildRemoteControlWindowSettings() {
   return {
     hideTitlebar: remoteControlHideTitlebarEnabled,
     clickThrough: remoteControlClickThroughEnabled,
+    expandCover: remoteControlExpandCoverEnabled,
     alwaysOnTopSupported: windowAlwaysOnTopSupported,
   };
 }
 
-// Applies click-through to the remote window and tells its renderer about both switches.
+// Applies click-through to the remote window and tells its renderer about its switches.
 function applyRemoteControlWindowPresentation(win) {
   if (!win || win.isDestroyed()) {
     return false;
@@ -6020,6 +6025,7 @@ ipcMain.handle('save-settings', (event, key, value) => {
     key === REMOTE_CONTROL_SKIP_TASKBAR_SETTING_KEY ||
     key === REMOTE_CONTROL_HIDE_TITLEBAR_SETTING_KEY ||
     key === REMOTE_CONTROL_CLICK_THROUGH_SETTING_KEY ||
+    key === REMOTE_CONTROL_EXPAND_COVER_SETTING_KEY ||
     key === TRANSPARENT_PLAYER_BACKGROUND_SETTING_KEY ||
     key === DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY ||
     key === VOICE_INPUT_PAUSE_ENABLED_SETTING_KEY ||
@@ -6199,6 +6205,11 @@ ipcMain.handle('save-settings', (event, key, value) => {
     remoteControlClickThroughEnabled = Boolean(nextValue);
     applyRemoteControlWindowPresentation(remoteControlWindow);
     refreshTrayMenu();
+  }
+
+  if (key === REMOTE_CONTROL_EXPAND_COVER_SETTING_KEY) {
+    remoteControlExpandCoverEnabled = Boolean(nextValue);
+    applyRemoteControlWindowPresentation(remoteControlWindow);
   }
 
   if (key === STAGE_MODE_SOURCE_SETTING_KEY) {
