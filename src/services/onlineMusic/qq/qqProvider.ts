@@ -32,6 +32,7 @@ import { getQqCloudCollection, getQqCloudTracks, getQqListTracks, qqListKindOf }
 import { qqExplore } from './qqExplore';
 import { areQqSongsLiked, withQqVipType } from './qqAccount';
 import { requestQqPreviewSource } from './qqPreview';
+import { noteQqBackendDeclaration, resetQqBackendDeclaration } from './qqBackendDeclaration';
 import { OnlineRequestTimeout } from '../failure/onlineRequestLimit';
 import { errorFields, errorMessage } from '../../../utils/errorText';
 
@@ -541,6 +542,7 @@ const refreshDeclaredChannels = (forceRetry = false): Promise<void> => {
             const channels = response?.data?.channels;
             if (!Array.isArray(channels) || channels.length === 0) throw new Error('Invalid QQ login channels');
             declaredChannels = channels.map(String);
+            noteQqBackendDeclaration(response?.data);
             channelProbeRetryAt = 0;
         })
         .catch(() => {
@@ -580,6 +582,7 @@ export const resetQqLoginChannelCache = (): void => {
     declaredChannels = null;
     channelProbe = null;
     channelProbeRetryAt = 0;
+    resetQqBackendDeclaration();
 };
 
 // provider 摘要在应用启动时就会被读到，把探测挂在这里，等用户真的打开登录弹窗时结果早已落地，
