@@ -111,7 +111,7 @@ const HOME_SURFACE_VARIANTS = {
 
 // 进出同时进行（AnimatePresence 默认 sync 模式），旧视图淡出、新视图淡入，容器 overflow-hidden 裁掉横移。
 // 用同一条 easeOut 曲线、同一个时长，横移与透明度一起落定，看起来才是一块内容在滑动而不是两段动画。
-const HOME_SURFACE_TRANSITION = { duration: 0.26, ease: [0.22, 1, 0.36, 1] as const };
+const HOME_SURFACE_TRANSITION = { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const };
 
 export const Grid3D: React.FC<Grid3DProps> = (props) => {
     countRender('Grid3D');
@@ -520,7 +520,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             <div
                                 ref={pillTrackRef}
                                 {...thumbHandlers}
-                                className="relative flex items-center gap-0 cursor-grab active:cursor-grabbing touch-none"
+                                className="relative flex items-center gap-0 cursor-grab active:cursor-grabbing touch-none pointer-none"
                             >
                                 {homeTabs.map((tab) => {
                                     const isActive = homeViewTab === tab.key;

@@ -38,7 +38,7 @@ const DRAG_SCALE = 2;
 const TAP_MOVE_THRESHOLD_PX = 4;
 // 松手把摇杆吸附到最近页签后不立刻切页面：等摇杆真的停下再等这样一拍，来回拖动时松手就不会
 // 连发页面切换、把界面顶得卡顿。吸附弹簧本身仍可被下一次按下随时打断（见 handlePointerDown）。
-const ACTIVATE_SETTLE_DELAY_MS = 300;
+const ACTIVATE_SETTLE_DELAY_MS = 150;
 
 const activeKeyToIndex = <K extends string>(items: HomeTabThumbItem<K>[], key: K) => {
     const index = items.findIndex(item => item.key === key);
