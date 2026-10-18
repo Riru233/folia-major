@@ -57,7 +57,3 @@ export const liveBeatEffectStrength = (settings: BeatClockSettings, source: Beat
     const effect = liveBeatEffects(settings).find(candidate => candidate.source === source);
     return effect ? resolveBeatEffectSetting(settings.smartBeat, effect.id).strength : 0;
 };
-
-/** True while the beat clock runs for a mode that also plays drum hits (`drawsDrumHits`: 时计). */
-export const visualizerWantsDrumHits = (settings: BeatClockSettings): boolean =>
-    visualizerWantsBeatClock(settings) && Boolean(getVisualizerRegistryEntry(settings.visualizerMode).drawsDrumHits);
