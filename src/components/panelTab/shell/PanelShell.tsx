@@ -114,7 +114,18 @@ const PanelSurface: React.FC<PanelSurfaceProps> = ({ hasHandle, isCover, tabKey,
                 padding: PADDING_PX,
                 marginBottom: underPx,
                 // The centre of the handle, at the surface's right end.
-                transformOrigin: `calc(100% - 24px) calc(100% + ${underPx - 24}px)`,
+                  transformOrigin: `calc(100% - 24px) calc(100% + ${underPx - 24}px)`,
+                  backgroundColor: isDaylight
+                    ? "rgba(255,255,255,0.4)"
+                    : "rgba(0,0,0,0.4)",
+                  borderTop: isDaylight
+                    ? "1px solid rgba(0,0,0,0.08)"
+                    : "1px solid rgba(255,255,255,0.12)",
+                  borderBottom: isDaylight
+                    ? "1px solid rgba(0,0,0,0.08)"
+                    : "1px solid rgba(255,255,255,0.12)",
+                  outline: "1px solid rgba(40,40,40,0.2)",
+                  boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
             } as MotionStyle}
         >
             {header}

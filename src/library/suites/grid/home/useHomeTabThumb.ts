@@ -36,6 +36,9 @@ interface UseHomeTabThumbOptions<K extends string> {
 const THUMB_SPRING = { stiffness: 320, damping: 32, mass: 0.9 } as const;
 const DRAG_SCALE = 2;
 const TAP_MOVE_THRESHOLD_PX = 4;
+// 松手把摇杆吸附到最近页签后不立刻切页面：等摇杆真的停下再等这样一拍，来回拖动时松手就不会
+// 连发页面切换、把界面顶得卡顿。吸附弹簧本身仍可被下一次按下随时打断（见 handlePointerDown）。
+const ACTIVATE_SETTLE_DELAY_MS = 300;
 
 const activeKeyToIndex = <K extends string>(items: HomeTabThumbItem<K>[], key: K) => {
     const index = items.findIndex(item => item.key === key);
@@ -72,6 +75,24 @@ export const useHomeTabThumb = <K extends string>({
     itemsRef.current = items;
     activeKeyRef.current = activeKey;
 
+    // 松手后待处理的页面切换：摇杆停稳再等 ACTIVATE_SETTLE_DELAY_MS 才真正换页签。新的一次按下会取消它，
+    // 所以吸附弹簧的打断不受影响。
+    const pendingActivationRef = useRef<{
+        timer: ReturnType<typeof setTimeout> | null;
+        unsubscribe?: VoidFunction;
+    } | null>(null);
+
+    const cancelPendingActivation = useCallback(() => {
+        const pending = pendingActivationRef.current;
+        if (!pending) return;
+        if (pending.timer !== null) clearTimeout(pending.timer);
+        pending.unsubscribe?.();
+        pendingActivationRef.current = null;
+    }, []);
+
+    // 卸载时别把待处理的切换留着。
+    useEffect(() => cancelPendingActivation, [cancelPendingActivation]);
+
     const activeIndex = Math.max(0, items.findIndex(item => item.key === activeKey));
     // Stable signature: re-measure only when the tab set or enabled state changes, not on re-render.
     const itemsSignature = items.map(item => `${item.key}:${item.disabled ? 1 : 0}`).join('|');
@@ -100,6 +121,32 @@ export const useHomeTabThumb = <K extends string>({
         thumbLeft.set(entry.left);
         thumbWidth.set(entry.width);
     }, [thumbLeft, thumbWidth]);
+
+    // 摇杆吸附停稳后再延一拍才换页签；期间任何一次新的拖动/吸附都会让这次切换作废。
+    const armActivationAfterSettle = useCallback((key: K) => {
+        cancelPendingActivation();
+        const pending: { timer: ReturnType<typeof setTimeout> | null; unsubscribe?: VoidFunction } = { timer: null };
+        pendingActivationRef.current = pending;
+        const startCountdown = () => {
+            if (pendingActivationRef.current !== pending) return;
+            pending.timer = setTimeout(() => {
+                if (pendingActivationRef.current !== pending) return;
+                pendingActivationRef.current = null;
+                if (draggingRef.current) return;
+                if (key !== activeKeyRef.current) onActivate(key);
+            }, ACTIVATE_SETTLE_DELAY_MS);
+        };
+        // 摇杆还在弹就等它停下再计时；已经停在目标上就直接计时。
+        if (thumbLeft.isAnimating()) {
+            pending.unsubscribe = thumbLeft.on('animationComplete', () => {
+                pending.unsubscribe?.();
+                pending.unsubscribe = undefined;
+                startCountdown();
+            });
+        } else {
+            startCountdown();
+        }
+    }, [cancelPendingActivation, onActivate, thumbLeft]);
 
     // Re-measure on mount and whenever the tab set changes, snapping straight onto the active tab.
     useLayoutEffect(() => {
@@ -172,6 +219,8 @@ export const useHomeTabThumb = <K extends string>({
     const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
         if (event.pointerType === 'mouse' && event.button !== 0) return;
         if (gestureRef.current) return;
+        // 新的一次按下作废上一次松手排下的页面切换，吸附弹簧照旧可被打断。
+        cancelPendingActivation();
         draggingRef.current = true;
         setDragging(true);
         const track = trackRef.current;
@@ -180,7 +229,7 @@ export const useHomeTabThumb = <K extends string>({
         trackScaleRef.current = track && rect && track.offsetWidth > 0 ? rect.width / track.offsetWidth : 1;
         gestureRef.current = { pointerId: event.pointerId, startX: event.clientX, moved: false };
         thumbLeft.set(pointerTargetLeft(event.clientX));
-    }, [pointerTargetLeft, thumbLeft, trackRef]);
+    }, [cancelPendingActivation, pointerTargetLeft, thumbLeft, trackRef]);
 
     // 越过阈值才算真正拖动：这时才夺指针并阻止默认行为（否则点页签的 click 会被吞掉）。
     const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -213,10 +262,11 @@ export const useHomeTabThumb = <K extends string>({
         glideToIndex(target);
         const key = itemsRef.current[target]?.key;
         if (key && key !== activeKeyRef.current) {
-            onActivate(key);
+            // 不立刻切：先把摇杆吸附到目标，停稳后再等一拍才换页签。
+            armActivationAfterSettle(key);
         }
         if (!gesture.moved) onTapActive?.();
-    }, [glideToIndex, nearestTabIndex, onActivate, onTapActive, pointerTargetLeft, thumbWidth]);
+    }, [armActivationAfterSettle, glideToIndex, nearestTabIndex, onTapActive, pointerTargetLeft, thumbWidth]);
 
     return {
         thumbLeft,

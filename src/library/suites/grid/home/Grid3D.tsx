@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useDeferredValue } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Loader2, Settings, PanelsTopLeft } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -31,8 +31,9 @@ import { useLibraryHomeOnline } from '../../../core/home/online/useLibraryHomeOn
 import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions';
 import { useLibraryHomeDirectory } from '../../../core/home/useLibraryHomeDirectory';
 import { useLibraryHomeListRegistration, useLibraryHomeTabsRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
-import { cycleIndex } from '../../../core/home/homeSources';
+import { cycleIndex, isOnlineHomeTab } from '../../../core/home/homeSources';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
+import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
 import { useGlass } from '@/shinoinject/useGlass';
 import { useHomeTabThumb } from './useHomeTabThumb';
 
@@ -100,6 +101,18 @@ interface Grid3DProps {
     declaredActions?: LibraryDeclaredActions;
 }
 
+// 一级页签切换时整块首页视图的进出：往页签顺序的右边走就从右边进、旧视图往左出，反向往回。
+// direction 为 0（只在同一页签内部换账户面板视图时）不横移，只做淡入淡出。
+const HOME_SURFACE_VARIANTS = {
+    enter: (direction: number) => ({ x: direction === 0 ? 0 : direction * 40, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (direction: number) => ({ x: direction === 0 ? 0 : direction * -40, opacity: 0 }),
+};
+
+// 进出同时进行（AnimatePresence 默认 sync 模式），旧视图淡出、新视图淡入，容器 overflow-hidden 裁掉横移。
+// 用同一条 easeOut 曲线、同一个时长，横移与透明度一起落定，看起来才是一块内容在滑动而不是两段动画。
+const HOME_SURFACE_TRANSITION = { duration: 0.26, ease: [0.22, 1, 0.36, 1] as const };
+
 export const Grid3D: React.FC<Grid3DProps> = (props) => {
     countRender('Grid3D');
     const {
@@ -165,22 +178,42 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const activeUser = online.user;
     const activeAccountView = online.accountView;
     const activeProviderNeedsRelogin = online.needsRelogin;
-    const onlineList = useLibraryHomeOnline(homeResources, homeSources);
+
+    // 切页签时页签高亮照旧立刻跟上，但下面这整套首页视图（几十张卡片、封面解码、图表与各自的一堆
+    // effect）不在同一帧挂上/卸下：交给 useDeferredValue 排进低优先级、可打断的渲染。这样松手切页时
+    // 摇杆的吸附弹簧不会被挂载顶掉帧，新视图随后换上（与 VisualizerRenderer 的 shownMode 同一套做法）。
+    // 视图用到的派生态（列表、目录会话 key）都跟着 shownTab 走：延迟渲染落地前的那一帧和上一帧完全
+    // 一致，旧视图不会被半途换掉 props（否则会先闪一下空列表 / 目录会话与视图错配）。
+    const shownTab = useDeferredValue(homeViewTab);
+    const shownIsOnlineTab = isOnlineHomeTab(shownTab);
+    const shownShowOnlineList = shownIsOnlineTab
+        && shownTab !== 'explore'
+        && activeAccountView !== 'accountless'
+        && activeAccountView !== 'resolving'
+        && activeAccountView !== 'guest';
+
+    // 进出方向按页签在一级页签里的先后定：向后面的页签走，新视图从右侧进（direction=1）。
+    const shownTabIndex = homeTabs.findIndex(tab => tab.key === shownTab);
+    const prevTabIndexRef = useRef(shownTabIndex);
+    const tabDirection = shownTabIndex === prevTabIndexRef.current
+        ? 0
+        : shownTabIndex > prevTabIndexRef.current ? 1 : -1;
+    useEffect(() => {
+        prevTabIndexRef.current = shownTabIndex;
+    }, [shownTabIndex]);
+
+    const reduceMotion = useReducedMotionFor('uiMicroMotion');
+
+    const onlineList = useLibraryHomeOnline(homeResources, { ...homeSources, tab: shownTab });
     const homeActions = homeResources.actions;
     const { snapshot: homeActionState, scanPercent: scanProgressPercent } = useLibraryHomeActions(homeActions);
     const scanProgress = homeActionState.scan;
     // 当前列表的目录会话 key 与隐藏作用域只在首页模型里算一次（core/home/homeSources），交给三个列表视图。
     const { directoryKey, hiddenScope } = useLibraryHomeDirectory({
-        tab: homeViewTab,
+        tab: shownTab,
         providerId: activeProviderId,
         localRow: localMusicState.activeRow,
     });
-    // 在线列表只在账户已就绪时显示（无账户 / 解析中 / 未登录各有面板）。探索页签没有卡片列表：它是平台自己的推荐页。
-    const showOnlineList = isOnlineTab
-        && homeViewTab !== 'explore'
-        && activeAccountView !== 'accountless'
-        && activeAccountView !== 'resolving'
-        && activeAccountView !== 'guest';
     // On the explore tab the wall (队列拼贴) shows the page's entries, not the play queue: it is
     // offered there once the page has an entry to show, with or without a song on the player.
     const opensExploreWall = homeViewTab === 'explore' && online.canUseExplore;
@@ -220,9 +253,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         },
     });
     useLibraryHomeListRegistration({
-        enabled: showOnlineList,
+        enabled: shownShowOnlineList,
         getState: (): LibraryHomeListState => ({
-            tab: homeViewTab,
+            tab: shownTab,
             directoryKey,
             hiddenScope,
             sections: [],
@@ -263,7 +296,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const mainBg = isDaylight ? 'bg-white/40' : 'bg-black/20';
     const inputBg = isDaylight ? 'bg-black/5 focus:bg-black/10' : 'bg-white/5 focus:bg-white/10';
     const navPillInactiveText = isDaylight ? 'text-black/60 hover:text-black' : 'text-white/60 hover:text-white';
-    const activeTabBg = isDaylight ? 'text-black font-bold' : 'text-black';
+    const activeTabBg = 'text-#fff';
 
     const bottomPadding = currentTrack ? 'pb-28 md:pb-32' : '';
 
@@ -314,26 +347,34 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         <div
             ref={gridRootRef}
             data-ponder-page-scope="grid-page"
-            className={`relative w-full h-full flex flex-col font-sans overflow-hidden ${mainBg} pointer-events-auto backdrop-blur-sm ${bottomPadding}`}
+            className={`relative w-full h-full flex flex-col font-sans overflow-hidden ${mainBg} pointer-events-auto ${bottomPadding}`}
         >
 
             {/* Main Header Container (Fades out when sliding/interacting) */}
             <div className="transition-opacity duration-300 ease-in-out z-20 opacity-100 select-none">
                 <div className="grid grid-cols-2 md:grid-cols-3 items-center w-full max-w-7xl mx-auto p-4 md:p-8 gap-y-4 md:gap-y-0">
                     {/* Left title and settings */}
-                    <div className="flex items-center justify-start order-1 md:order-none">
-                        <h1 className="text-2xl font-bold tracking-tight opacity-90 flex items-center gap-3">
-                            Folia
-                        </h1>
+                    <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
+                        {/* 左侧按钮组 */}
                         <button
                             data-glass
                             data-glass-jelly
                             data-glass-light
                             onClick={() => onOpenSettings?.('help')}
-                            className={`relative flex items-center gap-1.5 p-2 rounded-full hover:bg-white/10 transition-all ml-4 ${showUpdateIndicator
-                                    ? 'opacity-90 hover:opacity-100'
-                                    : 'opacity-40 hover:opacity-100'
-                                }`}
+                            className={`relative flex items-center gap-1.5 p-2.5 rounded-full hover:bg-white/10 transition-all ml-4 w-[40px] h-[40px]`}
+                            style={{
+                                backgroundColor: isDaylight
+                                ? "rgba(255,255,255,0.42)"
+                                : "rgba(0, 0, 0, 0.42)",
+                                borderTop: isDaylight
+                                ? "1px solid rgba(0,0,0,0.08)"
+                                : "1px solid rgba(255,255,255,0.12)",
+                                borderBottom: isDaylight
+                                ? "1px solid rgba(0,0,0,0.08)"
+                                : "1px solid rgba(255,255,255,0.12)",
+                                outline: "1px solid rgba(40,40,40,0.2)",
+                                boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                            }}
                             title={t('ui.options')}
                         >
                             <Settings size={20} style={{ color: 'var(--text-primary)' }} />
@@ -343,6 +384,40 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 </span>
                             )}
                         </button>
+                        
+            {onOpenLattice && currentTrack && (
+              <button
+                data-glass
+                data-glass-jelly
+                data-glass-light
+                onClick={() => onOpenLattice(opensExploreWall ? 'explore' : 'queue')}
+                data-testid="home-lattice-pill"
+                title={t("home.lattice")}
+                aria-label={t("home.lattice")}
+                className={`group relative inline-flex items-center justify-center p-2.5 rounded-full text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap ${navPillInactiveText} min-w-[40px] h-[40px]`}
+                style={{
+                  backgroundColor: isDaylight
+                    ? "rgba(255,255,255,0.42)"
+                    : "rgba(0, 0, 0, 0.42)",
+                  borderTop: isDaylight
+                    ? "1px solid rgba(0,0,0,0.08)"
+                    : "1px solid rgba(255,255,255,0.12)",
+                  borderBottom: isDaylight
+                    ? "1px solid rgba(0,0,0,0.08)"
+                    : "1px solid rgba(255,255,255,0.12)",
+                  outline: "1px solid rgba(40,40,40,0.2)",
+                  boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                }}
+              >
+                <PanelsTopLeft size={18} className="relative shrink-0" />
+                <span
+                  aria-hidden="true"
+                  className="relative z-10 max-w-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-2.5 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:max-w-28 group-focus-visible:opacity-100"
+                >
+                  {t("home.latticeLabel")}
+                </span>
+              </button>
+            )}
                         {scanProgress?.active && (
                             <div
                                 className="relative ml-3"
@@ -430,12 +505,13 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 data-glass
                                 data-glass-blur="0"
                                 aria-hidden="true"
-                                className={`absolute top-0 bottom-0 z-10 rounded-full shadow-sm pointer-events-none bg-[#0d4ae155] ${thumbDragging ? 'bg-transparent z-888' : ''} ${isDaylight ? 'border-y border-black/[0.08]' : 'border-y border-white/[0.12]'} outline outline-1 outline-[rgba(40,40,40,0.2)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]`}
+                                className={`absolute top-0 bottom-0 z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(40,40,40,0.2)] ${isDaylight ? 'border-y border-black/[0.08]' : 'border-y border-white/[0.12]'} ${thumbDragging ? 'bg-transparent z-888 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]' : 'bg-[var(--text-accent)]/20 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]'}`}
                                 style={{
                                     left: thumbLeft,
                                     width: thumbWidth,
                                     pointerEvents: 'none',
-                                    // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的液态玻璃。
+                                    // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的液态玻璃；底色与阴影的进出
+                                    // 由上面的 transition 补间，松手复原时不再瞬间跳变。
                                     boxShadow: thumbDragging ? '0 0 4px #000,0 0 8px #fffa' : '',
                                 }}
                                 animate={{ scale: thumbScale }}
@@ -490,25 +566,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     已经有五个内容 tab，多一个常驻文字就把胶囊撑得太长。点击始终直达。
                                     在「探索」页签上它打开的是同一面墙，铺的是探索页的条目（探索拼贴）：
                                     探索页有条目可铺时出现，不看有没有在播歌曲。 */}
-                                {onOpenLattice && (opensExploreWall ? hasExploreWall : currentTrack) && (
-                                    <button
-                                        onClick={() => onOpenLattice(opensExploreWall ? 'explore' : 'queue')}
-                                        data-testid="home-lattice-pill"
-                                        data-glass
-                                        data-glass-jelly
-                                        title={t(opensExploreWall ? 'home.latticeExplore' : 'home.lattice')}
-                                        aria-label={t(opensExploreWall ? 'home.latticeExplore' : 'home.lattice')}
-                                        className={`group relative inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap ${navPillInactiveText}`}
-                                    >
-                                        <PanelsTopLeft size={14} className="relative z-10 shrink-0" />
-                                        <span
-                                            aria-hidden="true"
-                                            className="relative z-10 max-w-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-1.5 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:max-w-28 group-focus-visible:opacity-100"
-                                        >
-                                            {t(opensExploreWall ? 'home.latticeExplore' : 'home.latticeLabel')}
-                                        </span>
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -516,11 +573,26 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     {/* Right Search Bar */}
                     <div className="flex justify-end order-2 md:order-none">
                         <form
-                            data-glass
-                            data-glass-jelly
-                            data-glass-light
-                            onSubmit={handleSearch}
-                            className="relative w-full md:w-56 transition-all focus-within:md:w-72 rounded-full"
+                        onSubmit={handleSearch}
+                        className="relative w-full md:w-56 transition-all focus-within:md:w-72  rounded-full"
+                        data-glass
+                        data-glass-jelly
+                        data-glass-light
+                        style={{
+                            backgroundColor: isDaylight
+                            ? "rgba(255,255,255,0.42)"
+                            : "rgba(0, 0, 0, 0.42)",
+                            borderTop: isDaylight
+                            ? "1px solid rgba(0,0,0,0.08)"
+                            : "1px solid rgba(255,255,255,0.12)",
+                            borderBottom: isDaylight
+                            ? "1px solid rgba(0,0,0,0.08)"
+                            : "1px solid rgba(255,255,255,0.12)",
+                            outline: "1px solid rgba(40,40,40,0.2)",
+                            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                            color: isDaylight ? "#000" : "#fff",
+                            overflow: "auto",
+                        }}
                         >
                             {isSearchingActive ? (
                                 <Loader2 className="absolute left-3 top-1/2 w-4 h-4 animate-spin opacity-40 -mt-2" />
@@ -536,7 +608,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className={`w-full ${inputBg} border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text`}
+                                className={`w-full border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text`}
                                 style={{ color: 'var(--text-primary)' }}
                             />
                         </form>
@@ -544,22 +616,35 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 </div>
             </div>
 
-            {/* Desktop Canvas Surface */}
-            <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative">
-                {isOnlineTab && activeAccountView === 'accountless' ? (
+            {/* Desktop Canvas Surface。AnimatePresence 按 shownTab 换视图：旧视图淡出、新视图淡入，
+                同时做一次横移（HOME_SURFACE_VARIANTS）。Cross 期间两个视图都绝对定位叠着，所以用
+                overflow-hidden 裁掉横移出去的部分。 */}
+            <div className="flex-1 min-h-0 relative overflow-hidden">
+                <AnimatePresence initial={false} custom={tabDirection} mode="sync">
+                    <motion.div
+                        key={shownTab}
+                        custom={tabDirection}
+                        variants={HOME_SURFACE_VARIANTS}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={reduceMotion ? { duration: 0 } : HOME_SURFACE_TRANSITION}
+                        className="absolute inset-0 flex flex-col items-center justify-center"
+                    >
+                {shownIsOnlineTab && activeAccountView === 'accountless' ? (
                     <OnlineProviderAccountlessPanel
                         providerLabel={activeProviderLabel}
                         isDaylight={isDaylight}
                         onSearch={() => searchInputRef.current?.focus()}
                     />
-                ) : isOnlineTab && activeAccountView === 'resolving' ? (
+                ) : shownIsOnlineTab && activeAccountView === 'resolving' ? (
                     <div className="flex flex-1 w-full items-center justify-center" aria-busy="true">
                         <Loader2 className="animate-spin opacity-30" size={28} />
                     </div>
-                ) : isOnlineTab && activeAccountView === 'guest' ? (
+                ) : shownIsOnlineTab && activeAccountView === 'guest' ? (
                     // One button: it opens the sign-in window, where the platform is chosen.
                     <HomeLoginPanel account={account} />
-                ) : homeViewTab === 'explore' ? (
+                ) : shownTab === 'explore' ? (
                     online.canUseExplore && (
                         <ExploreSurface
                             // Another platform or account starts from its own: how far a section was opened is not carried over.
@@ -571,9 +656,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             onOpenCollection={collection => onOpenGridView?.(createOnlineGridViewCollection(collection, activeProviderId))}
                         />
                     )
-                ) : showOnlineList ? (
+                ) : shownShowOnlineList ? (
                     <DesktopGrid3DSurface
-                        focusMemoryScope={JSON.stringify(['online', activeProviderId, activeUser?.id ?? null, homeViewTab])}
+                        focusMemoryScope={JSON.stringify(['online', activeProviderId, activeUser?.id ?? null, shownTab])}
                         title={onlineList.title}
                         mapButtonLabel={t('home.allAlbums')}
                         items={onlineList.items}
@@ -590,7 +675,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         directoryKey={directoryKey}
                         declaredHomeActions={declaredActions}
                     />
-                ) : homeViewTab === 'local' ? (
+                ) : shownTab === 'local' ? (
                     <div className="w-full h-full flex-1">
                         <LocalGrid3DView
                             localSongs={localSongs}
@@ -636,6 +721,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         />
                     </div>
                 )}
+                    </motion.div>
+                </AnimatePresence>
             </div>
 
             {/* The active account and the way back to the player; the sign-in window opens from it. */}

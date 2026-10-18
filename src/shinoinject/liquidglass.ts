@@ -586,19 +586,27 @@ export const installGlassJelly = () => {
 };
 
 /* —— 拖拽光效（data-glass-light 注入）——
-   pointerdown 命中带 data-glass-light 的元素（或其任意子元素）时，在该容器内挂一层铺满 inset:0 的光晕，
-   光点中心跟随指针（换算成元素自身布局坐标），半径取自属性值（px，缺省 LIGHT_DEFAULT_RANGE），
-   松手淡出后摘掉节点，不残留 DOM。不依赖 data-glass；可与 data-glass-jelly 叠加（形变 + 光晕）。
-   光晕颜色走 CSS 变量 --lg-light-color（在容器上定义即可），缺省为柔和白光。 */
+   指针悬停在带 data-glass-light 的元素上时，在该容器内挂一层铺满 inset:0 的光晕，光点中心跟随指针
+   （换算成元素自身布局坐标），强度是悬停的微光；按下时同一个光晕升到最强，松手回到悬停微光（指针还
+   停在元素上）或淡出（已离开）。半径取自属性值（px，缺省 LIGHT_DEFAULT_RANGE）。
+   淡入 / 淡出 / 换容器都只在 lightSync 里收敛一处，节点用完即摘，不残留 DOM。不依赖 data-glass；
+   可与 data-glass-jelly 叠加（形变 + 光晕）。光晕颜色走 CSS 变量 --lg-light-color（在容器上定义即可），
+   缺省为柔和白光。 */
 
 const LIGHT_DEFAULT_RANGE = 160; // 属性缺省时的发光半径（px）
 const LIGHT_FALLBACK_COLOR = "rgba(255,255,255,0.6)"; // --lg-light-color 未定义时的颜色
-const LIGHT_FADE_MS = 200; // 淡入 / 淡出时长（ms）
+const LIGHT_FADE_MS = 200; // 淡入 / 淡出 / 强弱切换时长（ms）
+const LIGHT_HOVER_OPACITY = 0.32; // 悬停微光的强度（相对按下时的 1）
+const LIGHT_PRESS_OPACITY = 1; // 按下时光的强度
 
 let lightInstalled = false;
-let lightEl: HTMLElement | null = null;
+let lightEl: HTMLElement | null = null; // 当前挂着光晕层的容器
 let lightLayer: HTMLDivElement | null = null;
+let lightHoverEl: HTMLElement | null = null; // 指针正悬停的容器（只认鼠标）
+let lightPressEl: HTMLElement | null = null; // 按下的容器
 let lightPointerId = -1;
+let lightX = 0; // 光点在容器布局坐标里的位置（按下与悬停共用，换层时不用等下一次 move）
+let lightY = 0;
 let lightRange = LIGHT_DEFAULT_RANGE;
 let lightForcedRelative = false;
 
@@ -623,7 +631,22 @@ const lightPaint = (el: HTMLElement, clientX: number, clientY: number) => {
   lightLayer.style.background = `radial-gradient(circle ${lightRange}px at ${x}px ${y}px, var(--lg-light-color, ${LIGHT_FALLBACK_COLOR}), transparent ${lightRange}px)`;
 };
 
-const lightStart = (el: HTMLElement, clientX: number, clientY: number) => {
+// 收摊：淡出光晕层、还原临时 position、清会话；淡出结束再摘节点（可被下一次会话覆盖，互不影响）。
+const lightUnmount = () => {
+  const el = lightEl;
+  lightEl = null;
+  if (lightLayer) {
+    const layer = lightLayer;
+    lightLayer = null;
+    layer.style.opacity = "0";
+    window.setTimeout(() => layer.remove(), LIGHT_FADE_MS + 40);
+  }
+  if (el && lightForcedRelative) el.style.position = "";
+  lightForcedRelative = false;
+};
+
+// 在 el 上挂一层光晕并淡入到 opacity（同一容器上加减强度不重建，见 lightSync）。
+const lightMount = (el: HTMLElement, clientX: number, clientY: number, opacity: number) => {
   if (getComputedStyle(el).position === "static") {
     el.style.position = "relative"; // 光晕层要相对容器定位；原本非 static 的不碰它
     lightForcedRelative = true;
@@ -638,48 +661,104 @@ const lightStart = (el: HTMLElement, clientX: number, clientY: number) => {
   lightPaint(el, clientX, clientY);
   el.appendChild(layer);
   void layer.offsetWidth; // 先落地再拉透明度，保证有淡入过渡
-  layer.style.opacity = "1";
+  lightEl = el;
+  layer.style.opacity = String(opacity);
 };
 
-// 收摊：淡出光晕层、还原临时 position、清会话；淡出结束再摘节点（可被下一次会话覆盖，互不影响）。
-const lightEnd = () => {
-  const el = lightEl;
-  lightEl = null;
-  lightPointerId = -1;
-  if (lightLayer) {
-    const layer = lightLayer;
-    lightLayer = null;
-    layer.style.opacity = "0";
-    window.setTimeout(() => layer.remove(), LIGHT_FADE_MS + 40);
+// 每次状态变化（悬停进出、按下松开）后按当前状态收敛光晕：按下压过悬停，同一容器只调强弱，换容器才重建。
+const lightSync = () => {
+  const want = lightPressEl && lightPressEl.isConnected ? lightPressEl
+    : lightHoverEl && lightHoverEl.isConnected ? lightHoverEl
+      : null;
+  const opacity = lightPressEl ? LIGHT_PRESS_OPACITY : LIGHT_HOVER_OPACITY;
+  if (!want) {
+    lightUnmount();
+    return;
   }
-  if (el && lightForcedRelative) el.style.position = "";
-  lightForcedRelative = false;
+  if (lightEl !== want) {
+    lightUnmount();
+    lightMount(want, lightX, lightY, opacity);
+    return;
+  }
+  lightPaint(want, lightX, lightY);
+  if (lightLayer) lightLayer.style.opacity = String(opacity);
+};
+
+// 悬停的容器：按下不看（按下有自己的会话），只认鼠标指针（触屏的 pointerover 发生在点按上，不算悬停）。
+const lightHoverTarget = (e: PointerEvent) => (
+  e.pointerType === "mouse" && e.target instanceof Element
+    ? e.target.closest<HTMLElement>("[data-glass-light]")
+    : null
+);
+
+const lightReduceMotion = () => typeof window !== "undefined"
+  && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const lightOnPointerOver = (e: PointerEvent) => {
+  if (lightReduceMotion()) return;
+  const el = lightHoverTarget(e);
+  if (el === lightHoverEl) return;
+  lightHoverEl = el;
+  lightSync();
+};
+
+const lightOnPointerOut = (e: PointerEvent) => {
+  // 离开的是同一个悬停容器的子元素时不动（relatedTarget 还在里面）；真正离开才收掉或换到下一个。
+  const to = e.pointerType === "mouse" && e.relatedTarget instanceof Element
+    ? e.relatedTarget.closest<HTMLElement>("[data-glass-light]")
+    : null;
+  if (to === lightHoverEl) return;
+  lightHoverEl = to;
+  lightSync();
 };
 
 const lightOnPointerDown = (e: PointerEvent) => {
-  if (typeof window === "undefined") return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (lightReduceMotion()) return;
   const el = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-glass-light]") : null;
   if (!el) return;
-  if (lightEl) lightEnd(); // 上一会话还挂着（松手前又按下），先收干净
-  lightEl = el;
+  lightPressEl = el;
   lightPointerId = e.pointerId;
-  lightStart(el, e.clientX, e.clientY);
+  lightX = e.clientX;
+  lightY = e.clientY;
+  lightSync();
 };
 
 const lightOnPointerMove = (e: PointerEvent) => {
-  if (!lightEl || e.pointerId !== lightPointerId || !lightEl.isConnected) return;
-  lightPaint(lightEl, e.clientX, e.clientY);
+  // 按下时跟手；悬停时也让光点跟着指针走（没有光晕层时 lightPaint 直接返回，开销只是一次判空）。
+  if (!lightLayer) return;
+  if (lightPressEl) {
+    if (e.pointerId !== lightPointerId) return;
+  } else if (!lightHoverEl) return;
+  lightX = e.clientX;
+  lightY = e.clientY;
+  lightPaint(lightPressEl ?? lightHoverEl!, lightX, lightY);
+};
+
+const lightEndPress = (e?: { pointerId?: number }) => {
+  if (!lightPressEl) return;
+  if (e && typeof e.pointerId === "number" && e.pointerId !== lightPointerId) return;
+  lightPressEl = null;
+  lightPointerId = -1;
+  lightSync();
+};
+
+const lightEndAll = () => {
+  lightPressEl = null;
+  lightPointerId = -1;
+  lightHoverEl = null;
+  lightSync();
 };
 
 // 由 useGlass 在 commit 后调一次（幂等）：挂 window 级指针监听，带 data-glass-light 的元素才参与。
 export const installGlassLight = () => {
   if (lightInstalled || typeof window === "undefined") return;
   lightInstalled = true;
+  window.addEventListener("pointerover", lightOnPointerOver, { capture: true });
+  window.addEventListener("pointerout", lightOnPointerOut, { capture: true });
   window.addEventListener("pointerdown", lightOnPointerDown, { capture: true });
   window.addEventListener("pointermove", lightOnPointerMove, { passive: true });
-  window.addEventListener("pointerup", lightEnd);
-  window.addEventListener("pointercancel", lightEnd);
-  window.addEventListener("blur", lightEnd);
-  document.addEventListener("visibilitychange", lightEnd);
+  window.addEventListener("pointerup", lightEndPress);
+  window.addEventListener("pointercancel", lightEndPress);
+  window.addEventListener("blur", lightEndAll);
+  document.addEventListener("visibilitychange", lightEndAll);
 };
