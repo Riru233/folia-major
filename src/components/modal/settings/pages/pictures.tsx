@@ -177,3 +177,49 @@ export const GlassPresetPicture: React.FC<{ id: LiquidGlassPresetId }> = ({ id }
         </span>
     );
 };
+
+/**
+ * 液态玻璃预设的两列预览网格（2×2）：大图铺满整行宽度（每格即半行宽），高 = 宽 − 30px，
+ * 方便看清折射与模糊；选中项套一圈强调色边环。图与占位都来自 GlassPresetPicture。
+ */
+export const GlassPresetGrid: React.FC<{
+    value: string;
+    label: string;
+    options: ReadonlyArray<{ value: string; label: string }>;
+    onChange: (value: string) => void;
+}> = ({ value, label, options, onChange }) => (
+    <div role="radiogroup" aria-label={label} className="grid w-full grid-cols-2 gap-3 py-1">
+        {options.map((option) => {
+            const selected = option.value === value;
+            return (
+                <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => {
+                        if (!selected) onChange(option.value);
+                    }}
+                    className="group flex min-w-0 flex-col items-center gap-1.5 rounded-lg"
+                >
+                    <span className="relative block w-full">
+                        {/* 高 = 宽 − 30px：padding-top 的百分比按包含块宽度算，这里正好是半行宽。 */}
+                        <span aria-hidden className="block w-full" style={{ paddingTop: 'calc(100% - 30px)' }} />
+                        <span
+                            aria-hidden
+                            className={`st-t-fast absolute inset-0 overflow-hidden rounded-lg bg-[var(--st-pv)] shadow-[inset_0_0_0_1px_var(--st-line)] transition-opacity ${selected ? '' : 'opacity-70 group-hover:opacity-100'}`}
+                        >
+                            <GlassPresetPicture id={option.value as LiquidGlassPresetId} />
+                        </span>
+                        {selected && (
+                            <span aria-hidden className="st-t-fast absolute -inset-[3px] rounded-[11px] shadow-[inset_0_0_0_2px_var(--st-accent)]" />
+                        )}
+                    </span>
+                    <span className={`st-t-fast max-w-full truncate text-center text-sm leading-5 transition-colors ${selected ? 'text-[color:var(--st-t1)]' : 'text-[color:var(--st-t2)] group-hover:text-[color:var(--st-t1)]'}`}>
+                        {option.label}
+                    </span>
+                </button>
+            );
+        })}
+    </div>
+);

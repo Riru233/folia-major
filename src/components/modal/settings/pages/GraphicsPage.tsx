@@ -10,8 +10,8 @@ import { useLiquidGlassSettingsStore } from '../../../../stores/useLiquidGlassSe
 import { LIQUID_GLASS_PARAM_BOUNDS, LIQUID_GLASS_PRESETS, type LiquidGlassPresetId } from '../../../../shinoinject/liquidglass';
 import { isWindowsPlatform } from '../../../../utils/platform';
 import { VISUALIZER_FRAME_RATE_OPTIONS } from '../../../../utils/frameRateLimiter';
-import { Group, Link, PictureChoice, Reveal, Row, Segmented, Slider, Toggle, option, useSettingsKitTheme, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
-import { GlassPresetPicture } from './pictures';
+import { Group, Link, Reveal, Row, Segmented, Slider, Toggle, option, useSettingsKitTheme, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
+import { GlassPresetGrid } from './pictures';
 
 // src/components/modal/settings/pages/GraphicsPage.tsx
 // The 性能与动效 page: what trades picture for smoothness or works around a renderer problem
@@ -114,7 +114,7 @@ const GraphicsPage: React.FC = () => {
     // 预设：非 Windows 不列出通透/朦胧流体；按当前值高亮（非 Windows 强度与弯曲距离被钉死，只按模糊匹配）。
     const presetOptions = LIQUID_GLASS_PRESETS
         .filter(preset => !preset.windowsOnly || IS_WINDOWS)
-        .map(preset => ({ value: preset.id as string, label: t(PRESET_LABEL_KEY[preset.id]), picture: <GlassPresetPicture id={preset.id} /> }));
+        .map(preset => ({ value: preset.id as string, label: t(PRESET_LABEL_KEY[preset.id]) }));
     const activePreset = LIQUID_GLASS_PRESETS.find(preset => (
         preset.windowsOnly && !IS_WINDOWS
             ? false
@@ -188,9 +188,11 @@ const GraphicsPage: React.FC = () => {
             </Group>
 
             <Group def={GLASS} foot={t('options.liquidGlassSectionDesc')}>
-                <Row option={O.glassPreset} hint={t('options.liquidGlassPresetDesc')}>
-                    <PictureChoice value={activePreset} options={presetOptions} onChange={applyPreset} />
-                </Row>
+                <Row
+                    option={O.glassPreset}
+                    hint={t('options.liquidGlassPresetDesc')}
+                    below={<GlassPresetGrid value={activePreset} label={t('options.liquidGlassPreset')} options={presetOptions} onChange={applyPreset} />}
+                />
                 {IS_WINDOWS && (
                     <Row option={O.glassStrength} hint={t('options.liquidGlassStrengthDesc')}>
                         <Slider
