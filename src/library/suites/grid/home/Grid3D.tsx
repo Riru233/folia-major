@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useDeferredValue } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Loader2, Settings, PanelsTopLeft } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -25,7 +25,7 @@ import type { LibraryDirectoryBatchController } from '../../../core/directory/di
 import type { LibraryLocalCatalogSnapshot } from '../../../core/home/home.contract';
 import type { LibraryHomeResources } from '../../../core/home/homeModel.contract';
 import type { LibraryHomeExtraTab, LibraryDeclaredActions } from '../../../core/suite/suite.contract';
-import type { LibraryHomeCard, LibraryHomeListState } from '../../../core/home/homeModel.contract';
+import type { LibraryHomeCard, LibraryHomeListState, LibraryHomeTabKey } from '../../../core/home/homeModel.contract';
 import { useLibraryHomeSources } from '../../../core/home/useLibraryHomeSources';
 import { useLibraryHomeOnline } from '../../../core/home/online/useLibraryHomeOnline';
 import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions';
@@ -101,16 +101,22 @@ interface Grid3DProps {
     declaredActions?: LibraryDeclaredActions;
 }
 
-// 一级页签切换时整块首页视图的进出：往页签顺序的右边走就从右边进、旧视图往左出，反向往回。
-// direction 为 0（只在同一页签内部换账户面板视图时）不横移，只做淡入淡出。
-const HOME_SURFACE_VARIANTS = {
-    enter: (direction: number) => ({ x: direction === 0 ? 0 : direction * 40, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (direction: number) => ({ x: direction === 0 ? 0 : direction * -40, opacity: 0 }),
-};
+// 一级页签切换时整块首页视图的横向位移量（px）：往页签顺序的右边走就从右边进、旧视图往左出，反向往回。
+// 进入的一侧只做 x 位移、不做 opacity：Chromium 会在祖先做 opacity 动画时丢掉后代的 backdrop-filter，
+// 视图内的 data-glass 面板会在整段切换动画期间不显示、动画结束才出现。只动 x（transform）没这个问题。
+const HOME_SURFACE_OFFSET_PX = 40;
 
-// 进出同时进行（AnimatePresence 默认 sync 模式），旧视图淡出、新视图淡入，容器 overflow-hidden 裁掉横移。
-// 用同一条 easeOut 曲线、同一个时长，横移与透明度一起落定，看起来才是一块内容在滑动而不是两段动画。
+// 页签层内容包装：非活动层跳过重渲染（视图已常驻，父级的输入框、焦点等 state 变化不该再牵动它），
+// 活动层每次都重渲染以拿到最新 props。切换时 isActive 变化，比较器放行，自然重渲染。
+const HomeTabLayerContent = React.memo(
+    function HomeTabLayerContent({ surface }: { surface: React.ReactNode; isActive: boolean }) {
+        return <>{surface}</>;
+    },
+    (prev, next) => !prev.isActive && !next.isActive,
+);
+
+// 进出同时进行（各层都在，靠 animate 目标变化换位），旧视图淡出、新视图滑入，容器 overflow-hidden 裁掉横移。
+// 用同一条 easeOut 曲线、同一个时长，横移与淡出一起落定，看起来才是一块内容在滑动而不是两段动画。
 const HOME_SURFACE_TRANSITION = { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const };
 
 export const Grid3D: React.FC<Grid3DProps> = (props) => {
@@ -179,12 +185,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const activeAccountView = online.accountView;
     const activeProviderNeedsRelogin = online.needsRelogin;
 
-    // 切页签时页签高亮照旧立刻跟上，但下面这整套首页视图（几十张卡片、封面解码、图表与各自的一堆
-    // effect）不在同一帧挂上/卸下：交给 useDeferredValue 排进低优先级、可打断的渲染。这样松手切页时
-    // 摇杆的吸附弹簧不会被挂载顶掉帧，新视图随后换上（与 VisualizerRenderer 的 shownMode 同一套做法）。
-    // 视图用到的派生态（列表、目录会话 key）都跟着 shownTab 走：延迟渲染落地前的那一帧和上一帧完全
-    // 一致，旧视图不会被半途换掉 props（否则会先闪一下空列表 / 目录会话与视图错配）。
-    const shownTab = useDeferredValue(homeViewTab);
+    // 直接跟随 homeViewTab（不再 useDeferredValue 推迟）：首页视图按页签常驻缓存（见下方 shownTabs 页签层），
+    // 切页签只切换可见层、不重挂重算，所以不需要把渲染排到低优先级——那种做法会让新视图晚一拍才出现。
+    const shownTab = homeViewTab;
     const shownIsOnlineTab = isOnlineHomeTab(shownTab);
     const shownShowOnlineList = shownIsOnlineTab
         && shownTab !== 'explore'
@@ -340,6 +343,169 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             navigationTabs[next].select();
         },
     });
+
+    // ---- 首页页签层（keep-alive）----
+    // 访问过的页签各自常驻一层，切页签只切换可见性与横向位移，不重挂视图：不丢玻璃位移图、不重解码封面、
+    // 不重跑各自一堆 effect。这是切换不再卡顿的关键，也正因为如此才敢去掉 useDeferredValue 的推迟渲染。
+    const [visitedTabs, setVisitedTabs] = useState<LibraryHomeTabKey[]>([shownTab]);
+    // 正在退场的层（做淡出动画，动画结束后转回 hidden）。切走时把上一层记进来，切回时把它剔出去。
+    const [exitingTabs, setExitingTabs] = useState<LibraryHomeTabKey[]>([]);
+    const prevShownTabRef = useRef(shownTab);
+    // 每层的在线列表 / 目录会话快照：切走时留着，隐藏层用快照渲染，避免它拿到当前活动页签的数据。
+    const tabSnapshotRef = useRef(new Map<string, {
+        onlineList: typeof onlineList;
+        directoryKey: string;
+        hiddenScope: typeof hiddenScope;
+    }>());
+
+    useEffect(() => {
+        setVisitedTabs(prev => (prev.includes(shownTab) ? prev : [...prev, shownTab]));
+    }, [shownTab]);
+
+    // 用 useLayoutEffect：切页签后本就该在这一帧画之前把「上一层」标成退场可见，否则它会先闪一下消失。
+    useLayoutEffect(() => {
+        const from = prevShownTabRef.current;
+        prevShownTabRef.current = shownTab;
+        setExitingTabs(prev => {
+            const next = new Set(prev);
+            next.delete(shownTab);
+            if (from !== shownTab) next.add(from);
+            return Array.from(next);
+        });
+    }, [shownTab]);
+
+    useEffect(() => {
+        tabSnapshotRef.current.set(shownTab, { onlineList, directoryKey, hiddenScope });
+    }, [shownTab, onlineList, directoryKey, hiddenScope]);
+
+    // 渲染的层：访问过 + 正在退场的 + 当前（已移除的页签不再渲染）。活动层排最后，同 z-index 时画在上层。
+    const tabKeySet = new Set(homeTabs.map(tab => tab.key));
+    tabKeySet.add(shownTab);
+    const orderedLayerKeys = Array.from(new Set([...visitedTabs, ...exitingTabs, shownTab]))
+        .filter(key => tabKeySet.has(key))
+        .sort((a, b) => Number(a === shownTab) - Number(b === shownTab));
+    // 某层相对活动页签的横向停靠位：在活动页签右边就停在 +offset（从右侧滑入），左边反之。
+    const layerOffsetX = (key: LibraryHomeTabKey) => {
+        const idx = homeTabs.findIndex(tab => tab.key === key);
+        if (idx < 0 || idx === shownTabIndex) return 0;
+        return idx > shownTabIndex ? 1 : -1;
+    };
+
+    // 单个页签层的内容：活动层用实时数据，非活动层用切走时的快照。活动层才可交互。
+    const renderTabSurface = (key: LibraryHomeTabKey, isActive: boolean): React.ReactNode => {
+        const snap = isActive
+            ? { onlineList, directoryKey, hiddenScope }
+            : tabSnapshotRef.current.get(key) ?? { onlineList, directoryKey, hiddenScope };
+        const { onlineList: list, directoryKey: dirKey, hiddenScope: scope } = snap;
+        const interactive = isInteractive && isActive;
+        if (isOnlineHomeTab(key) && activeAccountView === 'accountless') {
+            return (
+                <OnlineProviderAccountlessPanel
+                    providerLabel={activeProviderLabel}
+                    isDaylight={isDaylight}
+                    onSearch={() => searchInputRef.current?.focus()}
+                />
+            );
+        }
+        if (isOnlineHomeTab(key) && activeAccountView === 'resolving') {
+            return (
+                <div className="flex flex-1 w-full items-center justify-center" aria-busy="true">
+                    <Loader2 className="animate-spin opacity-30" size={28} />
+                </div>
+            );
+        }
+        if (isOnlineHomeTab(key) && activeAccountView === 'guest') {
+            // One button: it opens the sign-in window, where the platform is chosen.
+            return <HomeLoginPanel account={account} />;
+        }
+        if (key === 'explore') {
+            if (!online.canUseExplore) return null;
+            return (
+                <ExploreSurface
+                    // Another platform or account starts from its own: how far a section was opened is not carried over.
+                    key={`${activeProviderId}:${activeUser?.id ?? ''}`}
+                    providerId={activeProviderId}
+                    accountId={String(activeUser?.id ?? '')}
+                    scope={`${activeUser?.id ?? ''}:${i18n.language}`}
+                    onPlaySong={(song, queue) => onPlaySong(song, queue, false)}
+                    onOpenCollection={collection => onOpenGridView?.(createOnlineGridViewCollection(collection, activeProviderId))}
+                />
+            );
+        }
+        if (isOnlineHomeTab(key)) {
+            return (
+                <DesktopGrid3DSurface
+                    focusMemoryScope={JSON.stringify(['online', activeProviderId, activeUser?.id ?? null, key])}
+                    title={list.title}
+                    mapButtonLabel={t('home.allAlbums')}
+                    items={list.items}
+                    focusedIndex={focusedIndex}
+                    onFocusedIndexChange={setFocusedIndex}
+                    onSelect={item => handleSelectCollectionCard(item as LibraryHomeCard)}
+                    isLoading={list.isLoading}
+                    emptyMessage={list.emptyMessage}
+                    theme={theme}
+                    isDaylight={isDaylight}
+                    isInteractive={interactive}
+                    hasFloatingPlayer={Boolean(currentTrack)}
+                    playlistVisibilityScope={scope}
+                    directoryKey={dirKey}
+                    declaredHomeActions={declaredActions}
+                />
+            );
+        }
+        if (key === 'local') {
+            return (
+                <div className="w-full h-full flex-1">
+                    <LocalGrid3DView
+                        localSongs={localSongs}
+                        localPlaylists={localPlaylists}
+                        localLibraryCatalog={localLibraryCatalog}
+                        activeRow={localMusicState.activeRow}
+                        setActiveRow={(row) => setLocalMusicState(prev => ({ ...prev, activeRow: row }))}
+                        focusedFolderIndex={localMusicState.focusedFolderIndex}
+                        setFocusedFolderIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedFolderIndex: index }))}
+                        focusedAlbumIndex={localMusicState.focusedAlbumIndex}
+                        setFocusedAlbumIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedAlbumIndex: index }))}
+                        focusedArtistIndex={localMusicState.focusedArtistIndex}
+                        setFocusedArtistIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedArtistIndex: index }))}
+                        focusedPlaylistIndex={localMusicState.focusedPlaylistIndex}
+                        setFocusedPlaylistIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedPlaylistIndex: index }))}
+                        homeActions={homeActions}
+                        directoryTreesResource={homeResources.localDirectoryTrees}
+                        directoryKey={dirKey}
+                        theme={theme}
+                        isDaylight={isDaylight}
+                        isInteractive={interactive}
+                        isActive={isActive}
+                        hasFloatingPlayer={Boolean(currentTrack)}
+                        onOpenGridView={onOpenGridView}
+                        directoryActions={directoryActions}
+                        declaredHomeActions={declaredActions}
+                    />
+                </div>
+            );
+        }
+        return (
+            <div className="w-full h-full flex-1">
+                <NavidromeGrid3DView
+                    theme={theme}
+                    isDaylight={isDaylight}
+                    isInteractive={interactive}
+                    isActive={isActive}
+                    focusedAlbumIndex={navidromeFocusedAlbumIndex}
+                    setFocusedAlbumIndex={setNavidromeFocusedAlbumIndex ?? (() => { })}
+                    hasFloatingPlayer={Boolean(currentTrack)}
+                    homeActions={homeActions}
+                    overview={homeResources.navidromeOverview}
+                    directoryKey={dirKey}
+                    declaredHomeActions={declaredActions}
+                    onOpenSettings={() => onOpenSettings?.('help')}
+                    onOpenGridView={onOpenGridView}
+                />
+            </div>
+        );
+    };
 
     useGlass();
 
@@ -618,113 +784,40 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 </div>
             </div>
 
-            {/* Desktop Canvas Surface。AnimatePresence 按 shownTab 换视图：旧视图淡出、新视图淡入，
-                同时做一次横移（HOME_SURFACE_VARIANTS）。Cross 期间两个视图都绝对定位叠着，所以用
-                overflow-hidden 裁掉横移出去的部分。 */}
+            {/* Desktop Canvas Surface。每个访问过的页签常驻一层（keep-alive）：切页签只切换可见性和横向位移，
+                不重挂视图，所以不丢玻璃位移图、不重解码封面、不重跑各自一堆 effect。未选中层用 visibility:hidden
+                藏起来（保留布局尺寸，玻璃的 ResizeObserver 不会因此重建）。进入层只做 x、不做 opacity：Chromium
+                在祖先做 opacity 动画时会丢掉后代的 backdrop-filter。离开层照常淡出，动画结束后转回 hidden。 */}
             <div className="flex-1 min-h-0 relative overflow-hidden">
-                <AnimatePresence initial={false} custom={tabDirection} mode="sync">
-                    <motion.div
-                        key={shownTab}
-                        custom={tabDirection}
-                        variants={HOME_SURFACE_VARIANTS}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={reduceMotion ? { duration: 0 } : HOME_SURFACE_TRANSITION}
-                        className="absolute inset-0 flex flex-col items-center justify-center"
-                    >
-                {shownIsOnlineTab && activeAccountView === 'accountless' ? (
-                    <OnlineProviderAccountlessPanel
-                        providerLabel={activeProviderLabel}
-                        isDaylight={isDaylight}
-                        onSearch={() => searchInputRef.current?.focus()}
-                    />
-                ) : shownIsOnlineTab && activeAccountView === 'resolving' ? (
-                    <div className="flex flex-1 w-full items-center justify-center" aria-busy="true">
-                        <Loader2 className="animate-spin opacity-30" size={28} />
-                    </div>
-                ) : shownIsOnlineTab && activeAccountView === 'guest' ? (
-                    // One button: it opens the sign-in window, where the platform is chosen.
-                    <HomeLoginPanel account={account} />
-                ) : shownTab === 'explore' ? (
-                    online.canUseExplore && (
-                        <ExploreSurface
-                            // Another platform or account starts from its own: how far a section was opened is not carried over.
-                            key={`${activeProviderId}:${activeUser?.id ?? ''}`}
-                            providerId={activeProviderId}
-                            accountId={String(activeUser?.id ?? '')}
-                            scope={`${activeUser?.id ?? ''}:${i18n.language}`}
-                            onPlaySong={(song, queue) => onPlaySong(song, queue, false)}
-                            onOpenCollection={collection => onOpenGridView?.(createOnlineGridViewCollection(collection, activeProviderId))}
-                        />
-                    )
-                ) : shownShowOnlineList ? (
-                    <DesktopGrid3DSurface
-                        focusMemoryScope={JSON.stringify(['online', activeProviderId, activeUser?.id ?? null, shownTab])}
-                        title={onlineList.title}
-                        mapButtonLabel={t('home.allAlbums')}
-                        items={onlineList.items}
-                        focusedIndex={focusedIndex}
-                        onFocusedIndexChange={setFocusedIndex}
-                        onSelect={item => handleSelectCollectionCard(item as LibraryHomeCard)}
-                        isLoading={onlineList.isLoading}
-                        emptyMessage={onlineList.emptyMessage}
-                        theme={theme}
-                        isDaylight={isDaylight}
-                        isInteractive={isInteractive}
-                        hasFloatingPlayer={Boolean(currentTrack)}
-                        playlistVisibilityScope={hiddenScope}
-                        directoryKey={directoryKey}
-                        declaredHomeActions={declaredActions}
-                    />
-                ) : shownTab === 'local' ? (
-                    <div className="w-full h-full flex-1">
-                        <LocalGrid3DView
-                            localSongs={localSongs}
-                            localPlaylists={localPlaylists}
-                            localLibraryCatalog={localLibraryCatalog}
-                            activeRow={localMusicState.activeRow}
-                            setActiveRow={(row) => setLocalMusicState(prev => ({ ...prev, activeRow: row }))}
-                            focusedFolderIndex={localMusicState.focusedFolderIndex}
-                            setFocusedFolderIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedFolderIndex: index }))}
-                            focusedAlbumIndex={localMusicState.focusedAlbumIndex}
-                            setFocusedAlbumIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedAlbumIndex: index }))}
-                            focusedArtistIndex={localMusicState.focusedArtistIndex}
-                            setFocusedArtistIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedArtistIndex: index }))}
-                            focusedPlaylistIndex={localMusicState.focusedPlaylistIndex}
-                            setFocusedPlaylistIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedPlaylistIndex: index }))}
-                            homeActions={homeActions}
-                            directoryTreesResource={homeResources.localDirectoryTrees}
-                            directoryKey={directoryKey}
-                            theme={theme}
-                            isDaylight={isDaylight}
-                            isInteractive={isInteractive}
-                            hasFloatingPlayer={Boolean(currentTrack)}
-                            onOpenGridView={onOpenGridView}
-                            directoryActions={directoryActions}
-                            declaredHomeActions={declaredActions}
-                        />
-                    </div>
-                ) : (
-                    <div className="w-full h-full flex-1">
-                        <NavidromeGrid3DView
-                            theme={theme}
-                            isDaylight={isDaylight}
-                            isInteractive={isInteractive}
-                            focusedAlbumIndex={navidromeFocusedAlbumIndex}
-                            setFocusedAlbumIndex={setNavidromeFocusedAlbumIndex ?? (() => { })}
-                            hasFloatingPlayer={Boolean(currentTrack)}
-                            homeActions={homeActions}
-                            overview={homeResources.navidromeOverview}
-                            directoryKey={directoryKey}
-                            declaredHomeActions={declaredActions}
-                            onOpenSettings={() => onOpenSettings?.('help')}
-                            onOpenGridView={onOpenGridView}
-                        />
-                    </div>
-                )}
-                    </motion.div>
-                </AnimatePresence>
+                {orderedLayerKeys.map(key => {
+                    const isActive = key === shownTab;
+                    const isExiting = !isActive && exitingTabs.includes(key);
+                    return (
+                        <motion.div
+                            key={key}
+                            // 首次挂载（第一次访问该页签）从进入侧滑入，之后靠 animate 目标变化滑动。
+                            initial={{
+                                x: (isActive ? tabDirection : layerOffsetX(key)) * HOME_SURFACE_OFFSET_PX,
+                                opacity: 1,
+                            }}
+                            animate={isActive
+                                ? { x: 0, opacity: 1 }
+                                : { x: layerOffsetX(key) * HOME_SURFACE_OFFSET_PX, opacity: isExiting ? 0 : 1 }}
+                            transition={reduceMotion ? { duration: 0 } : HOME_SURFACE_TRANSITION}
+                            onAnimationComplete={() => {
+                                if (isExiting) setExitingTabs(prev => prev.filter(k => k !== key));
+                            }}
+                            className="absolute inset-0 flex flex-col items-center justify-center"
+                            style={{
+                                visibility: isActive || isExiting ? 'visible' : 'hidden',
+                                pointerEvents: isActive ? 'auto' : 'none',
+                                zIndex: isActive ? 3 : isExiting ? 2 : 1,
+                            }}
+                        >
+                            <HomeTabLayerContent isActive={isActive} surface={renderTabSurface(key, isActive)} />
+                        </motion.div>
+                    );
+                })}
             </div>
 
             {/* The active account and the way back to the player; the sign-in window opens from it. */}
