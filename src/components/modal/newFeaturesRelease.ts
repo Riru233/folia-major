@@ -1,4 +1,4 @@
-import { Droplets, Image as ImageIcon, LayoutDashboard, Sparkles, ZoomIn } from 'lucide-react';
+import { AudioWaveform, Compass, LogIn, Music2, QrCode, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // src/components/modal/newFeaturesRelease.ts
@@ -6,8 +6,6 @@ import type { LucideIcon } from 'lucide-react';
 type NewFeatureCard = {
     id: string;
     icon: LucideIcon;
-    daylightIconClassName: string;
-    darkIconClassName: string;
 };
 
 type NewFeaturesRelease = {
@@ -19,12 +17,14 @@ type NewFeaturesRelease = {
 
 // Defines the current release's cards; their localized text lives under i18nKey in every locale.
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
-    i18nKey: 'releaseNotes.v0_7_20s-shino',
+    i18nKey: 'releaseNotes.v0_7_21',
+    majorUpdate: { codename: 'Sabbat-of-the-witch' },
     features: [
-        { id: 'mainUiRedesign', icon: LayoutDashboard, daylightIconClassName: 'text-sky-600', darkIconClassName: 'text-sky-400' },
-        { id: 'pressGlow', icon: Sparkles, daylightIconClassName: 'text-amber-600', darkIconClassName: 'text-amber-400' },
-        { id: 'navBarMagnifier', icon: ZoomIn, daylightIconClassName: 'text-violet-600', darkIconClassName: 'text-violet-400' },
-        { id: 'glassCoverage', icon: Droplets, daylightIconClassName: 'text-cyan-600', darkIconClassName: 'text-cyan-400' },
-        { id: 'transparentLyricPoster', icon: ImageIcon, daylightIconClassName: 'text-emerald-600', darkIconClassName: 'text-emerald-400' },
+        { id: 'newPlatforms', icon: Music2 },
+        { id: 'loginWindow', icon: LogIn },
+        { id: 'explore', icon: Compass },
+        { id: 'smartBeat', icon: AudioWaveform },
+        { id: 'qqMusic', icon: QrCode },
+        { id: 'moreDetails', icon: Sparkles },
     ],
 };

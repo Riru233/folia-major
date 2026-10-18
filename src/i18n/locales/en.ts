@@ -3152,27 +3152,31 @@ export default {
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
       }
     },
-    "v0_7_20s-shino": {
-      "intro": "0.7.20s (Shino mod) spreads liquid glass across the whole interface: the main interface is rebuilt around the liquid glass aesthetic, so interactions feel closer to real glass.",
-      "mainUiRedesign": {
-        "title": "Main Interface Rebuilt in Liquid Glass",
-        "description": "The main interface is redesigned around the liquid glass aesthetic, so panels, controls, and the background blend together more naturally and consistently."
+    "v0_7_21": {
+      "intro": "Welcome to 0.7.21, the Sabbat-of-the-witch Update—a major release. The desktop app adds Spotify and YouTube Music, and every platform now signs in through one login window; the home screen gains an Explore tab; Sonnet, Diorama and Pendolo get Smart beat mode, moving with the beats and drums; QQ Music can sign in with the QQ Music app, and the interface is now available in Traditional Chinese.",
+      "newPlatforms": {
+        "title": "Spotify and YouTube Music",
+        "description": "Two new platforms on desktop. Sign in to Spotify through your system browser to search, browse, like, save and edit playlists; playback needs Spotify Premium, goes up to 320k, and isn't available on Intel Macs yet. YouTube Music searches and plays without signing in; to sign in, Folia opens Chrome, Edge, Chromium or Brave on your computer for your Google account, and Premium members can pick a higher quality. Both platforms bring line-synced lyrics only, and neither is available on the web version yet."
       },
-      "pressGlow": {
-        "title": "Press Glow and Flowing Light",
-        "description": "Pressing a control lights up a flowing shimmer and a soft outward glow, making the press feedback clearer and more tactile."
+      "loginWindow": {
+        "title": "One Login Window",
+        "description": "NetEase Cloud Music, QQ Music, Kugou, Bodian, Spotify and YouTube Music all sign in from the same window: platforms and their sign-in state on the left, the QR or browser steps on the right, and when something fails it says why and when you can retry. You can stay signed in to several platforms at once, and switch or sign out here (signing out clears the queue). Open it from the Sign in button on the home screen or the platform pill in the bottom-right corner."
       },
-      "navBarMagnifier": {
-        "title": "Glass Navigation Bar with Magnifier",
-        "description": "The navigation bar gains a glass treatment; pressing or dragging on it shows a magnifier effect so the target under the pointer is easier to pick."
+      "explore": {
+        "title": "Explore",
+        "description": "The home screen has a new Explore tab with recommended playlists, charts, new songs and new albums from NetEase Cloud Music, QQ Music, Spotify and YouTube Music, plus your recent plays and \"Play it again\" kept on this device, with a button to bring in a new batch. Bravais gets an Explore tab too, and opening Lattice from Explore lays it all out as a poster wall. You can turn it off in Settings → Home & playlists; QQ Music's Explore needs qq-music-api 3.3.3 or later on the backend."
       },
-      "glassCoverage": {
-        "title": "Liquid Glass Covers More of the App",
-        "description": "Liquid glass now reaches as many surfaces and components as possible, filling in the places that previously had no glass look."
+      "smartBeat": {
+        "title": "Smart Beat Mode",
+        "description": "Lyric styles on desktop gain Smart beat mode: Sonnet pushes the camera in on every beat and tears with light on the first beat of a bar, Diorama's particles ripple on the beat while the word being sung hops, and Pendolo's dial swells with the separated kick, snare and cymbals. Each effect has its own switch and strength, and the whole mode can be toggled from the command palette. It needs a GPU with WebGPU; a song is analysed for a moment the first time it plays and remembered afterwards. The models now ship with the installer, so automix no longer needs a separate model download either."
       },
-      "transparentLyricPoster": {
-        "title": "Transparent Lyric Poster Style",
-        "description": "The lyric poster gains a transparent style that uses the song cover as the player background directly, for a more immersive view."
+      "qqMusic": {
+        "title": "QQ Music: App Sign-in and More",
+        "description": "QQ Music can now sign in by scanning with the QQ Music app (on desktop, Docker and Node, the same code also works with mobile QQ and WeChat); on the web version with a Serverless backend, sign-in renews itself for up to 30 days. Signed-in search is steadier, and when the platform refuses a search you see an error instead of \"no results\". New: the music cloud drive (only songs that can play), membership level, playlist play counts and creating empty playlists; when no full-length source is available, Folia plays the preview and says so. These need qq-music-api 3.3.3 on the backend."
+      },
+      "moreDetails": {
+        "title": "More Improvements",
+        "description": "The interface can switch to Traditional Chinese; Settings is regrouped into Interface, Music, App and Advanced, and sync moved to Connections. New \"Hide the cursor when idle\", and \"Locate the playing song\" in the command palette; the remote control window is redesigned and can keep its idle cover from expanding; during an automix transition, Monet and the remote control window change songs along with the mix. With several displays you can choose which one wallpaper mode uses, and dragging in Windows wallpaper mode follows the mouse more closely. Linux ARM64 packages are new, and the mod API moves to Folium 1.6."
       }
     },
     "v0_7_20": {
