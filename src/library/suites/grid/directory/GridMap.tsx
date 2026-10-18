@@ -117,7 +117,7 @@ const MapCard = React.memo<{
 
         return (
             <div
-                className={`rounded-xl p-3 flex flex-col items-center border backdrop-blur-md transition-all duration-300 shadow-lg theme-polaroid-card ${
+                className={`rounded-xl p-3 flex flex-col items-center border backdrop-blur-md transition-all duration-300 shadow-lg theme-polaroid-card  ${
                     isPlaylistSelectionDisabled ? 'cursor-default' : 'cursor-pointer hover:shadow-2xl'
                 } ${isBatchMode && !isBatchSelected ? 'opacity-35 grayscale' : ''}`}
                 style={{
@@ -977,6 +977,7 @@ export const GridMap: React.FC<GridMapProps> = ({
     }, [closeCutInPanel, isInteractive, isPlaylistEditMode, onBack, searchQuery, setSearchQuery, setVisibilityMode, showCutInPanel, showSidePanel]);
 
     return (
+        // 此处需要调整到最高层级
         <motion.div
             data-ponder-page-scope={ponderPageScope}
             initial={{ opacity: 0 }}

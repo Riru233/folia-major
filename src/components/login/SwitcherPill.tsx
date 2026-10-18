@@ -139,7 +139,7 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
     <div
       ref={setRootNode}
       data-testid="online-provider-switcher"
-      className="pointer-events-auto absolute bottom-4 right-4 z-[100] md:bottom-6 md:right-6"
+      className="pointer-events-auto absolute bottom-4 right-4 z-[1] md:bottom-6 md:right-6"
       style={
         {
           ...settingsTokens(isDaylight, theme),

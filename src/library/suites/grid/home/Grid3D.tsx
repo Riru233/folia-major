@@ -365,18 +365,17 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     }>());
 
     useEffect(() => {
-        setVisitedTabs(prev => (prev.includes(shownTab) || TRANSIENT_TABS.has(shownTab) ? prev : [...prev, shownTab]));
+        setVisitedTabs(prev => (prev.includes(shownTab) ? prev : [...prev, shownTab]));
     }, [shownTab]);
 
     // 用 useLayoutEffect：切页签后本就该在这一帧画之前把「上一层」标成退场可见，否则它会先闪一下消失。
-    // 不常驻的页签不进退场表：它切走就卸，不做退场动画（进了退场表会先卸再为动画重挂一次）。
     useLayoutEffect(() => {
         const from = prevShownTabRef.current;
         prevShownTabRef.current = shownTab;
         setExitingTabs(prev => {
             const next = new Set(prev);
             next.delete(shownTab);
-            if (from !== shownTab && !TRANSIENT_TABS.has(from)) next.add(from);
+            if (from !== shownTab) next.add(from);
             return Array.from(next);
         });
     }, [shownTab]);
@@ -524,7 +523,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         >
 
             {/* Main Header Container (Fades out when sliding/interacting) */}
-            <div className="transition-opacity duration-300 ease-in-out z-20 opacity-100 select-none">
+            <div className="transition-opacity duration-300 ease-in-out z-[1] opacity-100 select-none">
                 <div className="grid grid-cols-2 md:grid-cols-3 items-center w-full max-w-7xl mx-auto p-4 md:p-8 gap-y-4 md:gap-y-0">
                     {/* Left title and settings */}
                     <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
