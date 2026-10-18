@@ -111,12 +111,14 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     libraryWallSeamStyle: useLibraryWallLookStore.getState().seamStyle,
     libraryWallBackdropLyrics: useLibraryWallLookStore.getState().backdropLyrics,
     libraryWallBackdropBlur: useLibraryWallLookStore.getState().backdropBlur,
-    // 液态玻璃的四个全局参数：视觉调参，随共享外观一起走（2026-10-12）。
+    // 液态玻璃的四个全局数值参数 + 光效 / 果冻两个效果开关：视觉调参，随共享外观一起走（2026-10-12）。
     liquidGlass: {
       strength: storeLiquidGlass.strength,
       blur: storeLiquidGlass.blur,
       sat: storeLiquidGlass.sat,
       bend: storeLiquidGlass.bend,
+      light: storeLiquidGlass.light,
+      jelly: storeLiquidGlass.jelly,
     },
   };
 }

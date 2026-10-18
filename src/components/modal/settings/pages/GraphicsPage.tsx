@@ -47,6 +47,8 @@ const O = {
     glassBend: option(GLASS, 'liquidGlassBend', 'options.liquidGlassBend', { available: () => IS_WINDOWS }),
     glassBlur: option(GLASS, 'liquidGlassBlur', 'options.liquidGlassBlur'),
     glassSat: option(GLASS, 'liquidGlassSat', 'options.liquidGlassSat', { available: () => IS_WINDOWS }),
+    glassLight: option(GLASS, 'liquidGlassLight', 'options.liquidGlassLight'),
+    glassJelly: option(GLASS, 'liquidGlassJelly', 'options.liquidGlassJelly'),
 };
 
 /** One row per part of the interface whose motion can be reduced, in the store's order. */
@@ -102,10 +104,14 @@ const GraphicsPage: React.FC = () => {
         blur: state.blur,
         sat: state.sat,
         bend: state.bend,
+        light: state.light,
+        jelly: state.jelly,
         setStrength: state.handleSetLiquidGlassStrength,
         setBlur: state.handleSetLiquidGlassBlur,
         setSat: state.handleSetLiquidGlassSat,
         setBend: state.handleSetLiquidGlassBend,
+        setLight: state.handleSetLiquidGlassLight,
+        setJelly: state.handleSetLiquidGlassJelly,
         setParams: state.handleSetLiquidGlassParams,
     })));
     // Native blur can drop frames on some GPUs, so switching it on asks first.
@@ -239,6 +245,12 @@ const GraphicsPage: React.FC = () => {
                         />
                     </Row>
                 )}
+                <Row option={O.glassLight} hint={t('options.liquidGlassLightDesc')}>
+                    <Toggle checked={glass.light} onChange={glass.setLight} />
+                </Row>
+                <Row option={O.glassJelly} hint={t('options.liquidGlassJellyDesc')}>
+                    <Toggle checked={glass.jelly} onChange={glass.setJelly} />
+                </Row>
             </Group>
 
             <ConfirmDialog

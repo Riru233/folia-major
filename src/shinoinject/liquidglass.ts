@@ -71,6 +71,21 @@ export const readStoredLiquidGlassParams = (): LiquidGlassParams => ({
   sat: readStoredParam("sat"),
   bend: readStoredParam("bend"),
 });
+// 光效（data-glass-light）与果冻效果（data-glass-jelly）是两个开关（不是数值参数），单独一组键。
+// 默认都开；本模块启动时读回，store 的初始状态也走这里，两边永远一致。
+export const LIQUID_GLASS_EFFECT_KEYS = {
+  light: "liquidglass_light",
+  jelly: "liquidglass_jelly",
+} as const;
+export type LiquidGlassEffects = { light: boolean; jelly: boolean };
+const readStoredFlag = (key: string) => {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(key) !== "0";
+};
+export const readStoredLiquidGlassEffects = (): LiquidGlassEffects => ({
+  light: readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.light),
+  jelly: readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.jelly),
+});
 Object.assign(global, readStoredLiquidGlassParams());
 const smoothStep = (a: number, b: number, t: number) => {
   t = clamp((t - a) / (b - a), 0, 1);
@@ -434,6 +449,8 @@ const jellyEaseOut = (p: number) => 1 - (1 - p) ** 3;
 
 // 单指针单元素会话；模块级状态，不进 React state。
 let jellyInstalled = false;
+// 果冻效果总开关（设置面板的「果冻效果」）：关掉后带 data-glass-jelly 的元素也不再拖拽形变。
+let jellyEnabled = readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.jelly);
 let jEl: HTMLElement | null = null;
 let jPointerId = -1;
 let jDragging = false;
@@ -579,7 +596,7 @@ const jellyEnsureLoop = () => {
 };
 
 const jellyOnPointerDown = (e: PointerEvent) => {
-  if (jDragging || typeof window === "undefined") return;
+  if (!jellyEnabled || jDragging || typeof window === "undefined") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   // data-glass-jelly 是果冻注入开关：命中该属性的玻璃才参与拖拽果冻。
   const el = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-glass-jelly]") : null;
@@ -628,6 +645,12 @@ export const installGlassJelly = () => {
   document.addEventListener("visibilitychange", jellyEndPointer);
 };
 
+// 果冻总开关的运行时入口（设置面板与外观导入调用）：关掉顺手把进行中的会话收干净。
+export const setLiquidGlassJellyEnabled = (enabled: boolean) => {
+  jellyEnabled = enabled;
+  if (!enabled) jellyFinish();
+};
+
 /* —— 拖拽光效（data-glass-light 注入）——
    指针悬停在带 data-glass-light 的元素上时，在该容器内挂一层铺满 inset:0 的光晕，光点中心跟随指针
    （换算成元素自身布局坐标），强度是悬停的微光；按下时同一个光晕升到最强，松手回到悬停微光（指针还
@@ -643,6 +666,8 @@ const LIGHT_HOVER_OPACITY = 0.32; // 悬停微光的强度（相对按下时的 
 const LIGHT_PRESS_OPACITY = 1; // 按下时光的强度
 
 let lightInstalled = false;
+// 光效总开关（设置面板的「光效」）：关掉后带 data-glass-light 的元素也不再出光晕。
+let lightEnabled = readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.light);
 let lightEl: HTMLElement | null = null; // 当前挂着光晕层的容器
 let lightLayer: HTMLDivElement | null = null;
 let lightHoverEl: HTMLElement | null = null; // 指针正悬停的容器（只认鼠标）
@@ -710,6 +735,10 @@ const lightMount = (el: HTMLElement, clientX: number, clientY: number, opacity: 
 
 // 每次状态变化（悬停进出、按下松开）后按当前状态收敛光晕：按下压过悬停，同一容器只调强弱，换容器才重建。
 const lightSync = () => {
+  if (!lightEnabled) {
+    lightUnmount();
+    return;
+  }
   const want = lightPressEl && lightPressEl.isConnected ? lightPressEl
     : lightHoverEl && lightHoverEl.isConnected ? lightHoverEl
       : null;
@@ -738,7 +767,7 @@ const lightReduceMotion = () => typeof window !== "undefined"
   && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const lightOnPointerOver = (e: PointerEvent) => {
-  if (lightReduceMotion()) return;
+  if (!lightEnabled || lightReduceMotion()) return;
   const el = lightHoverTarget(e);
   if (el === lightHoverEl) return;
   lightHoverEl = el;
@@ -746,6 +775,7 @@ const lightOnPointerOver = (e: PointerEvent) => {
 };
 
 const lightOnPointerOut = (e: PointerEvent) => {
+  if (!lightEnabled) return;
   // 离开的是同一个悬停容器的子元素时不动（relatedTarget 还在里面）；真正离开才收掉或换到下一个。
   const to = e.pointerType === "mouse" && e.relatedTarget instanceof Element
     ? e.relatedTarget.closest<HTMLElement>("[data-glass-light]")
@@ -756,7 +786,7 @@ const lightOnPointerOut = (e: PointerEvent) => {
 };
 
 const lightOnPointerDown = (e: PointerEvent) => {
-  if (lightReduceMotion()) return;
+  if (!lightEnabled || lightReduceMotion()) return;
   const el = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-glass-light]") : null;
   if (!el) return;
   lightPressEl = el;
@@ -768,7 +798,7 @@ const lightOnPointerDown = (e: PointerEvent) => {
 
 const lightOnPointerMove = (e: PointerEvent) => {
   // 按下时跟手；悬停时也让光点跟着指针走（没有光晕层时 lightPaint 直接返回，开销只是一次判空）。
-  if (!lightLayer) return;
+  if (!lightEnabled || !lightLayer) return;
   if (lightPressEl) {
     if (e.pointerId !== lightPointerId) return;
   } else if (!lightHoverEl) return;
@@ -804,4 +834,15 @@ export const installGlassLight = () => {
   window.addEventListener("pointercancel", lightEndPress);
   window.addEventListener("blur", lightEndAll);
   document.addEventListener("visibilitychange", lightEndAll);
+};
+
+// 光效总开关的运行时入口（设置面板与外观导入调用）：关掉清会话并收掉在场光晕。
+export const setLiquidGlassLightEnabled = (enabled: boolean) => {
+  lightEnabled = enabled;
+  if (!enabled) {
+    lightPressEl = null;
+    lightPointerId = -1;
+    lightHoverEl = null;
+    lightSync(); // lightEnabled 已置 false，这里只做收摊
+  }
 };
