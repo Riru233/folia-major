@@ -261,7 +261,7 @@ function doApply(marker, targetArg, noFetch) {
   const from = marker.lastSynced;
   if (!revOf(from)) fail(`基线提交 ${short(from)} 在本地不存在，先 fetch 官方仓库`);
 
-  if (isDirty()) {
+  if (isDirty() && !hasCherryPickHead()) {
     console.error('工作区不干净，先提交或暂存改动:');
     console.error(runGit(['status', '--short']).out.trim());
     fail('', 2);

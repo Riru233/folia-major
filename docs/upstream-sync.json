@@ -1,8 +1,8 @@
 {
   "remote": "https://github.com/chthollyphile/folia-major.git",
   "branch": "main",
-  "lastSynced": "9275471123cd31d295502272fd53f62235ee78b9",
-  "lastSyncedSubject": "fix(release): 0.7.21 新功能卡片 id 改成 newPlatforms",
+  "lastSynced": "ced47852c64c2709faebe0190d430c3ab75ca2a4",
+  "lastSyncedSubject": "docs(readme): 移动端说明中提及社区安卓版",
   "lastSyncedDate": "2026-10-18",
   "syncedAt": "2026-10-18",
   "note": "Shino提交：Windows液态玻璃性能优化、追加首页提示新版本的逻辑。"
