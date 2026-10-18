@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ImagePlus } from 'lucide-react';
 import { computeHexCardFrame } from '../../../../utils/hexCardFalloff';
+import type { LiquidGlassPresetId } from '../../../../shinoinject/liquidglass';
 import { SAMPLE_COVERS } from '../kit';
 
 // src/components/modal/settings/pages/pictures.tsx
@@ -143,5 +145,35 @@ export const GridCardsPreview: React.FC<GridCardsPreviewProps> = ({ minScale, mi
                 );
             })}
         </>
+    );
+};
+
+/**
+ * 液态玻璃预设的效果图占位：图片存在就显示图片（object-cover 铺满 96×64 框），
+ * 不存在就画一个虚线占位框（图片+ 图标），放图即自动显示、无需改代码。
+ * 把效果图放到 public/glass-presets/<预设 id>.png：毛玻璃 frosted、通透流体 clear、
+ * 朦胧流体 hazy、节能 eco。
+ */
+export const GlassPresetPicture: React.FC<{ id: LiquidGlassPresetId }> = ({ id }) => {
+    const [loaded, setLoaded] = useState(false);
+    const [failed, setFailed] = useState(false);
+    return (
+        <span className="relative flex h-full w-full items-center justify-center">
+            {!failed && (
+                <img
+                    src={`${import.meta.env.BASE_URL}glass-presets/${id}.png`}
+                    alt=""
+                    draggable={false}
+                    onLoad={() => setLoaded(true)}
+                    onError={() => setFailed(true)}
+                    className={`h-full w-full object-cover transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                />
+            )}
+            {!loaded && (
+                <span className="absolute inset-1 flex items-center justify-center rounded-md border border-dashed border-[var(--st-line)] text-[color:var(--st-t2)]">
+                    <ImagePlus size={16} strokeWidth={1.75} />
+                </span>
+            )}
+        </span>
     );
 };

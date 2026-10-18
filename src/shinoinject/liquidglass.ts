@@ -5,7 +5,9 @@ import { isWindowsPlatform } from "@/utils/platform";
 let uid = 0;
 const SVGNS = "http://www.w3.org/2000/svg";
 // 默认参数：出厂值就是这里，设置面板（useLiquidGlassSettingsStore）的兜底也读它。
-const global = { strength: 2.25, blur: 2, sat: 160 };
+// bend = 最大弯曲距离：边缘受折射的区域从边缘向中心延伸多少 px，平面（不受折射）区在中心，bend 越大平面越小。
+// ★ 配置位置①：默认弯曲距离（px）。测试直接改下行的 bend 数字，或给元素加 data-glass-bend="80" 单元素覆盖。
+const global = { strength: 2.25, blur: 2, sat: 160, bend: 60 };
 export type LiquidGlassParams = typeof global;
 export const LIQUID_GLASS_DEFAULTS: LiquidGlassParams = { ...global };
 // 边缘扭曲（位移滤镜）与饱和度只有 Windows 平台才支持：非 Windows 上不建 <filter>，
@@ -17,13 +19,34 @@ export const LIQUID_GLASS_STORAGE_KEYS = {
   strength: "liquidglass_strength",
   blur: "liquidglass_blur",
   sat: "liquidglass_sat",
+  bend: "liquidglass_bend",
 } as const;
 // 每个参数的量程：设置面板的滑杆和钳制共用同一份，UI 不会调出存不下的值。
 export const LIQUID_GLASS_PARAM_BOUNDS: Record<keyof LiquidGlassParams, { min: number; max: number }> = {
   strength: { min: 0, max: 6 },
   blur: { min: 0, max: 12 },
   sat: { min: 0, max: 300 },
+  // ★ 配置位置③：设置面板滑杆量程（弯曲距离最终还会被容器半个短边封顶，见 rebuild）。
+  bend: { min: 0, max: 300 },
 };
+// 预设：一组强度/模糊/弯曲距离（不碰饱和度），一键切到常见观感。通透流体与朦胧流体靠扭曲滤镜，
+// 只有 Windows 才有，其他平台不列出（毛玻璃只调模糊、节能在哪都能用）。
+// ★ 配置预设：改这里的数值即可；设置面板按 id 匹配当前值高亮，效果图见 public/glass-presets/<id>.png。
+export type LiquidGlassPresetId = "frosted" | "clear" | "hazy" | "eco";
+export type LiquidGlassPreset = {
+  id: LiquidGlassPresetId;
+  strength: number;
+  blur: number;
+  bend: number;
+  /** 需要扭曲滤镜（Windows）才有意义，其他平台不列出。 */
+  windowsOnly: boolean;
+};
+export const LIQUID_GLASS_PRESETS: readonly LiquidGlassPreset[] = [
+  { id: "frosted", strength: 0, blur: 12, bend: 0, windowsOnly: false },
+  { id: "clear", strength: 4, blur: 2.5, bend: 10, windowsOnly: true },
+  { id: "hazy", strength: 4, blur: 6, bend: 10, windowsOnly: true },
+  { id: "eco", strength: 0, blur: 0, bend: 0, windowsOnly: false },
+];
 const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
 // 每个参数各自钳到自己的量程；非有限值（含缺失键）回落到默认值。
 // 非 Windows 平台边缘扭曲与饱和度不存在可调空间：读回、设置面板、外观导入三条路径都走这里，
@@ -31,6 +54,8 @@ const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
 export const clampLiquidGlassParam = <K extends keyof LiquidGlassParams>(key: K, value: number) => {
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "strength") return LIQUID_GLASS_DEFAULTS.strength;
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "sat") return 1;
+  // bend 只作用于位移图（Windows 才有），非 Windows 上钉回默认值，state / localStorage 保持一致。
+  if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "bend") return LIQUID_GLASS_DEFAULTS.bend;
   const { min, max } = LIQUID_GLASS_PARAM_BOUNDS[key];
   return Number.isFinite(value) ? clamp(value, min, max) : LIQUID_GLASS_DEFAULTS[key];
 };
@@ -44,6 +69,7 @@ export const readStoredLiquidGlassParams = (): LiquidGlassParams => ({
   strength: readStoredParam("strength"),
   blur: readStoredParam("blur"),
   sat: readStoredParam("sat"),
+  bend: readStoredParam("bend"),
 });
 Object.assign(global, readStoredLiquidGlassParams());
 const smoothStep = (a: number, b: number, t: number) => {
@@ -100,15 +126,15 @@ type Glass = {
   feImage: SVGFEImageElement | null;
   feDisp: SVGFEDisplacementMapElement | null;
   id: string;
-  bezelFrac: number;
   strength: number;
   zoom: number;
-  // 每元素覆盖：带 data-glass-blur / data-glass-strength / data-glass-sat（值是数字）的玻璃
+  // 每元素覆盖：带 data-glass-blur / data-glass-strength / data-glass-sat / data-glass-bend（值是数字）的玻璃
   // 固定用自身值，未设置（null）时回落到全局 global 参数。仅在元素同时带 data-glass 时存在
-  // （只有 [data-glass] 会走 makeGlass），所以这三个属性离开 data-glass 不生效。
+  // （只有 [data-glass] 会走 makeGlass），所以这四个属性离开 data-glass 不生效。
   blurOverride: number | null;
   strengthOverride: number | null;
   satOverride: number | null;
+  bendOverride: number | null;
   builtW: number; // 上次成图时的元素尺寸（尺寸变化节流的比对基准）
   builtH: number;
   builtKey: string; // 上次成图的指纹（尺寸 + 影响位移图的参数），相同则跳过重建
@@ -176,7 +202,7 @@ const buildDisplacementMap = (
 };
 
 // 解析每元素参数覆盖：属性缺失或非有限数时返回 null（回落全局），否则钳到该参数量程。
-// 非 Windows 平台上 strength / sat 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
+// 非 Windows 平台上 strength / sat / bend 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
 const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParams) => {
   if (raw === undefined) return null;
   const parsed = parseFloat(raw);
@@ -218,12 +244,12 @@ export const makeGlass = (el: HTMLElement) => {
     feImage,
     feDisp,
     id,
-    bezelFrac: parseFloat(el.dataset.bezel || "0.5"),
     strength: parseFloat(el.dataset.strength || "0.5"),
     zoom: parseFloat(el.dataset.zoom || "0"),
     blurOverride: parseGlassOverride(el.dataset.glassBlur, "blur"),
     strengthOverride: parseGlassOverride(el.dataset.glassStrength, "strength"),
     satOverride: parseGlassOverride(el.dataset.glassSat, "sat"),
+    bendOverride: parseGlassOverride(el.dataset.glassBend, "bend"),
     builtW: 0,
     builtH: 0,
     builtKey: "",
@@ -237,11 +263,18 @@ export const makeGlass = (el: HTMLElement) => {
       const { filter: curFilter, feImage: curFeImage, feDisp: curFeDisp } = this;
       // 每元素覆盖 data-glass-strength 优先于全局；它参与位移图（k = strength·全局），故进指纹。
       const effGlobalStrength = this.strengthOverride ?? global.strength;
+      // 最大弯曲距离：每元素覆盖 data-glass-bend 优先于全局，两者都进指纹（改设置要重建成图）。
+      const effBend = this.bendOverride ?? global.bend;
+      // 折射关着（强度或弯曲距离为 0）就不成图：即便有 pending 的节流重建也直接跳过，不浪费一次 O(w·h)。
+      if (!(curFilter && this.strength > 0 && effGlobalStrength > 0 && effBend > 0)) return;
       if (curFilter && curFeImage && curFeDisp) {
         const cs = getComputedStyle(el);
         let radius = parseFloat(cs.borderRadius) || 0;
         radius = Math.min(radius, w / 2, h / 2);
-        const bezel = (Math.min(w, h) / 2) * this.bezelFrac;
+        // ★ 配置位置②：弯曲距离 → 折射带宽度算法在这里。
+        // 折射带宽度 = 最大弯曲距离（px，不随容器缩放），封顶为半个短边，平面区永远留在中心。
+        // 想让带更宽/更窄改上面的 effBend，或在这里改封顶方式（例如留最小平面区：Math.min(effBend, Math.min(w, h) / 2 - 8)）。
+        const bezel = Math.min(effBend, Math.min(w, h) / 2);
         // 大元素按长边封顶降采样成图，feImage 再拉伸回元素尺寸。
         const k = Math.min(1, MAX_DISPLACE_DIM / Math.max(w, h));
         const { url, scale } = buildDisplacementMap(
@@ -265,7 +298,7 @@ export const makeGlass = (el: HTMLElement) => {
       }
       this.builtW = w;
       this.builtH = h;
-      this.builtKey = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}`;
+      this.builtKey = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}|${effBend}`;
       this.builtAt = performance.now();
     },
     // 长宽变化的节流入口：窗口内只排一次尾补（窗口到期才成图），窗口已过则同步成图。
@@ -297,20 +330,29 @@ export const makeGlass = (el: HTMLElement) => {
         curFilter.setAttribute("x", "0");
         curFilter.setAttribute("y", "0");
       }
-      // 非 Windows 平台没有扭曲滤镜：只剩这段纯 blur 的 backdrop（顺带保证 blur/sat 拖滑杆即时生效）。
-      // 每元素覆盖（data-glass-blur / -sat / -strength）优先于全局，未设置时回落 global。
+      // 非 Windows 平台没有扭曲滤镜：只剩纯 blur 的 backdrop（顺带保证 blur/sat 拖滑杆即时生效）。
+      // 每元素覆盖（data-glass-blur / -sat / -strength / -bend）优先于全局，未设置时回落 global。
       const blur = this.blurOverride ?? global.blur;
       const sat = this.satOverride ?? global.sat;
       const effGlobalStrength = this.strengthOverride ?? global.strength;
-      const backdrop = curFilter
-        ? `saturate(${sat}%) blur(${blur}px) url(#${id})`
-        : `blur(${blur}px)`;
+      const effBend = this.bendOverride ?? global.bend;
+      // 性能/资源：强度或弯曲距离为 0 → 位移图恒为零，不挂折射滤镜（省掉 feDisplacementMap 与逐像素成图）；
+      // 模糊为 0 → 不挂 blur。非 Windows 无扭曲滤镜，curFilter 为空，只按 blur 决定。
+      const refractionOn = !!curFilter && this.strength > 0 && effGlobalStrength > 0 && effBend > 0;
+      const parts: string[] = [];
+      if (curFilter) parts.push(`saturate(${sat}%)`);
+      if (blur > 0) parts.push(`blur(${blur}px)`);
+      if (refractionOn) parts.push(`url(#${id})`);
+      const backdrop = parts.length ? parts.join(" ") : "none";
       el.style.backdropFilter = backdrop;
       // lib.dom 没有 webkitBackdropFilter，用 setProperty 写 -webkit 别名，保持原来的双写行为。
       el.style.setProperty("-webkit-backdrop-filter", backdrop);
       if (!curFilter || !curFeImage || !curFeDisp) return;
-      const key = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}`;
+      const key = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}|${effBend}`;
       if (key === this.builtKey) return; // 尺寸与建图参数都没变，无事可做
+      // 折射关着就不重建位移图（成图是 O(w·h)+PNG 编码，最贵的一步）；builtKey 不更新，
+      // 重新打开时 key 与旧值不等，自然会补建。
+      if (!refractionOn) return;
       // 尺寸变了 → 节流重建（modal 动画 resize 不再每帧逐像素画）；同尺寸只是参数变 → 即时重建。
       if (w !== this.builtW || h !== this.builtH) this.scheduleRebuild();
       else this.rebuild();
@@ -341,6 +383,7 @@ export const applyLiquidGlassParams = (next: Partial<LiquidGlassParams>) => {
   if (next.strength !== undefined) global.strength = clampLiquidGlassParam("strength", next.strength);
   if (next.blur !== undefined) global.blur = clampLiquidGlassParam("blur", next.blur);
   if (next.sat !== undefined) global.sat = clampLiquidGlassParam("sat", next.sat);
+  if (next.bend !== undefined) global.bend = clampLiquidGlassParam("bend", next.bend);
   refreshAllGlasses();
 };
 

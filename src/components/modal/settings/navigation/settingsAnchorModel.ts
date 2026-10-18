@@ -80,6 +80,7 @@ export const SETTINGS_ANCHOR_DEFINITIONS = {
     // pages/GraphicsPage
     graphicsPerformance: { section: 'graphics' },
     graphicsMotion: { section: 'graphics' },
+    liquidGlass: { section: 'graphics' },
 
     // pages/ModsPage
     modSystem: { section: 'mods' },
