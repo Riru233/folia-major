@@ -331,13 +331,9 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
         ? Math.max(MIN_RENDER_WINDOW_RADIUS, Math.ceil(visibleCardCount / 2) + RENDER_WINDOW_BUFFER)
         : GRID3D_WINDOW_RADIUS;
 
-    const loadedIndices = useMemo(() => {
-        const indexes = new Set<number>();
-        const start = Math.max(0, safeFocusedIndex - 12);
-        const end = Math.min(items.length - 1, safeFocusedIndex + 12);
-        for (let index = start; index <= end; index += 1) indexes.add(index);
-        return indexes;
-    }, [items.length, safeFocusedIndex]);
+    // 挂到 DOM 的只有 windowedItems（窗口已经就是「焦点 / 旧焦点 / 视口」的并集），封面没有理由再按
+    // 焦点 ±N 另收一道口子：窗口一旦落在焦点半径之外（切页、跳跃过渡的并集），那些卡片就会只显示占位、
+    // 加载不出封面。窗口有多大就认多大的范围，见下面 windowStart/windowEnd。
 
     // 当前视口实际盖住的索引范围，由滚动时（updateCardTransforms）算出。窗口和它取并集，是因为焦点与
     // 滚动位置在挂载、切页、快速甩动时会短暂不一致：只看焦点，真实可见的卡片就会落在窗口外、整片闪空白。
@@ -623,6 +619,21 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
         return () => cancelAnimationFrame(frameId);
     }, [centerIndex, focusedIndex, isLoading, items.length, itemsSignature, reduceMicroMotion, updateCardTransforms]);
 
+    // 切回这个页签（被 keep-alive 保持但不活动，现在重新激活）时把焦点卡重新对正：不活动期间可能有一次
+    // 没跑完的平滑滚动被打断、或容器尺寸变过，滚动位置会停在半路，而上面那个居中 effect 因为焦点和列表
+    // 都没变不会重跑。只在 false → true 这一下动，不干扰活动中的正常滚动。
+    const wasInteractiveRef = useRef(isInteractive);
+    useEffect(() => {
+        const wasInteractive = wasInteractiveRef.current;
+        wasInteractiveRef.current = isInteractive;
+        if (wasInteractive || !isInteractive || isLoading || items.length === 0) return;
+        const frameId = requestAnimationFrame(() => {
+            centerIndex(clampFocusedIndex(focusedIndex, items.length), 'auto');
+            updateCardTransforms();
+        });
+        return () => cancelAnimationFrame(frameId);
+    }, [centerIndex, focusedIndex, isLoading, isInteractive, items.length, updateCardTransforms]);
+
     const handleScroll = useCallback(() => {
         if (!isInteractive) {
             updateCardTransforms();
@@ -857,7 +868,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                             }`}
                                             style={{ width: coverSize, height: coverSize }}
                                         >
-                                            {item.coverUrl && loadedIndices.has(index) ? (
+                                            {item.coverUrl ? (
                                                 <img src={getSizedCoverUrl(item.coverUrl, coverSize)} alt={typeof displayName === 'string' ? displayName : ''} loading="lazy" decoding="async" className="w-full h-full object-cover pointer-events-none select-none" />
                                             ) : (
                                                 <div className="w-full h-full  flex items-center justify-center">
@@ -889,7 +900,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                                 <div
                                                     className="w-full aspect-square rounded-lg overflow-hidden relative shadow-inner mb-4 flex items-center justify-center"
                                                 >
-                                                    {item.coverUrl && loadedIndices.has(index) ? (
+                                                    {item.coverUrl ? (
                                                         <img src={getSizedCoverUrl(item.coverUrl, coverSize)} alt={typeof displayName === 'string' ? displayName : ''} loading="lazy" decoding="async" className="w-full h-full object-cover pointer-events-none select-none" />
                                                     ) : (
                                                         <Disc size={64} className="opacity-20" />
