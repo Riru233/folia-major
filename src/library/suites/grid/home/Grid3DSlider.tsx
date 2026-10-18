@@ -7,6 +7,7 @@ import { useHomeLayoutSettingsStore } from '../../../../stores/useHomeLayoutSett
 import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
 import { hasBlockingWindow } from '../../../../utils/keyboardTargets';
 import { CARD_TITLE_ATTR, MORPH_FRAME_ATTR } from '../transitions/gridMorphContract';
+import { LoadingRing } from '@/components/shared/LoadingRing';
 
 // src/library/suites/grid/home/Grid3DSlider.tsx
 // Controlled desktop Grid3D slider shared by Netease, local music, and Navidrome overview surfaces.
@@ -811,27 +812,12 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
             >
                 <div className="flex" style={{ paddingInline: edgePadding }}>
                     {isLoading ? (
-                        Array.from({ length: 5 }).map((_, index) => (
-                            <div key={`skeleton-${index}`} className="shrink-0 pointer-events-none select-none">
-                                {grid3dCardStyle === 'image' ? (
-                                    <div
-                                        className="aspect-square rounded-2xl animate-pulse bg-zinc-200/20 dark:bg-zinc-800/20 border border-white/5 shadow-inner"
-                                        style={{ width: coverSize, height: coverSize }}
-                                    />
-                                ) : (
-                                    <div
-                                        className="rounded-xl border border-white/5 p-4 flex flex-col items-center backdrop-blur-md shadow-lg"
-                                        style={{ width: coverSize }}
-                                    >
-                                        <div className="w-full aspect-square rounded-lg animate-pulse bg-zinc-200/20 dark:bg-zinc-800/20 mb-4" />
-                                        <div className="w-full text-left pt-2 space-y-2">
-                                            <div className="h-4 w-3/4 animate-pulse bg-zinc-200/20 dark:bg-zinc-800/20 rounded-md" />
-                                            <div className="h-3 w-1/2 animate-pulse bg-zinc-200/20 dark:bg-zinc-800/20 rounded-md" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                        <div
+                            className="shrink-0 flex items-center justify-center pointer-events-none select-none"
+                            style={{ width: coverSize, height: coverSize }}
+                        >
+                            <LoadingRing />
+                        </div>
                     ) : items.length === 0 ? (
                         <div className="opacity-40 text-sm font-sans flex items-center justify-center w-[20vw] shrink-0 text-center">
                             {emptyMessage || t('ui.noItemsFound')}

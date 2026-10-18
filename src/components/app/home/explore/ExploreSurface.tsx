@@ -9,7 +9,7 @@ import { ExploreLight } from './ExploreLight';
 import { EXPLORE_PILL, EXPLORE_TOKENS, ExploreSections } from './ExploreSections';
 import { useExploreTilt } from './exploreTilt';
 import { OWN_SECTION_IDS, listenedSongsOf, useOwnExploreSections } from './ownSections';
-import './exploreLoading.css';
+import { LoadingRing } from '../../../shared/LoadingRing';
 
 // src/components/app/home/explore/ExploreSurface.tsx
 // The explore tab of the home screen, as sections one under another. A section is the same
@@ -33,12 +33,6 @@ const TOP_FADE = 56;
 // The mark that more is being read and the offer to try again, at the list's end, are one height: the list does not move under a listener who stands there when one takes the other's place. (It does once, by this much, when the list turns out to end there.)
 const END = 'flex h-28 items-center justify-center';
 const NO_BATCHES = {};
-// The ring the tab shows for a moment when it is entered, before its sections are put on the page.
-const ExploreLoadingRing: React.FC = () => (
-    <svg className="explore-loading-ring" width="48" height="48" viewBox="0 0 16 16" aria-hidden="true">
-        <circle cx="8" cy="8" r="7" />
-    </svg>
-);
 
 interface ExploreSurfaceProps {
     providerId: OmniProviderId;
@@ -186,7 +180,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                 <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-2 md:px-8">
                     {!ready ? (
                         // Just entered: the ring stands in until the sections are put on the page.
-                        <div className="flex justify-center py-24" aria-busy="true"><ExploreLoadingRing /></div>
+                        <div className="flex justify-center py-24" aria-busy="true"><LoadingRing /></div>
                     ) : sections.length === 0 ? (
                         // No section to show: the state of the provider's page stands alone.
                         isLoading ? (
