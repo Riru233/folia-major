@@ -101,10 +101,12 @@ interface Grid3DProps {
     declaredActions?: LibraryDeclaredActions;
 }
 
-// 一级页签切换时整块首页视图的横向位移量（px）：往页签顺序的右边走就从右边进、旧视图往左出，反向往回。
-// 进入的一侧只做 x 位移、不做 opacity：Chromium 会在祖先做 opacity 动画时丢掉后代的 backdrop-filter，
-// 视图内的 data-glass 面板会在整段切换动画期间不显示、动画结束才出现。只动 x（transform）没这个问题。
-const HOME_SURFACE_OFFSET_PX = 40;
+// 一级页签切换时整块首页视图的横向位移：往页签顺序的右边走就从右边进、旧视图往左出，反向往回。
+// 位移量取整屏宽（100%），进出两页首尾相接、切换过程中互不重叠（之前只有 40px，两页几乎叠在一起）。
+// 进出都只做 x 位移、不做 opacity：Chromium 会在祖先做 opacity 动画时丢掉后代的 backdrop-filter，
+// 视图内的 data-glass 面板会在整段切换动画期间不显示、动画结束才出现。只动 x（transform）没这个问题，
+// 所以旧页也不淡出、直接滑出去，动画结束再转回 hidden。
+const HOME_SURFACE_SLIDE_PERCENT = 100;
 
 // 页签层内容包装：非活动层跳过重渲染（视图已常驻，父级的输入框、焦点等 state 变化不该再牵动它），
 // 活动层每次都重渲染以拿到最新 props。切换时 isActive 变化，比较器放行，自然重渲染。
@@ -118,6 +120,10 @@ const HomeTabLayerContent = React.memo(
 // 进出同时进行（各层都在，靠 animate 目标变化换位），旧视图淡出、新视图滑入，容器 overflow-hidden 裁掉横移。
 // 用同一条 easeOut 曲线、同一个时长，横移与淡出一起落定，看起来才是一块内容在滑动而不是两段动画。
 const HOME_SURFACE_TRANSITION = { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const };
+
+// 不常驻的页签：切走就卸载（退场动画放完即卸），再进来重新挂载、重新走一遍进入时的加载，不管上一次读没读完。
+// 探索页重新渲染本身就重（页签自己那条 1 秒加载环就是为它加的），留着常驻不如每次干净重挂。
+const TRANSIENT_TABS = new Set<LibraryHomeTabKey>(['explore']);
 
 export const Grid3D: React.FC<Grid3DProps> = (props) => {
     countRender('Grid3D');
@@ -347,7 +353,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     // ---- 首页页签层（keep-alive）----
     // 访问过的页签各自常驻一层，切页签只切换可见性与横向位移，不重挂视图：不丢玻璃位移图、不重解码封面、
     // 不重跑各自一堆 effect。这是切换不再卡顿的关键，也正因为如此才敢去掉 useDeferredValue 的推迟渲染。
-    const [visitedTabs, setVisitedTabs] = useState<LibraryHomeTabKey[]>([shownTab]);
+    const [visitedTabs, setVisitedTabs] = useState<LibraryHomeTabKey[]>(() => (TRANSIENT_TABS.has(shownTab) ? [] : [shownTab]));
     // 正在退场的层（做淡出动画，动画结束后转回 hidden）。切走时把上一层记进来，切回时把它剔出去。
     const [exitingTabs, setExitingTabs] = useState<LibraryHomeTabKey[]>([]);
     const prevShownTabRef = useRef(shownTab);
@@ -359,17 +365,18 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     }>());
 
     useEffect(() => {
-        setVisitedTabs(prev => (prev.includes(shownTab) ? prev : [...prev, shownTab]));
+        setVisitedTabs(prev => (prev.includes(shownTab) || TRANSIENT_TABS.has(shownTab) ? prev : [...prev, shownTab]));
     }, [shownTab]);
 
     // 用 useLayoutEffect：切页签后本就该在这一帧画之前把「上一层」标成退场可见，否则它会先闪一下消失。
+    // 不常驻的页签不进退场表：它切走就卸，不做退场动画（进了退场表会先卸再为动画重挂一次）。
     useLayoutEffect(() => {
         const from = prevShownTabRef.current;
         prevShownTabRef.current = shownTab;
         setExitingTabs(prev => {
             const next = new Set(prev);
             next.delete(shownTab);
-            if (from !== shownTab) next.add(from);
+            if (from !== shownTab && !TRANSIENT_TABS.has(from)) next.add(from);
             return Array.from(next);
         });
     }, [shownTab]);
@@ -786,8 +793,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
             {/* Desktop Canvas Surface。每个访问过的页签常驻一层（keep-alive）：切页签只切换可见性和横向位移，
                 不重挂视图，所以不丢玻璃位移图、不重解码封面、不重跑各自一堆 effect。未选中层用 visibility:hidden
-                藏起来（保留布局尺寸，玻璃的 ResizeObserver 不会因此重建）。进入层只做 x、不做 opacity：Chromium
-                在祖先做 opacity 动画时会丢掉后代的 backdrop-filter。离开层照常淡出，动画结束后转回 hidden。 */}
+                藏起来（保留布局尺寸，玻璃的 ResizeObserver 不会因此重建）。进出层都只做 x、不做 opacity：
+                Chromium 在祖先做 opacity 动画时会丢掉后代的 backdrop-filter；旧页直接滑出整屏，动画结束转回 hidden。 */}
             <div className="flex-1 min-h-0 relative overflow-hidden">
                 {orderedLayerKeys.map(key => {
                     const isActive = key === shownTab;
@@ -797,12 +804,12 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             key={key}
                             // 首次挂载（第一次访问该页签）从进入侧滑入，之后靠 animate 目标变化滑动。
                             initial={{
-                                x: (isActive ? tabDirection : layerOffsetX(key)) * HOME_SURFACE_OFFSET_PX,
+                                x: `${(isActive ? tabDirection : layerOffsetX(key)) * HOME_SURFACE_SLIDE_PERCENT}%`,
                                 opacity: 1,
                             }}
                             animate={isActive
-                                ? { x: 0, opacity: 1 }
-                                : { x: layerOffsetX(key) * HOME_SURFACE_OFFSET_PX, opacity: isExiting ? 0 : 1 }}
+                                ? { x: '0%', opacity: 1 }
+                                : { x: `${layerOffsetX(key) * HOME_SURFACE_SLIDE_PERCENT}%`, opacity: 1 }}
                             transition={reduceMotion ? { duration: 0 } : HOME_SURFACE_TRANSITION}
                             onAnimationComplete={() => {
                                 if (isExiting) setExitingTabs(prev => prev.filter(k => k !== key));

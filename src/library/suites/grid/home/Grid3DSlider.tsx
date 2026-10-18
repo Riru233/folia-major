@@ -81,6 +81,10 @@ const DISCRETE_WHEEL_DISTANCE_MULTIPLIER = 3;
 const GRID3D_CARD_GAP = 48;
 export const GRID3D_WINDOW_RADIUS = 18;
 export const GRID3D_LEAP_CARDS = 4;
+// 实际挂到 DOM 的卡片窗口半径（渲染量）按视口自适应，与 GRID3D_WINDOW_RADIUS（过渡阈值，决定「直接滚动
+// 还是跳跃」）解耦：一屏能看到的张数的一半再加一点缓冲，滑动时前方几张已经就绪，不必常驻焦点两侧各 18 张。
+const MIN_RENDER_WINDOW_RADIUS = 6;
+const RENDER_WINDOW_BUFFER = 3;
 const PROGRAMMATIC_SCROLL_SETTLE_PX = 3;
 const PROGRAMMATIC_SCROLL_TIMEOUT_MS = 600;
 const PROGRAMMATIC_SCROLL_IDLE_TIMEOUT_MS = 250;
@@ -316,6 +320,16 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     const safeFocusedIndex = clampFocusedIndex(focusedIndex, items.length);
     const itemsSignature = useMemo(() => getGrid3DItemsSignature(items), [items]);
 
+    const cardPitch = coverSize + GRID3D_CARD_GAP;
+
+    // 渲染窗口按视口自适应：visibleCardCount 是一屏大致能看到的张数，半径取它的一半再留一点缓冲。
+    const visibleCardCount = containerSize.width > 0
+        ? Math.ceil(containerSize.width / cardPitch) + 1
+        : GRID3D_WINDOW_RADIUS * 2 + 1;
+    const renderWindowRadius = containerSize.width > 0
+        ? Math.max(MIN_RENDER_WINDOW_RADIUS, Math.ceil(visibleCardCount / 2) + RENDER_WINDOW_BUFFER)
+        : GRID3D_WINDOW_RADIUS;
+
     const loadedIndices = useMemo(() => {
         const indexes = new Set<number>();
         const start = Math.max(0, safeFocusedIndex - 12);
@@ -324,9 +338,22 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
         return indexes;
     }, [items.length, safeFocusedIndex]);
 
-    const { start: windowStart, end: windowEnd } = getGrid3DWindowRange(safeFocusedIndex, items.length);
+    // 当前视口实际盖住的索引范围，由滚动时（updateCardTransforms）算出。窗口和它取并集，是因为焦点与
+    // 滚动位置在挂载、切页、快速甩动时会短暂不一致：只看焦点，真实可见的卡片就会落在窗口外、整片闪空白。
+    // 带上 itemsSignature：列表换了（同页内不是重挂、只是 props 变）时旧的滚动范围对新列表无意义，直接丢弃。
+    const [viewportRange, setViewportRange] = useState<{ signature: string; start: number; end: number } | null>(null);
+    const activeViewportRange = viewportRange && viewportRange.signature === itemsSignature ? viewportRange : null;
+
+    // 焦点切换时窗口要同时盖住「旧焦点卡」到「新焦点卡」的整段：否则程序化平滑滚动经过的中间卡不在窗口里，
+    // 会闪现空位。prevFocusedIndexRef 在 effect 里才更新，所以本帧渲染读到的仍是上一张焦点卡。
+    const focusRange = getGrid3DWindowRange(safeFocusedIndex, items.length, renderWindowRadius);
+    const prevFocusIndex = prevFocusedIndexRef.current;
+    const previousFocusRange = prevFocusIndex === safeFocusedIndex
+        ? focusRange
+        : getGrid3DWindowRange(prevFocusIndex, items.length, renderWindowRadius);
+    const windowStart = Math.min(focusRange.start, previousFocusRange.start, activeViewportRange?.start ?? Number.POSITIVE_INFINITY);
+    const windowEnd = Math.max(focusRange.end, previousFocusRange.end, activeViewportRange?.end ?? 0);
     const windowedItems = items.slice(windowStart, windowEnd);
-    const cardPitch = coverSize + GRID3D_CARD_GAP;
     const leadingSpacerWidth = windowStart * cardPitch;
     const remainingItemCount = items.length - windowEnd;
     const trailingSpacerWidth = remainingItemCount > 0
@@ -347,6 +374,15 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
             Math.round((containerCenter - edgePadding - coverSize / 2) / cardPitch),
             items.length,
         );
+
+        // 记下视口当前覆盖的卡片范围（两端各留一点缓冲），渲染窗口与它取并集，保证可见的卡片一定挂上。
+        const viewportStart = Math.max(0, Math.floor((container.scrollLeft - edgePadding) / cardPitch) - RENDER_WINDOW_BUFFER);
+        const viewportEnd = Math.min(items.length, Math.ceil((container.scrollLeft + viewportWidth - edgePadding) / cardPitch) + RENDER_WINDOW_BUFFER);
+        setViewportRange(prev => (
+            prev && prev.signature === itemsSignature && prev.start === viewportStart && prev.end === viewportEnd
+                ? prev
+                : { signature: itemsSignature, start: viewportStart, end: viewportEnd }
+        ));
         for (let i = 0; i < cards.length; i++) {
             const el = cards[i];
             const itemIndex = Number(el.dataset.grid3dIndex);
@@ -363,7 +399,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
         }
 
         return closestIndex;
-    }, [cardPitch, coverSize, edgePadding, grid3dCardStyle, items.length]);
+    }, [cardPitch, coverSize, edgePadding, grid3dCardStyle, items.length, itemsSignature]);
 
     const reportFocusedIndex = useCallback((index: number) => {
         const nextIndex = clampFocusedIndex(index, items.length);

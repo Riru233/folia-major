@@ -9,6 +9,7 @@ import { ExploreLight } from './ExploreLight';
 import { EXPLORE_PILL, EXPLORE_TOKENS, ExploreSections } from './ExploreSections';
 import { useExploreTilt } from './exploreTilt';
 import { OWN_SECTION_IDS, listenedSongsOf, useOwnExploreSections } from './ownSections';
+import './exploreLoading.css';
 
 // src/components/app/home/explore/ExploreSurface.tsx
 // The explore tab of the home screen, as sections one under another. A section is the same
@@ -32,6 +33,12 @@ const TOP_FADE = 56;
 // The mark that more is being read and the offer to try again, at the list's end, are one height: the list does not move under a listener who stands there when one takes the other's place. (It does once, by this much, when the list turns out to end there.)
 const END = 'flex h-28 items-center justify-center';
 const NO_BATCHES = {};
+// The ring the tab shows for a moment when it is entered, before its sections are put on the page.
+const ExploreLoadingRing: React.FC = () => (
+    <svg className="explore-loading-ring" width="48" height="48" viewBox="0 0 16 16" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" />
+    </svg>
+);
 
 interface ExploreSurfaceProps {
     providerId: OmniProviderId;
@@ -52,6 +59,15 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
     const refresh = useExploreFeedStore(state => state.refresh);
     const loadMore = useExploreFeedStore(state => state.loadMore);
     const loadMoreOf = useExploreFeedStore(state => state.loadMoreOf);
+    // Entered: hold the sections back for a moment behind a loading ring. The sections carry motion
+    // transitions that are heavy enough to drop frames against the tab's own slide-in; giving that
+    // animation a clear frame first is what keeps the entry smooth. The provider's page is still
+    // read meanwhile, so it is usually there by the time the ring goes.
+    const [ready, setReady] = useState(false);
+    useEffect(() => {
+        const id = window.setTimeout(() => setReady(true), 1000);
+        return () => window.clearTimeout(id);
+    }, []);
     const list = useRef<HTMLDivElement>(null);
     const end = useRef<HTMLDivElement>(null);
     const pin = useRef<HTMLDivElement>(null);
@@ -94,8 +110,9 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
     useLayoutEffect(() => {
         if (hasSections && list.current) list.current.scrollTop = exploreScroll.top;
         follow();
+        // (`ready`: while the ring stands in the list holds nothing, so the place can only be put back once the sections are on the page.)
         // (`feed?.status`: the control is put over the list when the provider's page has arrived, which with sections of the app's own on screen is none of the other moments.)
-    }, [follow, hasSections, feed?.status, feed?.read]);
+    }, [follow, hasSections, feed?.status, feed?.read, ready]);
 
     // Not while another page is being read in place of this one: its end asks for nothing then.
     const awaitsMore = hasMore && !feed?.loadingMore && !feed?.moreFailed && !feed?.refreshing;
@@ -122,7 +139,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
     const refreshLabel = t(feed?.refreshFailed ? 'home.exploreRetry' : 'home.exploreRefresh');
     return (
         <div className="relative h-full w-full self-stretch" style={EXPLORE_TOKENS}>
-            {hasRefresh && (
+            {hasRefresh && ready && (
                 // Laid out as the list's own content is, so that the control ends where the heading rows end.
                 // Before the list, so that the keyboard reaches it before the list's own buttons, as it did in its row.
                 <motion.div
@@ -167,7 +184,10 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                 style={{ maskImage: 'linear-gradient(to bottom, transparent, black var(--ex-top-fade, 0px))' }}
             >
                 <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-2 md:px-8">
-                    {sections.length === 0 ? (
+                    {!ready ? (
+                        // Just entered: the ring stands in until the sections are put on the page.
+                        <div className="flex justify-center py-24" aria-busy="true"><ExploreLoadingRing /></div>
+                    ) : sections.length === 0 ? (
                         // No section to show: the state of the provider's page stands alone.
                         isLoading ? (
                             <div className="flex justify-center py-24" aria-busy="true"><Loader2 size={28} className="animate-spin opacity-30" /></div>
