@@ -477,6 +477,7 @@ export default function App() {
     const {
         visualizerMode,
         randomVisualizerModePerSong,
+        randomVisualizerModes,
         handleSetVisualizerMode,
     } = useVisualizerSettingsStore(useShallow(selectVisualizerSettingsSnapshot));
 
@@ -511,6 +512,7 @@ export default function App() {
     useRandomVisualizerMode({
         currentSong,
         enabled: randomVisualizerModePerSong,
+        modes: randomVisualizerModes,
         visualizerMode,
         setVisualizerMode: handleSetVisualizerMode,
     });

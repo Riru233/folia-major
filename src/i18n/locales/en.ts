@@ -831,6 +831,7 @@ export default {
     }
   },
   "ui": {
+    "visualizerRandom": "Random",
     "noTrack": "No Track",
     "selectPlaceholder": "Select...",
     "previousTrack": "Previous track",
@@ -1742,6 +1743,10 @@ export default {
     "lyricMatchPriorityDesc": "When multiple lyric sources have high-confidence matches, prefer this source first."
   },
   "options": {
+    "randomVisualizerModes": "Styles to randomize",
+    "randomVisualizerSelectAll": "Select all",
+    "randomVisualizerCurrentStyle": "Current style",
+    "randomVisualizerAtLeastOne": "Select at least one style",
     "ponderHints": "Ponder tutorial hints",
     "ponderHintsDesc": "Hovering a teachable control shows a hint to hold G.",
     "ponderHintsAlways": "Always show",

@@ -831,6 +831,7 @@ export default {
     }
   },
   "ui": {
+    "visualizerRandom": "Acak",
     "noTrack": "Tidak Ada Trek",
     "selectPlaceholder": "Pilih...",
     "previousTrack": "Lagu sebelumnya",
@@ -1742,6 +1743,10 @@ export default {
     "lyricMatchPriorityDesc": "Saat beberapa sumber lirik memiliki kecocokan berkualitas tinggi, utamakan sumber ini terlebih dahulu."
   },
   "options": {
+    "randomVisualizerModes": "Gaya untuk diacak",
+    "randomVisualizerSelectAll": "Pilih semua",
+    "randomVisualizerCurrentStyle": "Gaya saat ini",
+    "randomVisualizerAtLeastOne": "Pilih setidaknya satu gaya",
     "ponderHints": "Petunjuk tutorial Ponder",
     "ponderHintsDesc": "Mengarahkan kursor ke kontrol yang bisa dipelajari memunculkan petunjuk menahan G.",
     "ponderHintsAlways": "Selalu tampilkan",
