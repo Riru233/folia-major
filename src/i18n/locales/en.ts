@@ -2647,7 +2647,7 @@ export default {
     "glowBlurQuantizeDocs": "Docs",
     "visualizerFrameRateValue": "Limit",
     "liquidGlassSection": "Liquid Glass",
-    "liquidGlassSectionDesc": "Tune the global strength, edge bend distance, blur and saturation every liquid glass panel shares. The defaults are 2.25, 60, 2 and 160.",
+    "liquidGlassSectionDesc": "Tune the global strength, edge bend distance, blur and saturation every liquid glass panel shares.",
     "liquidGlassPreset": "Liquid Glass Presets",
     "liquidGlassPresetDesc": "Quick looks that set strength, blur and edge bend distance together.",
     "liquidGlassPresetFrosted": "Frosted glass",

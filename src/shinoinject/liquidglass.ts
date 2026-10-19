@@ -7,7 +7,7 @@ const SVGNS = "http://www.w3.org/2000/svg";
 // 默认参数：出厂值就是这里，设置面板（useLiquidGlassSettingsStore）的兜底也读它。
 // bend = 最大弯曲距离：边缘受折射的区域从边缘向中心延伸多少 px，平面（不受折射）区在中心，bend 越大平面越小。
 // ★ 配置位置①：默认弯曲距离（px）。测试直接改下行的 bend 数字，或给元素加 data-glass-bend="80" 单元素覆盖。
-const global = { strength: 2.25, blur: 2, sat: 160, bend: 60 };
+const global = { strength: 2.25, blur: 2, sat: 180, bend: 60 };
 export type LiquidGlassParams = typeof global;
 export const LIQUID_GLASS_DEFAULTS: LiquidGlassParams = { ...global };
 // 边缘扭曲（位移滤镜）与饱和度只有 Windows 平台才支持：非 Windows 上不建 <filter>，
@@ -24,8 +24,8 @@ export const LIQUID_GLASS_STORAGE_KEYS = {
 // 每个参数的量程：设置面板的滑杆和钳制共用同一份，UI 不会调出存不下的值。
 export const LIQUID_GLASS_PARAM_BOUNDS: Record<keyof LiquidGlassParams, { min: number; max: number }> = {
   strength: { min: 0, max: 6 },
-  blur: { min: 0, max: 12 },
-  sat: { min: 0, max: 300 },
+  blur: { min: 0, max: 40 },
+  sat: { min: 100, max: 300 },
   // ★ 配置位置③：设置面板滑杆量程（弯曲距离最终还会被容器半个短边封顶，见 rebuild）。
   bend: { min: 0, max: 300 },
 };
@@ -807,12 +807,34 @@ const lightOnPointerMove = (e: PointerEvent) => {
   lightPaint(lightPressEl ?? lightHoverEl!, lightX, lightY);
 };
 
+// 触屏的 pointercancel 多因手势被判为滚动 / 平移、浏览器接管而触发；此时按下会话应继续，
+// 改由下面的 touchmove 跟手、touchend 收场，否则光晕会在滑动刚开始时就被收掉（表现为「光效散了」）。
+const lightOnPointerCancel = (e: PointerEvent) => {
+  if (e.pointerType !== "mouse") return;
+  lightEndPress(e);
+};
+
+// 触屏跟手：pointercancel 之后 pointermove 不再派发，用 touchmove 补上光点位置（仍是按下时的高光）。
+const lightOnTouchMove = (e: TouchEvent) => {
+  if (!lightEnabled || !lightLayer || !lightPressEl || !lightPressEl.isConnected) return;
+  const t = e.touches[0];
+  if (!t) return;
+  lightX = t.clientX;
+  lightY = t.clientY;
+  lightPaint(lightPressEl, lightX, lightY);
+};
+
 const lightEndPress = (e?: { pointerId?: number }) => {
   if (!lightPressEl) return;
   if (e && typeof e.pointerId === "number" && e.pointerId !== lightPointerId) return;
   lightPressEl = null;
   lightPointerId = -1;
   lightSync();
+};
+
+// touchend / touchcancel 是 Event，不带 pointerId；包一层只为收掉按下会话。
+const lightOnTouchEnd = () => {
+  lightEndPress();
 };
 
 const lightEndAll = () => {
@@ -831,7 +853,10 @@ export const installGlassLight = () => {
   window.addEventListener("pointerdown", lightOnPointerDown, { capture: true });
   window.addEventListener("pointermove", lightOnPointerMove, { passive: true });
   window.addEventListener("pointerup", lightEndPress);
-  window.addEventListener("pointercancel", lightEndPress);
+  window.addEventListener("pointercancel", lightOnPointerCancel);
+  window.addEventListener("touchmove", lightOnTouchMove, { passive: true });
+  window.addEventListener("touchend", lightOnTouchEnd);
+  window.addEventListener("touchcancel", lightOnTouchEnd);
   window.addEventListener("blur", lightEndAll);
   document.addEventListener("visibilitychange", lightEndAll);
 };

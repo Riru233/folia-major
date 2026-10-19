@@ -2647,7 +2647,7 @@ export default {
     "glowBlurQuantizeDocs": "文档",
     "visualizerFrameRateValue": "限制档位",
     "liquidGlassSection": "流体玻璃",
-    "liquidGlassSectionDesc": "调整所有玻璃面板共用的折射强度、边缘弯曲距离、模糊与饱和度。默认值为 2.25、60、2、160。",
+    "liquidGlassSectionDesc": "调整所有玻璃面板共用的折射强度、边缘弯曲距离、模糊与饱和度。",
     "liquidGlassPreset": "流体玻璃预设",
     "liquidGlassPresetDesc": "一键套用一组强度、模糊与边缘弯曲距离的常见观感。",
     "liquidGlassPresetFrosted": "毛玻璃",

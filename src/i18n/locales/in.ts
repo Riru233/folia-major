@@ -2647,7 +2647,7 @@ export default {
     "glowBlurQuantizeDocs": "Dokumentasi",
     "visualizerFrameRateValue": "Batas",
     "liquidGlassSection": "Kaca Cair",
-    "liquidGlassSectionDesc": "Sesuaikan kekuatan bias, jarak lengkung tepi, blur, dan saturasi yang dipakai semua panel kaca cair. Nilai bawaan 2.25, 60, 2, dan 160.",
+    "liquidGlassSectionDesc": "Sesuaikan kekuatan bias, jarak lengkung tepi, blur, dan saturasi yang dipakai semua panel kaca cair.",
     "liquidGlassPreset": "Preset Kaca Cair",
     "liquidGlassPresetDesc": "Tampilan siap pakai yang menyetel kekuatan, blur, dan jarak lengkung tepi sekaligus.",
     "liquidGlassPresetFrosted": "Kaca buram",
