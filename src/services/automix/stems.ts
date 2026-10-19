@@ -534,6 +534,18 @@ const CPU_REBUILD_MS = 1500;
 /** The thread count the CPU htdemucs was last asked for: another one rebuilds it. */
 let lastCpuThreads: number | null = null;
 /**
+ * When the last CPU run ended, and whether it was kept loaded (`resident`): a fallback model on a GPU
+ * machine is released FALLBACK_IDLE_MS after its run (electron/analysis/worker.cjs), so then the same
+ * thread count rebuilds too (from the PR #750 review: the estimate left that out).
+ */
+let lastCpuEndedAt = -Infinity;
+let lastCpuResident = false;
+/** The worker's FALLBACK_IDLE_MS. */
+const CPU_FALLBACK_IDLE_MS = 60_000;
+/** Whether the CPU htdemucs is built for `threads` still, as far as this side can tell. */
+const cpuBuiltFor = (threads: number, now: number) => threads === lastCpuThreads
+    && (lastCpuResident || now - lastCpuEndedAt < CPU_FALLBACK_IDLE_MS);
+/**
  * Each window's deadline as it stands, by window key: a later `ensureStems` for a window in flight
  * moves it (the duration arrives after the track does; a resume after a pause), and a pause clears
  * them (`clearStemDeadlines`). Read at the executor choice and at every GPU segment.
@@ -552,6 +564,8 @@ export const clearStemDeadlines = (): void => {
 /** Test-only: forgets the CPU's last thread count and every deadline. */
 export const resetStemExecutorForTests = (): void => {
     lastCpuThreads = null;
+    lastCpuEndedAt = -Infinity;
+    lastCpuResident = false;
     deadlines.clear();
 };
 
@@ -565,9 +579,9 @@ const chooseStemExecutor = (deadline: number | undefined, total: number, start: 
     const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency > 0 ? navigator.hardwareConcurrency : 4;
     const quietThreads = cpuThreads(cores, 'quiet', 'htdemucs');
     // Fewer threads than four, proportionally longer; another count than the last, a rebuild first.
-    const cpuMs = (threads: number) => (length / STEM_SAMPLE_RATE) * CPU_SECONDS_PER_SECOND * 1000 * Math.max(1, 4 / threads)
-        + (threads === lastCpuThreads ? 0 : CPU_REBUILD_MS);
     const now = performance.now();
+    const cpuMs = (threads: number) => (length / STEM_SAMPLE_RATE) * CPU_SECONDS_PER_SECOND * 1000 * Math.max(1, 4 / threads)
+        + (cpuBuiltFor(threads, now) ? 0 : CPU_REBUILD_MS);
     const units = segmentsOver(total, start, start + length).length;
     const gpuFinish = gpuAvailable ? estimateGpuFinish('htdemucs', units, 'background', deadline) : Infinity;
     // The level first, so the CPU is judged on time at the level it would run at.
@@ -716,6 +730,8 @@ export const ensureStems = async (request: StemRequest): Promise<void> => {
             }
         }
         let triedCpu = false;
+        // Why the CPU model declined, when it says (the worker's reason, e53569f5).
+        let declined: string | null = null;
         if (!parts && canSeparateStemsOnCpu() && (executor === 'cpu' || ranOn.includes('after the GPU'))) {
             const separate = window.electron?.separateStems;
             if (!separate) return;
@@ -723,7 +739,15 @@ export const ensureStems = async (request: StemRequest): Promise<void> => {
             // Copies of the window alone: a view would carry its whole span across the IPC.
             // Kept loaded only where the CPU is the separator; a GPU machine's fallback goes after a minute.
             lastCpuThreads = threads;
-            parts = await separate({ left: left.slice(), right: right.slice(), threads, resident: !canSeparateStemsOnGpu() });
+            lastCpuResident = !canSeparateStemsOnGpu();
+            let answer: Awaited<ReturnType<typeof separate>>;
+            try {
+                answer = await separate({ left: left.slice(), right: right.slice(), threads, resident: lastCpuResident });
+            } finally {
+                lastCpuEndedAt = performance.now();
+            }
+            if (answer && 'declined' in answer) declined = answer.declined;
+            else parts = answer;
         }
         if (!parts) {
             // The GPU's own failures are its runtime's to note (analysis/beatThisGpu.ts); only the
@@ -732,6 +756,11 @@ export const ensureStems = async (request: StemRequest): Promise<void> => {
                 console.log(`[Automix] could not separate the ${request.role} of "${request.song.name}" on the GPU`);
                 return;
             }
+            // Said here, in the console the listener reads. The worker's own line goes to the main
+            // process's stdout only, so a library that would not load once looked like a separation
+            // that never finished: "separating" and then nothing, track after track.
+            console.warn(`[Automix] could not separate the ${request.role} of "${request.song.name}":`
+                + ` ${declined ?? 'the analysis worker answered nothing'}`);
             // Nothing came back. The window this can happen in is the widest in the app - separation
             // is asked for the instant a track starts and runs for tens of seconds - so weights
             // disappearing under one, or the worker restarting under it on a folder switch, is
