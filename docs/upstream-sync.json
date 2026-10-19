@@ -1,9 +1,9 @@
 {
   "remote": "https://github.com/chthollyphile/folia-major.git",
   "branch": "main",
-  "lastSynced": "ced47852c64c2709faebe0190d430c3ab75ca2a4",
-  "lastSyncedSubject": "docs(readme): 移动端说明中提及社区安卓版",
-  "lastSyncedDate": "2026-10-18",
-  "syncedAt": "2026-10-18",
+  "lastSynced": "62c35156b01e165201dc999e0961f2e0e6dff68c",
+  "lastSyncedSubject": "Merge pull request #761 from chthollyphile/fix/automix-library-analysis",
+  "lastSyncedDate": "2026-10-19",
+  "syncedAt": "2026-10-19",
   "note": "Shino提交：Windows液态玻璃性能优化、追加首页提示新版本的逻辑。"
 }
