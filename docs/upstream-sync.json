@@ -1,9 +1,9 @@
 {
   "remote": "https://github.com/chthollyphile/folia-major.git",
   "branch": "main",
-  "lastSynced": "26c57f9b1b26b402a09e8943171a332215418ce6",
-  "lastSyncedSubject": "Merge pull request #780 from yakult-green-tea/fix/qq-preview-after-retry",
-  "lastSyncedDate": "2026-10-19",
-  "syncedAt": "2026-10-19",
+  "lastSynced": "f33f9eae108a70155a94b25fd95f2d39ab1cd968",
+  "lastSyncedSubject": "Merge pull request #784 from miaowu104-gif/fix/remote-window-drag-size",
+  "lastSyncedDate": "2026-10-20",
+  "syncedAt": "2026-10-20",
   "note": "Shino提交：Windows液态玻璃性能优化、追加首页提示新版本的逻辑。"
 }
