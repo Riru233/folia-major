@@ -5,6 +5,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import type { SongResult } from '../../../../types';
 import type { OmniCollection, OmniProviderId } from '../../../../types/onlineMusic';
 import { exploreScroll, useExploreFeedStore } from '../../../../stores/useExploreFeedStore';
+import { ExploreEdgeBlur } from './ExploreEdgeBlur';
 import { ExploreLight } from './ExploreLight';
 import { EXPLORE_PILL, EXPLORE_TOKENS, ExploreSections } from './ExploreSections';
 import { useExploreTilt } from './exploreTilt';
@@ -22,17 +23,17 @@ import { LoadingRing } from '../../../shared/LoadingRing';
 // Nothing here knows which provider it is: another one needs its own `OnlineExploreProvider`.
 // The page's own control ("refresh") is not part of the list: it stands over the list's top right
 // corner, where the first heading row leaves it room, and stays there while the list scrolls
-// under it. What passes under the list's top edge then fades out, so that a heading row's own
-// buttons are dim where they pass under the control (they are not gone: the fade is whole only
-// at the very edge).
+// under it. What passes under the list's top edge then blurs and fades out (ExploreEdgeBlur.tsx),
+// so that a heading row's own buttons are dim where they pass under the control (they are not
+// gone: the fade is whole only at the very edge).
 // Two things belong to the page as a whole and not to any entry: its light (ExploreLight.tsx),
 // which stands behind the list, and that a picture leans to the pointer over it (exploreTilt.ts).
 
 // How far down from its top edge the list fades what has scrolled up to it, in pixels.
-const TOP_FADE = 56;
+const TOP_FADE = 120;
 // How far up from its bottom edge the list fades what has not been scrolled to yet, in pixels.
-const BOTTOM_FADE = 56;
-// The mark that more is being read and the offer to try again, at the list's end, are one height: the list does not move under a listener who stands there when one takes the other's place. (It does once, by this much, when the list turns out to end there.)
+const BOTTOM_FADE = 70;
+// The mark that more is being read and the offer to try again, at the list's end, are EDGE_BLURSone height: the list does not move under a listener who stands there when one takes the other's place. (It does once, by this much, when the list turns out to end there.)
 const END = 'flex h-28 items-center justify-center';
 const NO_BATCHES = {};
 
@@ -191,6 +192,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                     maskImage: 'linear-gradient(to bottom, transparent, black var(--ex-top-fade, 0px), black calc(100% - var(--ex-bottom-fade, 0px)), transparent)',
                 }}
             >
+                <ExploreEdgeBlur edge="top" />
                 <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-2 md:px-8">
                     {!ready ? (
                         // Just entered: the ring stands in until the sections are put on the page.
@@ -230,6 +232,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                         </>
                     )}
                 </div>
+                <ExploreEdgeBlur edge="bottom" />
             </motion.div>
         </div>
     );
