@@ -404,37 +404,49 @@ export const applyLiquidGlassParams = (next: Partial<LiquidGlassParams>) => {
 
 /* —— 拖拽果冻（data-glass-jelly 注入）——
    pointerdown 命中带 data-glass-jelly 的元素即开会话，指针从按下点拖出的距离 d 驱动形变：
-   translate 与 scale 增量都走饱和曲线 T = max·d/(d+k)（增量随 d 反二次衰减，d 越大越接近临界值）；
-   scale 沿拖动轴拉伸、垂直轴压缩（垂直向下拖 → scaleX 略减、scaleY 略增），均带临界值。
-   形变量经弹簧平滑，松手后目标归零，弹簧把元素带回原状。
+   translate 走饱和曲线 T = max·d/(d+k)，位移比可配（1px:Npx），平移距离有上限（平移增量边界，px），
+   到边界不再增加；
+   缩放不用百分比，而是以元素的宽 / 高（px）为目标：拖动轴方向的尺寸按形变比增长
+   （默认 1px:10px，拖 10px → 长宽变 1px），拖动轴的垂直轴同比例回缩；再由 scale = 目标尺寸 / 基准尺寸 得到缩放比。
+   宽、高各走一个弹簧（输入是 px 尺寸），松手后目标回到基准尺寸，弹簧把元素带回原状。
    每帧 rAF 直写 transform（不进 React state）；framer / 拖拽组件可能随时改写
    el.style.transform，写前按 lastWritten 比对，外部改写收编为新的 base 再叠果冻项。 */
 
-const JELLY_TMAX = 18; // translate 饱和值（px）
-const JELLY_TK = 90; // 半饱和距离：拖 90px 达到 TMAX/2
-const JELLY_MMAX = 0.3; // 沿轴拉伸临界值（scale 最多到 1+MMAX）
-const JELLY_MK = 80; // 拉伸半饱和距离
-const JELLY_PERP = 0.35; // 垂直拖动分量的压缩系数（拖动轴放大时，垂直轴按此比例回缩）
-const JELLY_POS_K = 200; // 拖拽跟手用的平移弹簧：稍软，形变平滑逼近目标
+// 平移距离增量边界（px）：指针离按下点再远，元素也只平移这么多，不再继续增加。
+// 想让跟手范围更大就调大这个数（同时也是饱和曲线的临界值）。
+const JELLY_TRANS_DELTA_MAX = 60;
+// 位移比（1px:Npx）：每拖 Npx，元素平移 1px（饱和曲线的起始斜率 = 1/N）。
+const JELLY_TRANS_RATIO = 10;
+// 形变比（1px:Npx）：每拖 Npx，元素的目标尺寸（宽 / 高）变 1px。
+const JELLY_DEFORM_RATIO = 20;
+// 拉伸增量边界（px）：单轴目标尺寸相对基准尺寸的增量绝对值上限。
+// 拖到边界后不再继续增加（回缩方向不受它限制），想更夸张就调大这个数。
+const JELLY_SIZE_DELTA_MAX = 20;
+// 垂直拖动分量的回缩系数：拖动轴的尺寸增长时，垂直轴按此比例缩小。
+const JELLY_PERP = 0.35;
+// 目标尺寸的相对上下限（相对基准宽 / 高），防止拖过头把元素压扁或撑爆。
+const JELLY_SIZE_MIN_RATIO = 0.5;
+const JELLY_SIZE_MAX_RATIO = 1.4;
+const JELLY_POS_K = 400; // 拖拽跟手用的平移弹簧：稍软，形变平滑逼近目标
 const JELLY_POS_C = 24;
-const JELLY_STR_K = 260; // 拖拽跟手用的缩放弹簧：略硬，形变跟手
+// 拖拽跟手用的尺寸弹簧（输入是 px 宽 / 高）：略硬，形变跟手。
+const JELLY_STR_K = 120;
 const JELLY_STR_C = 27;
 // 回弹（松手后）位移用弹簧：调回弹速度改这组 k（临界阻尼附近 c ≈ 2√k，k = ω²，ω 越大回位越快）。
 // 验证：松手后 0.1s 内回到原状、无过冲甩尾；回不完加大 k，甩尾加大 c。
 const JELLY_POS_K_BACK = 6000; // 回弹平移弹簧（最远 18px）
 const JELLY_POS_C_BACK = 100;
-// 回弹缩放不用弹簧，改走 ease-out 动画曲线（先快后慢、末速为 0）：m 从松手值按曲线回 0。
-// 调回缩快慢改 JELLY_STR_BACK_DUR（须 ≤0.1s 回弹预算）；换曲线改 jellyEaseOut
-// （如换 ease-out 二次：1 - (1-t)**2，起步更平缓）。
-const JELLY_STR_BACK_DUR = 0.1; // 缩放回缩时长（s）
+// 回弹尺寸弹簧：目标回到基准宽 / 高，同样按临界阻尼取 c ≈ 2√k，不许过冲。
+const JELLY_STR_K_BACK = 6000;
+const JELLY_STR_C_BACK = 160;
 const JELLY_STEP = 1 / 120; // 定步长积分（s）
 const JELLY_MAX_SUBSTEPS = 8;
-const JELLY_REST_OFF = 0.05; // 贴住目标的静止判定（px）
-const JELLY_REST_M = 0.004;
+const JELLY_REST_OFF = 0.05; // 贴住目标的静止判定（px，平移）
+const JELLY_REST_SIZE_OFF = 0.05; // 尺寸贴住目标的静止判定（px）
 const JELLY_REST_V = 0.6; // 弹簧速度静止判定
-const JELLY_REST_MV = 0.01;
+const JELLY_REST_SIZE_V = 2; // 尺寸弹簧速度静止判定（px/s）
 
-// 饱和曲线：f(0)=0，f'(0)=max/k 最大，随 d 衰减 ~1/d²，f→max。鼠标越远 translate/scale 越大但增量越小。
+// 饱和曲线：f(0)=0，f'(0)=max/k 最大，随 d 衰减 ~1/d²，f→max。鼠标越远平移越大但增量越小。
 const jellySaturate = (d: number, max: number, k: number) => (max * d) / (d + k);
 
 // 半隐式欧拉一步：a = -k·(x - target) - c·v。
@@ -443,9 +455,6 @@ const jellyIntegrate = (x: number, v: number, target: number, dt: number, k: num
   const v2 = v + a * dt;
   return [x + v2 * dt, v2] as const;
 };
-
-// ease-out 曲线（三次）：p=0 时 0、p=1 时 1，起步快末尾慢，导数末端为 0（回缩无甩尾）。
-const jellyEaseOut = (p: number) => 1 - (1 - p) ** 3;
 
 // 单指针单元素会话；模块级状态，不进 React state。
 let jellyInstalled = false;
@@ -458,18 +467,20 @@ let jStartPX = 0;
 let jStartPY = 0;
 let jPx = 0; // 当前指针位置
 let jPy = 0;
-let jTheta = 0; // 拖动方向（rad），d 太小时保持上次方向
 let jOx = 0;
 let jVoX = 0;
 let jOy = 0;
 let jVoY = 0;
-let jM = 0; // 拉伸量：按 jTheta 方向分解成 scaleX/scaleY（无 rotate），见 jellyWrite
-let jVm = 0;
-let jStrT = 0; // 回弹缩放曲线已推进时间（s）
-let jStrFrom = 0; // 回弹缩放曲线起点（松手瞬间的 m）
+let jW0 = 0; // 拖拽开始时的基准宽（px，layout 尺寸，不受 transform 影响）
+let jH0 = 0; // 基准高（px）
+let jW = 0; // 尺寸弹簧当前宽度（px）
+let jVW = 0;
+let jH = 0; // 尺寸弹簧当前高度（px）
+let jVH = 0;
+let jTW = 0; // 目标宽度（px）
+let jTH = 0; // 目标高度（px）
 let jTOx = 0;
 let jTOy = 0;
-let jTM = 0;
 let jBase = ""; // 外部写在 el.style.transform 上的值（framer / 拖拽组件）
 let jLastWritten: string | null = null;
 let jRaf = 0;
@@ -490,24 +501,29 @@ const jellyFinish = () => {
   jEl = null;
   jDragging = false;
   jPointerId = -1;
-  jOx = jVoX = jOy = jVoY = jM = jVm = 0;
-  jStrT = jStrFrom = 0;
-  jTOx = jTOy = jTM = 0;
-  jTheta = 0;
+  jOx = jVoX = jOy = jVoY = 0;
+  jW = jVW = jH = jVH = 0;
+  jTW = jTH = 0;
+  jW0 = jH0 = 0;
+  jTOx = jTOy = 0;
   jLastWritten = null;
   if (el?.isConnected) el.style.transform = jBase;
 };
 
-// 弹簧是否贴住目标（静止）：按住不动时贴住目标即停帧省电，松手后目标为 0 即回原状。
+// 弹簧是否贴住目标（静止）：按住不动时贴住目标即停帧省电，松手后目标归基准尺寸即回原状。
 const jellyAtRest = () =>
   Math.abs(jOx - jTOx) < JELLY_REST_OFF &&
   Math.abs(jOy - jTOy) < JELLY_REST_OFF &&
-  Math.abs(jM - jTM) < JELLY_REST_M &&
+  Math.abs(jW - jTW) < JELLY_REST_SIZE_OFF &&
+  Math.abs(jH - jTH) < JELLY_REST_SIZE_OFF &&
   Math.abs(jVoX) < JELLY_REST_V &&
   Math.abs(jVoY) < JELLY_REST_V &&
-  Math.abs(jVm) < JELLY_REST_MV;
+  Math.abs(jVW) < JELLY_REST_SIZE_V &&
+  Math.abs(jVH) < JELLY_REST_SIZE_V;
 
-// 按当前指针位置算形变目标：位移向量 = 指针 - 按下点，方向定角度，模长走饱和曲线。
+// 按当前指针位置算形变目标：
+// 位移向量 = 指针 - 按下点，模长走饱和曲线；
+// 尺寸目标以元素的宽 / 高（px）表达：拖动轴方向按 1px:10px 增长，垂直轴同比例回缩。
 const jellyUpdateTarget = () => {
   const dx = jPx - jStartPX;
   const dy = jPy - jStartPY;
@@ -515,17 +531,29 @@ const jellyUpdateTarget = () => {
   if (d < 1) {
     // 没拖动：目标归零，松手感（纯点按不会出现形变，天然免误触门槛）。
     jTOx = jTOy = 0;
-    jTM = 0;
+    jTW = jW0;
+    jTH = jH0;
     return;
   }
-  jTheta = Math.atan2(dy, dx);
-  const t = jellySaturate(d, JELLY_TMAX, JELLY_TK);
+  // 平移：模长走饱和曲线 T = max·d/(d+k)，k = 边界 × 位移比 → 起始斜率 1/位移比；
+  // 上限 JELLY_TRANS_DELTA_MAX（px），到边界后不再增加。
+  const tk = JELLY_TRANS_DELTA_MAX * JELLY_TRANS_RATIO;
+  const t = jellySaturate(d, JELLY_TRANS_DELTA_MAX, tk);
   jTOx = (dx / d) * t;
   jTOy = (dy / d) * t;
-  jTM = jellySaturate(d, JELLY_MMAX, JELLY_MK);
+  if (!jW0 || !jH0) return; // 元素没有布局尺寸（隐藏 / display:none），尺寸目标保持基准
+  // 沿拖动轴的分量让该轴尺寸增长，垂直分量让该轴回缩；
+  // 两者都按形变比（JELLY_DEFORM_RATIO，1px:Npx）折算成 px。
+  // 增量先受 JELLY_SIZE_DELTA_MAX（px）限制：增长到边界就不再增加（回缩同理封顶）。
+  const adx = Math.abs(dx);
+  const ady = Math.abs(dy);
+  const dw = clamp((adx - ady * JELLY_PERP) / JELLY_DEFORM_RATIO, -JELLY_SIZE_DELTA_MAX, JELLY_SIZE_DELTA_MAX);
+  const dh = clamp((ady - adx * JELLY_PERP) / JELLY_DEFORM_RATIO, -JELLY_SIZE_DELTA_MAX, JELLY_SIZE_DELTA_MAX);
+  jTW = clamp(jW0 + dw, jW0 * JELLY_SIZE_MIN_RATIO, jW0 * JELLY_SIZE_MAX_RATIO);
+  jTH = clamp(jH0 + dh, jH0 * JELLY_SIZE_MIN_RATIO, jH0 * JELLY_SIZE_MAX_RATIO);
 };
 
-// 每帧写入：先收编外部 transform，再合成 base + translate + 方向性 scale（无 rotate / skew）。
+// 每帧写入：先收编外部 transform，再合成 base + translate + 由目标尺寸换算出的 scale（无 rotate / skew）。
 const jellyWrite = () => {
   const el = jEl;
   if (!el || !el.isConnected) {
@@ -534,19 +562,14 @@ const jellyWrite = () => {
   }
   const cur = el.style.transform;
   if (cur !== jLastWritten) jBase = cur; // 外部改写（framer layout / 拖拽组件 inline transform）
-  if (Math.abs(jOx) < 0.01 && Math.abs(jOy) < 0.01 && Math.abs(jM) < 0.001) {
+  const sx = jW0 ? jW / jW0 : 1;
+  const sy = jH0 ? jH / jH0 : 1;
+  if (Math.abs(jOx) < 0.01 && Math.abs(jOy) < 0.01 && Math.abs(sx - 1) < 0.001 && Math.abs(sy - 1) < 0.001) {
     // 形变为零：还原 base，不留无意义的 transform 壳。
     el.style.transform = jBase;
     jLastWritten = jBase;
     return;
   }
-  // 拖到哪个方向，形变就偏向哪个方向：把拖动单位向量分解到 x/y 轴做纯缩放——
-  // 沿拖动分量放大、垂直分量压缩，不引入 rotate / skew。
-  // θ=0（拖右）：scaleX↑ scaleY↓；θ=90°（拖下）：scaleX↓ scaleY↑；θ=45°：两轴等比微增。
-  const ux = Math.abs(Math.cos(jTheta));
-  const uy = Math.abs(Math.sin(jTheta));
-  const sx = 1 + jM * (ux - JELLY_PERP * uy);
-  const sy = 1 + jM * (uy - JELLY_PERP * ux);
   el.style.transform = `${jBase ? jBase + " " : ""}translate(${jOx.toFixed(2)}px, ${jOy.toFixed(2)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
   jLastWritten = el.style.transform;
 };
@@ -557,23 +580,19 @@ const jellyFrame = (t: number) => {
   jLastFrame = t;
   jAcc += dtMs / 1000;
   let steps = 0;
-  // 松手后：位移切回弹弹簧；缩放不走弹簧，改按 ease-out 曲线回缩（拖拽中缩放仍用跟手弹簧）。
+  // 松手后：位移切回弹弹簧；尺寸（宽 / 高）也切回弹弹簧，目标回到基准尺寸。
   const back = !jDragging;
   const pk = back ? JELLY_POS_K_BACK : JELLY_POS_K;
   const pc = back ? JELLY_POS_C_BACK : JELLY_POS_C;
+  const sk = back ? JELLY_STR_K_BACK : JELLY_STR_K;
+  const sc = back ? JELLY_STR_C_BACK : JELLY_STR_C;
   while (jAcc >= JELLY_STEP && steps < JELLY_MAX_SUBSTEPS) {
     [jOx, jVoX] = jellyIntegrate(jOx, jVoX, jTOx, JELLY_STEP, pk, pc);
     [jOy, jVoY] = jellyIntegrate(jOy, jVoY, jTOy, JELLY_STEP, pk, pc);
-    if (!back) [jM, jVm] = jellyIntegrate(jM, jVm, jTM, JELLY_STEP, JELLY_STR_K, JELLY_STR_C);
+    [jW, jVW] = jellyIntegrate(jW, jVW, jTW, JELLY_STEP, sk, sc);
+    [jH, jVH] = jellyIntegrate(jH, jVH, jTH, JELLY_STEP, sk, sc);
     jAcc -= JELLY_STEP;
     steps++;
-  }
-  if (back) {
-    // 缩放 ease-out 回缩：p 从 0→1，m = 松手值·(1 - easeOut(p))；vm 取解析导数供静止判定。
-    jStrT = Math.min(jStrT + dtMs / 1000, JELLY_STR_BACK_DUR);
-    const p = jStrT / JELLY_STR_BACK_DUR;
-    jM = jStrFrom * (1 - jellyEaseOut(p));
-    jVm = (-jStrFrom * 3 * (1 - p) ** 2) / JELLY_STR_BACK_DUR;
   }
   if (steps >= JELLY_MAX_SUBSTEPS) jAcc = 0;
   if (!jDragging && jellyAtRest()) {
@@ -607,10 +626,14 @@ const jellyOnPointerDown = (e: PointerEvent) => {
   jDragging = true;
   jStartPX = jPx = e.clientX;
   jStartPY = jPy = e.clientY;
-  jOx = jVoX = jOy = jVoY = jM = jVm = 0;
-  jStrT = jStrFrom = 0;
-  jTOx = jTOy = jTM = 0;
-  jTheta = 0;
+  jOx = jVoX = jOy = jVoY = 0;
+  // 基准尺寸取 layout 尺寸（offsetWidth/Height 不受 transform 影响），拖拽期间不会自己变。
+  jW0 = el.offsetWidth;
+  jH0 = el.offsetHeight;
+  jW = jTW = jW0;
+  jH = jTH = jH0;
+  jVW = jVH = 0;
+  jTOx = jTOy = 0;
   jBase = el.style.transform;
   jLastWritten = el.style.transform;
 };
@@ -627,9 +650,9 @@ const jellyEndPointer = () => {
   if (!jDragging) return;
   jDragging = false;
   jPointerId = -1;
-  jTOx = jTOy = jTM = 0; // 松手：目标归零，位移弹簧 + 缩放曲线把元素带回原状
-  jStrT = 0; // 缩放回缩曲线从松手瞬间的 m 出发
-  jStrFrom = jM;
+  jTOx = jTOy = 0; // 松手：位移目标归零，弹簧把元素带回原位
+  jTW = jW0; // 尺寸目标回到基准宽 / 高，尺寸弹簧把形变收回去
+  jTH = jH0;
   jellyEnsureLoop();
 };
 
