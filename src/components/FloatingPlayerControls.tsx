@@ -14,6 +14,7 @@ import { PlayerState, LyricData, Theme } from "../types";
 import LyricsTimelineModal from "./modal/LyricsTimelineModal";
 import TrackTitleNavigator from "./floating-player/TrackTitleNavigator";
 import PlayerControlSlotButton from "./floating-player/PlayerControlSlotButton";
+import PlayerBarGlow from "./floating-player/PlayerBarGlow";
 import PlayerBottomBarPositioner from "./floating-player/PlayerBottomBarPositioner";
 import { usePlayerBottomBarBottomPx } from "../hooks/usePlayerBottomBarBottomPx";
 import { playerBottomBarLiveOffset } from "../stores/motionSignals";
@@ -473,10 +474,13 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                 outline: "1px solid rgba(40,40,40,0.2)",
                 boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
               }}
-              className={`backdrop-blur-xl shadow-2xl overflow-hidden rounded-full relative transition-colors duration-300 select-none
+              className={`backdrop-blur-xl shadow-2xl overflow-hidden rounded-full relative isolate transition-colors duration-300 select-none
                             ${isPositioning ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}
                             ${showExpanded ? `p-3 ${glassBgExpanded} w-full` : `px-4 py-2 ${glassBgCollapsed} ${COLLAPSED_WIDTH_CLASS}`}`}
             >
+              {/* 播放时从胶囊底边发出的光：在胶囊内部，z-index: -1 压在内容下面、
+                  浮在胶囊自己的底色上面，照亮底边而不盖住控件。 */}
+              <PlayerBarGlow active={playerState === PlayerState.PLAYING} />
               <motion.div
                 layout
                 transition={{ layout: CONTROL_LAYOUT_SPRING }}
