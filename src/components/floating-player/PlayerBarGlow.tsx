@@ -65,7 +65,6 @@ const PlayerBarGlow: React.FC<PlayerBarGlowProps> = ({ active }) => {
   return (
     <div ref={rootRef} className="player-bar-glow" aria-hidden="true">
       <div className="player-bar-glow-core" />
-      <div className="player-bar-glow-stream" />
     </div>
   );
 };

@@ -49,38 +49,13 @@
     inset: 0;
     background: radial-gradient(
         ellipse 60% 100% at 50% 100%,
-        rgba(255, 255, 255, 0.7) 0%,
+        rgba(255, 255, 255, 0.9) 0%,
         var(--player-bar-glow-accent-bright) 38%,
         var(--player-bar-glow-accent) 68%,
         transparent 100%
     );
 }
 
-/* 流光：一道横向掠过的白条，在光晕上头飘过去。 */
-.player-bar-glow-stream {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    mix-blend-mode: screen;
-}
-
-.player-bar-glow-stream::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: -20%;
-    left: 0;
-    width: 26%;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.45) 38%,
-        rgba(255, 255, 255, 0.9) 50%,
-        rgba(255, 255, 255, 0.45) 62%,
-        transparent 100%
-    );
-    animation: player-bar-glow-stream 2.4s linear infinite;
-}
 
 @keyframes player-bar-glow-stream {
     from {
