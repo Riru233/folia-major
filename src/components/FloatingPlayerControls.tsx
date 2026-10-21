@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Pin } from "lucide-react";
 import { MotionValue } from "framer-motion";
 import ProgressBar from "./ProgressBar";
 import { PlayerState, LyricData, Theme } from "../types";
@@ -189,9 +189,17 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
   );
 
   const canAutoExpand = canTogglePlay && duration > 0;
+  // 固定：胶囊不再随指针离开而收缩，一直保持展开。
+  const playerBarPinned = usePlayerChromeSettingsStore(
+    (state) => state.playerBarPinned,
+  );
+  const togglePlayerBarPinned = usePlayerChromeSettingsStore(
+    (state) => state.handleTogglePlayerBarPinned,
+  );
   // 定位模式强制展开：用户要看到的是最终形态的胶囊，而不是一条细进度条。
   const showExpanded =
     isPositioning ||
+    playerBarPinned ||
     isHovered ||
     (canAutoExpand &&
       playerState !== PlayerState.PLAYING &&
@@ -465,7 +473,7 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                 outline: "1px solid rgba(40,40,40,0.2)",
                 boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
               }}
-              className={`backdrop-blur-xl shadow-2xl overflow-hidden rounded-full relative transition-colors duration-300
+              className={`backdrop-blur-xl shadow-2xl overflow-hidden rounded-full relative transition-colors duration-300 select-none
                             ${isPositioning ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}
                             ${showExpanded ? `p-3 ${glassBgExpanded} w-full` : `px-4 py-2 ${glassBgCollapsed} ${COLLAPSED_WIDTH_CLASS}`}`}
             >
@@ -495,6 +503,10 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                     slotPrimary={slotPrimary}
                     slotSecondary={slotSecondary}
                     slotContext={resolvedSlotContext}
+                    isPinned={playerBarPinned}
+                    onTogglePinned={() =>
+                      togglePlayerBarPinned(!playerBarPinned)
+                    }
                   />
                 ) : (
                   <CollapsedView
@@ -570,6 +582,9 @@ interface ExpandedViewProps {
   slotPrimary: PlayerControlSlotActionId;
   slotSecondary: PlayerControlSlotActionId;
   slotContext: PlayerControlSlotContext;
+  /** 播放条被固定：固定后它不再收缩，按钮呈高亮态。 */
+  isPinned: boolean;
+  onTogglePinned: () => void;
 }
 
 const ExpandedView: React.FC<ExpandedViewProps> = ({
@@ -591,13 +606,18 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
   slotPrimary,
   slotSecondary,
   slotContext,
+  isPinned,
+  onTogglePinned,
 }) => {
+  const { t } = useTranslation();
+  const pinLabel = t(isPinned ? "options.playerBarUnpin" : "options.playerBarPin");
   return (
     <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-x-4 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
       {/* Desktop Layout - responsive grid positions apply from the sm breakpoint */}
       {/* Mobile Layout - base grid positions apply below the sm breakpoint */}
       {/* Row 1: Centered Title */}
-      <div className="col-span-3 row-start-1 min-w-0 px-2 sm:col-start-2 sm:col-span-1">
+      {/* 窄屏上固定按钮占住标题行最右侧，所以标题右边留出它的位置（宽屏时按钮在右侧按钮组里，标题不挨着它）。 */}
+      <div className="col-span-3 row-start-1 min-w-0 pl-2 pr-10 sm:col-start-2 sm:col-span-1 sm:pr-2">
         {trackNavigation ? (
           <TrackTitleNavigator
             title={currentSong?.name || noTrackText}
@@ -663,6 +683,36 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
           controlsDisabled={controlsDisabled}
           className="col-start-3 row-start-2 justify-self-start sm:justify-self-auto"
         />
+
+        {/* 固定按钮：固定后播放条不再收缩。窄屏上它占住标题行最右侧的空位，
+            宽屏上它跟在两个槽位按钮后面。 */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePinned();
+          }}
+          disabled={controlsDisabled}
+          aria-pressed={isPinned}
+          className={`col-start-3 row-start-1 justify-self-end rounded-full p-2 transition-colors sm:col-auto sm:row-auto sm:justify-self-auto ${
+            isPinned
+              ? isDaylight
+                ? "bg-black/10 text-black"
+                : "bg-white/20"
+              : `opacity-40 hover:opacity-100 ${
+                  isDaylight ? "hover:bg-black/5" : "hover:bg-white/10"
+                }`
+          } ${controlsDisabled ? "cursor-not-allowed" : ""}`}
+          style={{ color: primaryColor }}
+          title={pinLabel}
+          aria-label={pinLabel}
+        >
+          <Pin
+            size={20}
+            className="sm:h-[18px] sm:w-[18px]"
+            fill={isPinned ? "currentColor" : "none"}
+          />
+        </button>
       </div>
 
       {/* Row 2: Current Time, Progress Bar, Duration */}

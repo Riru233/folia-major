@@ -97,7 +97,7 @@ const PanelSurface: React.FC<PanelSurfaceProps> = ({ hasHandle, isCover, tabKey,
             initial={away}
             animate={{ opacity: 1, scale: 1, transition: kitTransition('unfold', reduced) }}
             exit={{ ...away, transition: kitTransition('move', reduced) }}
-            data-glass
+            data-glass data-glass-light
             data-testid="unified-panel-surface"
             data-still={isStill || undefined}
             className="st-window pointer-events-auto @container hide-scrollbar flex w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden rounded-[20px] bg-[var(--pn-glass)] text-[color:var(--st-t1)] shadow-[var(--pn-shadow)] backdrop-blur-[40px] backdrop-saturate-[1.3] [&[data-still]_*]:transition-none"

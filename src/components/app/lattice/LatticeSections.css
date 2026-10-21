@@ -133,7 +133,11 @@
 
 /* The list of all sections, under the pill. Square, as everything of the wall but its round buttons.
    It grows out of the pill and shrinks back into it: the origin is the pill's centre, measured
-   in LatticeSectionFinder and handed over as a custom property. */
+   in LatticeSectionFinder and handed over as a custom property.
+   The animation moves the individual `scale` / `translate` properties, not `transform`: the jelly
+   drag (liquidglass.ts) writes an inline `transform` on this element, and a CSS animation on
+   `transform` outranks inline styles — it would freeze the drag for as long as the animation is
+   filled. The two compose instead: the jelly's own transform keeps working during the animation. */
 .lattice-sections-list {
   position: absolute;
   top: 68px;

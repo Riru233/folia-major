@@ -130,7 +130,7 @@ export function SidePanelList<T>({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          data-glass
+          data-glass data-glass-light
           initial={{ opacity: 0, x: 60, scale: 0.3, rotateZ: 45 }}
           animate={{ opacity: 1, x: 0, scale: 1, rotateZ: 0 }}
           exit={{ opacity: 0, x: 60, scale: 0.3, rotateZ: 45 }}
