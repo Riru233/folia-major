@@ -17,7 +17,7 @@ import { useGlass } from "@/shinoinject/useGlass";
 
 // How long the list takes to grow out of the pill and to shrink back into it (ms).
 // It must match the length of the animation in LatticeSections.css (.lattice-sections-list).
-const LIST_ANIM_MS = 400;
+const LIST_ANIM_MS = 220;
 
 /** The list's life: closed (not in the page), mounting (measured, not yet animated),
  *  open (grown out of the pill), closing (shrinking back into it). */
