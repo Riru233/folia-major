@@ -3243,6 +3243,33 @@ export default {
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
       }
     },
+    "v0_7_22": {
+      "intro": "This is the 0.7.22 Beta build, released early so everyone can try 0.7.22 ahead of the official release — the whole player looks clear and translucent.",
+      "glassUpgrade": {
+        "title": "Liquid glass, reworked",
+        "description": "Fluid glass gains four presets (frosted, clear, hazy, eco), each with a preview image you can apply in one click. A new \"refraction distance\" setting controls how far the refracting edge reaches from the border toward the center, and a new \"light effect\" adds a highlight that follows the pointer over the glass and brightens when it is pressed. Scenarios that were not covered by liquid glass at all (lists, poster walls) are fixed. The parameters travel with the appearance config's import and export, and reach the OBS visual settings as well."
+      },
+      "glassJelly": {
+        "title": "Jelly deformation, reworked",
+        "description": "Dragging a glass panel now follows a saturating curve: the further you drag, the less it moves, so a panel never flies off. It stretches along the direction you drag while the other axis shrinks, each axis has a cap, and the panel can be neither squashed flat nor blown up. The spring that brings it back is stiffer, so the shape follows your hand more closely. With the jelly effect off, scrolling and animation on glass panels feel smoother too."
+      },
+      "exploreImmersive": {
+        "title": "Explore, immersed",
+        "description": "The Explore list is now fixed over the whole window: the top fades by how far you have scrolled, the bottom by how much is still below. Both edges are built from three stacked blurs, so the content blurs away instead of being cut off. The scrollbar becomes a glass pill at the right edge of the window; its thumb shows where the list stands, and each section's mark jumps straight to it. While GridMap is open the header fades piece by piece, and it comes back as soon as the map starts leaving."
+      },
+      "pageSwitchPerf": {
+        "title": "Switching tabs no longer stutters",
+        "description": "Home tabs now keep a layer each: switching only changes visibility and a sideways offset instead of remounting the whole view, so glass displacement maps are kept and covers are not decoded again. The transition moves sideways without touching opacity, which keeps the glass panels on screen for the whole animation. The grid renders only the cards the viewport needs, so scrolling no longer flashes empty space; the rendering glitch under fast repeated tab switches, and the map being covered by the home layer, are fixed as well."
+      },
+      "playerBarGlow": {
+        "title": "Pinned player bar and a water wave",
+        "description": "The bottom player bar gains a pin: once pinned it no longer shrinks when the pointer leaves, and you can toggle it from the command palette or from settings. While music plays, a water-surface waveform rises along its lower edge — the spectrum is laid out logarithmically into a wave that swells with the music and drifts slowly. Its color runs from white out to the theme accent, and the center of the glow wanders slowly sideways."
+      },
+      "morePolish": {
+        "title": "More details",
+        "description": "Lattice lists get their animation, and the jelly styling is fixed. The reflection under a grid card is no longer sliced off by the scrolling container; it now fades away naturally. The \"transparent background\" switch on the player page and its twin in the remote sheet are gone; the system blur is now called \"acrylic background\", with a note that liquid glass does not refract system acrylic."
+      }
+    },
     "v0_7_21": {
       "intro": "Welcome to 0.7.21, the Sabbat-of-the-witch Update—a major release. The desktop app adds Spotify and YouTube Music, and every platform now signs in through one login window; the home screen gains an Explore tab; Sonnet, Diorama and Pendolo get Smart beat mode, moving with the beats and drums; QQ Music can sign in with the QQ Music app, and the interface is now available in Traditional Chinese.",
       "newPlatforms": {

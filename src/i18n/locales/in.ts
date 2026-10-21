@@ -3243,6 +3243,33 @@ export default {
         "description": "Setelah masuk, playlist pribadi buatan Anda kini dapat memuat lagu dengan paging sungguhan. Backend yang di-host sendiri harus memakai qq-music-api 3.1.2 atau lebih baru; backend lama beralih otomatis, dan playlist yang tidak dapat dibaca kini menjelaskan bahwa playlist itu tidak publik, alih-alih tampil kosong tanpa keterangan."
       }
     },
+    "v0_7_22": {
+      "intro": "Ini versi Beta 0.7.22, dirilis lebih awal agar semua orang bisa mencicipi 0.7.22 sebelum rilis resminya — seluruh pemutar terlihat bening dan tembus pandang.",
+      "glassUpgrade": {
+        "title": "Kaca Cair, Ditulis Ulang",
+        "description": "Kaca cair mendapat empat preset (frosted, clear, hazy, eco), masing-masing dengan gambar pratinjau yang bisa langsung dipakai sekali klik. Pengaturan \"jarak refraksi\" yang baru mengatur seberapa jauh tepi yang merefraksi menjangkau dari batas ke tengah, dan \"efek cahaya\" yang baru menambah pantulan yang mengikuti penunjuk di atas kaca dan lebih terang saat ditekan. Bagian yang sama sekali tidak tercakup kaca cair (daftar, dinding poster) sudah diperbaiki. Parameter ini ikut terbawa pada impor dan ekspor konfigurasi tampilan, dan sampai juga ke pengaturan visual OBS."
+      },
+      "glassJelly": {
+        "title": "Deformasi Jelly, Ditulis Ulang",
+        "description": "Menyeret panel kaca kini mengikuti kurva yang jenuh: semakin jauh ditarik, semakin sedikit pergerakannya, jadi panel tidak pernah terlempar keluar. Panel meregang searah tarikan sementara arah tegak lurusnya menyusut, tiap sumbu punya batas, dan panel tidak bisa gepeng atau membesar berlebihan. Pegas yang将他туarkannya lebih keras, sehingga bentuknya lebih mengikuti tangan. Dengan efek jelly dimatikan, pengguliran dan animasi pada panel kaca juga terasa lebih halus."
+      },
+      "exploreImmersive": {
+        "title": "Jelajahi, Terendam",
+        "description": "Daftar Jelajahi kini terkunci menutupi seluruh jendela: bagian atas memudar sesuai jarak yang digulir, bagian bawah memudar sesuai apa yang masih tersisa di bawah. Kedua tepinya disusun dari tiga lapis blur yang bertumpuk, jadi isinya memudar menghilang, bukan terpotong. Bilah geser berubah menjadi pil kaca di tepi kanan jendela; ibu jarinya menunjukkan posisi daftar, dan tanda tiap bagian bisa langsung melompat ke sana. Saat GridMap terbuka, kepala halaman memudar sedikit demi sedikit, dan kembali begitu peta mulai keluar."
+      },
+      "pageSwitchPerf": {
+        "title": "Berpindah Tab Tidak Lagi Tersendat",
+        "description": "Tab beranda kini menyimpan lapisannya masing-masing: berpindah hanya mengubah visibilitas dan geseran ke samping, bukan memasang ulang seluruh tampilan, jadi peta perpindahan kaca tetap utuh dan sampul tidak didekode ulang. Transisinya bergeser ke samping tanpa menyentuh opasitas, sehingga panel kaca tetap terlihat sepanjang animasi. Grid hanya menggambar kartu yang dibutuhkan layar, jadi menggulir tidak lagi berkedip kosong; gangguan gambar saat berpindah tab berulang cepat, dan peta yang tertutup lapisan beranda, ikut diperbaiki."
+      },
+      "playerBarGlow": {
+        "title": "Bilah Pemutar yang Disematkan dan Gelombang Air",
+        "description": "Bilah pemutar bawah mendapat tombol sematan: setelah disematkan, ia tidak lagi menyusut saat penunjuk pergi, dan bisa dihidupkan dari palet perintah maupun dari pengaturan. Sambil musik berbunyi, gelombang permukaan air naik di tepi bawahnya—spektrum ditata secara logaritma menjadi gelombang yang membesar mengikuti musik dan menghanyut perlahan. Warnanya mengalir dari putih ke warna aksen tema, dan pusat cahayanya melayang perlahan ke samping."
+      },
+      "morePolish": {
+        "title": "Detail Lainnya",
+        "description": "Daftar Lattice mendapat animasinya, dan gaya jelly yang bermasalah sudah diperbaiki. Bayangan di bawah kartu grid tidak lagi terpotong oleh wadah yang bisa digulir; kini ia memudar secara alami. Sakelar \"latar transparan\" di halaman pemutar dan kembarannya di panel kendali jarak jauh dihapus; kabut sistem kini disebut \"latar akrilik\", dengan catatan bahwa kaca cair tidak merefraksi akrilik sistem."
+      }
+    },
     "v0_7_21": {
       "intro": "Selamat datang di 0.7.21, Sabbat-of-the-witch Update—sebuah rilis besar. Aplikasi desktop menambahkan Spotify dan YouTube Music, dan semua platform kini masuk lewat satu jendela login; beranda mendapat tab Jelajahi; Sonnet, Diorama, dan Pendolo mendapat Mode ketukan pintar yang bergerak mengikuti ketukan dan drum; QQ Music bisa masuk dengan aplikasi QQ Music, dan antarmuka kini tersedia dalam bahasa Tionghoa Tradisional.",
       "newPlatforms": {

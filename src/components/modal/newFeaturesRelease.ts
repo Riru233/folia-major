@@ -1,4 +1,4 @@
-import { AudioWaveform, Compass, LogIn, Music2, QrCode, Sparkles } from 'lucide-react';
+import { AudioWaveform, Blend, Compass, Droplets, Sparkles, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // src/components/modal/newFeaturesRelease.ts
@@ -17,14 +17,14 @@ type NewFeaturesRelease = {
 
 // Defines the current release's cards; their localized text lives under i18nKey in every locale.
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
-    i18nKey: 'releaseNotes.v0_7_21',
-    majorUpdate: { codename: 'Sabbat-of-the-witch' },
+    i18nKey: 'releaseNotes.v0_7_22',
+    majorUpdate: { codename: 'Deluge-of-the-witch' },
     features: [
-        { id: 'newPlatforms', icon: Music2 },
-        { id: 'loginWindow', icon: LogIn },
-        { id: 'explore', icon: Compass },
-        { id: 'smartBeat', icon: AudioWaveform },
-        { id: 'qqMusic', icon: QrCode },
-        { id: 'moreDetails', icon: Sparkles },
+        { id: 'glassUpgrade', icon: Blend },
+        { id: 'glassJelly', icon: Droplets },
+        { id: 'exploreImmersive', icon: Compass },
+        { id: 'pageSwitchPerf', icon: Zap },
+        { id: 'playerBarGlow', icon: AudioWaveform },
+        { id: 'morePolish', icon: Sparkles },
     ],
 };
