@@ -593,7 +593,7 @@ export const compressConfig = (config: any): string => {
     if (config.libraryWallSeamStyle !== undefined) minified.lwss = config.libraryWallSeamStyle;
     if (config.libraryWallBackdropLyrics !== undefined) minified.lwbl = config.libraryWallBackdropLyrics;
     if (config.libraryWallBackdropBlur !== undefined) minified.lwbb = config.libraryWallBackdropBlur;
-    if (config.libraryWallSeamHorizontal !== undefined) minified.lwsh = config.libraryWallSeamHorizontal;
+    if (config.libraryWallSeamDirection !== undefined) minified.lwsd = config.libraryWallSeamDirection;
 
     const jsonStr = JSON.stringify(minified);
     const bytes = new TextEncoder().encode(jsonStr);
@@ -663,7 +663,7 @@ export const decompressConfig = (str: string): any => {
         || parsed.lwss !== undefined
         || parsed.lwbl !== undefined
         || parsed.lwbb !== undefined
-        || parsed.lwsh !== undefined
+        || parsed.lwsd !== undefined
         // 液态玻璃只有自己一组时，也要认成短码形态。
         || parsed.lgt !== undefined;
     if (isMinified) {
@@ -741,7 +741,7 @@ export const decompressConfig = (str: string): any => {
         if (parsed.lwss !== undefined) decompressed.libraryWallSeamStyle = parsed.lwss;
         if (parsed.lwbl !== undefined) decompressed.libraryWallBackdropLyrics = parsed.lwbl;
         if (parsed.lwbb !== undefined) decompressed.libraryWallBackdropBlur = parsed.lwbb;
-        if (parsed.lwsh !== undefined) decompressed.libraryWallSeamHorizontal = parsed.lwsh;
+        if (parsed.lwsd !== undefined) decompressed.libraryWallSeamDirection = parsed.lwsd;
 
         return decompressed;
     } else {
@@ -764,7 +764,7 @@ export const decompressConfig = (str: string): any => {
             'stageTrackPillMode', 'stageTrackPillTimeoutSec', 'stageTrackPillOnHome',
             'libraryWallStackEdges',
             'libraryWallSeamClear', 'libraryWallSeamStyle', 'libraryWallBackdropLyrics', 'libraryWallBackdropBlur',
-            'libraryWallSeamHorizontal',
+            'libraryWallSeamDirection',
             'liquidGlass',
         ];
         const hasValidKey = validKeys.some(k => parsed[k] !== undefined);

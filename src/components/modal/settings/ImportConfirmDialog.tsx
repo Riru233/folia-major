@@ -8,6 +8,7 @@ import { getVisualizerBackgroundModeLabel, hasVisualizerBackgroundMode } from '.
 import { ACTIVATE_CUSTOM_THEME_KEY, THEME_DARK_KEY, THEME_LIGHT_KEY, type ImportChange, type ImportGroup, type ImportPlan } from '../../../utils/appearanceImportPlan';
 import { resolveSettingLabelKey, resolveSettingValueLabelKey } from '../../../utils/settingLabelLookup';
 import { isLibraryWallSeamStyle, LIBRARY_WALL_SEAM_STYLE_LABEL_KEYS } from '../../../utils/libraryWallSeamStyle';
+import { isLibraryWallSeamDirection, LIBRARY_WALL_SEAM_DIRECTION_TEXT } from '../../../utils/libraryWallSeamDirection';
 
 // src/components/modal/settings/ImportConfirmDialog.tsx
 // What an imported config would change, before it is applied, chosen field by field. Rows spell out
@@ -98,7 +99,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
     libraryWallSeamStyle: 'options.bravaisSeamStyle',
     libraryWallBackdropLyrics: 'options.bravaisBackdropLyrics',
     libraryWallBackdropBlur: 'options.bravaisBackdropBlur',
-    libraryWallSeamHorizontal: 'options.bravaisSeamHorizontal',
+    libraryWallSeamDirection: 'options.bravaisSeamDirection',
     // 液态玻璃整组复用图形设置里的分组标题；三个子项由 settingLabelLookup 解析到各自的滑杆文案。
     liquidGlass: 'options.liquidGlassSection',
 };
@@ -291,6 +292,9 @@ const ImportConfirmDialog: React.FC<ImportConfirmDialogProps> = ({
         }
         if (key === 'libraryWallSeamStyle' && isLibraryWallSeamStyle(value)) {
             return <span className={cls}>{t(LIBRARY_WALL_SEAM_STYLE_LABEL_KEYS[value])}</span>;
+        }
+        if (key === 'libraryWallSeamDirection' && isLibraryWallSeamDirection(value)) {
+            return <span className={cls}>{t(LIBRARY_WALL_SEAM_DIRECTION_TEXT[value].label)}</span>;
         }
         if (isHexColor(value)) {
             return (

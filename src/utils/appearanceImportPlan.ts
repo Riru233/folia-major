@@ -149,7 +149,7 @@ const FIELD_GROUPS: Record<string, ImportGroup> = {
     libraryWallSeamStyle: 'libraryWall',
     libraryWallBackdropLyrics: 'libraryWall',
     libraryWallBackdropBlur: 'libraryWall',
-    libraryWallSeamHorizontal: 'libraryWall',
+    libraryWallSeamDirection: 'libraryWall',
 
     // 液态玻璃的三个全局参数：一套玻璃的调参，和别的分组没有从属关系，单独成组。
     liquidGlass: 'liquidGlass',
@@ -196,6 +196,8 @@ const TRUTHY_GUARDED_FIELDS = new Set([
     'stageTrackPillMode',
     // applyImportedConfig only applies a known info strip preset, all of which are truthy strings.
     'libraryWallSeamStyle',
+    // Likewise a known info strip direction (auto / vertical / horizontal).
+    'libraryWallSeamDirection',
 ]);
 
 // Per-renderer tunings the import skips whenever the visualizerTunings bundle is present. The three

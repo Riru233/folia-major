@@ -14,6 +14,7 @@ import { decompressConfig, readSavedCustomTheme } from '../../../../../utils/app
 import { ACTIVATE_CUSTOM_THEME_KEY, buildImportPlan, THEME_DARK_KEY, THEME_LIGHT_KEY, type ImportPlan } from '../../../../../utils/appearanceImportPlan';
 import { isFontFamilyAvailable } from '../../../../../utils/fontAvailability';
 import { isLibraryWallSeamStyle } from '../../../../../utils/libraryWallSeamStyle';
+import { isLibraryWallSeamDirection } from '../../../../../utils/libraryWallSeamDirection';
 import { extractCfgFromInput } from '../../../../../utils/obsUrl';
 import { mergeUrlBackgroundList } from '../../../../../utils/urlBackground';
 
@@ -337,8 +338,8 @@ export const applyImportedConfig = (config: any, keys: string[], theme: ConfigTh
     if (has('libraryWallBackdropBlur')) {
         storeLibraryWall.setBackdropBlur(Boolean(config.libraryWallBackdropBlur));
     }
-    if (has('libraryWallSeamHorizontal')) {
-        storeLibraryWall.setSeamHorizontal(Boolean(config.libraryWallSeamHorizontal));
+    if (has('libraryWallSeamDirection') && isLibraryWallSeamDirection(config.libraryWallSeamDirection)) {
+        storeLibraryWall.setSeamDirection(config.libraryWallSeamDirection);
     }
     // 液态玻璃：一组全局参数，整组套用，落库与刷新走 store 自己的 commit。
     if (has('liquidGlass') && config.liquidGlass) {
