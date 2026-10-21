@@ -478,9 +478,10 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                             ${isPositioning ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}
                             ${showExpanded ? `p-3 ${glassBgExpanded} w-full` : `px-4 py-2 ${glassBgCollapsed} ${COLLAPSED_WIDTH_CLASS}`}`}
             >
-              {/* 播放时从胶囊底边发出的光：在胶囊内部，z-index: -1 压在内容下面、
-                  浮在胶囊自己的底色上面，照亮底边而不盖住控件。 */}
-              <PlayerBarGlow active={playerState === PlayerState.PLAYING} />
+              {/* 播放时从胶囊底边发出的水光：在胶囊内部，z-index: -1 压在内容下面、
+                  浮在胶囊自己的底色上面，照亮底边而不盖住控件。
+                  expanded 传进去：胶囊展开/收起时画布要重新量一次尺寸。 */}
+              <PlayerBarGlow active={playerState === PlayerState.PLAYING} expanded={showExpanded} />
               <motion.div
                 layout
                 transition={{ layout: CONTROL_LAYOUT_SPRING }}
