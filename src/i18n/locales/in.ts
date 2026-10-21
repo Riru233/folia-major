@@ -1580,6 +1580,8 @@ export default {
     "exploreEmpty": "Belum ada rekomendasi",
     "exploreFailed": "Rekomendasi tidak dapat dibaca",
     "exploreRetry": "Coba lagi",
+    "exploreScrollbar": "Bilah gulir jelajah",
+    "exploreJumpToSection": "Lompat ke {{section}}",
     "exploreScrollLeft": "Gulir ke kiri",
     "exploreScrollRight": "Gulir ke kanan",
     "exploreArtist": "Artis",

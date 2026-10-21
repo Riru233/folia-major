@@ -1580,6 +1580,8 @@ export default {
     "exploreEmpty": "Nothing to recommend yet",
     "exploreFailed": "The recommendations could not be read",
     "exploreRetry": "Retry",
+    "exploreScrollbar": "Explore scrollbar",
+    "exploreJumpToSection": "Jump to {{section}}",
     "exploreScrollLeft": "Scroll left",
     "exploreScrollRight": "Scroll right",
     "exploreArtist": "Artist",

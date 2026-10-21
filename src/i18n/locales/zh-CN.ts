@@ -1580,6 +1580,8 @@ export default {
     "exploreEmpty": "暂时没有推荐内容",
     "exploreFailed": "推荐内容没有读到",
     "exploreRetry": "重试",
+    "exploreScrollbar": "探索页滚动条",
+    "exploreJumpToSection": "跳转到{{section}}",
     "exploreScrollLeft": "向左滚动",
     "exploreScrollRight": "向右滚动",
     "exploreArtist": "歌手",

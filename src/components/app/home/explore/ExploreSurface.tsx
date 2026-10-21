@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Loader2, RefreshCw } from 'lucide-react';
@@ -7,6 +7,7 @@ import type { OmniCollection, OmniProviderId } from '../../../../types/onlineMus
 import { exploreScroll, useExploreFeedStore } from '../../../../stores/useExploreFeedStore';
 import { ExploreEdgeBlur } from './ExploreEdgeBlur';
 import { ExploreLight } from './ExploreLight';
+import { ExploreScrollbar } from './ExploreScrollbar';
 import { EXPLORE_PILL, EXPLORE_TOKENS, ExploreSections } from './ExploreSections';
 import { useExploreTilt } from './exploreTilt';
 import { OWN_SECTION_IDS, listenedSongsOf, useOwnExploreSections } from './ownSections';
@@ -66,6 +67,8 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
         return () => window.clearTimeout(id);
     }, []);
     const list = useRef<HTMLDivElement>(null);
+    // The floating scrollbar points at the list through this id; one page per surface.
+    const listId = useId();
     const end = useRef<HTMLDivElement>(null);
     const pin = useRef<HTMLDivElement>(null);
     useExploreTilt(list);
@@ -180,6 +183,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
             <ExploreLight list={list} />
             <motion.div
                 ref={list}
+                id={listId}
                 data-explore-surface
                 // Entries that change places are followed from where they stood in this list.
                 layoutScroll
@@ -187,7 +191,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                     if (hasSections) exploreScroll.top = event.currentTarget.scrollTop;
                     follow();
                 }}
-                className="h-full w-full overflow-y-auto fixed top-0"
+                className="h-full w-full overflow-y-auto fixed top-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{
                     maskImage: 'linear-gradient(to bottom, transparent, black var(--ex-top-fade, 0px), black calc(100% - var(--ex-bottom-fade, 0px)), transparent)',
                 }}
@@ -234,6 +238,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                 </div>
                 <ExploreEdgeBlur edge="bottom" />
             </motion.div>
+            <ExploreScrollbar list={list} controls={listId} />
         </div>
     );
 };
