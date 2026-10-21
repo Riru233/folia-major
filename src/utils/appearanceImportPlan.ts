@@ -149,6 +149,7 @@ const FIELD_GROUPS: Record<string, ImportGroup> = {
     libraryWallSeamStyle: 'libraryWall',
     libraryWallBackdropLyrics: 'libraryWall',
     libraryWallBackdropBlur: 'libraryWall',
+    libraryWallSeamHorizontal: 'libraryWall',
 
     // 液态玻璃的三个全局参数：一套玻璃的调参，和别的分组没有从属关系，单独成组。
     liquidGlass: 'liquidGlass',

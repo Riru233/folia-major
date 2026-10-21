@@ -114,6 +114,9 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     libraryWallSeamStyle: useLibraryWallLookStore.getState().seamStyle,
     libraryWallBackdropLyrics: useLibraryWallLookStore.getState().backdropLyrics,
     libraryWallBackdropBlur: useLibraryWallLookStore.getState().backdropBlur,
+    // Which way the info strip opens (a column split, or a row split across the wall): part of the
+    // wall's look, no user exception.
+    libraryWallSeamHorizontal: useLibraryWallLookStore.getState().seamHorizontal,
     // 液态玻璃的四个全局数值参数 + 光效 / 果冻两个效果开关：视觉调参，随共享外观一起走（2026-10-12）。
     liquidGlass: {
       strength: storeLiquidGlass.strength,
