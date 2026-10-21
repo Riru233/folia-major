@@ -1,4 +1,4 @@
-import { isWindowsPlatform } from "@/utils/platform";
+import { isApplePlatform, isChromiumRenderer, isWindowsPlatform } from "@/utils/platform";
 /*
    液态玻璃
   */
@@ -10,9 +10,12 @@ const SVGNS = "http://www.w3.org/2000/svg";
 const global = { strength: 2.25, blur: 2, sat: 180, bend: 60 };
 export type LiquidGlassParams = typeof global;
 export const LIQUID_GLASS_DEFAULTS: LiquidGlassParams = { ...global };
-// 边缘扭曲（位移滤镜）与饱和度只有 Windows 平台才支持：非 Windows 上不建 <filter>，
-// backdrop-filter 不带 url(#lg-N) 也不写 saturate()，strength/sat 同时钉死不可调，blur 照常。
-export const LIQUID_GLASS_DISTORTION_SUPPORTED = isWindowsPlatform;
+// 边缘扭曲（位移滤镜）与饱和度需要 backdrop-filter 能引用 SVG 位移图：Chromium 内核画得了，
+// WebKit（macOS 的 Safari、iOS 上的所有浏览器）画不了。Windows 一律按支持处理；
+// Apple 设备放开到 Chromium 内核（macOS / iOS 上的桌面版与 Chrome、Edge、Brave），
+// Safari 与 iOS 上的浏览器仍然不画。Linux 维持原样，不在这一轮放开。
+export const LIQUID_GLASS_DISTORTION_SUPPORTED =
+    isWindowsPlatform || (isApplePlatform && isChromiumRenderer());
 // localStorage 键：面板读写同一组键；本模块启动时自行读回，
 // 保证设置面板还没被打开（store 尚未被 import）时玻璃也用的是用户调过的参数。
 export const LIQUID_GLASS_STORAGE_KEYS = {
@@ -30,7 +33,8 @@ export const LIQUID_GLASS_PARAM_BOUNDS: Record<keyof LiquidGlassParams, { min: n
   bend: { min: 0, max: 300 },
 };
 // 预设：一组强度/模糊/弯曲距离（不碰饱和度），一键切到常见观感。通透流体与朦胧流体靠扭曲滤镜，
-// 只有 Windows 才有，其他平台不列出（毛玻璃只调模糊、节能在哪都能用）。
+// 只有画得了位移图的渲染器才有（见 LIQUID_GLASS_DISTORTION_SUPPORTED），其它平台不列出
+// （毛玻璃只调模糊、节能在哪都能用）。
 // ★ 配置预设：改这里的数值即可；设置面板按 id 匹配当前值高亮，效果图见 public/glass-presets/<id>.png。
 export type LiquidGlassPresetId = "frosted" | "clear" | "hazy" | "eco";
 export type LiquidGlassPreset = {
@@ -38,23 +42,23 @@ export type LiquidGlassPreset = {
   strength: number;
   blur: number;
   bend: number;
-  /** 需要扭曲滤镜（Windows）才有意义，其他平台不列出。 */
-  windowsOnly: boolean;
+  /** 需要扭曲滤镜才有意义，画不了位移图的平台不列出。 */
+  needsDistortion: boolean;
 };
 export const LIQUID_GLASS_PRESETS: readonly LiquidGlassPreset[] = [
-  { id: "frosted", strength: 0, blur: 12, bend: 0, windowsOnly: false },
-  { id: "clear", strength: 4, blur: 2.5, bend: 10, windowsOnly: true },
-  { id: "hazy", strength: 4, blur: 6, bend: 10, windowsOnly: true },
-  { id: "eco", strength: 0, blur: 0, bend: 0, windowsOnly: false },
+  { id: "frosted", strength: 0, blur: 12, bend: 0, needsDistortion: false },
+  { id: "clear", strength: 4, blur: 2.5, bend: 10, needsDistortion: true },
+  { id: "hazy", strength: 4, blur: 6, bend: 10, needsDistortion: true },
+  { id: "eco", strength: 0, blur: 0, bend: 0, needsDistortion: false },
 ];
 const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
 // 每个参数各自钳到自己的量程；非有限值（含缺失键）回落到默认值。
-// 非 Windows 平台边缘扭曲与饱和度不存在可调空间：读回、设置面板、外观导入三条路径都走这里，
-// 统一钉回固定值，state / localStorage / 实际渲染不会各说各话。
+// 画不了位移图的平台（Safari、iOS 上的浏览器）边缘扭曲与饱和度不存在可调空间：读回、设置面板、
+// 外观导入三条路径都走这里，统一钉回固定值，state / localStorage / 实际渲染不会各说各话。
 export const clampLiquidGlassParam = <K extends keyof LiquidGlassParams>(key: K, value: number) => {
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "strength") return LIQUID_GLASS_DEFAULTS.strength;
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "sat") return 1;
-  // bend 只作用于位移图（Windows 才有），非 Windows 上钉回默认值，state / localStorage 保持一致。
+  // bend 只作用于位移图，画不了位移图的平台上钉回默认值，state / localStorage 保持一致。
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "bend") return LIQUID_GLASS_DEFAULTS.bend;
   const { min, max } = LIQUID_GLASS_PARAM_BOUNDS[key];
   return Number.isFinite(value) ? clamp(value, min, max) : LIQUID_GLASS_DEFAULTS[key];
@@ -136,7 +140,7 @@ const REBUILD_GAP = 64;
 
 type Glass = {
   el: HTMLElement;
-  // 非 Windows 平台不建扭曲滤镜，这三个为空；update 据此跳过位移图并写纯 blur 的 backdrop。
+  // 画不了位移图的平台不建扭曲滤镜，这三个为空；update 据此跳过位移图并写纯 blur 的 backdrop。
   filter: SVGFilterElement | null;
   feImage: SVGFEImageElement | null;
   feDisp: SVGFEDisplacementMapElement | null;
@@ -217,7 +221,7 @@ const buildDisplacementMap = (
 };
 
 // 解析每元素参数覆盖：属性缺失或非有限数时返回 null（回落全局），否则钳到该参数量程。
-// 非 Windows 平台上 strength / sat / bend 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
+// 画不了位移图的平台上 strength / sat / bend 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
 const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParams) => {
   if (raw === undefined) return null;
   const parsed = parseFloat(raw);
@@ -226,12 +230,12 @@ const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParam
 
 // 给元素挂液态玻璃滤镜（幂等）：同一元素只建一次，滤镜同步进文档，
 // 保证 backdrop-filter 写下的 url(#lg-N) 立即可解析，不存在悬空引用窗口。
-// 非 Windows 平台只登记玻璃记录、不建滤镜，backdrop 只剩 blur。
+// 画不了位移图的平台只登记玻璃记录、不建滤镜，backdrop 只剩 blur。
 export const makeGlass = (el: HTMLElement) => {
   const existing = glasses.get(el);
   if (existing) return existing;
   const id = "lg-" + uid++;
-  // 只有 Windows 才建位移滤镜；非 Windows 平台连 <filter> 都不落文档，url(#lg-N) 自然无从解析。
+  // 只有画得了位移图的平台才建位移滤镜；其它平台连 <filter> 都不落文档，url(#lg-N) 自然无从解析。
   let filter: SVGFilterElement | null = null;
   let feImage: SVGFEImageElement | null = null;
   let feDisp: SVGFEDisplacementMapElement | null = null;
@@ -345,14 +349,14 @@ export const makeGlass = (el: HTMLElement) => {
         curFilter.setAttribute("x", "0");
         curFilter.setAttribute("y", "0");
       }
-      // 非 Windows 平台没有扭曲滤镜：只剩纯 blur 的 backdrop（顺带保证 blur/sat 拖滑杆即时生效）。
+      // 画不了位移图的平台没有扭曲滤镜：只剩纯 blur 的 backdrop（顺带保证 blur/sat 拖滑杆即时生效）。
       // 每元素覆盖（data-glass-blur / -sat / -strength / -bend）优先于全局，未设置时回落 global。
       const blur = this.blurOverride ?? global.blur;
       const sat = this.satOverride ?? global.sat;
       const effGlobalStrength = this.strengthOverride ?? global.strength;
       const effBend = this.bendOverride ?? global.bend;
       // 性能/资源：强度或弯曲距离为 0 → 位移图恒为零，不挂折射滤镜（省掉 feDisplacementMap 与逐像素成图）；
-      // 模糊为 0 → 不挂 blur。非 Windows 无扭曲滤镜，curFilter 为空，只按 blur 决定。
+      // 模糊为 0 → 不挂 blur。没有扭曲滤镜的平台 curFilter 为空，只按 blur 决定。
       const refractionOn = !!curFilter && this.strength > 0 && effGlobalStrength > 0 && effBend > 0;
       const parts: string[] = [];
       if (curFilter) parts.push(`saturate(${sat}%)`);

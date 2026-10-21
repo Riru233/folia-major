@@ -7,8 +7,7 @@ import { usePlayerChromeSettingsStore } from '../../../../stores/usePlayerChrome
 import { useThemeSettingsStore } from '../../../../stores/useThemeSettingsStore';
 import { useVisualizerSettingsStore } from '../../../../stores/useVisualizerSettingsStore';
 import { useLiquidGlassSettingsStore } from '../../../../stores/useLiquidGlassSettingsStore';
-import { LIQUID_GLASS_PARAM_BOUNDS, LIQUID_GLASS_PRESETS, type LiquidGlassPresetId } from '../../../../shinoinject/liquidglass';
-import { isWindowsPlatform } from '../../../../utils/platform';
+import { LIQUID_GLASS_PARAM_BOUNDS, LIQUID_GLASS_PRESETS, LIQUID_GLASS_DISTORTION_SUPPORTED, type LiquidGlassPresetId } from '../../../../shinoinject/liquidglass';
 import { VISUALIZER_FRAME_RATE_OPTIONS } from '../../../../utils/frameRateLimiter';
 import { Group, Link, Reveal, Row, Segmented, Slider, Toggle, option, useSettingsKitTheme, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
 import { GlassPresetGrid } from './pictures';
@@ -31,8 +30,8 @@ const PERFORMANCE: SettingsGroupDef = { id: 'graphicsPerformance', titleKey: 'op
 const MOTION: SettingsGroupDef = { id: 'graphicsMotion', titleKey: 'options.reduceMotionSection' };
 const GLASS: SettingsGroupDef = { id: 'liquidGlass', titleKey: 'options.liquidGlassSection' };
 
-/** The liquid glass tuning: distortion and saturation only exist where the backend distorts (Windows). */
-const IS_WINDOWS = isWindowsPlatform;
+/** 扭曲与饱和度只在画得了位移图的渲染器上可调（Chromium 内核；Safari 与 iOS 上的浏览器除外）。 */
+const GLASS_DISTORTION = LIQUID_GLASS_DISTORTION_SUPPORTED;
 
 const O = {
     glassPreset: option(GLASS, 'liquidGlassPreset', 'options.liquidGlassPreset'),
@@ -43,10 +42,10 @@ const O = {
     frameRateValue: option(PERFORMANCE, 'visualizerFrameRateValue', 'options.visualizerFrameRateValue'),
     glowFix: option(PERFORMANCE, 'glowBlurQuantize', 'options.glowBlurQuantize'),
     followSystem: option(MOTION, 'reduceMotionFollowSystem', 'options.reduceMotionFollowSystem'),
-    glassStrength: option(GLASS, 'liquidGlassStrength', 'options.liquidGlassStrength', { available: () => IS_WINDOWS }),
-    glassBend: option(GLASS, 'liquidGlassBend', 'options.liquidGlassBend', { available: () => IS_WINDOWS }),
+    glassStrength: option(GLASS, 'liquidGlassStrength', 'options.liquidGlassStrength', { available: () => GLASS_DISTORTION }),
+    glassBend: option(GLASS, 'liquidGlassBend', 'options.liquidGlassBend', { available: () => GLASS_DISTORTION }),
     glassBlur: option(GLASS, 'liquidGlassBlur', 'options.liquidGlassBlur'),
-    glassSat: option(GLASS, 'liquidGlassSat', 'options.liquidGlassSat', { available: () => IS_WINDOWS }),
+    glassSat: option(GLASS, 'liquidGlassSat', 'options.liquidGlassSat', { available: () => GLASS_DISTORTION }),
     glassLight: option(GLASS, 'liquidGlassLight', 'options.liquidGlassLight'),
     glassJelly: option(GLASS, 'liquidGlassJelly', 'options.liquidGlassJelly'),
 };
@@ -117,14 +116,14 @@ const GraphicsPage: React.FC = () => {
     // Native blur can drop frames on some GPUs, so switching it on asks first.
     const [nativeBlurAsking, setNativeBlurAsking] = useState(false);
     const frameRateLimited = visualizer.frameRate !== 'off';
-    // 预设：非 Windows 不列出通透/朦胧流体；按当前值高亮（非 Windows 强度与弯曲距离被钉死，只按模糊匹配）。
+    // 预设：画不了位移图的平台不列出通透/朦胧流体；按当前值高亮（那边强度与弯曲距离被钉死，只按模糊匹配）。
     const presetOptions = LIQUID_GLASS_PRESETS
-        .filter(preset => !preset.windowsOnly || IS_WINDOWS)
+        .filter(preset => !preset.needsDistortion || GLASS_DISTORTION)
         .map(preset => ({ value: preset.id as string, label: t(PRESET_LABEL_KEY[preset.id]) }));
     const activePreset = LIQUID_GLASS_PRESETS.find(preset => (
-        preset.windowsOnly && !IS_WINDOWS
+        preset.needsDistortion && !GLASS_DISTORTION
             ? false
-            : IS_WINDOWS
+            : GLASS_DISTORTION
                 ? glass.strength === preset.strength && glass.blur === preset.blur && glass.bend === preset.bend
                 : glass.blur === preset.blur
     ))?.id ?? '';
@@ -199,7 +198,7 @@ const GraphicsPage: React.FC = () => {
                     hint={t('options.liquidGlassPresetDesc')}
                     below={<GlassPresetGrid value={activePreset} label={t('options.liquidGlassPreset')} options={presetOptions} onChange={applyPreset} />}
                 />
-                {IS_WINDOWS && (
+                {GLASS_DISTORTION && (
                     <Row option={O.glassStrength} hint={t('options.liquidGlassStrengthDesc')}>
                         <Slider
                             value={glass.strength}
@@ -211,7 +210,7 @@ const GraphicsPage: React.FC = () => {
                         />
                     </Row>
                 )}
-                {IS_WINDOWS && (
+                {GLASS_DISTORTION && (
                     <Row option={O.glassBend} hint={t('options.liquidGlassBendDesc')}>
                         <Slider
                             value={glass.bend}
@@ -233,7 +232,7 @@ const GraphicsPage: React.FC = () => {
                         format={value => value.toFixed(1)}
                     />
                 </Row>
-                {IS_WINDOWS && (
+                {GLASS_DISTORTION && (
                     <Row option={O.glassSat} hint={t('options.liquidGlassSatDesc')}>
                         <Slider
                             value={glass.sat}
