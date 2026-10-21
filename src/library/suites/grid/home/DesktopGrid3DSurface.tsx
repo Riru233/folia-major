@@ -12,6 +12,7 @@ import { useHiddenCollections } from '../../../core/collection/useHiddenCollecti
 import { DEFAULT_DIRECTORY_SESSION_ID, hasDirectorySessionState } from '../../../core/directory/directorySession';
 import { homeCardToDirectoryItem } from '../../../core/directory/directoryItems';
 import { getLibraryDirectorySession, useLibraryDirectorySessionStore } from '../../../core/directory/useLibraryDirectorySessionStore';
+import { useGridMapVisibilityStore } from './gridMapVisibilityStore';
 import { useHomeCardPosition } from '../../../../hooks/useHomeCardPosition';
 import { useGlass } from '@/shinoinject/useGlass';
 
@@ -83,31 +84,47 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
     // 关掉时的 key 记下来，退场期间换了 section 也关对的那个）。挂载不算打开、卸载不算关闭——换 suite 卸载网格时
     // 会话留给下一套 suite。挂载时这个目录若已经打开着、会话里有筛选 / 选择 / 管理隐藏视图（例如刚从 TUI 切过来），
     // 地图直接开着把它们显示出来；打开着却是空会话就当它关了（网格里地图关着）。
+    // 页头的淡出 / 淡入不走会话，而是跟着网格自己的可见性 store（gridMapVisibilityStore）同步翻转：
+    // 关地图时会话等退场结束才清，页头却从退场第一帧就淡回来，两者交叉。
     const [showGridMap, setShowGridMap] = useState(() => {
         const { openDirectoryKey } = useLibraryDirectorySessionStore.getState();
         return openDirectoryKey === directoryKey && hasDirectorySessionState(getLibraryDirectorySession(directoryKey));
     });
     const closingDirectoryKeyRef = useRef<string | null>(null);
+    // 卸载清理读最新的 key（换 section 不该触发一次「先清后显示」的中间态）。
+    const directoryKeyRef = useRef(directoryKey);
+    directoryKeyRef.current = directoryKey;
     useEffect(() => {
         const { openDirectoryKey, closeDirectory } = useLibraryDirectorySessionStore.getState();
         if (!showGridMap && openDirectoryKey === directoryKey) closeDirectory(directoryKey);
+        // 挂载时地图已经开着（会话从别的 suite 带过来）：页头也要从第一帧就按「地图开着」处理。
+        if (showGridMap) useGridMapVisibilityStore.getState().show(directoryKey);
         // 只在挂载时对一次（之后的开关都经下面的回调）。
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     // 地图开着时换了目录（切 section）：新目录成为打开着的那个（之前的随之关掉，与原先换 key 丢筛选一致）。
     useEffect(() => {
-        if (showGridMap) useLibraryDirectorySessionStore.getState().openDirectory(directoryKey);
+        if (!showGridMap) return;
+        useLibraryDirectorySessionStore.getState().openDirectory(directoryKey);
+        useGridMapVisibilityStore.getState().show(directoryKey);
     }, [directoryKey, showGridMap]);
+    // 换 suite 卸载时清掉「地图显示着」标记（只清自己的 key，别处刚打开的地图不受影响）。
+    useEffect(() => () => {
+        useGridMapVisibilityStore.getState().hide(directoryKeyRef.current);
+    }, []);
     const openGridMap = useCallback(() => {
         const store = useLibraryDirectorySessionStore.getState();
         // 退场还没结束就重新打开：上一次的关闭照样算数（会话丢掉，新地图从空会话开始）。
         if (closingDirectoryKeyRef.current) store.closeDirectory(closingDirectoryKeyRef.current);
         closingDirectoryKeyRef.current = null;
         store.openDirectory(directoryKey);
+        useGridMapVisibilityStore.getState().show(directoryKey);
         setShowGridMap(true);
     }, [directoryKey]);
     const closeGridMap = useCallback(() => {
         closingDirectoryKeyRef.current = directoryKey;
+        // 页头从地图开始退场就淡回来（会话仍等退场结束才关，筛选结果不先跳回全部）。
+        useGridMapVisibilityStore.getState().hide(directoryKey);
         setShowGridMap(false);
     }, [directoryKey]);
     const handleGridMapExitComplete = useCallback(() => {

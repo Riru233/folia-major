@@ -31,6 +31,7 @@ import { useLibraryHomeOnline } from '../../../core/home/online/useLibraryHomeOn
 import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions';
 import { useLibraryHomeDirectory } from '../../../core/home/useLibraryHomeDirectory';
 import { useLibraryHomeListRegistration, useLibraryHomeTabsRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
+import { useGridMapVisibilityStore } from './gridMapVisibilityStore';
 import { cycleIndex, isOnlineHomeTab } from '../../../core/home/homeSources';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
 import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
@@ -515,6 +516,22 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
     useGlass();
 
+    // 当前页签的 GridMap 显示着（含退场动画）时页头淡出；关闭时这个标记立刻翻转，页头与地图退场交叉淡入。
+    // 三个首页列表的 GridMap 都经网格自己的可见性 store 记下显示的是哪个目录，不用逐个 surface 往上传。
+    // 比对 directoryKey 而不是只看「有地图」：地图还开着时按 Tab 换页签，旧页的地图随层藏起来，
+    // 新页的页头不该跟着一起淡掉。
+    const isGridMapOpen = useGridMapVisibilityStore(
+        state => state.visibleDirectoryKey !== null && state.visibleDirectoryKey === directoryKey,
+    );
+    // 页头淡出按「带玻璃的元素各自淡」来做：不能给页头容器加 opacity——祖先 opacity < 1 会把
+    // backdrop-filter 的取样根截断在容器内，整段动画期间玻璃都不显示（与 CommandPalette 面板同一条）。
+    // 元素自己的 opacity 不参与取样根判定，所以玻璃在淡出过程中一直有滤镜。
+    const headerFadeStyle: React.CSSProperties = {
+        opacity: isGridMapOpen ? 0 : 1,
+        // opacity 排前面：它按 300ms 淡，其余属性沿用这些元素原本 150ms 的过渡（例如搜索框展开宽度）。
+        transition: 'opacity 300ms ease-in-out, all 150ms',
+    };
+
     return (
         <div
             ref={gridRootRef}
@@ -522,8 +539,12 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             className={`relative w-full h-full flex flex-col font-sans overflow-hidden ${mainBg} pointer-events-auto ${bottomPadding}`}
         >
 
-            {/* Main Header Container (Fades out when sliding/interacting) */}
-            <div className="transition-opacity duration-300 ease-in-out z-[1] opacity-100 select-none">
+            {/* Main Header Container (fades out piece by piece while GridMap is open; see headerFadeStyle) */}
+            <div
+                aria-hidden={isGridMapOpen}
+                inert={isGridMapOpen}
+                className={`z-[20] select-none ${isGridMapOpen ? 'pointer-events-none' : ''}`}
+            >
                 <div className="grid grid-cols-2 md:grid-cols-3 items-center w-full max-w-7xl mx-auto p-4 md:p-8 gap-y-4 md:gap-y-0">
                     {/* Left title and settings */}
                     <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
@@ -546,6 +567,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 : "1px solid rgba(255,255,255,0.12)",
                                 outline: "1px solid rgba(40,40,40,0.2)",
                                 boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                                ...headerFadeStyle,
                             }}
                             title={t('ui.options')}
                         >
@@ -579,6 +601,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     : "1px solid rgba(255,255,255,0.12)",
                   outline: "1px solid rgba(40,40,40,0.2)",
                   boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                  ...headerFadeStyle,
                 }}
               >
                 <PanelsTopLeft size={18} className="relative shrink-0" />
@@ -593,6 +616,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         {scanProgress?.active && (
                             <div
                                 className="relative ml-3"
+                                style={headerFadeStyle}
                                 onMouseEnter={() => setScanDetailsExpanded(true)}
                                 onMouseLeave={() => setScanDetailsExpanded(false)}
                             >
@@ -668,6 +692,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     borderBottom: isDaylight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.12)',
                                     outline: '1px solid rgba(40,40,40,0.2)',
                                     boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                                    ...headerFadeStyle,
                                 }}
                             />
                             {/* 摇杆：按住切换器任意处即吸附到鼠标并跟手，松手按最近页签吸附。层级与玻璃层平级，
@@ -688,12 +713,18 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     // 由上面的 transition 补间，松手复原时不再瞬间跳变。
                                     boxShadow: thumbDragging ? '0 0 4px #000,0 0 8px #fffa' : '',
                                 }}
-                                animate={{ scale: thumbScale }}
-                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                // 摇杆的 opacity 交给 framer-motion（和 scale 同一个 animate），不写 CSS transition，
+                                // 免得覆盖上面底色与阴影的补间；元素自己的 opacity 不影响 backdrop-filter。
+                                animate={{ scale: thumbScale, opacity: isGridMapOpen ? 0 : 1 }}
+                                transition={{
+                                    scale: { type: 'spring', stiffness: 500, damping: 30 },
+                                    opacity: { duration: 0.3, ease: 'easeInOut' },
+                                }}
                             />
                             <div
                                 ref={pillTrackRef}
                                 {...thumbHandlers}
+                                style={headerFadeStyle}
                                 className="relative flex items-center gap-0 cursor-grab active:cursor-grabbing touch-none pointer-none"
                             >
                                 {homeTabs.map((tab) => {
@@ -766,6 +797,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                             color: isDaylight ? "#000" : "#fff",
                             overflow: "auto",
+                            ...headerFadeStyle,
                         }}
                         >
                             {isSearchingActive ? (

@@ -30,6 +30,8 @@ import { LoadingRing } from '../../../shared/LoadingRing';
 
 // How far down from its top edge the list fades what has scrolled up to it, in pixels.
 const TOP_FADE = 56;
+// How far up from its bottom edge the list fades what has not been scrolled to yet, in pixels.
+const BOTTOM_FADE = 56;
 // The mark that more is being read and the offer to try again, at the list's end, are one height: the list does not move under a listener who stands there when one takes the other's place. (It does once, by this much, when the list turns out to end there.)
 const END = 'flex h-28 items-center justify-center';
 const NO_BATCHES = {};
@@ -70,8 +72,13 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
     // under it (nothing while the list stands at its top), and that the control now floats over
     // the list.
     const follow = useCallback(() => {
-        const top = list.current?.scrollTop ?? 0;
-        list.current?.style.setProperty('--ex-top-fade', `${Math.min(top, TOP_FADE)}px`);
+        const element = list.current;
+        if (!element) return;
+        const top = element.scrollTop;
+        // What still stands below the bottom edge: nothing at the end, so nothing to fade there.
+        const below = element.scrollHeight - element.clientHeight - top;
+        element.style.setProperty('--ex-top-fade', `${Math.min(top, TOP_FADE)}px`);
+        element.style.setProperty('--ex-bottom-fade', `${Math.min(Math.max(below, 0), BOTTOM_FADE)}px`);
         pin.current?.toggleAttribute('data-floating', top > 0);
     }, []);
     // The width of the list's scrollbar, which comes and goes with what the list holds: the
@@ -80,13 +87,18 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
     useLayoutEffect(() => {
         const element = list.current;
         if (!element || typeof ResizeObserver === 'undefined') return undefined;
-        const measure = () => setBarWidth(element.offsetWidth - element.clientWidth);
+        const measure = () => {
+            setBarWidth(element.offsetWidth - element.clientWidth);
+            // Sections arriving (or the list changing height) change what stands below the
+            // bottom edge without a scroll event.
+            follow();
+        };
         const observer = new ResizeObserver(measure);
         observer.observe(element);
         if (element.firstElementChild) observer.observe(element.firstElementChild);
         measure();
         return () => observer.disconnect();
-    }, []);
+    }, [follow]);
 
     // What the listener played here, as it is when the provider's page is read: the provider may make sections out of it.
     const listened = useCallback(() => listenedSongsOf(providerId, accountId), [providerId, accountId]);
@@ -174,8 +186,10 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                     if (hasSections) exploreScroll.top = event.currentTarget.scrollTop;
                     follow();
                 }}
-                className="h-full w-full overflow-y-auto"
-                style={{ maskImage: 'linear-gradient(to bottom, transparent, black var(--ex-top-fade, 0px))' }}
+                className="h-full w-full overflow-y-auto fixed top-0"
+                style={{
+                    maskImage: 'linear-gradient(to bottom, transparent, black var(--ex-top-fade, 0px), black calc(100% - var(--ex-bottom-fade, 0px)), transparent)',
+                }}
             >
                 <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-2 md:px-8">
                     {!ready ? (
@@ -201,7 +215,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                                 onOpenCollection={onOpenCollection}
                                 onLoadMoreOf={sectionId => void loadMoreOf(sectionId)}
                                 // Room for the control that stands over this corner of the list.
-                                pageControls={hasRefresh ? <span data-explore-controls-room aria-hidden className="h-8 w-8 shrink-0" /> : undefined}
+                                pageControls={hasRefresh ? <span data-explore-controls-room aria-hidden className="h-8 w-8 shrink-0  mt-[188px]" /> : undefined}
                             />
                             {/* Under the sections, the state of the provider's page: what the app keeps itself is shown through all of it. */}
                             {isLoading ? (
