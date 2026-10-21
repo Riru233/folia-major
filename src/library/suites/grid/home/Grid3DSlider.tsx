@@ -80,6 +80,9 @@ export const getGrid3DSliderSummaryText = (
 const DISCRETE_WHEEL_PIXEL_THRESHOLD = 40;
 const DISCRETE_WHEEL_DISTANCE_MULTIPLIER = 3;
 const GRID3D_CARD_GAP = 48;
+// 倒影露出的一段高度（px）：紧贴卡片底边，并在这一段里淡完，所以不会被滚动容器裁出硬边。
+// 聚焦卡是放大过的（scale 1.2），它底边往下多出来的那截也算在可见高度里，48px 仍然够用。
+const GRID3D_REFLECTION_BAND_PX = 48;
 export const GRID3D_WINDOW_RADIUS = 18;
 export const GRID3D_LEAP_CARDS = 4;
 // 实际挂到 DOM 的卡片窗口半径（渲染量）按视口自适应，与 GRID3D_WINDOW_RADIUS（过渡阈值，决定「直接滚动
@@ -806,7 +809,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     const focusedSecondaryText = focusedItem ? getGrid3DSliderSecondaryText(focusedItem) : '';
 
     return (
-        <div ref={containerRef} className="w-full flex-1 flex flex-col justify-center relative min-h-0 select-none">
+        <div ref={containerRef} className="w-full flex-1 flex flex-col justify-center relative min-h-0 h-full select-none">
             <div
                 ref={scrollContainerRef}
                 data-grid3d-slider
@@ -926,7 +929,10 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                                 </div>
                                             </>
                                         );
-                                        // 加倒影：整张卡片镜像后裁成上窄下宽的梯形（封面同样是梯形）并向下渐隐（不改布局，随卡片一起缩放/位移）。
+                                        // 加倒影：整张卡片镜像后贴在卡片底边下面，并向下渐隐（不改布局，随卡片一起缩放/位移）。
+                                        // 倒影只留贴着卡片的一小段（GRID3D_REFLECTION_BAND_PX），并且在这一段里就淡完：
+                                        // 整张镜像铺出去的话，滚动容器的 overflow-y-hidden 会在中途把它切掉，
+                                        // 倒影断成一条硬边，看着割裂；带子外的内容本来就该是全透明的，被裁掉也看不出来。
                                         return (
                                             <div className="relative" style={{ width: coverSize }}>
                                                 <div
@@ -939,18 +945,29 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                                 </div>
                                                 <div
                                                     aria-hidden="true"
-                                                    className={`pointer-events-none select-none absolute inset-x-0 top-full ${cardSurfaceClassName}`}
+                                                    className="pointer-events-none select-none absolute inset-x-0 top-full overflow-hidden"
                                                     style={{
-                                                        ...cardSurfaceStyle,
-                                                        boxShadow: 'none',
-                                                        opacity: isDaylight ? 0.35 : 0.5,
-                                                        transform: 'scaleY(-1)',
-                                                        transformOrigin: 'center',
-                                                        WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent 72%)',
-                                                        maskImage: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent 72%)',
+                                                        height: GRID3D_REFLECTION_BAND_PX,
+                                                        WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 60%, transparent 100%)',
+                                                        maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 60%, transparent 100%)',
                                                     }}
                                                 >
-                                                    {renderCardBody(true)}
+                                                    <div
+                                                        className={`${cardSurfaceClassName}`}
+                                                        style={{
+                                                            ...cardSurfaceStyle,
+                                                            position: 'absolute',
+                                                            left: 0,
+                                                            right: 0,
+                                                            top: 0,
+                                                            boxShadow: 'none',
+                                                            opacity: isDaylight ? 0.35 : 0.5,
+                                                            transform: 'scaleY(-1)',
+                                                            transformOrigin: 'center',
+                                                        }}
+                                                    >
+                                                        {renderCardBody(true)}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
