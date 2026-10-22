@@ -2871,7 +2871,6 @@ export default {
     "useSystemProxyAI": "Use System Proxy for AI",
     "useSystemProxyAIDesc": "Route strictly AI requests through system proxy.",
     "geminiApiKey": "Gemini API Key",
-    "openaiApiKey": "OpenAI API Key",
     "aiApiKeySavedPlaceholder": "Saved (leave blank to keep it)",
     "aiApiKeySavedDesc": "The key is stored encrypted on this device and is not shown again. Enter a new key and save to replace it.",
     "aiApiKeyClear": "Clear",

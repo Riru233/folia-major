@@ -2871,7 +2871,6 @@ export default {
     "useSystemProxyAI": "Gunakan Proxy Sistem untuk AI",
     "useSystemProxyAIDesc": "Rutekan permintaan AI secara ketat melalui proxy sistem.",
     "geminiApiKey": "Kunci API Gemini",
-    "openaiApiKey": "Kunci API OpenAI",
     "aiApiKeySavedPlaceholder": "Tersimpan (kosongkan untuk mempertahankan)",
     "aiApiKeySavedDesc": "Kunci disimpan terenkripsi di perangkat ini dan tidak ditampilkan lagi. Masukkan kunci baru lalu simpan untuk menggantinya.",
     "aiApiKeyClear": "Hapus",
