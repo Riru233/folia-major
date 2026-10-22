@@ -1801,7 +1801,6 @@ export default {
     "aiProvider_custom": "Endpoint kompatibel kustom",
     "aiApiKey": "Kunci API",
     "aiModel": "Model",
-    "aiTemperatureAnthropicDesc": "Rentang: 0–1. Nilai bawaan 0.7 jika kosong.",
     "aiApiUrl": "URL API",
     "aiModelsFetch": "Ambil model",
     "aiModelsLoading": "Mengambil…",
