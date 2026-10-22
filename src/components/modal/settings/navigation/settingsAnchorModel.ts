@@ -78,10 +78,11 @@ export const SETTINGS_ANCHOR_DEFINITIONS = {
     wallpaperMode: { section: 'desktop' },
     updateCheck: { section: 'general' },
 
-    // pages/GraphicsPage
+    // pages/GraphicsPage; the render GPU row only in the Windows desktop app.
     graphicsPerformance: { section: 'graphics' },
     graphicsMotion: { section: 'graphics' },
     liquidGlass: { section: 'graphics' },
+    gpuPreference: { section: 'graphics' },
 
     // pages/ModsPage
     modSystem: { section: 'mods' },
