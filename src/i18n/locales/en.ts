@@ -1815,6 +1815,7 @@ export default {
     "aiModelRetired": "{{model}} has been retired. Switch to {{replacement}}.",
     "aiModelAlwaysThinks": "This model cannot turn thinking off, so lyric segmentation will be slower.",
     "aiEndpoint": "Site",
+    "aiApiUrlUnlistedDesc": "Not one of this provider's listed sites. Pick a site to replace it, or switch to Custom compatible endpoint to edit it.",
     "aiEndpoint_cn": "China",
     "aiEndpoint_global": "International",
     "aiEndpoint_singapore": "Singapore",
