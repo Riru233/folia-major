@@ -2777,6 +2777,7 @@ export default function App() {
                                 currentSong={displaySong}
                                 playerState={displayPlayerState}
                                 currentTime={currentTime}
+                                lyricCurrentTime={lyricCurrentTime}
                                 playbackDuration={displayDuration}
                                 canTogglePlayback={canToggleCurrentPlayback}
                                 queue={playQueue}

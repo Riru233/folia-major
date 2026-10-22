@@ -31,6 +31,7 @@ import type {
 } from "./floating-player/playerControlSlotActions";
 import { usePlayerOverlayObstacle } from "../hooks/usePlayerOverlayLayout";
 import { useGlass } from "../shinoinject/useGlass.tsx";
+import { resolveLyricSeekMediaTime } from "../utils/lyrics/lyricSeekTime";
 
 export interface TrackNavigation {
   /** 当前曲目的稳定身份，用于识别「确实换歌了」；相邻两首同名时标题字符串不变，不能拿标题判断 */
@@ -552,9 +553,12 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
         duration={duration}
         currentTime={lyricCurrentTime ?? currentTime}
         onSeek={(time) => {
-          const offset =
-            currentTime.get() - (lyricCurrentTime?.get() ?? currentTime.get());
-          onSeek(Math.max(0, time + offset));
+          const target = resolveLyricSeekMediaTime(time, {
+            mediaTimeSec: currentTime.get(),
+            lyricTimeSec: lyricCurrentTime?.get() ?? currentTime.get(),
+            durationSec: duration,
+          });
+          if (target !== null) onSeek(target);
         }}
         primaryColor={primaryColor}
         secondaryColor={secondaryColor}
