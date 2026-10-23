@@ -1,8 +1,8 @@
 {
   "remote": "https://github.com/chthollyphile/folia-major.git",
   "branch": "main",
-  "lastSynced": "5767dd6fbb20287972a10081289a63c75dc1217d",
-  "lastSyncedSubject": "Merge pull request #760 from GSQZ/codex/qishui-integration",
+  "lastSynced": "1f6d0f468f5bc81b23a8b40ad7ca96ccd4b1ecbe",
+  "lastSyncedSubject": "release: v0.7.22",
   "lastSyncedDate": "2026-10-23",
   "syncedAt": "2026-10-23",
   "note": "Shino提交：Windows液态玻璃性能优化、追加首页提示新版本的逻辑。"
