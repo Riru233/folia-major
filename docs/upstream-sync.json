@@ -1,8 +1,8 @@
 {
   "remote": "https://github.com/chthollyphile/folia-major.git",
   "branch": "main",
-  "lastSynced": "2f15dc36a32b2b620a9911b007a8d5cc39ffbcc4",
-  "lastSyncedSubject": "Merge pull request #822 from chthollyphile/feat/bravais-horizontal-infobar",
+  "lastSynced": "f161d3006f5c3c87a63675578c4c3807c055c75e",
+  "lastSyncedSubject": "Merge pull request #829 from chthollyphile/feat/background-throttling",
   "lastSyncedDate": "2026-10-22",
   "syncedAt": "2026-10-22",
   "note": "Shino提交：Windows液态玻璃性能优化、追加首页提示新版本的逻辑。"

@@ -1787,16 +1787,6 @@ export default {
     "lyricMatchPriorityDesc": "When multiple lyric sources have high-confidence matches, prefer this source first."
   },
   "options": {
-    "randomVisualizerModes": "Styles to randomize",
-    "randomVisualizerSelectAll": "Select all",
-    "randomVisualizerCurrentStyle": "Current style",
-    "randomVisualizerAtLeastOne": "Select at least one style",
-    "randomVisualizerReroll": "Draw another style from the pool",
-    "previewGlobalSettings": "Global",
-    "randomPool": "Random pool",
-    "randomPoolCount": "{{selected}} of {{total}}",
-    "randomPoolDesc": "Each song switches to one of the chosen styles, played with that style's own saved settings.",
-    "randomPoolChoose": "Choose random pool",
     "aiProvider_gemini": "Google Gemini",
     "aiProvider_deepseek": "DeepSeek",
     "aiProvider_mimo": "Xiaomi MiMo",

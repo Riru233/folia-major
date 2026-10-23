@@ -1787,16 +1787,6 @@ export default {
     "lyricMatchPriorityDesc": "Saat beberapa sumber lirik memiliki kecocokan berkualitas tinggi, utamakan sumber ini terlebih dahulu."
   },
   "options": {
-    "randomVisualizerModes": "Gaya untuk diacak",
-    "randomVisualizerSelectAll": "Pilih semua",
-    "randomVisualizerCurrentStyle": "Gaya saat ini",
-    "randomVisualizerAtLeastOne": "Pilih setidaknya satu gaya",
-    "randomVisualizerReroll": "Ambil gaya lain dari kumpulan",
-    "previewGlobalSettings": "Global",
-    "randomPool": "Kumpulan acak",
-    "randomPoolCount": "{{selected}} dari {{total}}",
-    "randomPoolDesc": "Setiap lagu beralih ke salah satu gaya yang dipilih, dengan pengaturan tersimpan milik gaya itu.",
-    "randomPoolChoose": "Pilih kumpulan acak",
     "aiProvider_gemini": "Google Gemini",
     "aiProvider_deepseek": "DeepSeek",
     "aiProvider_mimo": "Xiaomi MiMo",

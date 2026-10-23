@@ -1787,16 +1787,6 @@ export default {
     "lyricMatchPriorityDesc": "在多个歌词源都存在高置信度匹配时，优先选择该歌词源的结果。"
   },
   "options": {
-    "randomVisualizerModes": "参与随机的样式",
-    "randomVisualizerSelectAll": "全选",
-    "randomVisualizerCurrentStyle": "当前样式",
-    "randomVisualizerAtLeastOne": "至少选择一种样式",
-    "randomVisualizerReroll": "从随机池里换一种",
-    "previewGlobalSettings": "全局",
-    "randomPool": "随机池",
-    "randomPoolCount": "已选 {{selected}}/{{total}}",
-    "randomPoolDesc": "每首歌从选中的样式里换一种，各样式用自己保存的参数。",
-    "randomPoolChoose": "选择随机池",
     "aiProvider_gemini": "Google Gemini",
     "aiProvider_deepseek": "DeepSeek",
     "aiProvider_mimo": "小米 MiMo",

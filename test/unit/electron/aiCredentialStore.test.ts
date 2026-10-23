@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
+import { openAIEndpointOf as rendererOpenAIEndpointOf } from '../../../src/utils/openAIEndpoint';
 
 // test/unit/electron/aiCredentialStore.test.ts
 
 const {
     createAiCredentialStore,
     isReservedAiCredentialKey,
+    openAIEndpointOf,
 } = require('../../../electron/aiCredentialStore.cjs') as {
     createAiCredentialStore: (options: Record<string, unknown>) => {
         get: (key: string) => unknown;
@@ -16,6 +18,11 @@ const {
         settingsView: { get: (key: string) => unknown };
     };
     isReservedAiCredentialKey: (key: string) => boolean;
+    openAIEndpointOf: (rawUrl: unknown) => string;
+};
+
+const { runAiJsonCompletion } = require('../../../electron/aiTextClient.cjs') as {
+    runAiJsonCompletion: (options: Record<string, unknown>) => Promise<string>;
 };
 
 function createStore(initial: Record<string, unknown> = {}) {
@@ -72,6 +79,8 @@ describe('AI credential store', () => {
     it('gives the renderer only which keys are saved, never the keys or their ciphertext', () => {
         const store = createStore({ OPENAI_API_KEY: 'sk-legacy-plain', AI_PROVIDER: 'openai' });
         const credentials = createAiCredentialStore({ store, safeStorage: createSafeStorage(), platform: 'win32' });
+        // Startup order: migrate() runs before any window can ask for settings.
+        credentials.migrate();
         credentials.set('GEMINI_API_KEY', 'gemini-key');
 
         const settings = credentials.toPublicSettings(Object.fromEntries(store.values));
@@ -124,6 +133,7 @@ describe('AI credential store', () => {
         expect(isReservedAiCredentialKey('GEMINI_API_KEY_SEALED')).toBe(true);
         expect(isReservedAiCredentialKey('OPENAI_API_KEY_SEALED')).toBe(true);
         expect(isReservedAiCredentialKey('AI_API_KEYS_CONFIGURED')).toBe(true);
+        expect(isReservedAiCredentialKey('OPENAI_API_KEY_ENDPOINT')).toBe(true);
         expect(isReservedAiCredentialKey('OPENAI_API_KEY')).toBe(false);
         expect(isReservedAiCredentialKey('OPENAI_API_URL')).toBe(false);
     });
@@ -197,7 +207,9 @@ describe('AI credential store', () => {
 
     it('falls back to a plaintext copy when the sealed blob cannot be decrypted', () => {
         const warn = vi.fn();
-        const store = createStore({ OPENAI_API_KEY_SEALED: 'Ym9ndXM=', OPENAI_API_KEY: 'sk-plain' });
+        const store = createStore({
+            OPENAI_API_KEY_SEALED: 'Ym9ndXM=', OPENAI_API_KEY: 'sk-plain', OPENAI_API_KEY_ENDPOINT: 'https://api.openai.com',
+        });
         const credentials = createAiCredentialStore({
             store, safeStorage: createSafeStorage({ available: false }), platform: 'linux', warn,
         });
