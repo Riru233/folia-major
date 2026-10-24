@@ -1,4 +1,4 @@
-通知: 0.7.20暂时没有液态玻璃的第三方版本，想用的自己构建
+通知: 0.7.20暂时没有流体玻璃的第三方版本，想用的自己构建
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/b5d0e863-48be-497b-b0e9-4bd8d8ce9bf0" alt="Folia" width="100%" />

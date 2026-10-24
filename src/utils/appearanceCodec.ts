@@ -575,7 +575,7 @@ export const compressConfig = (config: any): string => {
     if (config.smartBeat) minified.smb = compressSmartBeat(config.smartBeat);
     if (config.temperaTuning) minified.tmp = compressTempera(config.temperaTuning);
     if (config.lumiereTuning) minified.lmt = compressLumiere(config.lumiereTuning);
-    // 液态玻璃的三个参数是一组小对象，原样塞进去比再压一轮划算。
+    // 流体玻璃的三个参数是一组小对象，原样塞进去比再压一轮划算。
     if (config.liquidGlass) minified.lgt = config.liquidGlass;
     // Folium param values are already plain JSON keyed by scope; stored as-is.
     if (config.foliumParams) minified.fp = config.foliumParams;
@@ -664,7 +664,7 @@ export const decompressConfig = (str: string): any => {
         || parsed.lwbl !== undefined
         || parsed.lwbb !== undefined
         || parsed.lwsd !== undefined
-        // 液态玻璃只有自己一组时，也要认成短码形态。
+        // 流体玻璃只有自己一组时，也要认成短码形态。
         || parsed.lgt !== undefined;
     if (isMinified) {
         const decompressed: any = {};

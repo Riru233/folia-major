@@ -100,7 +100,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
     libraryWallBackdropLyrics: 'options.bravaisBackdropLyrics',
     libraryWallBackdropBlur: 'options.bravaisBackdropBlur',
     libraryWallSeamDirection: 'options.bravaisSeamDirection',
-    // 液态玻璃整组复用图形设置里的分组标题；三个子项由 settingLabelLookup 解析到各自的滑杆文案。
+    // 流体玻璃整组复用图形设置里的分组标题；三个子项由 settingLabelLookup 解析到各自的滑杆文案。
     liquidGlass: 'options.liquidGlassSection',
 };
 

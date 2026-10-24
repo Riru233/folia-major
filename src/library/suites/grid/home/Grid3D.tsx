@@ -680,7 +680,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     >
                         <div className="relative scale-90 md:scale-100 origin-center rounded-full -inset-1" style={{ overflow: 'visible' }}>
                             {/* 玻璃底色单独做绝对定位层，与摇杆、页签同为兄弟层级：摇杆不再嵌在玻璃元素里，
-                                否则它自己的液态玻璃 backdrop 只能采到父级已经模糊过的背景，被削弱。 */}
+                                否则它自己的流体玻璃 backdrop 只能采到父级已经模糊过的背景，被削弱。 */}
                             <div
                                 data-glass-light
                                 data-glass
@@ -709,7 +709,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     left: thumbLeft,
                                     width: thumbWidth,
                                     pointerEvents: 'none',
-                                    // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的液态玻璃；底色与阴影的进出
+                                    // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的流体玻璃；底色与阴影的进出
                                     // 由上面的 transition 补间，松手复原时不再瞬间跳变。
                                     boxShadow: thumbDragging ? '0 0 4px #000,0 0 8px #fffa' : '',
                                 }}

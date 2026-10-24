@@ -14,7 +14,7 @@ import {
 } from '../shinoinject/liquidglass';
 
 // src/stores/useLiquidGlassSettingsStore.ts
-// 液态玻璃的四个全局数值参数（折射强度 strength、模糊 blur、饱和度 sat、最大弯曲距离 bend，见 src/mods/liquidglass.ts）
+// 流体玻璃的四个全局数值参数（折射强度 strength、模糊 blur、饱和度 sat、最大弯曲距离 bend，见 src/mods/liquidglass.ts）
 // 与两个效果开关（光效 light、果冻 jelly）。默认值与读回都定义在 liquidglass.ts（它的 global 是运行时实际生效的那份），
 // 这里只负责持久化、钳制后的 state 和 setter；setter 同步调 liquidglass 的入口让在场的玻璃 / 效果立刻重画或收摊。
 

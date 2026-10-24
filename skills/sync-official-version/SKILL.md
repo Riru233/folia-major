@@ -5,7 +5,7 @@ description: Use when the official chthollyphile/folia-major upstream ships a ne
 
 # Sync Official Version
 
-把官方上游 `chthollyphile/folia-major` 的新版本提交合入本地 `main`。核心约束：**按时间顺序、一提交一条目、保留原作者**；冲突时以上游（传入的提交）为准，但本地"初始状态之后的更改"（液态玻璃等自定义）不得被覆盖。
+把官方上游 `chthollyphile/folia-major` 的新版本提交合入本地 `main`。核心约束：**按时间顺序、一提交一条目、保留原作者**；冲突时以上游（传入的提交）为准，但本地"初始状态之后的更改"（流体玻璃等自定义）不得被覆盖。
 
 同步 = 追加提交，历史不改写，推送**不需要 `--force`**。
 
@@ -55,7 +55,7 @@ git add -A
 即"上游新内容 + 本地相对旧上游的改动"三方叠加。拿不准时人工核对，原则：
 
 1. **上游侧为准**：上游的重构、新功能、格式化直接采纳。
-2. **贴回本地自定义**：`data-glass`、`useGlass()`、渐变/描边 style、玻璃遮罩动画等本地液态玻璃改动逐一贴回；贴回后核对 `git grep -c -e data-glass -e 'useGlass(' F` 不少于同步前。
+2. **贴回本地自定义**：`data-glass`、`useGlass()`、渐变/描边 style、玻璃遮罩动画等本地流体玻璃改动逐一贴回；贴回后核对 `git grep -c -e data-glass -e 'useGlass(' F` 不少于同步前。
 3. **按提交时间顺序依次插入**：只贴"该提交时刻已存在"的本地改动；属于未来提交才引入的行（例如上游后续才加的 `onAnimationComplete`）不要提前贴进来，等轮到那条提交时再合入。
 4. **i18n / 发布说明双存**：上游新增的 `vX_Y_Z` releaseNotes 与本地历史条目（如 `v0_7_18s-shino`）并存，冲突块里双方都要保留。
 5. 保留注释，尤其是 `@note` 注释；不要顺手删除或翻译。

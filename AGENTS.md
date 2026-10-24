@@ -95,7 +95,7 @@
 - `kugou-provider-alignment`：开发时按 `docs/ku-go-api-docs.md`、`.env.local` 中的真实酷狗服务和 `.dev-credentials/kugou.json` 对齐酷狗 provider 的请求与响应，不猜接口结构。
 - `prepare-folia-release`：稳定版本发布流程：汇总上个稳定版本以来用的人能感到的变化，更新新功能介绍、桌面与 Docker 版本号，并生成可手动粘贴的 Markdown release note。
 - `run-desktop`：启动并驱动 Electron 桌面版（隔离的 profile，后台驱动加单条命令的客户端：截图、点击、填表、在页面和主进程里求值、读日志），在真的桌面构建里验证主进程、preload IPC 和桌面专属设置的改动。
-- `sync-official-version`：官方 chthollyphile/folia-major 发新版本时把上游提交合入本地 main：从 `docs/upstream-sync.json` 基线到目标提交计算范围，按时间顺序逐条 cherry-pick 保留原作者，冲突时取上游并叠回本地液态玻璃改动，完成后更新基线并验证。路径：`skills/sync-official-version/SKILL.md`。
+- `sync-official-version`：官方 chthollyphile/folia-major 发新版本时把上游提交合入本地 main：从 `docs/upstream-sync.json` 基线到目标提交计算范围，按时间顺序逐条 cherry-pick 保留原作者，冲突时取上游并叠回本地流体玻璃改动，完成后更新基线并验证。路径：`skills/sync-official-version/SKILL.md`。
 
 四份开发者指南：
 

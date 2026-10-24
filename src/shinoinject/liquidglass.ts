@@ -1,6 +1,6 @@
 import { isApplePlatform, isChromiumRenderer, isWindowsPlatform } from "@/utils/platform";
 /*
-   液态玻璃
+   流体玻璃
   */
 let uid = 0;
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -17,7 +17,7 @@ export const LIQUID_GLASS_DEFAULTS: LiquidGlassParams = { ...global };
 export const LIQUID_GLASS_DISTORTION_SUPPORTED =
     isWindowsPlatform || (isApplePlatform && isChromiumRenderer());
 // localStorage 键 gpu_preference（useDesktopSettingsStore 的 GPU_PREFERENCE_STORAGE_KEY）为 low-power
-// 时液态玻璃整体停用：玻璃滤镜、光效、果冻都不挂。位移图逐像素成图加 backdrop-filter 在省电卡上撑不住。
+// 时流体玻璃整体停用：玻璃滤镜、光效、果冻都不挂。位移图逐像素成图加 backdrop-filter 在省电卡上撑不住。
 // 显卡偏好本身启动时生效（改动等下次启动），这里同样只在启动时读一次，两边时机一致。
 export const LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE =
     typeof window !== "undefined" && localStorage.getItem("gpu_preference") === "low-power";
@@ -233,13 +233,13 @@ const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParam
   return Number.isFinite(parsed) ? clampLiquidGlassParam(key, parsed) : null;
 };
 
-// 给元素挂液态玻璃滤镜（幂等）：同一元素只建一次，滤镜同步进文档，
+// 给元素挂流体玻璃滤镜（幂等）：同一元素只建一次，滤镜同步进文档，
 // 保证 backdrop-filter 写下的 url(#lg-N) 立即可解析，不存在悬空引用窗口。
 // 画不了位移图的平台只登记玻璃记录、不建滤镜，backdrop 只剩 blur。
 export const makeGlass = (el: HTMLElement) => {
   const existing = glasses.get(el);
   if (existing) return existing;
-  // 省电 GPU 上不用液态玻璃：不登记、不挂滤镜也不写 backdrop-filter，元素保持原样。
+  // 省电 GPU 上不用流体玻璃：不登记、不挂滤镜也不写 backdrop-filter，元素保持原样。
   if (LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE) return null;
   const id = "lg-" + uid++;
   // 只有画得了位移图的平台才建位移滤镜；其它平台连 <filter> 都不落文档，url(#lg-N) 自然无从解析。
@@ -470,7 +470,7 @@ const jellyIntegrate = (x: number, v: number, target: number, dt: number, k: num
 // 单指针单元素会话；模块级状态，不进 React state。
 let jellyInstalled = false;
 // 果冻效果总开关（设置面板的「果冻效果」）：关掉后带 data-glass-jelly 的元素也不再拖拽形变。
-// 省电 GPU 上液态玻璃整体停用，果冻同样不生效（存下的开关值保留，换回显卡重启即恢复）。
+// 省电 GPU 上流体玻璃整体停用，果冻同样不生效（存下的开关值保留，换回显卡重启即恢复）。
 let jellyEnabled = !LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE && readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.jelly);
 let jEl: HTMLElement | null = null;
 let jPointerId = -1;
@@ -703,7 +703,7 @@ const LIGHT_PRESS_OPACITY = 1; // 按下时光的强度
 
 let lightInstalled = false;
 // 光效总开关（设置面板的「光效」）：关掉后带 data-glass-light 的元素也不再出光晕。
-// 省电 GPU 上液态玻璃整体停用，光效同样不生效（存下的开关值保留，换回显卡重启即恢复）。
+// 省电 GPU 上流体玻璃整体停用，光效同样不生效（存下的开关值保留，换回显卡重启即恢复）。
 let lightEnabled = !LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE && readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.light);
 let lightEl: HTMLElement | null = null; // 当前挂着光晕层的容器
 let lightLayer: HTMLDivElement | null = null;

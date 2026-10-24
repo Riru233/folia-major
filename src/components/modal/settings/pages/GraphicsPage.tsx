@@ -39,7 +39,7 @@ const GLASS: SettingsGroupDef = { id: 'liquidGlass', titleKey: 'options.liquidGl
 /** 扭曲与饱和度只在画得了位移图的渲染器上可调（Chromium 内核；Safari 与 iOS 上的浏览器除外）。 */
 const GLASS_DISTORTION = LIQUID_GLASS_DISTORTION_SUPPORTED;
 
-/** 渲染显卡选了「省电」GPU 时液态玻璃整体停用（见 liquidglass.ts），整组设置只读并说明原因。 */
+/** 渲染显卡选了「省电」GPU 时流体玻璃整体停用（见 liquidglass.ts），整组设置只读并说明原因。 */
 const GLASS_GPU_BLOCKED = LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE;
 
 const O = {

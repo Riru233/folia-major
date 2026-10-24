@@ -149,7 +149,7 @@ export const GridCardsPreview: React.FC<GridCardsPreviewProps> = ({ minScale, mi
 };
 
 /**
- * 液态玻璃预设的效果图占位：图片存在就显示图片（object-cover 铺满 96×64 框），
+ * 流体玻璃预设的效果图占位：图片存在就显示图片（object-cover 铺满 96×64 框），
  * 不存在就画一个虚线占位框（图片+ 图标），放图即自动显示、无需改代码。
  * 把效果图放到 public/glass-presets/<预设 id>.png：毛玻璃 frosted、通透流体 clear、
  * 朦胧流体 hazy、节能 eco。
@@ -179,7 +179,7 @@ export const GlassPresetPicture: React.FC<{ id: LiquidGlassPresetId }> = ({ id }
 };
 
 /**
- * 液态玻璃预设的两列预览网格（2×2）：大图铺满整行宽度（每格即半行宽），高 = 宽 − 30px，
+ * 流体玻璃预设的两列预览网格（2×2）：大图铺满整行宽度（每格即半行宽），高 = 宽 − 30px，
  * 方便看清折射与模糊；选中项套一圈强调色边环。图与占位都来自 GlassPresetPicture。
  */
 export const GlassPresetGrid: React.FC<{

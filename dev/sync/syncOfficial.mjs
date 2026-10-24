@@ -224,7 +224,7 @@ function finish(state, target, commits, skippedNote) {
   console.log(`✅ 同步完成: ${short(state.from)} → ${short(target.sha)}，共处理 ${commits.length} 条${skippedNote}`);
   console.log(`玻璃标记守卫: 同步前 ${before} 行 → 同步后 ${now} 行`);
   if (now < before) {
-    console.log('⚠ 玻璃标记减少，本地液态玻璃改动可能被覆盖，请人工检查 git diff');
+    console.log('⚠ 玻璃标记减少，本地流体玻璃改动可能被覆盖，请人工检查 git diff');
   }
   const marker = readMarker();
   const today = new Date().toISOString().slice(0, 10);
