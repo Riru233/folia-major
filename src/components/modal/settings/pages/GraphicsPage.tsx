@@ -8,7 +8,7 @@ import { usePlayerChromeSettingsStore } from '../../../../stores/usePlayerChrome
 import { useThemeSettingsStore } from '../../../../stores/useThemeSettingsStore';
 import { useVisualizerSettingsStore } from '../../../../stores/useVisualizerSettingsStore';
 import { useLiquidGlassSettingsStore } from '../../../../stores/useLiquidGlassSettingsStore';
-import { LIQUID_GLASS_PARAM_BOUNDS, LIQUID_GLASS_PRESETS, LIQUID_GLASS_DISTORTION_SUPPORTED, type LiquidGlassPresetId } from '../../../../shinoinject/liquidglass';
+import { LIQUID_GLASS_PARAM_BOUNDS, LIQUID_GLASS_PRESETS, LIQUID_GLASS_DISTORTION_SUPPORTED, LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE, type LiquidGlassPresetId } from '../../../../shinoinject/liquidglass';
 import { VISUALIZER_FRAME_RATE_OPTIONS } from '../../../../utils/frameRateLimiter';
 import { Group, Link, Reveal, Row, Segmented, Slider, Toggle, option, useSettingsKitTheme, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
 import { GlassPresetGrid } from './pictures';
@@ -38,6 +38,9 @@ const GLASS: SettingsGroupDef = { id: 'liquidGlass', titleKey: 'options.liquidGl
 
 /** 扭曲与饱和度只在画得了位移图的渲染器上可调（Chromium 内核；Safari 与 iOS 上的浏览器除外）。 */
 const GLASS_DISTORTION = LIQUID_GLASS_DISTORTION_SUPPORTED;
+
+/** 渲染显卡选了「省电」GPU 时液态玻璃整体停用（见 liquidglass.ts），整组设置只读并说明原因。 */
+const GLASS_GPU_BLOCKED = LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE;
 
 const O = {
     glassPreset: option(GLASS, 'liquidGlassPreset', 'options.liquidGlassPreset'),
@@ -210,13 +213,17 @@ const GraphicsPage: React.FC = () => {
             </Group>
 
             <Group def={GLASS} foot={t('options.liquidGlassSectionDesc')}>
+                {GLASS_GPU_BLOCKED && (
+                    <Row sub notice={t('options.liquidGlassGpuBlockedNotice')} />
+                )}
                 <Row
                     option={O.glassPreset}
+                    disabled={GLASS_GPU_BLOCKED}
                     hint={t('options.liquidGlassPresetDesc')}
                     below={<GlassPresetGrid value={activePreset} label={t('options.liquidGlassPreset')} options={presetOptions} onChange={applyPreset} />}
                 />
                 {GLASS_DISTORTION && (
-                    <Row option={O.glassStrength} hint={t('options.liquidGlassStrengthDesc')}>
+                    <Row option={O.glassStrength} disabled={GLASS_GPU_BLOCKED} hint={t('options.liquidGlassStrengthDesc')}>
                         <Slider
                             value={glass.strength}
                             min={LIQUID_GLASS_PARAM_BOUNDS.strength.min}
@@ -228,7 +235,7 @@ const GraphicsPage: React.FC = () => {
                     </Row>
                 )}
                 {GLASS_DISTORTION && (
-                    <Row option={O.glassBend} hint={t('options.liquidGlassBendDesc')}>
+                    <Row option={O.glassBend} disabled={GLASS_GPU_BLOCKED} hint={t('options.liquidGlassBendDesc')}>
                         <Slider
                             value={glass.bend}
                             min={LIQUID_GLASS_PARAM_BOUNDS.bend.min}
@@ -239,7 +246,7 @@ const GraphicsPage: React.FC = () => {
                         />
                     </Row>
                 )}
-                <Row option={O.glassBlur} hint={t('options.liquidGlassBlurDesc')}>
+                <Row option={O.glassBlur} disabled={GLASS_GPU_BLOCKED} hint={t('options.liquidGlassBlurDesc')}>
                     <Slider
                         value={glass.blur}
                         min={LIQUID_GLASS_PARAM_BOUNDS.blur.min}
@@ -250,7 +257,7 @@ const GraphicsPage: React.FC = () => {
                     />
                 </Row>
                 {GLASS_DISTORTION && (
-                    <Row option={O.glassSat} hint={t('options.liquidGlassSatDesc')}>
+                    <Row option={O.glassSat} disabled={GLASS_GPU_BLOCKED} hint={t('options.liquidGlassSatDesc')}>
                         <Slider
                             value={glass.sat}
                             min={LIQUID_GLASS_PARAM_BOUNDS.sat.min}
@@ -261,10 +268,10 @@ const GraphicsPage: React.FC = () => {
                         />
                     </Row>
                 )}
-                <Row option={O.glassLight} hint={t('options.liquidGlassLightDesc')}>
+                <Row option={O.glassLight} disabled={GLASS_GPU_BLOCKED} hint={t('options.liquidGlassLightDesc')}>
                     <Toggle checked={glass.light} onChange={glass.setLight} />
                 </Row>
-                <Row option={O.glassJelly} hint={t('options.liquidGlassJellyDesc')}>
+                <Row option={O.glassJelly} disabled={GLASS_GPU_BLOCKED} hint={t('options.liquidGlassJellyDesc')}>
                     <Toggle checked={glass.jelly} onChange={glass.setJelly} />
                 </Row>
             </Group>

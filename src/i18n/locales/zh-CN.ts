@@ -2869,6 +2869,7 @@ export default {
     "liquidGlassLightDesc": "指针悬停在玻璃上时跟随的高光，按下时更亮。",
     "liquidGlassJelly": "果冻效果",
     "liquidGlassJellyDesc": "拖拽时拉伸、松手回弹。",
+    "liquidGlassGpuBlockedNotice": "渲染显卡选择了「省电」，液态玻璃不可用；切回「自动」或「高性能」并重启 Folia 后恢复。",
     "liquidGlassValueLabel": "当前值",
     "themePresets": "配色主题预设",
     "themePresetsDefault": "墨染 / 素白",

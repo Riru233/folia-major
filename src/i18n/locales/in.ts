@@ -2869,6 +2869,7 @@ export default {
     "liquidGlassLightDesc": "Cahaya yang mengikuti kursor di atas kaca, makin terang saat ditekan.",
     "liquidGlassJelly": "Efek Jeli",
     "liquidGlassJellyDesc": "Memanjang saat diseret lalu memantul kembali.",
+    "liquidGlassGpuBlockedNotice": "Kaca cair tidak tersedia selama GPU render disetel ke Hemat daya; kembali ke Otomatis atau Performa tinggi lalu mulai ulang Folia untuk mengaktifkannya kembali.",
     "liquidGlassValueLabel": "Nilai",
     "themePresets": "Preset Tema",
     "themePresetsDefault": "Bawaan",

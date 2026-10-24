@@ -2869,6 +2869,7 @@ export default {
     "liquidGlassLightDesc": "A glow that follows the pointer over the glass, brighter while pressed.",
     "liquidGlassJelly": "Jelly Effect",
     "liquidGlassJellyDesc": "Stretches when dragged and springs back on release.",
+    "liquidGlassGpuBlockedNotice": "Liquid glass is unavailable while the render GPU is set to Power saving; switch back to Auto or High performance and restart Folia to re-enable it.",
     "liquidGlassValueLabel": "Value",
     "themePresets": "Theme Presets",
     "themePresetsDefault": "Default",

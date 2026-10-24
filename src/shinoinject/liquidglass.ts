@@ -16,6 +16,11 @@ export const LIQUID_GLASS_DEFAULTS: LiquidGlassParams = { ...global };
 // Safari 与 iOS 上的浏览器仍然不画。Linux 维持原样，不在这一轮放开。
 export const LIQUID_GLASS_DISTORTION_SUPPORTED =
     isWindowsPlatform || (isApplePlatform && isChromiumRenderer());
+// localStorage 键 gpu_preference（useDesktopSettingsStore 的 GPU_PREFERENCE_STORAGE_KEY）为 low-power
+// 时液态玻璃整体停用：玻璃滤镜、光效、果冻都不挂。位移图逐像素成图加 backdrop-filter 在省电卡上撑不住。
+// 显卡偏好本身启动时生效（改动等下次启动），这里同样只在启动时读一次，两边时机一致。
+export const LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE =
+    typeof window !== "undefined" && localStorage.getItem("gpu_preference") === "low-power";
 // localStorage 键：面板读写同一组键；本模块启动时自行读回，
 // 保证设置面板还没被打开（store 尚未被 import）时玻璃也用的是用户调过的参数。
 export const LIQUID_GLASS_STORAGE_KEYS = {
@@ -234,6 +239,8 @@ const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParam
 export const makeGlass = (el: HTMLElement) => {
   const existing = glasses.get(el);
   if (existing) return existing;
+  // 省电 GPU 上不用液态玻璃：不登记、不挂滤镜也不写 backdrop-filter，元素保持原样。
+  if (LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE) return null;
   const id = "lg-" + uid++;
   // 只有画得了位移图的平台才建位移滤镜；其它平台连 <filter> 都不落文档，url(#lg-N) 自然无从解析。
   let filter: SVGFilterElement | null = null;
@@ -463,7 +470,8 @@ const jellyIntegrate = (x: number, v: number, target: number, dt: number, k: num
 // 单指针单元素会话；模块级状态，不进 React state。
 let jellyInstalled = false;
 // 果冻效果总开关（设置面板的「果冻效果」）：关掉后带 data-glass-jelly 的元素也不再拖拽形变。
-let jellyEnabled = readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.jelly);
+// 省电 GPU 上液态玻璃整体停用，果冻同样不生效（存下的开关值保留，换回显卡重启即恢复）。
+let jellyEnabled = !LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE && readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.jelly);
 let jEl: HTMLElement | null = null;
 let jPointerId = -1;
 let jDragging = false;
@@ -673,9 +681,10 @@ export const installGlassJelly = () => {
 };
 
 // 果冻总开关的运行时入口（设置面板与外观导入调用）：关掉顺手把进行中的会话收干净。
+// 省电 GPU 上无论传入什么都保持关闭（设置面板在该状态下已禁用，这里挡住导入等旁路）。
 export const setLiquidGlassJellyEnabled = (enabled: boolean) => {
-  jellyEnabled = enabled;
-  if (!enabled) jellyFinish();
+  jellyEnabled = enabled && !LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE;
+  if (!jellyEnabled) jellyFinish();
 };
 
 /* —— 拖拽光效（data-glass-light 注入）——
@@ -694,7 +703,8 @@ const LIGHT_PRESS_OPACITY = 1; // 按下时光的强度
 
 let lightInstalled = false;
 // 光效总开关（设置面板的「光效」）：关掉后带 data-glass-light 的元素也不再出光晕。
-let lightEnabled = readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.light);
+// 省电 GPU 上液态玻璃整体停用，光效同样不生效（存下的开关值保留，换回显卡重启即恢复）。
+let lightEnabled = !LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE && readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.light);
 let lightEl: HTMLElement | null = null; // 当前挂着光晕层的容器
 let lightLayer: HTMLDivElement | null = null;
 let lightHoverEl: HTMLElement | null = null; // 指针正悬停的容器（只认鼠标）
@@ -889,9 +899,10 @@ export const installGlassLight = () => {
 };
 
 // 光效总开关的运行时入口（设置面板与外观导入调用）：关掉清会话并收掉在场光晕。
+// 省电 GPU 上无论传入什么都保持关闭（设置面板在该状态下已禁用，这里挡住导入等旁路）。
 export const setLiquidGlassLightEnabled = (enabled: boolean) => {
-  lightEnabled = enabled;
-  if (!enabled) {
+  lightEnabled = enabled && !LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE;
+  if (!lightEnabled) {
     lightPressEl = null;
     lightPointerId = -1;
     lightHoverEl = null;
