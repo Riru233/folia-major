@@ -81,6 +81,7 @@
 | 32+ | `src/types/navidrome.ts` |
 | 32+ | `src/utils/coverUrl.ts` |
 | 32+ | `src/utils/fontStacks.ts` |
+| 32+ | `src/utils/lyricRenderQuality.ts` |
 | 32+ | `src/utils/lyrics/graphemeTiming.ts` |
 | 32+ | `src/utils/lyrics/parserCore.ts` |
 | 32+ | `test/component/fixtures.ts` |
