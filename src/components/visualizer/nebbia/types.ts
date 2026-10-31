@@ -21,6 +21,18 @@ export type NebbiaFadeStyle = typeof NEBBIA_FADE_STYLES[number];
 export const NEBBIA_LAYOUTS = ['ribbon', 'lines2', 'lines3', 'cross', 'pillar', 'header', 'badge', 'columns', 'orbit'] as const;
 export type NebbiaLayout = typeof NEBBIA_LAYOUTS[number];
 
+/** 窗外画哪几样（每样一个开关，可以全关）：聚光灯、楼群、霓虹路灯招牌的光斑、车灯、湿路面和倒影。 */
+export const NEBBIA_SCENERY = ['spot', 'buildings', 'lights', 'cars', 'road'] as const;
+export type NebbiaSceneryPart = typeof NEBBIA_SCENERY[number];
+
+/** 窗外的雨：跟着车速斜着落、竖直落、不下。 */
+export const NEBBIA_RAIN = ['slant', 'straight', 'off'] as const;
+export type NebbiaRain = typeof NEBBIA_RAIN[number];
+
+/** 窗外是什么：雾笺自己画的雨夜街景，或者共用背景（雾变成一层半透明的雾、日白夜深，擦开的字透出后面；透明模式下就是桌面）。 */
+export const NEBBIA_BEHIND = ['night', 'backdrop'] as const;
+export type NebbiaBehind = typeof NEBBIA_BEHIND[number];
+
 export interface NebbiaTuning {
     /** 分辨率与抗锯齿（#929）：默认跟随「性能与动效」里的全局挡位（utils/lyricRenderQuality.ts）。 */
     render: LyricRenderOverride;
@@ -30,6 +42,12 @@ export interface NebbiaTuning {
     fade: NebbiaFadeStyle[];
     /** 打开的构图，至少一种。 */
     layouts: NebbiaLayout[];
+    /** 窗外是街景还是共用背景；播放页透明时总是共用背景（那时背景卸掉，透出桌面）。 */
+    behind: NebbiaBehind;
+    /** 窗外打开的几样，可以一样都没有。 */
+    scenery: NebbiaSceneryPart[];
+    /** 窗外的雨。 */
+    rain: NebbiaRain;
     /** 最后一句唱完后在玻璃上写出曲名和歌手（nebbiaCredits.ts）。 */
     credits: boolean;
     /** 手写歪斜：整字转动、上下错落、整行倾斜。 */
@@ -90,6 +108,9 @@ export const DEFAULT_NEBBIA_TUNING: NebbiaTuning = {
     appear: ['write', 'fade'],
     fade: ['fog'],
     layouts: [...NEBBIA_LAYOUTS],
+    behind: 'night',
+    scenery: [...NEBBIA_SCENERY],
+    rain: 'slant',
     credits: true,
     jitter: 0.6,
     warp: 0.6,
@@ -113,6 +134,8 @@ export interface NebbiaSong { lines: Line[]; seed: string | number; title?: stri
 /** React 外壳交给运行时的宿主、两个每帧读的 MotionValue 和回调。 */
 export interface NebbiaRuntimeInput {
     host: HTMLElement;
+    /** 窗外不画，画布带透明通道：雾是半透明的（颜色跟主题日夜），擦开的地方全透明。建好就不变，要换得重建运行时。 */
+    seeThrough: boolean;
     currentTime: MotionValue<number>;
     vocal: MotionValue<number>;
     onFirstFrame: () => void;
