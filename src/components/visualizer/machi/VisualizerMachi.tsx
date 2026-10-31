@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next';
 import type { Line, Theme } from '../../../types';
 import { loadLucideIcons } from '../../../services/lucideIconResolver';
 import { useAppViewStore } from '../../../stores/useAppViewStore';
-import { useVisualizerSettingsStore } from '../../../stores/useVisualizerSettingsStore';
 import { resolveThemeFontStack, resolveThemeFontWeight } from '../../../utils/fontStacks';
 import { getLineRenderEndTime } from '../../../utils/lyrics/renderHints';
 import type { VisualizerSharedProps } from '../definition';
 import { useVisualizerPixiHost } from '../pixi/pixiRuntimeHost';
+import { useGlobalLyricRenderQuality, useLyricRenderQualityPin } from '../renderQuality/lyricRenderQualityPin';
 import { useVisualizerRuntime } from '../runtime';
 import { useVisualizerSongCommit } from '../songHandover';
 import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
@@ -16,6 +16,7 @@ import VisualizerSubtitleOverlay from '../VisualizerSubtitleOverlay';
 import { closeMachiCameraBar, isMachiCameraBarOpen, subscribeMachiCameraBar } from './cameraBar';
 import type { MachiRuntime, MachiSongContext } from './createMachiRuntime';
 import MachiCameraBar from './MachiCameraBar';
+import { pinMachiQualityForExport } from './machiTuning';
 import type { MachiSceneId, MachiTuning } from './types';
 
 // src/components/visualizer/machi/VisualizerMachi.tsx
@@ -69,8 +70,10 @@ const VisualizerMachi: React.FC<VisualizerMachiProps> = (props) => {
     const { t } = useTranslation();
     const hostRef = useRef<HTMLDivElement>(null);
     const [runtimeFailed, setRuntimeFailed] = useState(false);
-    // 歌词画布的全局分辨率与抗锯齿挡位：画质里跟随全局的两项用它。
-    const renderQuality = useVisualizerSettingsStore(state => state.lyricRenderQuality);
+    // 歌词画布的全局分辨率与抗锯齿挡位：画质里跟随全局的两项用它。视频导出钉住了 1× 时，町景自己选的分辨率、抗锯齿和自动降级
+    // 也不算（下面 shownTuning，pinMachiQualityForExport）。
+    const renderQuality = useGlobalLyricRenderQuality();
+    const renderPinned = useLyricRenderQualityPin() !== null;
     const [contextEpoch, setContextEpoch] = useState(0);
     // 取景控制条：只在播放页上（预览不接拖拽，也没有地方存改动；画面在主页后面当背景时也不出）。
     const onPlayerPage = useAppViewStore(state => state.view === 'player');
@@ -80,7 +83,12 @@ const VisualizerMachi: React.FC<VisualizerMachiProps> = (props) => {
     // 取景控制条拖动中的改动（还没存）：画面用存下的 tuning 叠上它。
     const barDraftRef = useRef<Partial<MachiTuning> | null>(null);
     const [barDraft, setBarDraft] = useState<Partial<MachiTuning> | null>(null);
-    const shownTuning = useMemo(() => (barDraft ? { ...machiTuning, ...barDraft } : machiTuning), [machiTuning, barDraft]);
+    const shownTuning = useMemo(() => {
+        const tuning = barDraft ? { ...machiTuning, ...barDraft } : machiTuning;
+        if (!renderPinned) return tuning;
+        const quality = pinMachiQualityForExport(tuning.quality);
+        return quality === tuning.quality ? tuning : { ...tuning, quality };
+    }, [machiTuning, barDraft, renderPinned]);
 
     // 运行时创建期间这些输入可能已经变了；create 完成后按最新值补一次。
     const latestRef = useRef({ theme, paused, showText, staticMode, machiTuning, shownTuning, renderQuality, onVisualizerTuningChange });
