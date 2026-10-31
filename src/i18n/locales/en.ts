@@ -613,8 +613,8 @@ export default {
       "settings-help": { "title": "Open Help", "description": "Open help and shortcuts" },
       "ponder-current-page": { "title": "Ponder this page", "description": "Open the interactive guide for the current page" },
       "settings-options": { "title": "Open Options", "description": "Open the options center" },
-      "settings-ai-provider": { "title": "AI provider settings", "description": "Choose an AI provider and model" },
       "settings-now-playing-card-position": { "title": "Reposition song card", "description": "Drag the now playing card to a new position" },
+      "settings-ai-provider": { "title": "AI provider settings", "description": "Choose an AI provider and model" },
       "settings-appearance": { "title": "Appearance settings", "description": "Open visual and appearance settings" },
       "settings-general": { "title": "General settings", "description": "Open general app preferences" },
       "settings-playback": { "title": "Playback settings", "description": "Open playback behavior settings" },
@@ -762,6 +762,7 @@ export default {
       "library-wall-backdrop-blur-toggle": { "title": "Blur behind the wall", "description": "Blur the visualizer that shows through the wall" },
       "library-wall-seam-direction-picker": { "title": "Pick info strip direction", "description": "Open the info strip as a column, a row across the wall, or by the screen shape" },
       "settings-theme-presets": { "title": "Theme presets", "description": "Jump to the built-in and saved theme presets" },
+      "settings-liquid-glass": { "title": "Liquid glass", "description": "Jump to liquid glass strength, blur and presets" },
       "settings-lyric-render-quality": { "title": "Lyric canvas resolution and anti-aliasing", "description": "Jump to the resolution and anti-aliasing every canvas / WebGL lyric style follows by default" },
       "settings-lyrics-renderer": { "title": "Lyrics renderer", "description": "Jump to how lyrics are drawn on the player" },
       "settings-grid-card-style": { "title": "Grid card style", "description": "Jump to how the home grid draws its cards" },
@@ -1022,8 +1023,6 @@ export default {
     "exitFullscreen": "Exit fullscreen",
     "maximizeWindow": "Maximize",
     "restoreWindow": "Restore window",
-    "pinWindowControls": "Pin window controls",
-    "unpinWindowControls": "Unpin window controls",
     "remoteControl": "Remote control",
     "seek": "Seek",
     "clearActiveCommand": "Clear active command",
@@ -2337,8 +2336,8 @@ export default {
     "hidePlayerRightPanelButton": "Hide player right-side button",
     "transparentPlayerBackground": "Transparent player background",
     "transparentPlayerBackgroundDesc": "Transparent window for OBS browser sources or chroma key overlays.",
-    "enablePlayerPageNativeBlur": "Acrylic background",
-    "enablePlayerPageNativeBlurHint": "Replaces the player background with the system blur, but liquid glass does not refract the system acrylic",
+    "enablePlayerPageNativeBlur": "Enable Player Page Native Blur",
+    "enablePlayerPageNativeBlurHint": "System blur replaces the player backgrounds; uses more resources",
     "enablePlayerPageNativeBlurDesc": "Applies only in the desktop app in non-transparent mode; moving the window may lag.",
     "nativeBlurConfirmTitle": "System glass effect",
     "nativeBlurConfirmDesc": "This changes the window to a translucent background using the system glass effect. Folia backgrounds will not be shown.",
@@ -3130,6 +3129,28 @@ export default {
     "gpuPreferenceCommandLineNotice": "This launch passed a GPU switch on the command line, which takes precedence",
     "gpuPreferenceActive": "In use",
     "visualizerFrameRateValue": "Limit",
+    "liquidGlassSection": "Liquid Glass",
+    "liquidGlassSectionDesc": "Adjust the material of Folia's interface components.",
+    "liquidGlassPreset": "Presets",
+    "liquidGlassPresetDesc": "Quick looks that set strength, blur and edge bend distance together.",
+    "liquidGlassPresetFrosted": "Frosted glass",
+    "liquidGlassPresetClear": "Clear liquid glass",
+    "liquidGlassPresetHazy": "Hazy liquid glass",
+    "liquidGlassPresetEco": "Power saving",
+    "liquidGlassStrength": "Refraction Strength",
+    "liquidGlassStrengthDesc": "How strongly the glass edges refract what sits behind them.",
+    "liquidGlassBend": "Refraction Distance",
+    "liquidGlassBendDesc": "How far, in pixels, the refracted edge reaches from the border toward the centre. The larger it is, the smaller the flat area in the middle becomes.",
+    "liquidGlassBlur": "Blur",
+    "liquidGlassBlurDesc": "Blur amount of transparent elements.",
+    "liquidGlassSat": "Saturation",
+    "liquidGlassSatDesc": "Saturation of the backdrop seen through the glass.",
+    "liquidGlassLight": "Light Effect",
+    "liquidGlassLightDesc": "A glow that follows the pointer over the glass, brighter while pressed.",
+    "liquidGlassJelly": "Jelly Effect",
+    "liquidGlassJellyDesc": "Stretches when dragged and springs back on release.",
+    "liquidGlassGpuBlockedNotice": "Liquid glass is unavailable while the render GPU is set to Power saving; switch back to Auto or High performance and restart Folia to re-enable it.",
+    "liquidGlassValueLabel": "Value",
     "lyricRenderScale": "Lyric canvas resolution",
     "lyricRenderScaleDesc": "Lyric styles drawn with canvas or WebGL (Machi, Hanabi, Lumiere, Nebbia and others) render at this multiple; 1× is each style's usual sharpness, above 1× supersamples for finer edges at more GPU cost. Every style follows this unless its own settings pick a value.",
     "lyricAntialias": "Lyric canvas anti-aliasing",
@@ -3208,6 +3229,8 @@ export default {
     "geminiApiKey": "Gemini API Key",
     "aiApiKeySavedPlaceholder": "Saved (leave blank to keep it)",
     "aiApiKeySavedDesc": "The key is stored encrypted on this device and is not shown again. Enter a new key and save to replace it.",
+    "aiApiKeyEndpointMismatchDesc": "The saved key was for {{endpoint}} and can't be used at a different address. Enter a new key and save.",
+    "aiApiKeyOtherProviderDesc": "The saved key was for {{provider}} and can't be used after switching providers. Enter a new key and save.",
     "aiApiKeyClear": "Clear",
     "openaiApiTemperature": "Temperature",
     "openaiApiStream": "Streaming",
@@ -3708,30 +3731,30 @@ export default {
       }
     },
     "v0_7_22": {
-      "intro": "This is the 0.7.22 Beta build, released early so everyone can try 0.7.22 ahead of the official release — the whole player looks clear and translucent.",
-      "glassUpgrade": {
-        "title": "Liquid glass, reworked",
-        "description": "Fluid glass gains four presets (frosted, clear, hazy, eco), each with a preview image you can apply in one click. A new \"refraction distance\" setting controls how far the refracting edge reaches from the border toward the center, and a new \"light effect\" adds a highlight that follows the pointer over the glass and brightens when it is pressed. Scenarios that were not covered by liquid glass at all (lists, poster walls) are fixed. The parameters travel with the appearance config's import and export, and reach the OBS visual settings as well."
+      "intro": "Welcome to 0.7.22, the Sparkle Update—a major release. It adds Qishui Music; brings Hanabi, a Japanese fireworks lyric style; lets you choose which styles the per-song random style picks from; gives the desktop app global playback shortcuts; and lets AI settings pick a provider and model directly.",
+      "qishui": {
+        "title": "Qishui Music",
+        "description": "Qishui Music arrives on desktop: sign in from the login window by scanning with Douyin. Search, play (standard quality), read word-synced lyrics and artists' top songs, and open your own playlists and \"Recently played on Qishui\"; the recommendation feed and scene stations play as Personal FM, and the scene cards on the home screen start playing in one tap. You can like songs, add and remove songs in playlists you created, and use Dislike in Personal FM. Songs without a directly playable source can't be played, and browsing albums, creating playlists and saving playlists aren't supported yet. Local songs matched to a Qishui song can fetch its lyrics too."
       },
-      "glassJelly": {
-        "title": "Jelly deformation, reworked",
-        "description": "Dragging a glass panel now follows a saturating curve: the further you drag, the less it moves, so a panel never flies off. It stretches along the direction you drag while the other axis shrinks, each axis has a cap, and the panel can be neither squashed flat nor blown up. The spring that brings it back is stiffer, so the shape follows your hand more closely. With the jelly effect off, scrolling and animation on glass panels feel smoother too."
+      "hanabi": {
+        "title": "Hanabi",
+        "description": "A new lyric style in the look of a Japanese lyric PV: each line enters character by character on blocks of color, firework-like ornaments bloom along the text, and between shots the whole scene spins and rises with the launching fireworks, with film strips, stickers and tape as collage decor and a glow that lifts during the chorus. Fireworks, text, decor and colors are adjustable in the style settings, with quality tiers; in Smart beat mode a firework bursts in the night sky on every beat and the camera pushes in with it."
       },
-      "exploreImmersive": {
-        "title": "Explore, immersed",
-        "description": "The Explore list is now fixed over the whole window: the top fades by how far you have scrolled, the bottom by how much is still below. Both edges are built from three stacked blurs, so the content blurs away instead of being cut off. The scrollbar becomes a glass pill at the right edge of the window; its thumb shows where the list stands, and each section's mark jumps straight to it. While GridMap is open the header fades piece by piece, and it comes back as soon as the map starts leaving."
+      "randomStyles": {
+        "title": "Choose Your Random Styles",
+        "description": "The lyric style picker gains Random: tick some or all built-in styles to form a random pool, and each song switches to one of them, never the same twice in a row, each with its own saved settings. From the player panel you can redraw a style for the current song or edit the pool; the pool is included in config import, export and sync."
       },
-      "pageSwitchPerf": {
-        "title": "Switching tabs no longer stutters",
-        "description": "Home tabs now keep a layer each: switching only changes visibility and a sideways offset instead of remounting the whole view, so glass displacement maps are kept and covers are not decoded again. The transition moves sideways without touching opacity, which keeps the glass panels on screen for the whole animation. The grid renders only the cards the viewport needs, so scrolling no longer flashes empty space; the rendering glitch under fast repeated tab switches, and the map being covered by the home layer, are fixed as well."
+      "globalShortcuts": {
+        "title": "Global Playback Shortcuts",
+        "description": "Desktop gains Shortcuts → Global shortcuts: control playback even when Folia isn't in front, with Ctrl+Alt+Shift (Control+Option+Shift on macOS) plus a letter or digit. Bind play/pause, previous, next, volume up and down, mute, repeat and shuffle, as well as commands provided by mods; combinations taken by another app are marked. Under native Wayland, one button registers them with your desktop environment, where you assign the keys. The command palette also gains play/pause and volume up/down."
       },
-      "playerBarGlow": {
-        "title": "Pinned player bar and a water wave",
-        "description": "The bottom player bar gains a pin: once pinned it no longer shrinks when the pointer leaves, and you can toggle it from the command palette or from settings. While music plays, a water-surface waveform rises along its lower edge — the spectrum is laid out logarithmically into a wave that swells with the music and drifts slowly. Its color runs from white out to the theme accent, and the center of the glow wanders slowly sideways."
+      "aiProviders": {
+        "title": "AI Providers and Models",
+        "description": "AI settings on desktop now let you pick a provider: Gemini, DeepSeek, Xiaomi MiMo, Alibaba Cloud Qwen, Tencent Cloud TokenHub, OpenAI, Anthropic, Kimi, Zhipu GLM, or a custom compatible endpoint. Built-in providers need no URL; enter a key to fetch the model list, choose from a dropdown, and start with a recommended model prefilled. Thinking, temperature and similar parameters are handled per provider and model, and retired models are flagged. After switching songs, an unfinished AI theme from the previous song no longer lands on the new one."
       },
-      "morePolish": {
-        "title": "More details",
-        "description": "Lattice lists get their animation, and the jelly styling is fixed. The reflection under a grid card is no longer sliced off by the scrolling container; it now fades away naturally. The \"transparent background\" switch on the player page and its twin in the remote sheet are gone; the system blur is now called \"acrylic background\", with a note that liquid glass does not refract system acrylic."
+      "moreDetails": {
+        "title": "More Improvements",
+        "description": "Sign-ins on every platform are no longer cleared after a restart just because the network or server was down. Smart beat mode gains an \"Analysed only\" setting, and its main switch moves to a new Global page in the lyric style window; local and Navidrome songs now get automix transition analysis too; local scanning supports DSD (.dsf and .dff). Windows gains a Render GPU setting, and Performance & motion adds Background throttling (off by default), which holds the lyric animation while the window is minimized or hidden. Bravais' info bar can be automatic, vertical or horizontal, and its Explore wall now includes recently played. The mod API moves up to Folium 1.7."
       }
     },
     "v0_7_21": {
@@ -3788,25 +3811,6 @@ export default {
         "description": "The Bravais home settings tile now tells you when a new version is available. Searching from the Bravais home no longer shows an empty result page, and no longer searches the wrong platform on KuGou or QQ. Vertical Chinese labels no longer pile up on some Linux distributions, and artist or album posters no longer flash the default colors as they flip away. The desktop app tightens security checks on external links and internal messaging, and AI keys are only sent to the address they were saved for."
       }
     },
-    "v0_7_19s-shino": {
-      "intro": "0.7.19s (Shino mod) builds on official 0.7.19: the Bravais home tool grid hints when a new version is found, IPC and external-link handling are hardened, liquid glass display issues at high blur are fixed, and liquid glass is faster so large panels stay smooth while resizing.",
-      "homeUpdateHint": {
-        "title": "Home Tool Grid Hints at a New Version",
-        "description": "Bravais now follows update status: with update checks on, a new version found, and nothing seen yet in Settings, a clickable \"New version found\" line appears under the settings tool cell (or an accent dot on the settings icon when the spine is too narrow for text); clicking it opens the help page just like the settings button. Opening Settings marks it seen and the hint disappears. Both home layouts share one update state."
-      },
-      "ipcSecurity": {
-        "title": "Hardened IPC and External Link Handling",
-        "description": "Only http(s) links are handed to the system now; custom schemes such as file:// and ms-settings: are blocked so untrusted URLs cannot trigger unexpected system protocol calls. The OBS browser-source status and KuGou API IPC channels also gained window-source checks, so other windows can no longer call them."
-      },
-      "liquidGlassBlurFix": {
-        "title": "Liquid Glass Fixed at High Blur",
-        "description": "The liquid glass filter chain is reordered (saturation and blur first, edge refraction last), fixing display issues that appeared when the blur level was turned up."
-      },
-      "liquidGlassPerf": {
-        "title": "Faster Liquid Glass",
-        "description": "Displacement maps are generated at a capped resolution, and repeated pixel-by-pixel rebuilds while a large panel keeps resizing are merged into one per throttling window instead of running every frame: resizing large windows or animated panels stays smooth, with no noticeable loss in glass quality."
-      }
-    },
     "v0_7_19": {
       "intro": "0.7.19 turns the artist and album pages in Bravais into Tempera-style posters. When an online song fails to play, Folia now tells you the real reason instead of always saying it was removed; word-by-word visualizers such as Tempera split Chinese and Japanese lyrics more naturally; and the web version starts up offline again.",
       "artistPoster": {
@@ -3834,23 +3838,8 @@ export default {
         "description": "On Android, opening Options or other overlays on the Bravais or Lattice wall no longer flashes the wall underneath. Fixed an occasional crash when resizing the window while Tempera is playing. The Sora background stops drawing while paused, and its stars hold still in static mode. The release notes window shown at startup now closes with Esc."
       }
     },
-    "v0_7_18s-shino": {
-      "intro": "0.7.18s (Shino mod) builds on official 0.7.18 with a stronger liquid glass experience: it restores missing liquid glass coverage on components affected by the 0.7.18 update, softens selected buttons, and adds liquid glass settings so you can tune refraction, blur, and saturation. Note: liquid glass is only supported on Windows.",
-      "liquidGlassFix": {
-        "title": "Liquid Glass Coverage Fixed",
-        "description": "Restores liquid glass on components that lost coverage after the 0.7.18 update, so frosted surfaces such as buttons and panels get a consistent glass look again."
-      },
-      "liquidGlassSoften": {
-        "title": "Softer Liquid Glass Buttons",
-        "description": "Selected buttons now have a softer glass treatment with smoother edge transitions, improving both the look and the feel of the interface."
-      },
-      "liquidGlassSettings": {
-        "title": "New Liquid Glass Settings",
-        "description": "Freely adjust liquid glass refraction strength, blur, and saturation to customize the glass texture to your taste. Note: liquid glass is only supported on Windows."
-      }
-    },
     "v0_7_18": {
-      "intro": "0.7.18 adds a play queue you can work with right from the wall tools in Bravais and Lattice, and both walls now share one tools panel. Several lyric visualizers use fewer resources, switching between local songs is smoother, QQ Music QR sign-in tells you what to do when your device limit is reached, and the desktop app now stores AI keys encrypted. Window animations now use an iOS 26-like gradient transition, and the side play queue gains a rotation effect.",
+      "intro": "0.7.18 adds a play queue you can work with right from the wall tools in Bravais and Lattice, and both walls now share one tools panel. Several lyric visualizers use fewer resources, switching between local songs is smoother, QQ Music QR sign-in tells you what to do when your device limit is reached, and the desktop app now stores AI keys encrypted.",
       "queueIsland": {
         "title": "Manage the Queue on the Wall",
         "description": "Open Wall tools in the bottom-right corner of Bravais or Lattice and choose Play queue to show the queue above the panel. Click a song to play it without leaving the page, drag the handle to reorder, hover to play next, move to the end or remove, save the queue as a local playlist, or clear it with a two-step confirm. Keyboard: ↑↓ to move, Alt+↑↓ to reorder, Delete to remove. Not available in Personal FM; while an external Stage is playing you can only pick songs."
@@ -3874,10 +3863,6 @@ export default {
       "aiKeySecure": {
         "title": "Encrypted AI Keys on Desktop",
         "description": "The desktop app now stores Gemini / OpenAI keys encrypted with the system's secure storage, and plain-text keys from older versions are migrated at startup. Saved keys are never shown again: leave the field blank to keep a key, type a new one to replace it, or use the separate Clear button. Testing the connection with a blank field uses the saved key."
-      },
-      "windowAnimation": {
-        "title": "Window Animation Adjusted",
-        "description": "Window animations now use a gradient transition similar to iOS 26, and the side play queue gains a rotation effect for a smoother, more natural switch."
       }
     },
     "v0_7_17": {
@@ -3908,7 +3893,7 @@ export default {
       }
     },
     "v0_7_16": {
-      "intro": "0.7.16 moves AMLL lyrics to the official API, finds far more AMLL lyrics for QQ Music songs, and lets manual matching search AMLL directly. It also adds Tab switching between home tabs and fixes missing album and artist links in local search results. The Shino mod additionally brings liquid glass to frosted surfaces such as buttons and the top bar, and restyles the window buttons after Windows 8 RP.",
+      "intro": "0.7.16 moves AMLL lyrics to the official API, finds far more AMLL lyrics for QQ Music songs, and lets manual matching search AMLL directly. It also adds Tab switching between home tabs and fixes missing album and artist links in local search results.",
       "amllSource": {
         "title": "AMLL Lyrics via the Official API",
         "description": "AMLL lyrics now come from the official AMLL API."
@@ -3924,14 +3909,6 @@ export default {
       "searchLinks": {
         "title": "Local Search Results Keep Their Links",
         "description": "If you search right after importing a folder, album and artist links in the results now fill in once the library finishes loading, without searching again."
-      },
-      "liquidGlass": {
-        "title": "Liquid Glass Added",
-        "description": "Liquid glass effects are now applied to frosted surfaces such as buttons and the top bar, giving the interface a richer glass texture."
-      },
-      "windowButtons": {
-        "title": "Window Buttons Restyled",
-        "description": "The window buttons have been adjusted to mimic the style of Windows 8 RP."
       }
     },
     "v0_7_15": {
