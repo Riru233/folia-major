@@ -13,6 +13,7 @@ import type { NebbiaSegments } from './nebbiaSegments';
 // 两张雾的预渲染（nebbiaFogGl.ts，RGBA16F，1/4、1/8 画布分辨率；不支持浮点渲染目标时主画面自己算），
 // 窗外楼群的缓存（nebbiaBuildingCache.ts，采样单元 9–14，雾的预渲染和主画面从它取楼群），
 // 静态噪声纹理（nebbiaNoiseTex.ts，采样单元 15）。
+// 透明（seeThrough）时画布带透明通道，窗外不画：楼群缓存和雾的预渲染都跳过，主画面输出预乘的透明度。
 // 着色器在后台编（nebbiaPrograms.ts）：`ready` 为真之前不画。
 // 水珠精灵是 raindrop-fx 1.0.8（MIT，见 nebbiaRaindrop.LICENSE.txt）的 assets/img/raindrop.png。
 
@@ -20,8 +21,12 @@ type Locations = Record<string, WebGLUniformLocation | null>;
 
 // 街景（两个程序都有）读的 uniform；其余只在主画面
 const PALETTE_UNIFORMS = ['uSky0', 'uSky1', 'uLa', 'uLb', 'uLc'];
-const SCENE_UNIFORMS = ['uRes', 'uSceneShift', 'uTime', 'uBus', 'uNeon', ...PALETTE_UNIFORMS, 'uSpotSrc', 'uSpotSrc2', 'uSpotTgt', 'uSpotR', 'uSpotI', 'uBldOn', 'uBldGeo'];
-const MAIN_UNIFORMS = [...SCENE_UNIFORMS, 'uMist', 'uEdge', 'uRefract', 'uGlint', 'uGlassShift', 'uBreathOn', 'uBreathThick', 'uNoiseOn'];
+const SCENE_UNIFORMS = ['uRes', 'uSceneShift', 'uTime', 'uBus', 'uNeon', ...PALETTE_UNIFORMS, 'uSpotSrc', 'uSpotSrc2', 'uSpotTgt', 'uSpotR', 'uSpotI', 'uScenery', 'uBldOn', 'uBldGeo'];
+const MAIN_UNIFORMS = [...SCENE_UNIFORMS, 'uMist', 'uEdge', 'uRefract', 'uGlint', 'uGlassShift', 'uBreathOn', 'uBreathThick', 'uNoiseOn', 'uSeeThrough', 'uMistTint'];
+
+/** uScenery 里楼群那一位（nebbiaFrameUniforms.ts 的 SCENERY_BITS），和关着时给着色器的楼群缓存状态。 */
+const SCN_BUILDINGS = 1;
+const NO_BUILDINGS: NebbiaBuildingState = { on: [0, 0, 0], geo: [0, 1, 1, 0, 1, 1, 0, 1, 1] };
 
 const locate = (gl: WebGL2RenderingContext, prog: WebGLProgram, names: string[]): Locations => (
     Object.fromEntries(names.map(n => [n, gl.getUniformLocation(prog, n)]))
@@ -50,11 +55,13 @@ export class NebbiaGl {
     private instData = new Float32Array(0);
     /** 主题配色：编好之前先记下，编好时补上。 */
     private palette: number[][] | null = null;
+    /** 透明时雾的颜色（0..1 的 RGB），跟主题日夜。 */
+    mistTint: [number, number, number] = [0.07, 0.08, 0.1];
     /** 精灵贴图加载好时调（这之前不画水珠）。 */
     onSpriteReady: (() => void) | null = null;
 
-    constructor(private readonly canvas: HTMLCanvasElement) {
-        const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: false });
+    constructor(private readonly canvas: HTMLCanvasElement, private readonly seeThrough = false) {
+        const gl = canvas.getContext('webgl2', { antialias: false, alpha: seeThrough, preserveDrawingBuffer: false });
         if (!gl) throw new Error('Nebbia: WebGL2 unavailable');
         this.gl = gl;
         this.fogOK = canRenderFogToFloat(gl);
@@ -106,6 +113,7 @@ export class NebbiaGl {
         const samplers: [string, Tex][] = [['uMask', this.mask.tex], ['uDrop', this.drop], ['uField', this.field], ['uFogBlur', fogBlur.tex], ['uFogGlow', fogGlow.tex], ['uBreath', this.breath], ['uNoise', this.noise.tex]];
         for (const [name, tex] of samplers) gl.uniform1i(gl.getUniformLocation(main, name), tex.unit);
         gl.uniform1f(this.U.uBreathThick, NEBBIA_FIXED.breathThick);
+        gl.uniform1i(this.U.uSeeThrough, this.seeThrough ? 1 : 0);
         this.bld.bindSamplers(main);
         if (fog) {
             this.F = locate(gl, fog, SCENE_UNIFORMS);
@@ -209,6 +217,7 @@ export class NebbiaGl {
         gl.uniform2fv(L.uSceneShift, u.sceneShift);
         gl.uniform2fv(L.uSpotSrc, u.spotSrc); gl.uniform2fv(L.uSpotSrc2, u.spotSrc2); gl.uniform2fv(L.uSpotTgt, u.spotTgt);
         gl.uniform1f(L.uSpotR, u.spotR); gl.uniform1f(L.uSpotI, u.spotI);
+        gl.uniform1i(L.uScenery, u.scenery);
     }
 
     // 楼群缓存的取样状态（两个程序都设）
@@ -234,9 +243,10 @@ export class NebbiaGl {
         this.renderDrops(this.drop, drops);
         this.renderDrops(this.field, field);
         gl.bindVertexArray(this.quadVao);
-        const buildings = this.bld.update(u.time * u.bus, bldFill, this.B);
+        // 楼群关着时不补画缓存；再打开时缓存发现位置对不上，自己整张重画
+        const buildings = u.scenery & SCN_BUILDINGS && !this.seeThrough ? this.bld.update(u.time * u.bus, bldFill, this.B) : NO_BUILDINGS;
         const noiseOn = this.noise.update(noise);
-        if (fog) {
+        if (fog && !this.seeThrough) {
             gl.useProgram(fog);
             this.setScene(this.F, u);
             this.setBuildings(this.F, buildings);
@@ -250,6 +260,7 @@ export class NebbiaGl {
         gl.uniform2fv(U.uGlassShift, u.glassShift);
         gl.uniform1i(U.uBreathOn, breath ? 1 : 0);
         gl.uniform1i(U.uNoiseOn, noiseOn ? 1 : 0);
+        gl.uniform3fv(U.uMistTint, this.mistTint);
         gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.bindVertexArray(null);
