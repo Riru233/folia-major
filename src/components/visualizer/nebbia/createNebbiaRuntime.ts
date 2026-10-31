@@ -1,4 +1,5 @@
-import type { Theme } from '../../../types';
+import type { LyricRenderScale, Theme } from '../../../types';
+import { resolveLyricPixelRatio } from '../../../utils/lyricRenderQuality';
 import { loadLucideIcons, resolveLucideIconNames } from '../../../services/lucideIconResolver';
 import { resolveThemeFontStack, resolveThemeFontWeight } from '../../../utils/fontStacks';
 import { buildNebbiaLines, collectEmojiIcons, NEBBIA_DEFAULT_DOODLES } from './nebbiaChars';
@@ -51,6 +52,8 @@ export class NebbiaRuntime {
     private theme: Theme;
     private tuning: NebbiaTuning;
     private fontScale = 1;
+    /** 分辨率倍数（#929）：外壳从全局挡位和 tuning.render 合出来，预览时是 1。 */
+    private renderScale: LyricRenderScale;
     private showText = true;
     private paused = false;
     private still = false;
@@ -65,9 +68,10 @@ export class NebbiaRuntime {
     private readonly startedAt = performance.now();
     private shadersLogged = false;
 
-    constructor(private readonly input: NebbiaRuntimeInput, theme: Theme, tuning: NebbiaTuning) {
+    constructor(private readonly input: NebbiaRuntimeInput, theme: Theme, tuning: NebbiaTuning, renderScale: LyricRenderScale = 1) {
         this.theme = theme;
         this.tuning = tuning;
+        this.renderScale = renderScale;
         // setTuning 只在 tuning 变了才调：上下文恢复后重建的运行时要自己带上颠簸强度
         this.motion.bump = tuning.bump;
         this.canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
@@ -122,9 +126,15 @@ export class NebbiaRuntime {
         const prev = this.tuning;
         this.tuning = tuning;
         this.motion.bump = tuning.bump;
-        if (prev.resolution !== tuning.resolution) this.resize();
         if (LAYOUT_KEYS.some(k => !sameValue(prev[k], tuning[k]))) this.rebuild();
         this.requestFrame();
+    }
+
+    /** 分辨率倍数变了：就地换画布和缓冲的尺寸，不重建上下文。 */
+    setRenderScale(scale: LyricRenderScale) {
+        if (scale === this.renderScale) return;
+        this.renderScale = scale;
+        this.resize();
     }
 
     setPlayback(paused: boolean, still: boolean) {
@@ -183,7 +193,7 @@ export class NebbiaRuntime {
         const sized = Math.round(rect.width) !== this.W || Math.round(rect.height) !== this.H;
         this.W = Math.round(rect.width);
         this.H = Math.round(rect.height);
-        const dpr = Math.min(2, window.devicePixelRatio || 1) * this.tuning.resolution;
+        const dpr = resolveLyricPixelRatio(Math.min(2, window.devicePixelRatio || 1), this.renderScale);
         this.gl.resize(this.W, this.H, dpr);
         this.mask.resize(this.W, this.H);
         if (sized) {

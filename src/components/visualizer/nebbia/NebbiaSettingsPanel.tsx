@@ -2,6 +2,7 @@ import React from 'react';
 import { Group, type SettingsGroupDef } from '../../modal/settings/kit';
 import { type VisualizerSettingsPanelProps } from '../definition';
 import { percent, SliderRow, times, ToggleRow } from '../panelRows';
+import LyricRenderQualityRows from '../renderQuality/LyricRenderQualityRows';
 import {
     DEFAULT_NEBBIA_TUNING,
     NEBBIA_APPEAR_STYLES,
@@ -17,7 +18,7 @@ import {
 
 // src/components/visualizer/nebbia/NebbiaSettingsPanel.tsx
 // 雾笺的设置：雾上写字（笔画、手写歪斜和变形、雾、片尾写曲名），字怎么出现、怎么消失、一句怎么构图（每种一个开关，开几种用几种），
-// 窗外（车、霓虹、聚光灯、雨点、画质）。用设置窗口的共用控件画成几组。
+// 窗外（车、霓虹、聚光灯、雨点），渲染（分辨率，默认跟随全局）。用设置窗口的共用控件画成几组。
 
 export const NEBBIA_APPEAR_LABEL_KEYS: Record<NebbiaAppearStyle, string> = {
     write: 'options.nebbiaAppearWrite',
@@ -55,8 +56,9 @@ const WINDOW_SLIDERS: SliderSpec[] = [
     ['spotX', 'options.nebbiaSpotX', 0.01, percent],
     ['rainHit', 'options.nebbiaRainHit', 0.05, times],
     ['rainBig', 'options.nebbiaRainBig', 0.05, times],
-    ['resolution', 'options.nebbiaResolution', 0.25, times],
 ];
+// 分辨率（#929）：原来窗外一组里的分辨率滑块换成共用的「跟随全局 / 指定倍数」；全屏着色器没有 MSAA，不出抗锯齿那行。
+const RENDER_GROUP: SettingsGroupDef = { id: 'vis-nebbia-render', titleKey: 'options.lyricRenderSection' };
 const APPEAR_GROUP: SettingsGroupDef = { id: 'vis-nebbia-appear', titleKey: 'options.nebbiaAppear' };
 const FADE_GROUP: SettingsGroupDef = { id: 'vis-nebbia-fade', titleKey: 'options.nebbiaFade' };
 const LAYOUT_GROUP: SettingsGroupDef = { id: 'vis-nebbia-layouts', titleKey: 'options.nebbiaLayouts' };
@@ -126,6 +128,13 @@ const NebbiaSettingsPanel: React.FC<VisualizerSettingsPanelProps<NebbiaTuning>> 
                 {toggles(NEBBIA_LAYOUTS, resolved.layouts, LAYOUT_LABEL_KEYS, layouts => ({ layouts }))}
             </Group>
             <Group def={WINDOW_GROUP}>{sliders(WINDOW_SLIDERS)}</Group>
+            <Group def={RENDER_GROUP}>
+                <LyricRenderQualityRows
+                    value={resolved.render}
+                    onChange={patch => onTuningChange({ render: { ...resolved.render, ...patch } })}
+                    antialias={false}
+                />
+            </Group>
         </>
     );
 };
