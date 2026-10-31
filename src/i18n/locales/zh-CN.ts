@@ -613,8 +613,8 @@ export default {
       "settings-help": { "title": "打开帮助", "description": "打开帮助和快捷键" },
       "ponder-current-page": { "title": "思索当前页面", "description": "打开当前页面的交互式介绍" },
       "settings-options": { "title": "打开选项", "description": "打开设置中心" },
-      "settings-ai-provider": { "title": "AI 供应商设置", "description": "选择 AI 供应商和模型" },
       "settings-now-playing-card-position": { "title": "调整卡片位置", "description": "拖动正在播放卡片到新的位置" },
+      "settings-ai-provider": { "title": "AI 供应商设置", "description": "选择 AI 供应商和模型" },
       "settings-appearance": { "title": "外观设置", "description": "打开视觉和外观设置" },
       "settings-general": { "title": "通用设置", "description": "打开全局应用偏好" },
       "settings-playback": { "title": "播放设置", "description": "打开播放行为设置" },
@@ -763,6 +763,7 @@ export default {
       "library-wall-seam-direction-picker": { "title": "选择信息条方向", "description": "信息条竖着开、从块的横向缝隙横着开，或按屏幕形状自动选" },
       "settings-theme-presets": { "title": "预设配色", "description": "直接跳到内置和已保存的预设配色" },
       "settings-liquid-glass": { "title": "流体玻璃", "description": "直接跳到流体玻璃强度、模糊与预设" },
+      "settings-lyric-render-quality": { "title": "歌词画布分辨率与抗锯齿", "description": "直接跳到 canvas / WebGL 歌词样式默认跟随的分辨率和抗锯齿设置" },
       "settings-lyrics-renderer": { "title": "歌词渲染方式", "description": "直接跳到播放器歌词的绘制方式设置" },
       "settings-grid-card-style": { "title": "网格卡片样式", "description": "直接跳到首页网格卡片的绘制样式" },
       "settings-queue-behavior": { "title": "队列行为", "description": "直接跳到播放队列的组建与保留方式" },
@@ -847,11 +848,9 @@ export default {
       "background-latent-both": { "title": "背景切换到隐现：混合", "description": "同时显示 隐现 像素与流体层" },
       "background-url": { "title": "背景切换到 嵌入背景", "description": "切换背景到嵌入网页模式" },
       "background-sora": { "title": "背景切换：空", "description": "将背景切换到星空 (Sora)" },
-      "background-transparent": { "title": "背景切换到 透明", "description": "将背景切换为完全透明" },
       "settings-toggle-transparent": { "title": "透明化", "description": "切换播放器背景透明度" },
       "settings-toggle-daylight": { "title": "切换明暗", "description": "切换主题日夜模式" },
       "settings-toggle-player-back-button": { "title": "始终显示播放页返回按钮", "description": "切换播放页左上角返回按钮的常驻显示" },
-      "settings-toggle-player-bar-pinned": { "title": "固定播放条", "description": "让底部播放条保持展开，不再自动收缩" },
       "settings-gridview-cards": { "title": "网格卡片外观", "description": "直接调整全画幅封面和网格卡片的远近缩放与淡出" },
       "settings-toggle-gridview-full-bleed-cover": { "title": "全画幅封面", "description": "开关网格卡片的封面铺满整张卡片" },
       "settings-toggle-gridview-square-cards": { "title": "正方形网格卡片", "description": "开关全画幅网格卡片使用正方形而非竖版比例" },
@@ -1133,6 +1132,7 @@ export default {
     "queueReplaceUndoGone": "队列在替换之后又改过了，没有可以撤销的替换",
     "queueReplaceHint": "可以一次换掉整个播放队列，并结束私人 FM；替换后会提示是哪个模组换的，在队列再被改动之前可以撤销。",
     "equalizerControlHint": "会改写你的音效设置：可以切换音效预设，或换上它自己的均衡器曲线。",
+    "renderQualityHint": "会改写歌词画布的渲染质量：可以修改「性能与动效」里的歌词画布分辨率与抗锯齿。",
     "signatureVerified": "官方认证",
     "signatureVerifiedDetail": "带有有效的 Folium 官方签名（{{key}}）：来源与内容经过官方审查，签名后未被修改。它启用后仍以应用的完整权限运行。",
     "signatureBeta": "先行测试",
@@ -2336,8 +2336,8 @@ export default {
     "hidePlayerRightPanelButton": "隐藏右侧按钮",
     "transparentPlayerBackground": "播放页透明背景",
     "transparentPlayerBackgroundDesc": "透明窗口模式，适合 OBS 浏览器源或抠像叠加。",
-    "enablePlayerPageNativeBlur": "亚克力背景",
-    "enablePlayerPageNativeBlurHint": "用系统毛玻璃替代播放页背景，但流体玻璃不会折射系统亚克力",
+    "enablePlayerPageNativeBlur": "开启播放页原生毛玻璃背景",
+    "enablePlayerPageNativeBlurHint": "用系统毛玻璃替代播放页背景，更耗性能",
     "enablePlayerPageNativeBlurDesc": "仅在桌面版的非透明模式下生效；移动窗口时可能卡顿。",
     "nativeBlurConfirmTitle": "系统毛玻璃效果",
     "nativeBlurConfirmDesc": "开启后，窗口会变为系统毛玻璃效果的半透明背景，Folia 的各种背景将不再显示。如果系统不支持，则会显示为白色不透明背景。",
@@ -2865,7 +2865,22 @@ export default {
     "nebbiaSpotX": "聚光灯位置",
     "nebbiaRainHit": "雨点打在玻璃上",
     "nebbiaRainBig": "吐字时的大雨点",
-    "nebbiaResolution": "渲染分辨率",
+    "nebbiaScenery": "窗外显示",
+    "nebbiaSceneryHint": "窗外每样都能单独关掉，全关时只剩天色。光斑是霓虹、路灯和招牌；关掉马路时车灯和光斑也没有倒影。玻璃上的雨点在上面的滑块里调。",
+    "nebbiaScenery_spot": "聚光灯",
+    "nebbiaScenery_buildings": "楼群",
+    "nebbiaScenery_lights": "光斑",
+    "nebbiaScenery_cars": "车灯",
+    "nebbiaScenery_road": "马路",
+    "nebbiaRain": "窗外的雨",
+    "nebbiaRainHint": "窗外的雨只在聚光灯的光柱里、玻璃擦干净的地方看得见；斜着落时随车速倾斜。",
+    "nebbiaRain_slant": "斜着",
+    "nebbiaRain_straight": "竖直",
+    "nebbiaRain_off": "不下",
+    "nebbiaBehind": "窗外",
+    "nebbiaBehindHint": "雨夜街景，或者用共用背景。用背景时雾变成一层半透明的雾（日间主题是白雾、夜间主题是深色的雾），擦开的字透出后面的背景；播放页透明时总是这样，透出的是桌面。",
+    "nebbiaBehind_night": "雨夜街景",
+    "nebbiaBehind_backdrop": "背景",
     "lumiereUnlitOpacity": "未唱字透明度",
     "lumiereWindowNeighbors": "邻行",
     "lumiereWindowNeighborsPrev": "上一行 + 当前行",
@@ -2956,9 +2971,9 @@ export default {
     "machiQualityBalanced": "平衡",
     "machiQualityLow": "低",
     "machiRenderScale": "分辨率",
-    "machiRenderScaleHint": "按屏幕像素的几成来画：低一些会糊一点，但快很多。高 DPI 屏上最多按 2 倍算。",
+    "machiRenderScaleHint": "按屏幕像素的几成来画：低一些会糊一点，但快很多。高 DPI 屏上最多按 2 倍算。跟随全局时用「性能与动效」里的歌词画布分辨率（现在是 {{value}}，高于 1× 按超采样画）。",
     "machiAntialias": "抗锯齿",
-    "machiAntialiasHint": "FXAA 最省，字会略软；SMAA 边缘干净，墨线和雨丝也平滑，代价稍高；超采样按 2 倍分辨率画再缩回来，最细也最贵。",
+    "machiAntialiasHint": "FXAA 最省，字会略软；SMAA 边缘干净，墨线和雨丝也平滑，代价稍高；超采样按 2 倍分辨率画再缩回来，最细也最贵。跟随全局时，全局挡位开着（现在是{{value}}）就是 SMAA，关着就是关。",
     "machiAntialiasOff": "关",
     "machiAntialiasFxaa": "FXAA",
     "machiAntialiasSmaa": "SMAA",
@@ -2973,7 +2988,8 @@ export default {
     "machiGlow": "辉光与光条",
     "machiGlowHint": "夜里灯和招牌晕开的光，以及横向的镜头光条。",
     "machiAdaptive": "自动降级",
-    "machiAdaptiveHint": "帧率长期偏低时，在这套设置之下逐步降低（先关景深的虚化，再降倒影、阴影、辉光，最后才动抗锯齿和分辨率），不会高过你选的。改了设置会从新的这套重新开始。",
+    "machiAdaptiveHint": "帧率长期偏低时，在这套设置之下逐步降低（先关景深的虚化，再退超采样和几何边缘的 MSAA，然后是倒影、辉光、分辨率、后期抗锯齿，阴影最后），不会高过你选的。改了设置会从新的这套重新开始。",
+    "machiAdaptiveActive": "现在已经降了 {{count}} 档。",
     "hanabiFireworksSection": "烟花",
     "hanabiStageSection": "画面",
     "hanabiTextSection": "文字",
@@ -3113,13 +3129,13 @@ export default {
     "gpuPreferenceCommandLineNotice": "这次启动带了显卡参数，以启动参数为准",
     "gpuPreferenceActive": "当前使用",
     "visualizerFrameRateValue": "限制档位",
-    "liquidGlassSection": "高级材质",
+    "liquidGlassSection": "液态玻璃",
     "liquidGlassSectionDesc": "调整Folia界面组件的材质。",
     "liquidGlassPreset": "预设",
     "liquidGlassPresetDesc": "一键套用一组强度、模糊与边缘弯曲距离的常见观感。",
     "liquidGlassPresetFrosted": "毛玻璃",
-    "liquidGlassPresetClear": "通透流体",
-    "liquidGlassPresetHazy": "朦胧流体",
+    "liquidGlassPresetClear": "通透液态玻璃",
+    "liquidGlassPresetHazy": "朦胧液态玻璃",
     "liquidGlassPresetEco": "节能",
     "liquidGlassStrength": "折射强度",
     "liquidGlassStrengthDesc": "玻璃边缘折射背后内容的强弱。",
@@ -3135,6 +3151,17 @@ export default {
     "liquidGlassJellyDesc": "拖拽时拉伸、松手回弹。",
     "liquidGlassGpuBlockedNotice": "渲染显卡选择了「省电」，流体玻璃不可用；切回「自动」或「高性能」并重启 Folia 后恢复。",
     "liquidGlassValueLabel": "当前值",
+    "lyricRenderScale": "歌词画布分辨率",
+    "lyricRenderScaleDesc": "用 canvas / WebGL 画的歌词样式（町景、花火、绘光、雾笺等）按这个倍数渲染，1× 是各样式原来的清晰度；高于 1× 是超采样，边缘更细，也更吃显卡。各样式默认跟随这里，也能在样式自己的设置里单独指定。",
+    "lyricAntialias": "歌词画布抗锯齿",
+    "lyricAntialiasDesc": "自动是各样式自己的默认；打开时几何边缘（线条、卡片、色块）更平滑，代价是显存和一点帧率。各样式默认跟随这里。",
+    "lyricAntialiasAuto": "自动",
+    "lyricAntialiasOn": "开",
+    "lyricAntialiasOff": "关",
+    "lyricRenderSection": "渲染",
+    "lyricRenderFollowGlobal": "跟随全局",
+    "lyricRenderScaleStyleHint": "这个样式按几倍分辨率画，高于 1× 是超采样。跟随全局时用「性能与动效」里的挡位（现在是 {{value}}）。",
+    "lyricAntialiasStyleHint": "跟随全局时用「性能与动效」里的挡位（现在是{{value}}）。",
     "themePresets": "配色主题预设",
     "themePresetsDefault": "墨染 / 素白",
     "openThemePark": "打开主题乐园",
@@ -3202,6 +3229,8 @@ export default {
     "geminiApiKey": "Gemini 密钥",
     "aiApiKeySavedPlaceholder": "已保存（留空则保持不变）",
     "aiApiKeySavedDesc": "密钥已加密保存在本机，不会再显示。输入新密钥并保存可替换。",
+    "aiApiKeyEndpointMismatchDesc": "已保存的密钥是之前 {{endpoint}} 用的，换了地址就不能再用。请输入新的密钥并保存。",
+    "aiApiKeyOtherProviderDesc": "已保存的密钥是之前 {{provider}} 的，切换服务商后不能再用。请输入新的密钥并保存。",
     "aiApiKeyClear": "清除",
     "openaiApiTemperature": "温度",
     "openaiApiStream": "流式传输",
@@ -3348,7 +3377,7 @@ export default {
     "importGroupSongTheme": "歌曲主题自动化",
     "importGroupTrackCard": "歌曲信息卡片",
     "importGroupLibraryWall": "资料库墙面",
-    "importGroupLiquidGlass": "流体玻璃",
+    "importGroupLiquidGlass": "液态玻璃",
     "importDerivedUnpin": "将同时关闭「固定自定义主题」",
     "importDerivedUploadedFont": "你上传的字体将被替换并删除，需要重新上传",
     "importFontUnavailable": "本机未安装此字体，导入后会回落到内置字体栈",
@@ -3702,30 +3731,30 @@ export default {
       }
     },
     "v0_7_22": {
-      "intro": "该版本是0.7.22 Beta版本，该版本供大家提前尝鲜，比官方更先一步体验0.7.22，整个播放器都很通透。",
-      "glassUpgrade": {
-        "title": "流体玻璃全面升级",
-        "description": "流体玻璃新增四组预设（毛玻璃、通透流体、朦胧流体、节能），每组都配了预览图，一键套用；新增「折射面距离」，控制边缘的折射区域从边框往中心延伸多远；新增「光效」，指针悬停在玻璃上时会有跟着走的高光，按下时更亮。修复了部分场景（列表、海报墙等）没有覆盖到流体玻璃的问题。这些参数同样会跟着外观配置一起导入导出，也会同步到 OBS 视觉设置。"
+      "intro": "欢迎来到 0.7.22「Sparkle Update」：这是一次重大更新。这一版接入了汽水音乐；新增日系烟花歌词样式「花火」，每首歌随机换样式时可以自己挑范围；桌面版有了全局播放快捷键，AI 设置可以直接选服务商和模型。",
+      "qishui": {
+        "title": "汽水音乐",
+        "description": "桌面版新增汽水音乐，在登录窗口用抖音扫码登录。可以搜索、播放（标准音质）、看逐字歌词和歌手热门歌曲，读取自己的歌单和「汽水最近播放」；推荐流和场景电台作为私人 FM 播放，首页场景卡点一下就开播。可以红心、在自建歌单里加歌删歌，私人 FM 支持「不喜欢」。没有可直接播放音源的歌放不了；暂不支持浏览专辑、新建歌单和收藏歌单。本地歌曲匹配到汽水的歌时，也能取回它的歌词。"
       },
-      "glassJelly": {
-        "title": "果冻形变修复",
-        "description": "拖动玻璃面板时，位移走一条会饱和的曲线：拖得越远跟得越慢，面板不会被甩出去；沿着拖动的方向被拉长，垂直方向同时收窄，单个方向的形变有上限，面板不会被压扁或撑爆；松手回弹的弹簧更硬一些，形变更跟手。关掉果冻效果时，玻璃面板的滚动和动画也更流畅。"
+      "hanabi": {
+        "title": "花火",
+        "description": "新增歌词样式「花火」：日系歌词 PV 的画风，每句歌词带着色块逐字出场，烟花一样的装饰沿着字开花，镜头之间整个画面跟着升空的烟花一边旋转一边往上走，还有胶片、贴纸、胶带等拼贴装饰，副歌时画面亮起一层辉光。烟花、文字、装饰、配色都能在样式设置里调，也有画质档；智能动感模式下每拍在夜空开一朵烟花、画面随拍推近。"
       },
-      "exploreImmersive": {
-        "title": "探索页沉浸化",
-        "description": "探索页的列表固定铺满窗口：上方按滚动量淡出，下方按还没滚到的部分淡出；列表的两条边各由三层模糊叠成，越靠边越糊，内容是「淡出去」而不是「被切掉」。滚动条变成贴在窗口右缘的玻璃药丸，滑块显示列表停在哪里，每个分区的记号可以直接跳过去。打开 GridMap 时页头逐块淡出，地图开始退场时页头就淡回来。"
+      "randomStyles": {
+        "title": "随机歌词样式自选范围",
+        "description": "歌词样式选择里新增「随机」：从内建样式里勾选几种或全部组成随机池，每首歌换一种，不会连着重复，每种样式用它自己保存的参数。播放面板上可以给这首歌重新抽一种，或改随机池；随机池会跟着配置导入导出和同步。"
       },
-      "pageSwitchPerf": {
-        "title": "切页不再卡顿",
-        "description": "首页的页签各自常驻一层：切换页签只改变可见性和横向位移，不重挂整个视图，不丢玻璃的位移图、不重新解码封面。切换动画只做横向位移、不动透明度，玻璃面板在整个动画期间都保持显示。网格卡片的渲染窗口按视口自适应，滑动时不再整片闪空白；连续快速切页签时的渲染异常、以及地图被首页层级压住的问题也一并修好。"
+      "globalShortcuts": {
+        "title": "全局播放快捷键",
+        "description": "桌面版「快捷操作 → 全局快捷键」：Folia 不在前台时也能用 Ctrl+Alt+Shift（macOS 是 Control+Option+Shift）加一个字母或数字控制播放，可绑定播放/暂停、上一首、下一首、音量加减、静音、循环和随机，模组提供的命令也能绑定；被别的程序占用的组合会标出来。原生 Wayland 下改为一键注册到桌面环境，在系统设置里绑定按键。命令面板也新增了播放/暂停和音量加减。"
       },
-      "playerBarGlow": {
-        "title": "播放条浮岛与水面波形",
-        "description": "底部播放条新增「固定」：固定之后鼠标移开也不会收起，可以从命令面板或设置里开关。播放时底边会泛起一层水面波形——频谱按对数频率铺成波形，跟着音乐起伏并缓缓流动；颜色从白色射向主题强调色，泛光的心沿横向慢慢游走。"
+      "aiProviders": {
+        "title": "AI 服务商与模型",
+        "description": "桌面版的 AI 设置改为直接选服务商：Gemini、DeepSeek、小米 MiMo、阿里云 Qwen、腾讯云 TokenHub、OpenAI、Anthropic、Kimi、智谱 GLM，或自定义兼容接口。内置服务商不用填地址，填好密钥就能获取模型列表下拉选择，并预填推荐模型；思考、温度等参数按服务商和模型自动处理，用到已停用的模型会提示。切歌后，上一首没生成完的 AI 主题不会再盖到这首歌上。"
       },
-      "morePolish": {
-        "title": "更多细节",
-        "description": "Lattice 列表补上了动画，果冻样式的问题也修好了。网格卡片的倒影不再被滚动容器拦腰切断，改成自然地淡出。播放页的「透明背景」开关与遥控器里的同类设置被去掉；系统毛玻璃改称「亚克力背景」，并说明流体玻璃不会折射系统亚克力。"
+      "moreDetails": {
+        "title": "更多改进",
+        "description": "重启后各平台的登录不会再因为断网或服务器出错被清掉。智能动感模式多了「只用已分析」一档，总开关挪到歌词样式窗口新的「全局」页；本地和 Navidrome 的歌也会做自动混音的过渡分析；本地扫描支持 DSD（.dsf、.dff）。Windows 新增「渲染显卡」设置，「性能与动效」新增默认关闭的「后台节流」，窗口最小化或隐藏时停住歌词动画。Bravais 的信息条可以选自动、竖向或横向，探索墙也放上了最近播放。模组接口升级到 Folium 1.7。"
       }
     },
     "v0_7_21": {
@@ -3782,25 +3811,6 @@ export default {
         "description": "Bravais 首页的设置格在有新版本时会提示；在 Bravais 首页搜索不再一直显示无结果，也不再在酷狗、QQ 下搜错平台；修复部分 Linux 发行版上竖排中文标签叠在一起；歌手 / 专辑海报翻走时不再闪回默认配色。桌面版收紧了外部链接与内部通信的安全检查，AI 密钥只会发往保存时的地址。"
       }
     },
-    "v0_7_19s": {
-      "intro": "0.7.19s 魔改版在官方 0.7.19 基础上更新：主要强化流体玻璃和修改普通布局。",
-      "homeUpdateHint": {
-        "title": "首页工具格提示发现新版本",
-        "description": "Bravais 首页接入更新状态：开启更新检查、发现新版本且还没在设置里查看时，设置工具格下方会出现一行可点的「发现新版本」（书脊放不下文字时改为设置图标右上角的强调色圆点），点击与点设置一样打开帮助页；打开设置看过后提示自动消失。Bravais 与经典网格两种首页共用同一套更新状态。"
-      },
-      "ipcSecurity": {
-        "title": "IPC 与外部链接处理的安全加固",
-        "description": "外部链接只有 http(s) 会交给系统打开，file://、ms-settings: 等自定义协议一律拦截，避免不可信 URL 触发非预期的系统协议调用；OBS 浏览器源状态与酷狗 API 请求等 IPC 通道补上窗口来源校验，其它窗口无法再冒用调用。"
-      },
-      "liquidGlassBlurFix": {
-        "title": "高模糊度下流体玻璃修复",
-        "description": "调整流体玻璃的滤镜链顺序（先饱和度与模糊、最后边缘折射），修复把模糊度调高后流体玻璃显示异常的问题。"
-      },
-      "liquidGlassPerf": {
-        "title": "流体玻璃性能优化",
-        "description": "位移图按分辨率上限生成；面板等大元素连续改变尺寸时，逐像素重建按节流窗口合并，不再每帧重画：大窗口或面板动画改尺寸更流畅，玻璃画质无可感知变化。"
-      }
-    },
     "v0_7_19": {
       "intro": "0.7.19 把 Bravais 的歌手页和专辑页做成了凝彩风格的海报；在线播放失败时会说明真正的原因，不再一律报「已下架」；凝彩等按词排版的模式对中文、日文的分词更自然；网页版断网也能正常启动。",
       "artistPoster": {
@@ -3828,23 +3838,8 @@ export default {
         "description": "Android 上在 Bravais / Lattice 墙面打开设置等覆盖层时，不再闪出底下的墙；凝彩播放时调整窗口大小偶尔崩溃的问题已修复；Sora 背景在暂停时停止绘制，静态模式下星点定格；启动时弹出的版本更新窗口可以按 Esc 关闭。"
       }
     },
-    "v0_7_18s-shino": {
-      "intro": "0.7.18s 魔改版在官方 0.7.18 基础上强化了流体玻璃体验：修复部分组件缺失的流体玻璃覆盖，为部分按钮追加软化效果，并新增可自由调整折射、模糊与饱和度的流体玻璃设置。温馨提示：流体玻璃仅支持 Windows 系统。",
-      "liquidGlassFix": {
-        "title": "流体玻璃修复",
-        "description": "修复 0.7.18 更新后部分组件缺少流体玻璃覆盖的情况，让按钮、面板等毛玻璃场景重新获得统一的流体玻璃效果。"
-      },
-      "liquidGlassSoften": {
-        "title": "流体玻璃组件软化",
-        "description": "对部分按钮增加软化处理，边缘过渡更柔和，提升页面整体观感与操作体验。"
-      },
-      "liquidGlassSettings": {
-        "title": "新增流体玻璃设置",
-        "description": "可以自由调整流体玻璃的折射强度、模糊与饱和度，按自己的喜好定制玻璃质感。温馨提示：流体玻璃仅支持 Windows 系统。"
-      }
-    },
     "v0_7_18": {
-      "intro": "0.7.18 给 Bravais 与 Lattice 的墙面工具加上可以直接操作的播放队列，工具面板也统一成同一套布局；多个歌词可视化模式更省资源，本地歌曲连续播放切歌更顺，QQ 扫码遇到登录设备超限会直接告诉你怎么处理，桌面版的 AI 密钥改为加密保存。窗口动画调整为类似 iOS 26 的渐变过渡，侧边播放列表增加旋转效果。",
+      "intro": "0.7.18 给 Bravais 与 Lattice 的墙面工具加上可以直接操作的播放队列，工具面板也统一成同一套布局；多个歌词可视化模式更省资源，本地歌曲连续播放切歌更顺，QQ 扫码遇到登录设备超限会直接告诉你怎么处理，桌面版的 AI 密钥改为加密保存。",
       "queueIsland": {
         "title": "墙面上直接管理播放队列",
         "description": "在 Bravais 或 Lattice 右下角的「墙面工具」里点「播放队列」，面板上方会展开队列：点歌直接播放、不跳页，拖动手柄排序，悬停可下一首播放、移到末尾或移除，还能存为本地歌单或两步确认清空。键盘可用 ↑↓ 移动、Alt+↑↓ 挪动、Delete 移除。私人 FM 下不可用，外部舞台播放时只能点歌。"
@@ -3868,10 +3863,6 @@ export default {
       "aiKeySecure": {
         "title": "桌面版 AI 密钥加密保存",
         "description": "桌面版的 Gemini / OpenAI 密钥改用系统的安全存储加密保存，旧版本留下的明文会在启动时自动迁移。保存后不再回显，留空即保持不变，替换需输入新密钥，清除是单独的按钮；测试连接时留空会使用已保存的密钥。"
-      },
-      "windowAnimation": {
-        "title": "窗口动画调整",
-        "description": "窗口动画调整为类似 iOS 26 的渐变过渡效果，侧边播放列表增加旋转效果，切换时更顺滑自然。"
       }
     },
     "v0_7_17": {
@@ -3902,7 +3893,7 @@ export default {
       }
     },
     "v0_7_16": {
-      "intro": "0.7.16 把 AMLL 歌词切到官方接口，QQ 音乐歌曲能找到的 AMLL 歌词更多，手动匹配也能直接搜 AMLL；另外新增首页用 Tab 切换页签，并修复本地搜索结果缺少专辑与歌手链接的问题。魔改版还在按钮、顶栏等多个毛玻璃场景增加了流体玻璃效果，窗口按钮也调整为模仿 Windows 8 RP 的样式。",
+      "intro": "0.7.16 把 AMLL 歌词切到官方接口，QQ 音乐歌曲能找到的 AMLL 歌词更多，手动匹配也能直接搜 AMLL；另外新增首页用 Tab 切换页签，并修复本地搜索结果缺少专辑与歌手链接的问题。",
       "amllSource": {
         "title": "AMLL 歌词改用官方接口",
         "description": "AMLL 歌词改为从 AMLL 官方接口获取。"
@@ -3918,14 +3909,6 @@ export default {
       "searchLinks": {
         "title": "本地搜索结果的链接不再缺失",
         "description": "刚导入文件夹就搜索时，结果里的专辑与歌手链接会在曲库加载完后自动补上，不必重新搜索。"
-      },
-      "liquidGlass": {
-        "title": "增加流体玻璃",
-        "description": "在按钮、顶栏等多个毛玻璃场景增加了流体玻璃的效果，界面质感更强。"
-      },
-      "windowButtons": {
-        "title": "窗口按钮变更",
-        "description": "窗口按钮进行了调整，模仿 Windows 8 RP 的样式。"
       }
     },
     "v0_7_15": {
