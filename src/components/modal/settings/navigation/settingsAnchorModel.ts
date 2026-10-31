@@ -87,6 +87,7 @@ export const SETTINGS_ANCHOR_DEFINITIONS = {
     graphicsMotion: { section: 'graphics' },
     liquidGlass: { section: 'graphics' },
     gpuPreference: { section: 'graphics' },
+    lyricRenderScale: { section: 'graphics' },
 
     // pages/ModsPage
     modSystem: { section: 'mods' },

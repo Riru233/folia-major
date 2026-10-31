@@ -39,7 +39,8 @@ import { useSettingsPage } from "./settingsPageContext";
 
 // src/components/modal/settings/pages/GraphicsPage.tsx
 // The 性能与动效 page: what trades picture for smoothness or works around a renderer problem
-// (static mode, the home background, native blur, the frame-rate cap, background throttling, the
+// (static mode, the home background, native blur, the frame-rate cap, the lyric canvas resolution and
+// anti-aliasing every canvas / WebGL lyric style follows by default, background throttling, the
 // Linux glow fix, the Windows render GPU), and which parts of the interface play reduced motion.
 
 /** Docs page behind the "Fix lyric animation freeze on Linux" switch. */
@@ -210,9 +211,11 @@ const PRESET_LABEL_KEY: Record<LiquidGlassPresetId, string> = {
 };
 
 const GraphicsPage: React.FC = () => {
-  const { t } = useTranslation();
+    const { t } = useTranslation();
   const { isDaylight } = useSettingsKitTheme();
   const { isElectron } = useSettingsPage();
+  
+  // 1. 保留主分支的代码格式，并合并你的液态玻璃 store
   const theme = useThemeSettingsStore(
     useShallow((state) => ({
       staticMode: state.staticMode,
@@ -233,12 +236,16 @@ const GraphicsPage: React.FC = () => {
   const setBackgroundThrottling = useDesktopSettingsStore(
     (state) => state.handleToggleBackgroundThrottling,
   );
+  
+  // 2. 融合 visualizer：加入主分支新增的 renderQuality 逻辑
   const visualizer = useVisualizerSettingsStore(
     useShallow((state) => ({
       frameRate: state.visualizerFrameRate,
       glowFix: state.glowBlurQuantize,
       setFrameRate: state.handleSetVisualizerFrameRate,
       setGlowFix: state.handleToggleGlowBlurQuantize,
+      renderQuality: state.lyricRenderQuality,             // 新增：来自 main
+      setRenderQuality: state.handleSetLyricRenderQuality, // 新增：来自 main
     })),
   );
   const motion = useMotionSettingsStore(
@@ -250,6 +257,8 @@ const GraphicsPage: React.FC = () => {
       setFollowSystem: state.handleToggleFollowSystemReducedMotion,
     })),
   );
+
+  // 3. 保留你的液态玻璃设置 store
   const glass = useLiquidGlassSettingsStore(
     useShallow((state) => ({
       strength: state.strength,
@@ -267,9 +276,12 @@ const GraphicsPage: React.FC = () => {
       setParams: state.handleSetLiquidGlassParams,
     })),
   );
+
   // Native blur can drop frames on some GPUs, so switching it on asks first.
   const [nativeBlurAsking, setNativeBlurAsking] = useState(false);
   const frameRateLimited = visualizer.frameRate !== "off";
+  
+  // 4. 保留你的液态玻璃预设计算逻辑
   // 预设：画不了位移图的平台不列出通透/朦胧流体；按当前值高亮（那边强度与弯曲距离被钉死，只按模糊匹配）。
   const presetOptions = LIQUID_GLASS_PRESETS.filter(
     (preset) => !preset.needsDistortion || GLASS_DISTORTION,
@@ -290,7 +302,6 @@ const GraphicsPage: React.FC = () => {
   const applyPreset = (id: string) => {
     const preset = LIQUID_GLASS_PRESETS.find(
       (candidate) => candidate.id === id,
-    );
     if (preset)
       glass.setParams({
         strength: preset.strength,

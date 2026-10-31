@@ -40,6 +40,7 @@
 | 128+ | `src/utils/appPlaybackGuards.ts` |
 | 64+ | `src/components/command-palette/types.ts` |
 | 64+ | `src/components/modal/settings/kit/index.ts` |
+| 64+ | `src/components/visualizer/definition.ts` |
 | 64+ | `src/i18n/config.ts` |
 | 64+ | `src/library/core/suite/suite.contract.ts` |
 | 64+ | `src/mods/folium/contract.ts` |
@@ -52,11 +53,11 @@
 | 32+ | `dev/probes/definition.ts` |
 | 32+ | `src/components/modal/settings/kit/motion.ts` |
 | 32+ | `src/components/visualizer/colorMix.ts` |
-| 32+ | `src/components/visualizer/definition.ts` |
 | 32+ | `src/components/visualizer/hanabi/types.ts` |
 | 32+ | `src/components/visualizer/machi/engine/materials.ts` |
 | 32+ | `src/components/visualizer/registry.tsx` |
 | 32+ | `src/components/visualizer/tuningDefinition.ts` |
+| 32+ | `src/components/visualizer/tuningRegistry.ts` |
 | 32+ | `src/components/wall/layout.ts` |
 | 32+ | `src/components/wall/wallSlots.ts` |
 | 32+ | `src/library/core/account/account.contract.ts` |
@@ -80,6 +81,7 @@
 | 32+ | `src/types/navidrome.ts` |
 | 32+ | `src/utils/coverUrl.ts` |
 | 32+ | `src/utils/fontStacks.ts` |
+| 32+ | `src/utils/lyricRenderQuality.ts` |
 | 32+ | `src/utils/lyrics/graphemeTiming.ts` |
 | 32+ | `src/utils/lyrics/parserCore.ts` |
 | 32+ | `test/component/fixtures.ts` |
