@@ -190,11 +190,13 @@ export class NebbiaRuntime {
     }
 
     private resize() {
-        const rect = this.input.host.getBoundingClientRect();
-        if (rect.width < 1 || rect.height < 1) return;
-        const sized = Math.round(rect.width) !== this.W || Math.round(rect.height) !== this.H;
-        this.W = Math.round(rect.width);
-        this.H = Math.round(rect.height);
+        // 量排版尺寸，不量 getBoundingClientRect：样式小图和样式窗口的大样张把窗口大的舞台缩小了画（preview/previewScale.ts），
+        // 量到缩小后的尺寸，整首就排在小画布上，字小到笔画宽度被 8 像素的下限盖过，调笔画粗细看不出变化（#963）
+        const { clientWidth: width, clientHeight: height } = this.input.host;
+        if (width < 1 || height < 1) return;
+        const sized = width !== this.W || height !== this.H;
+        this.W = width;
+        this.H = height;
         const dpr = resolveLyricPixelRatio(Math.min(2, window.devicePixelRatio || 1), this.renderScale);
         this.gl.resize(this.W, this.H, dpr);
         this.mask.resize(this.W, this.H);
