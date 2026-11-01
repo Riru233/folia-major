@@ -1,6 +1,50 @@
 
 
 export default {
+  "scratchpad": {
+    "title": "Buku catatan",
+    "count_one": "{{count}} lagu",
+    "count_other": "{{count}} lagu",
+    "hint": "Lagu untuk didengar atau dirapikan nanti. Menaruhnya di sini tidak mengubah antrean.",
+    "empty": "Belum ada apa-apa. Arahkan penunjuk ke kartu lagu, baris daftar lagu, atau hasil pencarian lalu pilih \"Tambahkan ke buku catatan\", atau catat lagu yang sedang diputar dari palet perintah.",
+    "open": "Buka buku catatan",
+    "close": "Tutup buku catatan",
+    "play": "Putar di antrean",
+    "enqueue": "Tambahkan ke antrean",
+    "addToPlaylist": "Tambahkan ke daftar putar…",
+    "remove": "Keluarkan dari buku catatan",
+    "enqueueAll": "Antrekan semua",
+    "replaceQueue": "Putar, ganti antrean",
+    "clear": "Kosongkan",
+    "confirmClear": "Klik lagi untuk mengosongkan",
+    "sourceLocal": "Lokal",
+    "collect": "Tambahkan ke buku catatan",
+    "collectScope": "Tambahkan semua ke buku catatan",
+    "originSearch": "Pencarian \"{{query}}\"",
+    "originExploreSection": "Jelajahi · {{section}}",
+    "collectFiltered_one": "Tambahkan {{count}} lagu tersaring ke buku catatan",
+    "collectFiltered_other": "Tambahkan {{count}} lagu tersaring ke buku catatan",
+    "addedOne": "Dicatat ke buku catatan",
+    "addedMany_one": "{{count}} lagu dicatat ke buku catatan",
+    "addedMany_other": "{{count}} lagu dicatat ke buku catatan",
+    "skippedDuplicates_one": "{{count}} sudah ada di sana",
+    "skippedDuplicates_other": "{{count}} sudah ada di sana",
+    "alreadyInOne": "Lagu ini sudah ada di buku catatan",
+    "alreadyInAll": "Semua lagu ini sudah ada di buku catatan",
+    "full": "Buku catatan penuh (paling banyak {{count}} lagu). Kosongkan sebagian dulu.",
+    "saveFailed": "Buku catatan gagal disimpan (penyimpanan lokal penuh); perubahan ini akan hilang saat dimulai ulang",
+    "expandCanvas": "Bentangkan jadi kanvas",
+    "collapseCanvas": "Kembali ke daftar",
+    "canvasHint": "Seret kartu untuk mengurutkan; kartu menempel saat dilepas. Seret kotak di ruang kosong untuk memilih beberapa.",
+    "selectGroup": "Pilih grup ini",
+    "enqueueGroup": "Antrekan grup ini",
+    "addGroupToPlaylist": "Tambahkan grup ini ke daftar putar…",
+    "selectedCount_one": "{{count}} dipilih",
+    "selectedCount_other": "{{count}} dipilih",
+    "removeSelected": "Keluarkan",
+    "clearSelection": "Batalkan pilihan",
+    "mixedSourcesHint": "Pilihan berasal dari lebih dari satu sumber; daftar putar hanya menerima lagu dari satu sumber"
+  },
   "libraryBravais": {
     "suiteName": "Dinding Bravais",
     "homeTitle": "Pustaka",
@@ -73,6 +117,10 @@ export default {
     "queueSaveFailed": "Playlist tidak bisa disimpan",
     "queueDragHandle": "Seret untuk mengurutkan",
     "queueMoved": "Dipindah ke posisi {{position}}",
+    "queueSearch": "Cari di antrean",
+    "queueSearchPlaceholder": "Cari di {{count}} lagu",
+    "queueSearchClose": "Tutup pencarian",
+    "queueNoMatch": "Tidak ada lagu yang cocok",
     "openPlayer": "Buka pemutar",
     "openPlayerUnavailable": "Belum ada lagu yang diputar",
     "openSettings": "Buka pengaturan",
@@ -398,6 +446,7 @@ export default {
     "playingSongNoSource": "Antrean saat ini bukan dari satu album atau playlist",
     "unliked": "Dihapus dari Disukai",
     "playlistUpdated": "Playlist diperbarui",
+    "playlistUpdateFailed": "Gagal menambahkan ke daftar putar",
     "providerLikeUnavailable": "{{provider}} tidak mendukung fitur menyukai lagu.",
     "providerPlaylistMutationUnavailable": "{{provider}} tidak mendukung penambahan lagu ke playlist.",
     "providerRecommendationsUnavailable": "{{provider}} tidak menyediakan rekomendasi konten.",
@@ -723,6 +772,7 @@ export default {
       "grid-toggle-edit-mode": { "title": "Alihkan mode sunting", "description": "Masuk atau keluar dari mode yang memungkinkan menghapus lagu dari koleksi ini" },
       "grid-reload-online-collection": { "title": "Muat ulang koleksi ini", "description": "Lewati cache dan muat ulang semua lagu dari koleksi online ini" },
       "grid-toggle-subscribe": { "title": "Berlangganan atau berhenti berlangganan", "description": "Simpan playlist atau album online ini ke koleksimu, atau hapus jika sudah tersimpan" },
+      "grid-collect-filtered": { "title": "Tambahkan lagu-lagu ini ke buku catatan", "description": "Simpan koleksi ini (hanya lagu yang tersaring saat menyaring) ke buku catatan tanpa mengubah antrean" },
       "directory-play-selection": { "title": "Putar kartu terpilih", "description": "Putar lagu dari kartu yang dipilih di peta, sesuai urutan kartu" },
       "directory-enqueue-selection": { "title": "Antrekan kartu terpilih", "description": "Tambahkan lagu dari kartu yang dipilih di peta ke antrean" },
       "directory-create-playlist": { "title": "Playlist baru dari pilihan", "description": "Buat playlist lokal berisi lagu dari kartu yang dipilih" },
@@ -801,6 +851,8 @@ export default {
       "playback-loop": { "title": "Alihkan loop", "description": "Ubah mode loop" },
       "playback-like": { "title": "Sukai lagu ini", "description": "Tambahkan lagu ini ke favorit, atau keluarkan lagi" },
       "playback-add-to-playlist": { "title": "Tambahkan ke daftar putar", "description": "Masukkan lagu ini ke salah satu daftar putar Anda" },
+      "scratchpad-toggle": { "title": "Buka atau tutup buku catatan", "description": "Tarik keluar buku catatan: lagu untuk didengar atau dirapikan nanti" },
+      "scratchpad-collect-current": { "title": "Catat lagu ini ke buku catatan", "description": "Simpan lagu ini untuk nanti tanpa mengubah antrean" },
       "playback-mute": { "title": "Bisukan", "description": "Bisukan pemutaran, atau kembalikan suaranya" },
       "playback-volume-up": { "title": "Volume naik", "description": "Naikkan volume 5%" },
       "playback-volume-down": { "title": "Volume turun", "description": "Turunkan volume 5%" },
@@ -1292,6 +1344,14 @@ export default {
     "locatePlaying": "Temukan lagu yang diputar di halaman ini",
     "viewCollections": "Lihat koleksi",
     "tracks": "Trek",
+    "alreadyLiked": "Sudah disukai",
+    "saveToPlaylist": "Simpan ke daftar putar",
+    "saving": "Sedang menambahkan ke daftar putar, sebentar",
+    "searchPlaylists": "Cari daftar putar",
+    "noMatchingPlaylists": "Tidak ada daftar putar yang cocok",
+    "createAndAdd": "Buat dan tambahkan",
+    "songsToSave_one": "{{count}} lagu",
+    "songsToSave_other": "{{count}} lagu",
     "plays": "Putar",
     "playAll": "Putar Semua",
     "playFilteredTracks": "Putar {{count}} lagu",
@@ -1317,7 +1377,17 @@ export default {
     "playTrack": "Putar trek",
     "error": "Pencarian gagal. Silakan coba lagi.",
     "retry": "Coba Lagi",
-    "catalogUnavailable": "Album atau artis ini tidak dapat dibuka karena penyedia tidak mengembalikan ID katalog yang valid."
+    "catalogUnavailable": "Album atau artis ini tidak dapat dibuka karena penyedia tidak mengembalikan ID katalog yang valid.",
+    "placeholderAlbum": "Cari album...",
+    "placeholderPlaylist": "Cari playlist...",
+    "sources": "Sumber pencarian",
+    "kinds": "Jenis pencarian",
+    "kindSong": "Lagu",
+    "kindAlbum": "Album",
+    "kindPlaylist": "Playlist",
+    "resultCount": "{{n}} ditemukan",
+    "trackCount": "{{n}} lagu",
+    "playCount": "{{n}} kali diputar"
   },
   "personalFmMode": {
     "openPicker": "Ganti mode FM Pribadi",
@@ -1716,6 +1786,7 @@ export default {
     "quickActions": "Aksi cepat",
     "queueCollage": "Kolase antrean",
     "playQueue": "Antrean pemutaran",
+    "scratchpad": "Buku catatan",
     "navigatePlaylists": "Navigasi Playlist",
     "playPause": "Putar / Jeda",
     "playerControls": "Kontrol Halaman Pemutar",
@@ -1725,6 +1796,7 @@ export default {
     "seekBackward": "Mundur 5d",
     "hidePlayerChrome": "Sembunyikan bilah progres dan tombol kanan bawah",
     "toggleRightPanel": "Alihkan panel kanan",
+    "openControlPanel": "Buka panel kontrol",
     "cycleRightPanelTabs": "Gilir tab panel kanan yang terbuka",
     "openCommandPalette": "Buka palette perintah",
     "openCommandPaletteQueue": "Buka antrean di palette perintah",
@@ -4905,7 +4977,8 @@ export default {
       "side_panel": "Bagaimana panel disusun dan cara berganti tab.",
       "theme_settings": "Preset, asal palet kustom, dan kapan ia berubah sendiri.",
       "sign_in": "Tombol Login di beranda dan pil di kanan bawah membuka jendela yang sama.",
-      "lyric_match": "Pilih lirik untuk sebuah lagu secara manual: ganti sumber, cari, lihat dulu, lalu simpan."
+      "lyric_match": "Pilih lirik untuk sebuah lagu secara manual: ganti sumber, cari, lihat dulu, lalu simpan.",
+      "scratchpad": "Buku catatan di tepi kiri: mengumpulkan lagu, membereskannya per sumber, dan kanvasnya."
     },
     "categories": {
       "basics": "Memulai",
@@ -5418,6 +5491,25 @@ export default {
         "save": "Simpan",
         "switches": "Sampul, Metadata, Lirik",
         "noMatch": "Jangan gunakan metadata online"
+      },
+      "scratchpad": {
+        "page": "Pustaka",
+        "handle": "Pegangan buku catatan",
+        "card": "Kartu lagu",
+        "collect": "Tambahkan ke buku catatan",
+        "save": "Simpan ke daftar putar",
+        "drawer": "Buku catatan",
+        "group": "Kelompok sumber",
+        "groupActions": "Aksi kelompok",
+        "row": "Sebuah lagu",
+        "rowActions": "Tombol baris",
+        "footer": "Aksi untuk semua",
+        "expand": "Bentangkan jadi kanvas",
+        "canvas": "Kanvas",
+        "canvasGroup": "Satu kelompok di kanvas",
+        "slot": "Tempat menempel",
+        "marquee": "Pilih dengan kotak",
+        "selection": "Aksi untuk pilihan"
       }
     },
     "targets": {
@@ -5475,7 +5567,8 @@ export default {
       "gridPaletteHotkey": "S di kisi",
       "settingsPage": "Halaman Opsi",
       "signIn": "Masuk ke platform musik",
-      "lyricMatch": "Jendela Cocokkan Data"
+      "lyricMatch": "Jendela Cocokkan Data",
+      "scratchpad": "Buku catatan"
     },
     "scenes": {
       "bravaisSeamLevels": "Tiga lebar: penuh, punggung, terlipat",
@@ -5629,7 +5722,10 @@ export default {
       "signInAccount": "Setelah masuk",
       "lyricMatchSearch": "Ganti sumber, cari lagi",
       "lyricMatchPick": "Pilih satu dan lihat liriknya dulu",
-      "lyricMatchLocal": "Tiga sakelar tambahan untuk lagu lokal"
+      "lyricMatchLocal": "Tiga sakelar tambahan untuk lagu lokal",
+      "scratchpadCollect": "Mengumpulkan lagu",
+      "scratchpadDrawer": "Membuka dan kelompok",
+      "scratchpadCanvas": "Kanvas"
     },
     "captions": {
       "bravaisSeam": {
@@ -6048,7 +6144,7 @@ export default {
         "appear": "Di tab Sampul, baris di bawah judul ini selalu ada: tindakan untuk lagu ini di kiri, jalan ke beranda dan pengaturan di ujung kanan. Di tab lain baris ini disimpan dan hanya tombol suka yang tersisa, di atas.",
         "settings": "Roda gigi membuka pengaturan. Panel menutup lebih dulu, lalu jendela pengaturan muncul.",
         "home": "Rumah di ujung kanan kembali ke dinding poster di beranda; panel menutup lebih dulu. Pemutaran tidak terhenti.",
-        "addToPlaylist": "Bintang menambahkan lagu ini ke playlist. Ia hanya ada bila sumber saat ini mendukung playlist; saat lagu tidak bisa ditambahkan ia meredup, dan mengarahkan penunjuk ke sana menjelaskan alasannya.",
+        "addToPlaylist": "Bintang menyimpan lagu ini ke daftar putar; baris pertama adalah Lagu yang Disukai (hati). Ia meredup bila sumber tidak mendukung daftar putar maupun suka, dan mengarahkan penunjuk ke sana menjelaskan alasannya.",
 
         "like": "Hati menyukai lagu ini. Bila sumber saat ini tidak bisa melakukannya, tombolnya meredup, dan mengarahkan penunjuk ke sana menjelaskan alasannya.",
         "playingFrom": "Bila antrean dimulai dari sebuah playlist atau album, tombol bertuliskan namanya muncul di sini: klik untuk kembali ke halaman itu dan menemukan lagu ini di sana. Begitu antrean berisi lagu lain, tombol ini hilang."
@@ -6096,6 +6192,21 @@ export default {
         "save": "“Simpan” menerapkan baris yang dipilih ke lagu ini; “Batal” tidak mengubah apa pun.",
         "switches": "Untuk berkas lokal ada tiga sakelar di bawah sampul: “Sampul”, “Metadata”, dan “Lirik”. Yang menyala mengambil bagian itu dari baris yang dipilih; yang padam mempertahankan milik berkasnya.",
         "noMatch": "“Jangan gunakan metadata online” di kiri bawah membuat lagu ini hanya memakai milik berkasnya."
+      },
+      "scratchpad": {
+        "hover": "Arahkan penunjuk ke kartu lagu, dua tombol muncul di kanan atasnya; yang kiri menambahkan lagu ke buku catatan. Kartu Grid, ubin dan kartu fokus Bravais, serta setiap baris hasil pencarian punya pasangan ini.",
+        "save": "Yang kanan menyimpannya ke daftar putar. Untuk sumber yang mendukung suka, baris pertama pemilih daftar putar adalah Lagu Disukai; Anda juga bisa membuat daftar putar baru di sana lalu memasukkan lagunya.",
+        "notQueue": "Menambahkan ke buku catatan tidak mengubah antrean putar; yang sedang diputar tetap berjalan. Arahkan penunjuk ke tepi kiri atas dan pegangannya terbuka, menunjukkan jumlah lagu di dalamnya; selama buku catatan kosong, pegangannya tersembunyi.",
+        "otherWays": "Untuk lagu yang sedang diputar, tekan : untuk mode eksekusi lalu S. Di halaman koleksi, “Tambahkan semua ke buku catatan” mengambil lagu halaman itu sekaligus, hanya yang tersaring bila filter aktif: di Grid ada di panel info, di Bravais di bawah “⋯ Lainnya” pada strip info.",
+        "open": "Klik pegangannya, atau tekan {{mod}} + J, untuk membuka buku catatan; di mode eksekusi tombolnya J. Tekan lagi untuk menutupnya.",
+        "groups": "Lagu dikelompokkan per sumber: satu kelompok per platform daring, satu untuk berkas lokal, satu untuk Navidrome. Asal tiap lagu (daftar putar atau pencarian mana) tertulis setelah artisnya.",
+        "groupActions": "Di kanan kepala kelompok: “Antrekan grup ini” dan “Tambahkan grup ini ke daftar putar…”. Satu daftar putar hanya menerima lagu dari satu sumber; karena dikelompokkan per sumber, satu kelompok pas untuk satu daftar putar.",
+        "rowActions": "Arahkan penunjuk ke sebuah baris untuk: putar di antrean, tambahkan ke antrean, tambahkan ke daftar putar, dan keluarkan dari buku catatan. Lagu tetap ada setelah dimasukkan ke antrean atau daftar putar; keluarkan sendiri bila sudah tidak perlu.",
+        "footer": "Baris paling bawah: tambahkan semua ke antrean, ganti antrean dengan buku catatan, dan kosongkan. Mengosongkan perlu dua klik.",
+        "expand": "Di atas laci, di kiri tombol tutup: “Bentangkan jadi kanvas”.",
+        "canvas": "Setelah dibentangkan, tiap lagu menjadi kartu, tetap dikelompokkan per sumber, dan kepala kelompok mendapat “Pilih grup ini”. Esc lebih dulu membatalkan pilihan, lalu kembali ke daftar.",
+        "drag": "Seret kartu untuk mengatur urutan. Kartu hanya berpindah di dalam kelompoknya sendiri, dan menempel ke tempat terdekat saat dilepas.",
+        "select": "Seret kotak di tempat kosong untuk memilih kartu di dalamnya; {{mod}}-klik sebuah kartu untuk menambah atau menguranginya. Baris bawah lalu bekerja pada pilihan: tambahkan ke antrean, tambahkan ke daftar putar, keluarkan. Bila pilihan berasal dari sumber berbeda, tambahkan ke daftar putar menjadi abu-abu."
       }
     }
   }

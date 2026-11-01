@@ -1,6 +1,50 @@
 
 
 export default {
+  "scratchpad": {
+    "title": "速记簿",
+    "count_one": "{{count}} 首",
+    "count_other": "{{count}} 首",
+    "hint": "先放着、待会再听或再整理的歌。放进来不会动播放队列。",
+    "empty": "还什么都没有。把指针停在歌曲卡片、曲目列表或搜索结果的一行上，点「加入速记簿」；也可以用命令面板把正在播的这首记下来。",
+    "open": "打开速记簿",
+    "close": "收起速记簿",
+    "play": "插进队列播放",
+    "enqueue": "加入队列",
+    "addToPlaylist": "加入歌单…",
+    "remove": "移出速记簿",
+    "enqueueAll": "全部入队",
+    "replaceQueue": "替换队列播放",
+    "clear": "清空",
+    "confirmClear": "再点一次清空",
+    "sourceLocal": "本地",
+    "collect": "加入速记簿",
+    "collectScope": "全部加入速记簿",
+    "originSearch": "搜索「{{query}}」",
+    "originExploreSection": "探索 · {{section}}",
+    "collectFiltered_one": "把筛出的 {{count}} 首加入速记簿",
+    "collectFiltered_other": "把筛出的 {{count}} 首加入速记簿",
+    "addedOne": "已记进速记簿",
+    "addedMany_one": "已把 {{count}} 首记进速记簿",
+    "addedMany_other": "已把 {{count}} 首记进速记簿",
+    "skippedDuplicates_one": "{{count}} 首已经在里面了",
+    "skippedDuplicates_other": "{{count}} 首已经在里面了",
+    "alreadyInOne": "这首已经在速记簿里了",
+    "alreadyInAll": "这些歌都已经在速记簿里了",
+    "full": "速记簿满了（最多 {{count}} 首），先处理掉一些吧",
+    "saveFailed": "速记簿没能存下来（本机存储满了），重启后这次的改动会丢",
+    "expandCanvas": "展开成画布",
+    "collapseCanvas": "收回列表",
+    "canvasHint": "拖动卡片整理顺序，松手会吸附到位；在空白处拖出框来多选。",
+    "selectGroup": "选中本组",
+    "enqueueGroup": "本组全部入队",
+    "addGroupToPlaylist": "本组加入歌单…",
+    "selectedCount_one": "已选 {{count}} 首",
+    "selectedCount_other": "已选 {{count}} 首",
+    "removeSelected": "移出速记簿",
+    "clearSelection": "取消选择",
+    "mixedSourcesHint": "选中的歌来自不同来源，一个歌单只收一个来源的歌"
+  },
   "libraryBravais": {
     "suiteName": "Bravais 墙面",
     "homeTitle": "书库",
@@ -73,6 +117,10 @@ export default {
     "queueSaveFailed": "歌单没能保存",
     "queueDragHandle": "拖动排序",
     "queueMoved": "已移到第 {{position}} 首",
+    "queueSearch": "搜索队列",
+    "queueSearchPlaceholder": "在 {{count}} 首里搜索",
+    "queueSearchClose": "关闭搜索",
+    "queueNoMatch": "没有符合的歌曲",
     "openPlayer": "前往播放页",
     "openPlayerUnavailable": "还没有在播放的歌",
     "openSettings": "打开设置",
@@ -398,6 +446,7 @@ export default {
     "playingSongNoSource": "这个播放队列没有对应的歌单或专辑",
     "unliked": "已取消喜欢",
     "playlistUpdated": "歌单已更新",
+    "playlistUpdateFailed": "没能加进歌单",
     "providerLikeUnavailable": "{{provider}} 暂不支持喜欢歌曲。",
     "providerPlaylistMutationUnavailable": "{{provider}} 暂不支持将歌曲添加到歌单。",
     "providerRecommendationsUnavailable": "{{provider}} 暂未提供推荐内容。",
@@ -723,6 +772,7 @@ export default {
       "grid-toggle-edit-mode": { "title": "切换编辑模式", "description": "进入或退出可以从这个合集里移除歌曲的模式" },
       "grid-reload-online-collection": { "title": "重新加载此合集", "description": "跳过缓存，重新拉取这个在线合集的全部歌曲" },
       "grid-toggle-subscribe": { "title": "收藏或取消收藏", "description": "把这个在线歌单或专辑加入收藏，已经收藏的就取消" },
+      "grid-collect-filtered": { "title": "把当前范围加入速记簿", "description": "把这个集合（筛选时只算筛出的歌）收进速记簿，不动播放队列" },
       "directory-play-selection": { "title": "播放选中的卡片", "description": "按卡片顺序播放地图上选中卡片的歌曲" },
       "directory-enqueue-selection": { "title": "选中的卡片加入队列", "description": "把地图上选中卡片的歌曲加入播放队列" },
       "directory-create-playlist": { "title": "用选中的卡片新建歌单", "description": "用选中卡片的歌曲新建一个本地歌单" },
@@ -801,6 +851,8 @@ export default {
       "playback-loop": { "title": "切换循环", "description": "切换循环模式" },
       "playback-like": { "title": "收藏当前歌曲", "description": "把当前歌曲加入收藏，或取消收藏" },
       "playback-add-to-playlist": { "title": "添加到歌单", "description": "把当前歌曲放进你的某个歌单" },
+      "scratchpad-toggle": { "title": "打开 / 收起速记簿", "description": "从左边拉出速记簿：先放着、待会再听或再整理的歌" },
+      "scratchpad-collect-current": { "title": "把当前歌曲记进速记簿", "description": "不动播放队列，先把这首记下来" },
       "playback-mute": { "title": "静音", "description": "静音，或恢复声音" },
       "playback-volume-up": { "title": "音量加", "description": "音量调高 5%" },
       "playback-volume-down": { "title": "音量减", "description": "音量调低 5%" },
@@ -1290,6 +1342,14 @@ export default {
     "locatePlaying": "在这一页定位正在播放的歌",
     "viewCollections": "查看合集",
     "tracks": "首歌曲",
+    "alreadyLiked": "已经喜欢了",
+    "saveToPlaylist": "收藏到歌单",
+    "saving": "正在放进歌单，稍等",
+    "searchPlaylists": "搜索歌单",
+    "noMatchingPlaylists": "没有匹配的歌单",
+    "createAndAdd": "新建并加入",
+    "songsToSave_one": "{{count}} 首歌",
+    "songsToSave_other": "{{count}} 首歌",
     "plays": "次播放",
     "playAll": "播放全部",
     "playFilteredTracks": "播放{{count}}首",
@@ -1315,7 +1375,17 @@ export default {
     "playTrack": "播放歌曲",
     "error": "搜索失败，请重试。",
     "retry": "重试",
-    "catalogUnavailable": "无法打开该专辑或歌手：在线平台未返回有效的目录 ID。"
+    "catalogUnavailable": "无法打开该专辑或歌手：在线平台未返回有效的目录 ID。",
+    "placeholderAlbum": "搜索专辑...",
+    "placeholderPlaylist": "搜索歌单...",
+    "sources": "搜索来源",
+    "kinds": "搜索种类",
+    "kindSong": "单曲",
+    "kindAlbum": "专辑",
+    "kindPlaylist": "歌单",
+    "resultCount": "共 {{n}} 条",
+    "trackCount": "{{n}} 首",
+    "playCount": "{{n}} 次播放"
   },
   "personalFmMode": {
     "openPicker": "切换私人 FM 模式",
@@ -1714,6 +1784,7 @@ export default {
     "quickActions": "快捷操作",
     "queueCollage": "队列拼贴",
     "playQueue": "播放队列",
+    "scratchpad": "速记簿",
     "navigatePlaylists": "切换歌单",
     "playPause": "播放 / 暂停",
     "playerControls": "播放页面控制",
@@ -1723,6 +1794,7 @@ export default {
     "seekBackward": "倒退 5 秒",
     "hidePlayerChrome": "隐藏进度条和右下角按钮",
     "toggleRightPanel": "切换右侧面板",
+    "openControlPanel": "打开控制面板",
     "cycleRightPanelTabs": "循环切换已打开右侧面板的标签页",
     "openCommandPalette": "打开命令面板",
     "openCommandPaletteQueue": "直接打开命令面板队列",
@@ -4903,7 +4975,8 @@ export default {
       "side_panel": "面板分几段、怎么换页。",
       "theme_settings": "预设、自定义配色从哪来，以及配色什么时候自己变。",
       "sign_in": "主页的登录按钮和右下角那一枚开的是同一个窗口。",
-      "lyric_match": "给一首歌手动挑一份歌词：换来源、搜索、先看再保存。"
+      "lyric_match": "给一首歌手动挑一份歌词：换来源、搜索、先看再保存。",
+      "scratchpad": "左缘那本速记簿：怎么收进歌、按来源分组处理、展开成画布整理。"
     },
     "categories": {
       "basics": "上手",
@@ -5416,6 +5489,25 @@ export default {
         "save": "保存",
         "switches": "封面、元数据、歌词",
         "noMatch": "不使用在线数据"
+      },
+      "scratchpad": {
+        "page": "资料库",
+        "handle": "速记簿把手",
+        "card": "歌曲卡片",
+        "collect": "加入速记簿",
+        "save": "收藏到歌单",
+        "drawer": "速记簿",
+        "group": "来源分组",
+        "groupActions": "整组操作",
+        "row": "一首歌",
+        "rowActions": "行内按钮",
+        "footer": "对全部的操作",
+        "expand": "展开成画布",
+        "canvas": "画布",
+        "canvasGroup": "画布里的一组",
+        "slot": "吸附的位置",
+        "marquee": "框选",
+        "selection": "对选中的操作"
       }
     },
     "targets": {
@@ -5473,7 +5565,8 @@ export default {
       "gridPaletteHotkey": "网格上的 S 键",
       "settingsPage": "设置页面",
       "signIn": "登录在线音乐平台",
-      "lyricMatch": "匹配歌词窗口"
+      "lyricMatch": "匹配歌词窗口",
+      "scratchpad": "速记簿"
     },
     "scenes": {
       "bravaisSeamLevels": "三档：完整、书脊、折叠",
@@ -5627,7 +5720,10 @@ export default {
       "signInAccount": "登录之后",
       "lyricMatchSearch": "换来源，重新搜",
       "lyricMatchPick": "挑一条，先看歌词",
-      "lyricMatchLocal": "本地歌曲多出来的三个开关"
+      "lyricMatchLocal": "本地歌曲多出来的三个开关",
+      "scratchpadCollect": "收进来",
+      "scratchpadDrawer": "打开与分组",
+      "scratchpadCanvas": "展开成画布"
     },
     "captions": {
       "bravaisSeam": {
@@ -6046,7 +6142,7 @@ export default {
         "appear": "封面页上，歌名下面这一行一直在：左边是这首歌的几个动作，右端是回到首页和设置。换到别的页，这一行收起来，只在顶上留一颗喜欢。",
         "settings": "齿轮打开设置。按下去面板会先收起来，再把设置窗口铺上来。",
         "home": "右端的房子回到首页的海报墙，面板会先收起。播放不会中断。",
-        "addToPlaylist": "星形那颗把当前这首加进歌单。只有当前来源支持歌单时它才在；加不了的时候它是灰的，指针停上去会写明原因。",
+        "addToPlaylist": "星形那颗把当前这首收藏到歌单，第一行是「我喜欢」（红心）。来源既不支持歌单也不支持红心时它是灰的，指针停上去会写明原因。",
 
         "like": "心形是喜欢这首歌。当前来源做不了这件事时它是灰的，指针停上去会写明原因。",
         "playingFrom": "队列是从某张歌单或专辑开始播的，这里就多一枚写着它名字的按钮：点一下回到那一页，并找到这首歌。队列换成别的歌之后它就不在了。"
@@ -6094,6 +6190,21 @@ export default {
         "save": "「保存」把选中的这一条用到这首歌上；「取消」什么都不改。",
         "switches": "给本地文件匹配时，封面下面多三个开关：「封面」「元数据」「歌词」。亮着的那一项用选中的这一条，关掉的保持文件自己的。",
         "noMatch": "左下角的「不使用在线数据」让这首歌只用文件自己的信息。"
+      },
+      "scratchpad": {
+        "hover": "指针停在一首歌的卡片上，右上角出现两颗按钮，左边这颗把它加入速记簿。网格的卡片、Bravais 的磁贴和聚焦卡、搜索结果的每一行都有这一对。",
+        "save": "右边那颗是收藏到歌单。能点喜欢的来源，选歌单的窗口第一行是「我喜欢的音乐」；也可以就地新建一个歌单再放进去。",
+        "notQueue": "加入速记簿不会动播放队列，正在放的照常放。指针移到左缘上部，把手展开，上面写着里面有几首；速记簿空着时，把手平时看不见。",
+        "otherWays": "正在播的这首：按 : 进执行模式再按 S，就记下来了。集合页上的「全部加入速记簿」把这一页的歌一次收进来，筛选过就只收筛出来的；网格在信息栏里，Bravais 在信息条的「⋯ 更多」里。",
+        "open": "点把手，或者按 {{mod}} + J，打开速记簿；执行模式里是 J。再按一次就收起来。",
+        "groups": "里面的歌按来源分组：一个在线平台一组，本地一组，Navidrome 一组。从哪个歌单、哪次搜索收来的，写在每一行歌手后面。",
+        "groupActions": "组头右端是「本组全部入队」和「本组加入歌单…」。一个歌单只收一个来源的歌；按来源分了组，整组放进同一个歌单正好。",
+        "rowActions": "指针停在一行上，右端出现插进队列播放、加入队列、加入歌单、移出速记簿。入了队、进了歌单，这一行也还留着，不要了自己移出。",
+        "footer": "最底下这一排：全部入队、用速记簿替换队列播放，以及清空。清空要连点两次。",
+        "expand": "抽屉顶上、关闭左边那颗是「展开成画布」。",
+        "canvas": "展开之后每首歌是一张卡片，仍旧按来源分组；组头多一颗「选中本组」。Esc 先取消选择，没有选择时收回列表。",
+        "drag": "拖动卡片整理顺序。只能在自己那一组里挪，松手时吸附到最近的位置。",
+        "select": "在空白处拖出一个框，框住的卡片就选中了；按住 {{mod}} 点卡片可以逐张加减。最底下换成对选中的入队、加入歌单、移出。选中的来自不同来源时，加入歌单是灰的。"
       }
     }
   }

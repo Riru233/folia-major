@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Plus } from "lucide-react";
+import { X, Play, Plus, NotebookPen } from "lucide-react";
 import { List as VirtualList } from "react-window";
 import { useTranslation } from "react-i18next";
 import { getSizedCoverUrl } from "../../utils/coverUrl";
@@ -208,6 +208,8 @@ export const TrackListItem = React.memo<{
   style: React.CSSProperties;
   onPlay: () => void;
   onAddToQueue?: () => void;
+    /** 收进速记簿（不动队列）；不给就没有这颗按钮。 */
+    onCollect?: () => void;
   isUnavailable?: boolean;
   isActive?: boolean;
   albumTrackLabel?: string | null;
@@ -217,7 +219,7 @@ export const TrackListItem = React.memo<{
     index,
     style,
     onPlay,
-    onAddToQueue,
+    onAddToQueue, onCollect,
     isUnavailable,
     isActive,
     albumTrackLabel,
@@ -228,62 +230,76 @@ export const TrackListItem = React.memo<{
       getSongArtistLabel(track).split(",")[0]?.trim() || "Unknown Artist";
 
     return (
-      <div style={style} className="px-2 py-1">
-        <div
-          onClick={isUnavailable ? undefined : onPlay}
-          className={`flex items-center gap-3 p-2 rounded-lg transition-colors w-full h-full ${
-            isUnavailable
-              ? "opacity-40 cursor-not-allowed"
-              : isActive
-                ? "bg-black/10 dark:bg-white/10 cursor-pointer group"
-                : "hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer group"
-          }`}
+        <div 
+            style={style} 
+            className="px-2 py-1"
         >
-          <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-zinc-200 dark:bg-zinc-800">
-            {coverUrl && (
-              <img
-                src={getSizedCoverUrl(coverUrl, 50)}
-                alt={track.name}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            )}
-            {!isUnavailable && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Play size={16} className="text-white fill-white ml-0.5" />
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col min-w-0 flex-1 justify-center">
-            <div className="flex min-w-0 items-baseline gap-1.5 leading-tight">
-              <span className="text-sm font-semibold truncate">
-                {track.name}
-              </span>
-              {albumTrackLabel && (
-                <span className="shrink-0 text-[10px] font-medium tabular-nums opacity-45">
-                  {albumTrackLabel}
-                </span>
-              )}
-            </div>
-            <div className="text-[10px] opacity-60 truncate leading-tight mt-0.5">
-              {artistName}
-            </div>
-          </div>
-          {!isUnavailable && onAddToQueue && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToQueue();
-              }}
-              className="p-2 ml-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-              title={t("navidrome.addToQueue")}
-              style={{ color: "var(--text-secondary)" }}
+            <div 
+                onClick={isUnavailable ? undefined : onPlay}
+                className={`flex items-center gap-3 p-2 rounded-lg transition-colors w-full h-full ${
+                    isUnavailable 
+                        ? 'opacity-40 cursor-not-allowed' 
+                        : isActive
+                            ? 'bg-black/10 dark:bg-white/10 cursor-pointer group'
+                            : 'hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer group'
+                }`}
             >
-              <Plus size={16} />
-            </button>
-          )}
+                <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-zinc-200 dark:bg-zinc-800">
+                    {coverUrl && (
+                        <img 
+                            src={getSizedCoverUrl(coverUrl, 50)} 
+                            alt={track.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                        />
+                    )}
+                    {!isUnavailable && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play size={16} className="text-white fill-white ml-0.5" />
+                        </div>
+                    )}
+                </div>
+                <div className="flex flex-col min-w-0 flex-1 justify-center">
+                    <div className="flex min-w-0 items-baseline gap-1.5 leading-tight">
+                        <span className="text-sm font-semibold truncate">{track.name}</span>
+                        {albumTrackLabel && (
+                            <span className="shrink-0 text-[10px] font-medium tabular-nums opacity-45">
+                                {albumTrackLabel}
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-[10px] opacity-60 truncate leading-tight mt-0.5">{artistName}</div>
+                </div>
+                {!isUnavailable && onCollect && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onCollect();
+                        }}
+                        className="p-2 ml-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                        title={t('scratchpad.collect')}
+                        aria-label={t('scratchpad.collect')}
+                        data-track-action="collect"
+                        style={{ color: 'var(--text-secondary)' }}
+                    >
+                        <NotebookPen size={15} />
+                    </button>
+                )}
+                {!isUnavailable && onAddToQueue && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAddToQueue();
+                        }}
+                        className="p-2 ml-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                        title={t('navidrome.addToQueue')}
+                        style={{ color: 'var(--text-secondary)' }}
+                    >
+                        <Plus size={16} />
+                    </button>
+                )}
+            </div>
         </div>
-      </div>
     );
   },
 );
