@@ -103,3 +103,6 @@ public/nebbia-strokes.json
 
 # 忽略补丁
 patch/
+
+# 忽略备份临时文件
+bak/
