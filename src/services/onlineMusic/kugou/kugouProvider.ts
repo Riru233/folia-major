@@ -1051,6 +1051,7 @@ export const kugouProvider: OnlineMusicProvider = {
     id: 'kugou',
     displayName: 'KuGou Music',
     shortName: '酷狗',
+    shortNameKey: 'onlineProviderName.kugou',
     mark: { letter: 'K', color: '#2563eb' },
     getAvailability: getKugouTransportAvailability,
     describeFailure: describeKugouFailure,

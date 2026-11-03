@@ -64,6 +64,8 @@ export interface ProviderCapabilities {
     wordByWordLyrics: boolean;
     userCloud?: boolean;
     historyRecommendations?: boolean;
+    /** Daily recommendations can be narrowed to styles the account picks (`recommendations.getDailyStyle*`). */
+    dailyStyleRecommendations?: boolean;
     playlistSubscription?: boolean;
     playlistTrackMutations?: boolean;
     likes?: boolean;
@@ -88,6 +90,8 @@ export interface ProviderAccountSummary {
     providerId: OnlineProviderId;
     displayName: string;
     shortName: string;
+    /** 短名的 i18n key（OnlineMusicProvider.shortNameKey）；界面按它取当前语言的名字。没有就显示 shortName。 */
+    shortNameKey?: string;
     availability: ProviderAvailability;
     /** False for a provider with no account at all (a Folium mod source): it is used without signing in. Absent means true. */
     requiresAccount?: boolean;
@@ -694,6 +698,28 @@ export interface PersonalFmRequestOptions {
     submode?: string | null;
 }
 
+/**
+ * The styles daily recommendations can be narrowed to, in the provider's own groups (genre, mood,
+ * scene, language…) and words. Ids are the provider's, written as strings.
+ */
+export interface DailyStyleGroup {
+    id: string;
+    name: string;
+    tags: { id: string; name: string }[];
+}
+
+/** The styles an account has picked: some tags of one group (a provider takes tags of a single group only). */
+export interface DailyStyleSelection {
+    groupId: string;
+    tagIds: string[];
+}
+
+/** The daily songs of the picked styles, and the pick they were made for (null where the provider does not say). */
+export interface DailyStyleSongs {
+    songs: UnifiedSong[];
+    selection: DailyStyleSelection | null;
+}
+
 export interface OnlineRecommendationProvider {
     getPersonalFmCatalog?(): Promise<PersonalFmCatalog>;
     getDailySongs?(refresh?: boolean): Promise<UnifiedSong[]>;
@@ -703,6 +729,11 @@ export interface OnlineRecommendationProvider {
     getHistoryDates?(): Promise<string[]>;
     getHistorySongs?(entry: ProviderHistoryEntry | string): Promise<UnifiedSong[]>;
     dislikeSong?(id: MediaId): Promise<{ replacement?: UnifiedSong; limitReached?: boolean }>;
+    /** The style groups to pick from (capability `dailyStyleRecommendations`). */
+    getDailyStyleGroups?(): Promise<DailyStyleGroup[]>;
+    getDailyStyleSongs?(): Promise<DailyStyleSongs>;
+    /** Saves the pick on the account; the next `getDailyStyleSongs` answers for it. */
+    setDailyStyle?(selection: DailyStyleSelection): Promise<void>;
 }
 
 /**
@@ -854,6 +885,8 @@ export interface OnlineMusicProvider {
     id: OnlineProviderId;
     displayName: string;
     shortName?: string;
+    /** 界面上显示的平台名（i18n key）；不给就用 shortName / displayName。名字由界面翻译。 */
+    shortNameKey?: string;
     mark?: ProviderMark;
     getAvailability?(): ProviderAvailability;
     /**
