@@ -13,6 +13,7 @@ import ScratchpadList, { type ScratchpadPanelActions } from './ScratchpadList';
 import ScratchpadCanvas from './ScratchpadCanvas';
 import ScratchpadHistory from './ScratchpadHistory';
 import './scratchpad.css';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/app/scratchpad/ScratchpadHost.tsx
 // 速记簿的界面：左缘的把手和从左边滑出的抽屉（设计稿 plan/scratchpad-spec.md）。抽屉非模态——不加遮罩、不抢焦点，
@@ -220,7 +221,7 @@ const ScratchpadHost: React.FC<ScratchpadHostProps> = ({ isDaylight, playback })
         setTab(next);
         requestAnimationFrame(() => document.getElementById(`scratchpad-tab-${next}`)?.focus());
     };
-
+    useGlass();
     return (
         <div className={`scratchpad-root${isDaylight ? ' is-daylight' : ''}${isCovered ? ' is-covered' : ''}`}>
             {!isOpen && (
@@ -244,7 +245,21 @@ const ScratchpadHost: React.FC<ScratchpadHostProps> = ({ isDaylight, playback })
             <AnimatePresence>
                 {isOpen && (
                     <motion.aside
+                        data-glass data-glass-light
                         key="scratchpad-drawer"
+                        style={{
+                            backgroundColor: isDaylight
+                                ? "rgba(255,255,255,0.42)"
+                                : "rgba(0, 0, 0, 0.42)",
+                            borderTop: isDaylight
+                                ? "1px solid rgba(0,0,0,0.08)"
+                                : "1px solid rgba(255,255,255,0.12)",
+                            borderBottom: isDaylight
+                                ? "1px solid rgba(0,0,0,0.08)"
+                                : "1px solid rgba(255,255,255,0.12)",
+                            outline: "1px solid rgba(40,40,40,0.2)",
+                            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                        }}
                         className={`scratchpad-drawer${isExpanded ? ' is-expanded' : ''}`}
                         data-testid="scratchpad-drawer"
                         data-ponder="scratchpad"

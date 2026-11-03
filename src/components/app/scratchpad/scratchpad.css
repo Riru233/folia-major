@@ -100,11 +100,8 @@
     transition: width 0.26s cubic-bezier(0.22, 1, 0.36, 1);
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid rgb(255 255 255 / 8%);
     border-radius: 20px;
     background: rgb(0 0 0 / 52%);
-    box-shadow: 0 24px 64px rgb(0 0 0 / 42%);
-    backdrop-filter: blur(28px);
     pointer-events: auto;
 }
 
