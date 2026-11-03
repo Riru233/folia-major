@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Pin } from 'lucide-react';
 import { MotionValue } from 'framer-motion';
 import ProgressBar from './ProgressBar';
 import { PlayerState, LyricData, Theme } from '../types';
 import LyricsTimelineModal from './modal/LyricsTimelineModal';
 import TrackTitleNavigator from './floating-player/TrackTitleNavigator';
 import PlayerControlSlotButton from './floating-player/PlayerControlSlotButton';
+import PlayerBarGlow from './floating-player/PlayerBarGlow';
 import PlayerBottomBarPositioner from './floating-player/PlayerBottomBarPositioner';
 import PlayerControlSlotPicker from './floating-player/PlayerControlSlotPicker';
 import PlayerControlSlotSuggestion from './floating-player/PlayerControlSlotSuggestion';
@@ -318,6 +319,9 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     ));
 
     const canAutoExpand = canTogglePlay && duration > 0;
+    // 固定：胶囊不再随指针离开而收缩，一直保持展开。
+    const playerBarPinned = usePlayerChromeSettingsStore(state => state.playerBarPinned);
+    const togglePlayerBarPinned = usePlayerChromeSettingsStore(state => state.handleTogglePlayerBarPinned);
     const showSlotSuggestion = slotSuggestion !== null && !isHidden && !isPositioning && slotPicker === null;
     // 浮动命令和提议占同一块地方，提议优先；换按钮的浮层开着时也让开。
     // 停留浮出只给能悬停的指针：触屏点一下也会补发 mouseenter，不拦的话点胶囊去播放页后这排会一直挂着。
@@ -350,7 +354,7 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     // 刚换完按钮也再展开一会儿，让人看见换上去的结果。
     // 变成命令面板期间胶囊照常收起或展开，只是看不见：它在面板接手的那一刻就立刻隐去，
     // 收起时透过遮罩看不到它往下缩；面板收回时量的正是它此刻的样子，收回去的宽度就对得上。
-    const showExpanded = isPositioning || hoverExpands || (isTouchRevealed && currentView === 'player') || slotPicker !== null || showSlotSuggestion || slotCustomization.isShowingChange || (canAutoExpand && playerState !== PlayerState.PLAYING && currentView !== 'home');
+    const showExpanded = isPositioning || playerBarPinned || hoverExpands || (isTouchRevealed && currentView === 'player') || slotPicker !== null || showSlotSuggestion || slotCustomization.isShowingChange || (canAutoExpand && playerState !== PlayerState.PLAYING && currentView !== 'home');
     showExpandedRef.current = showExpanded;
 
     // 一暂停就浮出：只在播放页、主指针是触屏（或者上一次碰胶囊的是手指）时。只认从播放到暂停那一下，
@@ -730,7 +734,7 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                         onPointerMove={handlePositionDragMove}
                         onPointerUp={handlePositionDragEnd}
                         onPointerCancel={handlePositionDragEnd}
-                        className={`shadow-2xl overflow-hidden rounded-full relative transition-colors duration-300
+                        className={`shadow-2xl overflow-hidden rounded-full relative isolate transition-colors duration-300 select-none
                             ${isPositioning ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
                             ${showExpanded ? `p-3 ${glassBgExpanded} w-full` : `px-4 py-2 ${glassBgCollapsed} ${COLLAPSED_WIDTH_CLASS}`}`}
                         style={{
@@ -748,6 +752,10 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                             boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                         }}
                     >
+                        {/* 播放时从胶囊底边发出的水光：在胶囊内部，z-index: -1 压在内容下面、
+                            浮在胶囊自己的底色上面，照亮底边而不盖住控件。
+                            expanded 传进去：胶囊展开/收起时画布要重新量一次尺寸。 */}
+                        <PlayerBarGlow active={playerState === PlayerState.PLAYING} expanded={showExpanded} />
                         <motion.div
                             layout
                             transition={{ layout: CONTROL_LAYOUT_SPRING }}
@@ -773,6 +781,8 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                                     trackNavigation={trackNavigation}
                                     slotPrimary={slotPrimary}
                                     slotSecondary={slotSecondary}
+                                    isPinned={playerBarPinned}
+                                    onTogglePinned={() => togglePlayerBarPinned(!playerBarPinned)}
                                     slotContext={resolvedSlotContext}
                                     onCustomizePrimary={slotCustomization.openPrimaryPicker}
                                     onCustomizeSecondary={slotCustomization.openSecondaryPicker}
@@ -876,6 +886,9 @@ interface ExpandedViewProps {
     slotContext: PlayerControlSlotContext;
     onCustomizePrimary: (anchorRect: DOMRect) => void;
     onCustomizeSecondary: (anchorRect: DOMRect) => void;
+    /** 播放条被固定：固定后它不再收缩，按钮呈高亮态。 */
+    isPinned: boolean;
+    onTogglePinned: () => void;
 }
 
 const ExpandedView: React.FC<ExpandedViewProps> = ({
@@ -899,7 +912,11 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
     slotContext,
     onCustomizePrimary,
     onCustomizeSecondary,
+    isPinned,
+    onTogglePinned,
 }) => {
+    const { t } = useTranslation();
+    const pinLabel = t(isPinned ? 'options.playerBarUnpin' : 'options.playerBarPin');
     const isHifiRoute = useIsHifiRoute();
     const progressBar = (
         <ProgressBar
@@ -918,7 +935,8 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
             {/* Desktop Layout - responsive grid positions apply from the sm breakpoint */}
             {/* Mobile Layout - base grid positions apply below the sm breakpoint */}
             {/* Row 1: Centered Title */}
-            <div className="col-span-3 row-start-1 min-w-0 px-2 sm:col-start-2 sm:col-span-1">
+            {/* 窄屏上固定按钮占住标题行最右侧，所以标题右边留出它的位置（宽屏时按钮在右侧按钮组里，标题不挨着它）。 */}
+            <div className="col-span-3 row-start-1 min-w-0 pl-2 pr-10 sm:col-start-2 sm:col-span-1 sm:pr-2">
                 {trackNavigation ? (
                     <TrackTitleNavigator
                         title={currentSong?.name || noTrackText}
@@ -983,6 +1001,35 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                     className="col-start-3 row-start-2 justify-self-start sm:justify-self-auto"
                     onCustomize={onCustomizeSecondary}
                 />
+                {/* 固定按钮：固定后播放条不再收缩。窄屏上它占住标题行最右侧的空位，
+                    宽屏上它跟在两个槽位按钮后面。 */}
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePinned();
+                    }}
+                    disabled={controlsDisabled}
+                    aria-pressed={isPinned}
+                    className={`col-start-3 row-start-1 justify-self-end rounded-full p-2 transition-colors sm:col-auto sm:row-auto sm:justify-self-auto ${
+                        isPinned
+                            ? isDaylight
+                                ? "bg-black/10 text-black"
+                                : "bg-white/20"
+                            : `opacity-40 hover:opacity-100 ${
+                                isDaylight ? "hover:bg-black/5" : "hover:bg-white/10"
+                            }`
+                    } ${controlsDisabled ? "cursor-not-allowed" : ""}`}
+                    style={{ color: primaryColor }}
+                    title={pinLabel}
+                    aria-label={pinLabel}
+                >
+                    <Pin
+                        size={20}
+                        className="sm:h-[18px] sm:w-[18px]"
+                        fill={isPinned ? "currentColor" : "none"}
+                    />
+                </button>
             </div>
 
             {/* Row 2: Current Time, Progress Bar, Duration */}

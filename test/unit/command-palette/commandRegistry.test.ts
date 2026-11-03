@@ -127,6 +127,7 @@ const createContext = (overrides: CommandPaletteContextOverrides = {}): CommandP
             togglePonderTouchButton: vi.fn(),
             startPlayerBottomBarPositioning: vi.fn(),
             canStartPlayerBottomBarPositioning: true,
+            togglePlayerBarPinned: vi.fn(),
             toggleAlwaysShowPlayerBackButton: vi.fn(),
             toggleGridViewFullBleedCover: vi.fn(),
             toggleGridViewSquareCards: vi.fn(),
