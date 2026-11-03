@@ -2,6 +2,7 @@ import { applyVisualizerTuningsToSettings } from '../../../../visualizer/tuningR
 import { importFoliumParams, snapshotFoliumParams } from '../../../../../mods/params/paramStore';
 import { buildVisualSettingsConfig } from '../../../../../services/obs/visualSettingsConfig';
 import { isThemeGenerationSource, type ThemeGenerationSource } from '../../../../../services/themePreferences';
+import { useLatticeSettingsStore } from '../../../../../stores/useLatticeSettingsStore';
 import { useLibraryWallLookStore } from '../../../../../stores/useLibraryWallLookStore';
 import { useLiquidGlassSettingsStore } from '../../../../../stores/useLiquidGlassSettingsStore';
 import { usePlayerChromeSettingsStore } from '../../../../../stores/usePlayerChromeSettingsStore';
@@ -352,6 +353,10 @@ export const applyImportedConfig = (config: any, keys: string[], theme: ConfigTh
     }
     if (has('libraryWallSeamDirection') && isLibraryWallSeamDirection(config.libraryWallSeamDirection)) {
         storeLibraryWall.setSeamDirection(config.libraryWallSeamDirection);
+    }
+    // Numbering only the playing song, on both tile walls (the 播放页 page's tile wall group writes it).
+    if (has('latticeBadgeCurrentOnly')) {
+        useLatticeSettingsStore.getState().handleToggleLatticeBadgeCurrentOnly(Boolean(config.latticeBadgeCurrentOnly));
     }
     // 流体玻璃：一组全局参数，整组套用，落库与刷新走 store 自己的 commit。
     if (has('liquidGlass') && config.liquidGlass) {

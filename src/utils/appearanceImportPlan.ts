@@ -152,6 +152,9 @@ const FIELD_GROUPS: Record<string, ImportGroup> = {
     libraryWallBackdropLyrics: 'libraryWall',
     libraryWallBackdropBlur: 'libraryWall',
     libraryWallSeamDirection: 'libraryWall',
+    // Numbering only the playing song styles the tiles of both walls (queue collage and bravais): the
+    // library wall group is where the other tile looks are.
+    latticeBadgeCurrentOnly: 'libraryWall',
 
     // 流体玻璃的三个全局参数：一套玻璃的调参，和别的分组没有从属关系，单独成组。
     liquidGlass: 'liquidGlass',
