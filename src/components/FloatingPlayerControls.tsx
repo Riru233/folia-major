@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Pin } from 'lucide-react';
 import { MotionValue } from 'framer-motion';
 import ProgressBar from './ProgressBar';
 import { PlayerState, LyricData, Theme } from '../types';
 import LyricsTimelineModal from './modal/LyricsTimelineModal';
 import TrackTitleNavigator from './floating-player/TrackTitleNavigator';
 import PlayerControlSlotButton from './floating-player/PlayerControlSlotButton';
+import PlayerBarGlow from './floating-player/PlayerBarGlow';
 import PlayerBottomBarPositioner from './floating-player/PlayerBottomBarPositioner';
 import PlayerControlSlotPicker from './floating-player/PlayerControlSlotPicker';
 import PlayerControlSlotSuggestion from './floating-player/PlayerControlSlotSuggestion';
@@ -22,7 +23,7 @@ import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX, clampPlayerBottomBarOffset, resolvePl
 import type { PlayerControlSlotActionId, PlayerControlSlotContext } from './floating-player/playerControlSlotActions';
 import { usePlayerOverlayObstacle } from '../hooks/usePlayerOverlayLayout';
 import { useGlass } from '../shinoinject/useGlass.tsx';
-import { releaseGlassJelly } from '../shinoinject/liquidglass.ts';
+import { releaseGlassJelly, isGlassJellyDragging } from '../shinoinject/liquidglass.ts';
 import { useSupportsFinePointer } from '../hooks/useSupportsFinePointer';
 import { resolvePlayerCapsuleNavigationTarget } from '../hooks/useAppNavigation';
 import { useCapsulePaletteStore } from '../stores/useCapsulePaletteStore';
@@ -159,8 +160,12 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     const { t } = useTranslation();
     const slotCustomization = usePlayerControlSlotCustomization(slotPrimary, slotSecondary);
     const { slotPicker, closeSlotPicker, slotSuggestion } = slotCustomization;
+    // 果冻拖拽会话是否进行中。触屏按住那排命令拖动时，浏览器可能判定为手势接管并发 pointercancel，
+    // 控制条的自动隐藏会在 3 秒后把整条标记为隐藏；但手指还没松开，这时淡出/收起就是
+    // 「拖到容器外自动收回」。拖拽期间整条控制条保持可见。
+    const [jellyDragging, setJellyDragging] = useState(false);
     // 自动隐藏播放页控件只看鼠标移动：盯着更换浮层看选项时不动鼠标，浮层不能跟着整条控制条一起淡出。
-    const isHidden = isChromeHidden && slotPicker === null;
+    const isHidden = isChromeHidden && slotPicker === null && !jellyDragging;
     const { ref: layoutRef, invalidate: invalidateLayout } = usePlayerOverlayObstacle('player-controls', 'playback', !isHidden);
     // 命令面板从胶囊原地长出来时要量它，所以胶囊节点除了交给遮挡登记，也留一份自己的。
     const capsuleElementRef = useRef<HTMLDivElement | null>(null);
@@ -318,20 +323,26 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     ));
 
     const canAutoExpand = canTogglePlay && duration > 0;
+    // 固定：胶囊不再随指针离开而收缩，一直保持展开。
+    const playerBarPinned = usePlayerChromeSettingsStore(state => state.playerBarPinned);
+    const togglePlayerBarPinned = usePlayerChromeSettingsStore(state => state.handleTogglePlayerBarPinned);
     const showSlotSuggestion = slotSuggestion !== null && !isHidden && !isPositioning && slotPicker === null;
     // 浮动命令和提议占同一块地方，提议优先；换按钮的浮层开着时也让开。
     // 停留浮出只给能悬停的指针：触屏点一下也会补发 mouseenter，不拦的话点胶囊去播放页后这排会一直挂着。
     // 主指针是触屏的设备不走停留；带触屏的笔记本主指针是鼠标，再按这一次进来的是不是手指拦。
     // 手指另走下面的 showTouchQuickActions：点开胶囊或暂停时直接浮出。
     const supportsFinePointer = useSupportsFinePointer();
-    const hasDwelled = useCapsuleQuickActionsDwell(isHovered && !isTouchHover);
+    // 果冻拖拽期间按「还在悬停」算：指针被拖到容器外时 mouseleave 会清掉悬停态，
+    // 那排命令会当场卸载——拖到容器外就自动收回。拖拽优先级高于悬停/隐藏，松手后再按实际状态走。
+    const hasDwelled = useCapsuleQuickActionsDwell((isHovered && !isTouchHover) || jellyDragging);
     // 手指浮出的只在播放页：首页点胶囊是去播放页，歌曲墙上是定位到当前歌曲，都不是要这排。
     const touchRowAllowed = currentView === 'player' && !showSlotSuggestion && slotPicker === null
         && !isHidden && !isPositioning && !controlsDisabled;
     const showTouchQuickActions = isTouchRevealed && touchRowAllowed;
     touchRowShownRef.current = showTouchQuickActions;
     touchRowAllowedRef.current = touchRowAllowed;
-    const showQuickActions = showTouchQuickActions || (supportsFinePointer && hasDwelled && !showSlotSuggestion && slotPicker === null
+    // 拖拽优先级最高：只要还在拖，那排就保持浮出，不看悬停、不看自动隐藏。
+    const showQuickActions = jellyDragging || showTouchQuickActions || (supportsFinePointer && hasDwelled && !showSlotSuggestion && slotPicker === null
         && !isHidden && !isPositioning && !controlsDisabled);
     // 播放页上点胶囊本来就在要去的地方，这一下改成把胶囊变成命令面板；播放入口设成歌曲墙时
     // 这一下仍然去墙，不抢原有的跳转。
@@ -350,7 +361,8 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     // 刚换完按钮也再展开一会儿，让人看见换上去的结果。
     // 变成命令面板期间胶囊照常收起或展开，只是看不见：它在面板接手的那一刻就立刻隐去，
     // 收起时透过遮罩看不到它往下缩；面板收回时量的正是它此刻的样子，收回去的宽度就对得上。
-    const showExpanded = isPositioning || hoverExpands || (isTouchRevealed && currentView === 'player') || slotPicker !== null || showSlotSuggestion || slotCustomization.isShowingChange || (canAutoExpand && playerState !== PlayerState.PLAYING && currentView !== 'home');
+    // 果冻拖拽期间保持展开：那排命令贴着胶囊上沿，胶囊缩下去会把正在拖的东西一起带走。
+    const showExpanded = jellyDragging || isPositioning || playerBarPinned || hoverExpands || (isTouchRevealed && currentView === 'player') || slotPicker !== null || showSlotSuggestion || slotCustomization.isShowingChange || (canAutoExpand && playerState !== PlayerState.PLAYING && currentView !== 'home');
     showExpandedRef.current = showExpanded;
 
     // 一暂停就浮出：只在播放页、主指针是触屏（或者上一次碰胶囊的是手指）时。只认从播放到暂停那一下，
@@ -377,6 +389,45 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
 
     // 浮着的时候：在悬停区里按下先停住计时（拖进度条、长按槽位时不能半路收起），抬起再重新数 4 秒；
     // 在外面按下（包括命令面板、换按钮的浮层）立刻收。只在浮着时挂监听，都是按下抬起级别的事件。
+    // 另外盯住果冻会话：手指按住那排拖到容器外时，控制条的自动隐藏会在 3 秒后把 isHidden 置真，
+    // 但手指还没松开——记下拖拽状态，让上面那条判断在拖拽期间不因 isHidden 收排。
+    useEffect(() => {
+        const syncJellyDragging = () => setJellyDragging(isGlassJellyDragging());
+        // 果冻的会话由 liquidglass 的 window 级监听驱动，这里只需要在按下/抬起后读一次状态；
+        // pointermove 是高频路径，用 rAF 合并到每帧最多读一次。
+        let raf = 0;
+        const scheduleSync = () => {
+            if (raf) return;
+            raf = requestAnimationFrame(() => {
+                raf = 0;
+                syncJellyDragging();
+            });
+        };
+        // 触屏的会话由 touch 事件收场（pointercancel 对触屏不收摊），松手后要同步回落。
+        const syncNow = () => {
+            if (raf) {
+                cancelAnimationFrame(raf);
+                raf = 0;
+            }
+            syncJellyDragging();
+        };
+        window.addEventListener('pointerdown', syncNow, true);
+        window.addEventListener('pointermove', scheduleSync, { passive: true, capture: true });
+        window.addEventListener('pointerup', syncNow, true);
+        window.addEventListener('pointercancel', syncNow, true);
+        window.addEventListener('touchend', syncNow);
+        window.addEventListener('touchcancel', syncNow);
+        return () => {
+            if (raf) cancelAnimationFrame(raf);
+            window.removeEventListener('pointerdown', syncNow, true);
+            window.removeEventListener('pointermove', scheduleSync, true);
+            window.removeEventListener('pointerup', syncNow, true);
+            window.removeEventListener('pointercancel', syncNow, true);
+            window.removeEventListener('touchend', syncNow);
+            window.removeEventListener('touchcancel', syncNow);
+        };
+    }, []);
+
     useEffect(() => {
         if (!isTouchRevealed) {
             return;
@@ -571,6 +622,12 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
             expandTimeoutRef.current = null;
         }
 
+        // 果冻拖拽期间指针被带着离开悬停区（拖到容器外），这不是真的「离开」：
+        // 收起悬停态会让那排命令当场卸载。松手后再走正常收起。
+        if (jellyDragging) {
+            return;
+        }
+
         if (!isHovered || collapseTimeoutRef.current !== null) {
             return;
         }
@@ -730,7 +787,7 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                         onPointerMove={handlePositionDragMove}
                         onPointerUp={handlePositionDragEnd}
                         onPointerCancel={handlePositionDragEnd}
-                        className={`shadow-2xl overflow-hidden rounded-full relative transition-colors duration-300
+                        className={`shadow-2xl overflow-hidden rounded-full relative isolate transition-colors duration-300 select-none
                             ${isPositioning ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
                             ${showExpanded ? `p-3 ${glassBgExpanded} w-full` : `px-4 py-2 ${glassBgCollapsed} ${COLLAPSED_WIDTH_CLASS}`}`}
                         style={{
@@ -748,6 +805,10 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                             boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                         }}
                     >
+                        {/* 播放时从胶囊底边发出的水光：在胶囊内部，z-index: -1 压在内容下面、
+                            浮在胶囊自己的底色上面，照亮底边而不盖住控件。
+                            expanded 传进去：胶囊展开/收起时画布要重新量一次尺寸。 */}
+                        <PlayerBarGlow active={playerState === PlayerState.PLAYING} expanded={showExpanded} />
                         <motion.div
                             layout
                             transition={{ layout: CONTROL_LAYOUT_SPRING }}
@@ -773,6 +834,8 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                                     trackNavigation={trackNavigation}
                                     slotPrimary={slotPrimary}
                                     slotSecondary={slotSecondary}
+                                    isPinned={playerBarPinned}
+                                    onTogglePinned={() => togglePlayerBarPinned(!playerBarPinned)}
                                     slotContext={resolvedSlotContext}
                                     onCustomizePrimary={slotCustomization.openPrimaryPicker}
                                     onCustomizeSecondary={slotCustomization.openSecondaryPicker}
@@ -876,6 +939,9 @@ interface ExpandedViewProps {
     slotContext: PlayerControlSlotContext;
     onCustomizePrimary: (anchorRect: DOMRect) => void;
     onCustomizeSecondary: (anchorRect: DOMRect) => void;
+    /** 播放条被固定：固定后它不再收缩，按钮呈高亮态。 */
+    isPinned: boolean;
+    onTogglePinned: () => void;
 }
 
 const ExpandedView: React.FC<ExpandedViewProps> = ({
@@ -899,7 +965,11 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
     slotContext,
     onCustomizePrimary,
     onCustomizeSecondary,
+    isPinned,
+    onTogglePinned,
 }) => {
+    const { t } = useTranslation();
+    const pinLabel = t(isPinned ? 'options.playerBarUnpin' : 'options.playerBarPin');
     const isHifiRoute = useIsHifiRoute();
     const progressBar = (
         <ProgressBar
@@ -918,7 +988,8 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
             {/* Desktop Layout - responsive grid positions apply from the sm breakpoint */}
             {/* Mobile Layout - base grid positions apply below the sm breakpoint */}
             {/* Row 1: Centered Title */}
-            <div className="col-span-3 row-start-1 min-w-0 px-2 sm:col-start-2 sm:col-span-1">
+            {/* 窄屏上固定按钮占住标题行最右侧，所以标题右边留出它的位置（宽屏时按钮在右侧按钮组里，标题不挨着它）。 */}
+            <div className="col-span-3 row-start-1 min-w-0 pl-2 pr-10 sm:col-start-2 sm:col-span-1 sm:pr-2">
                 {trackNavigation ? (
                     <TrackTitleNavigator
                         title={currentSong?.name || noTrackText}
@@ -983,6 +1054,35 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                     className="col-start-3 row-start-2 justify-self-start sm:justify-self-auto"
                     onCustomize={onCustomizeSecondary}
                 />
+                {/* 固定按钮：固定后播放条不再收缩。窄屏上它占住标题行最右侧的空位，
+                    宽屏上它跟在两个槽位按钮后面。 */}
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePinned();
+                    }}
+                    disabled={controlsDisabled}
+                    aria-pressed={isPinned}
+                    className={`col-start-3 row-start-1 justify-self-end rounded-full p-2 transition-colors sm:col-auto sm:row-auto sm:justify-self-auto ${
+                        isPinned
+                            ? isDaylight
+                                ? "bg-black/10 text-black"
+                                : "bg-white/20"
+                            : `opacity-40 hover:opacity-100 ${
+                                isDaylight ? "hover:bg-black/5" : "hover:bg-white/10"
+                            }`
+                    } ${controlsDisabled ? "cursor-not-allowed" : ""}`}
+                    style={{ color: primaryColor }}
+                    title={pinLabel}
+                    aria-label={pinLabel}
+                >
+                    <Pin
+                        size={20}
+                        className="sm:h-[18px] sm:w-[18px]"
+                        fill={isPinned ? "currentColor" : "none"}
+                    />
+                </button>
             </div>
 
             {/* Row 2: Current Time, Progress Bar, Duration */}
