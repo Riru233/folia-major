@@ -94,12 +94,12 @@ const CapsuleQuickActions: React.FC<CapsuleQuickActionsProps> = ({
     const iconSize = touch ? 20 : 16;
     useGlass();
     return (
-        // 上浮位移放在这层不带玻璃的包裹上：transform 会形成 backdrop-filter 的取样根，
-        // 玻璃节点自身只做 opacity 淡入，第一帧就能取到背后的画面。
         <motion.div
             // 下边距画在自己身上而不是外层：指针从胶囊往上挪到这排按钮时一直在悬停区里，胶囊不会中途收起。
             className="pointer-events-auto pb-3"
             data-testid="capsule-quick-actions"
+            // 这一层只做上浮位移，不带 opacity：祖先上的 opacity < 1 会成为 backdrop-filter 的取样根，
+            // 玻璃采样不到它背后的画面，表现成「动画放完才出玻璃」。transform 不会，位移留在这里无妨。
             initial={{ y: 6 }}
             animate={{ y: 0 }}
             exit={{ y: 6 }}
@@ -107,9 +107,8 @@ const CapsuleQuickActions: React.FC<CapsuleQuickActionsProps> = ({
             onClick={event => event.stopPropagation()}
         >
             <motion.div
-                // 玻璃层和动画层是同一个元素：祖先上只要有 opacity < 1 / transform 就会成为
-                // backdrop-filter 的取样根，玻璃采样不到背后的画面，表现为「动画放完才出玻璃」。
-                // 面板自己的 opacity 不参与取样根判定（同 CommandPalette），所以淡入放这一层。
+                // 玻璃层和动画层必须是同一个元素：淡入淡出写在这一层，元素自身的 opacity 不参与
+                // 取样根判定（同 CommandPalette 的面板），所以第一帧就能取到背景、玻璃立刻可见。
                 data-glass data-glass-light data-glass-jelly
                 role="group"
                 aria-label={t('player.capsuleQuickActions')}
