@@ -730,10 +730,23 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                         onPointerMove={handlePositionDragMove}
                         onPointerUp={handlePositionDragEnd}
                         onPointerCancel={handlePositionDragEnd}
-                        style={{ touchAction: isPositioning ? 'none' : undefined }}
                         className={`shadow-2xl overflow-hidden rounded-full relative transition-colors duration-300
                             ${isPositioning ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
                             ${showExpanded ? `p-3 ${glassBgExpanded} w-full` : `px-4 py-2 ${glassBgCollapsed} ${COLLAPSED_WIDTH_CLASS}`}`}
+                        style={{
+                            touchAction: isPositioning ? "none" : undefined,
+                            backgroundColor: isDaylight
+                            ? "rgba(255,255,255,0.4)"
+                            : "rgba(0,0,0,0.4)",
+                            borderTop: isDaylight
+                            ? "1px solid rgba(0,0,0,0.08)"
+                            : "1px solid rgba(255,255,255,0.12)",
+                            borderBottom: isDaylight
+                            ? "1px solid rgba(0,0,0,0.08)"
+                            : "1px solid rgba(255,255,255,0.12)",
+                            outline: "1px solid rgba(40,40,40,0.2)",
+                            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                        }}
                     >
                         <motion.div
                             layout
