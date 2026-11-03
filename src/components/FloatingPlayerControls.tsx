@@ -189,7 +189,7 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
         }
         previousViewRef.current = currentView;
         disarmJelly();
-    }, [currentView, disarmJelly]);
+    }, [currentView]);
     useEffect(() => () => {
         if (jellyRearmRafRef.current !== null) {
             cancelAnimationFrame(jellyRearmRafRef.current);
