@@ -1,37 +1,37 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
-import { Lock, LockOpen } from "lucide-react";
-import type { Theme } from "../../types";
-import { SettingsKitThemeContext } from "../modal/settings/kit/kitTheme";
-import { SheetLayerContext } from "../shared/Sheet";
-import TitlebarDragZone from "../TitlebarDragZone";
-import WindowControls from "../WindowControls";
-import {
-  usePlayerOverlayRoot,
-  usePlayerOverlayReservation,
-} from "../../hooks/usePlayerOverlayLayout";
-import { usePlayerChromeSettingsStore } from "../../stores/usePlayerChromeSettingsStore";
-import type { FoliumLayoutRect } from "../../mods/folium/contract";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { Lock, LockOpen } from 'lucide-react';
+import type { Theme } from '../../types';
+import { SettingsKitThemeContext } from '../modal/settings/kit/kitTheme';
+import { SheetLayerContext } from '../shared/Sheet';
+import TitlebarDragZone from '../TitlebarDragZone';
+import WindowControls from '../WindowControls';
+import ClickThroughMediaControls from './ClickThroughMediaControls';
+import type { TransportButtonAction } from './playback/bridges/useTransportCommandRefs';
+import { usePlayerOverlayRoot, usePlayerOverlayReservation } from '../../hooks/usePlayerOverlayLayout';
+import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
+import type { FoliumLayoutRect } from '../../mods/folium/contract';
 
 // Shared shell for the app container, Electron titlebar, and mounted audio node.
 type AppShellProps = {
-  appStyle: React.CSSProperties;
-  isElectronWindow: boolean;
-  hideFullscreenButton: boolean;
-  usesCustomWindowChrome: boolean;
-  useCustomWindowRadius: boolean;
-  showTransparentWindowBorder: boolean;
-  isPlayerView: boolean;
-  isTitlebarRevealed: boolean;
-  alwaysShowMainWindowTitlebar: boolean;
-  isMainWindowClickThroughEnabled: boolean;
-  showMainWindowClickThroughToggle: boolean;
-  onToggleMainWindowClickThrough: () => void;
-  isDaylight: boolean;
-  theme: Theme;
-  audioElement: React.ReactNode;
-  children: React.ReactNode;
+    appStyle: React.CSSProperties;
+    isElectronWindow: boolean;
+    hideFullscreenButton: boolean;
+    usesCustomWindowChrome: boolean;
+    useCustomWindowRadius: boolean;
+    showTransparentWindowBorder: boolean;
+    isPlayerView: boolean;
+    isTitlebarRevealed: boolean;
+    alwaysShowMainWindowTitlebar: boolean;
+    isMainWindowClickThroughEnabled: boolean;
+    showMainWindowClickThroughToggle: boolean;
+    onToggleMainWindowClickThrough: () => void;
+    onClickThroughTransportAction: (action: TransportButtonAction) => void;
+    isDaylight: boolean;
+    theme: Theme;
+    audioElement: React.ReactNode;
+    children: React.ReactNode;
 };
 
 const TITLEBAR_REVEAL_HEIGHT = 56;
@@ -48,22 +48,23 @@ export const resolveWindowCornerRadius = (platform: string): string =>
   platform === "win32" ? "8px" : "18px";
 
 const AppShell: React.FC<AppShellProps> = ({
-  appStyle,
-  isElectronWindow,
-  hideFullscreenButton,
-  usesCustomWindowChrome,
-  useCustomWindowRadius,
-  showTransparentWindowBorder,
-  isPlayerView,
-  isTitlebarRevealed,
-  alwaysShowMainWindowTitlebar,
-  isMainWindowClickThroughEnabled,
-  showMainWindowClickThroughToggle,
-  onToggleMainWindowClickThrough,
-  isDaylight,
-  theme,
-  audioElement,
-  children,
+    appStyle,
+    isElectronWindow,
+    hideFullscreenButton,
+    usesCustomWindowChrome,
+    useCustomWindowRadius,
+    showTransparentWindowBorder,
+    isPlayerView,
+    isTitlebarRevealed,
+    alwaysShowMainWindowTitlebar,
+    isMainWindowClickThroughEnabled,
+    showMainWindowClickThroughToggle,
+    onToggleMainWindowClickThrough,
+    onClickThroughTransportAction,
+    isDaylight,
+    theme,
+    audioElement,
+    children,
 }) => {
   const { t } = useTranslation();
   const layoutRootRef = useRef<HTMLDivElement>(null);
@@ -193,90 +194,85 @@ const AppShell: React.FC<AppShellProps> = ({
             : ""
       }`;
 
-  return (
-    <div
-      ref={layoutRootRef}
-      className="fixed inset-0 w-full h-full flex flex-col overflow-hidden font-sans transition-colors duration-500"
-      style={{
-        ...appStyle,
-        borderRadius: shouldApplyWindowRadius
-          ? resolveWindowCornerRadius(window.electron?.platform ?? "")
-          : undefined,
-        boxShadow: showTransparentWindowBorder
-          ? "inset 0 0 0 1px rgba(255,255,255,0.24)"
-          : undefined,
-      }}
-    >
-      {usesCustomWindowChrome && (
-        <div className="absolute top-0 left-0 right-0 z-[9999] h-8 pointer-events-none">
-          {shouldRenderTitlebarBackdrop && (
-            <motion.div
-              initial={false}
-              animate={{
-                opacity: isTitlebarBackdropVisible ? 1 : 0,
-              }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className={titlebarBackdropClassName}
-            />
-          )}
-          <div className="relative h-full">
-            <div className={`pl-3 pt-1 tracking-tight flex items-center gap-3 ${isDaylight?'[text-shadow:_0_0px_2px_#fff] [text-shadow:_0_0px_4px_#fff] [text-shadow:_0_0px_6px_#fff]' : '[text-shadow:_0_0px_2px_#000] [text-shadow:_0_0px_4px_#000] [text-shadow:_0_0px_6px_#000]'}`}>
-              Folia
-            </div>
-            <TitlebarDragZone active={usesCustomWindowChrome} />
-            <div
-              className={`pointer-events-auto absolute top-0 z-20 h-full flex items-center ${
-                hasFullscreenTitlebarButton ? "right-[300px]" : "right-[224px]"
-              }`}
-              style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-            >
-              <button
-                type="button"
-                aria-label={
-                  isMainWindowClickThroughEnabled
-                    ? "Disable click-through"
-                    : "Enable click-through"
-                }
-                title={
-                  isMainWindowClickThroughEnabled
-                    ? t("remote.disableClickThrough")
-                    : t("remote.enableClickThrough")
-                }
-                onClick={onToggleMainWindowClickThrough}
-                className={`flex h-7 w-7 items-center justify-center rounded-full border shadow-[0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur-md transition-all duration-200 ${
-                  showMainWindowClickThroughToggle
-                    ? "click-through-interactive pointer-events-auto opacity-100 translate-y-0"
-                    : "pointer-events-none opacity-0 -translate-y-1"
-                } ${
-                  isMainWindowClickThroughEnabled
-                    ? isDaylight
-                      ? "border-amber-500/30 bg-amber-50/80 text-amber-700 hover:bg-amber-100/90"
-                      : "border-amber-300/35 bg-black/55 text-amber-100 hover:bg-black/70"
-                    : isDaylight
-                      ? "border-black/[0.06] bg-white/40 text-zinc-700 hover:bg-white/80 hover:text-zinc-900 shadow-[0_4px_12px_rgba(0,0,0,0.04)]"
-                      : "border-white/15 bg-transparent text-white/75 hover:bg-black/20 hover:text-white"
-                }`}
-              >
-                {isMainWindowClickThroughEnabled ? (
-                  <Lock size={14} />
-                ) : (
-                  <LockOpen size={14} />
-                )}
-              </button>
-            </div>
-            <div className="pointer-events-auto absolute top-0 right-0 z-10 h-full">
-              <WindowControls
-                revealed={areTitlebarControlsVisible}
-                isDaylight={isDaylight}
-                isMainWindowClickThroughEnabled={
-                  isMainWindowClickThroughEnabled
-                }
-                hideFullscreenButton={hideFullscreenButton}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+    return (
+        <div
+            ref={layoutRootRef}
+            className="fixed inset-0 w-full h-full flex flex-col overflow-hidden font-sans transition-colors duration-500"
+            style={{
+                ...appStyle,
+                borderRadius: shouldApplyWindowRadius ? resolveWindowCornerRadius(window.electron?.platform ?? '') : undefined,
+                boxShadow: showTransparentWindowBorder ? 'inset 0 0 0 1px rgba(255,255,255,0.24)' : undefined,
+            }}
+        >
+            {usesCustomWindowChrome && (
+                <div className="absolute top-0 left-0 right-0 z-[9999] h-8 pointer-events-none">
+                    {shouldRenderTitlebarBackdrop && (
+                        <motion.div
+                            initial={false}
+                            animate={{
+                                opacity: isTitlebarBackdropVisible ? 1 : 0,
+                            }}
+                            transition={{ duration: 0.18, ease: 'easeOut' }}
+                            className={titlebarBackdropClassName}
+                        />
+                    )}
+                    <div className="relative h-full">
+                        <TitlebarDragZone active={usesCustomWindowChrome} />
+                        <div
+                            className={`pointer-events-auto absolute top-0 z-20 h-full flex items-center ${
+                                hasFullscreenTitlebarButton ? 'right-[224px]' : 'right-[180px]'
+                            }`}
+                            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        >
+                            <button
+                                type="button"
+                                aria-label={isMainWindowClickThroughEnabled ? 'Disable click-through' : 'Enable click-through'}
+                                title={isMainWindowClickThroughEnabled ? t('remote.disableClickThrough') : t('remote.enableClickThrough')}
+                                onClick={onToggleMainWindowClickThrough}
+                                className={`flex h-7 w-7 items-center justify-center rounded-full border shadow-[0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur-md transition-all duration-200 ${
+                                    showMainWindowClickThroughToggle
+                                        ? 'click-through-interactive pointer-events-auto opacity-100 translate-y-0'
+                                        : 'pointer-events-none opacity-0 -translate-y-1'
+                                } ${
+                                    isMainWindowClickThroughEnabled
+                                        ? isDaylight
+                                            ? 'border-amber-500/30 bg-amber-50/80 text-amber-700 hover:bg-amber-100/90'
+                                            : 'border-amber-300/35 bg-black/55 text-amber-100 hover:bg-black/70'
+                                        : isDaylight
+                                            ? 'border-black/[0.06] bg-white/40 text-zinc-700 hover:bg-white/80 hover:text-zinc-900 shadow-[0_4px_12px_rgba(0,0,0,0.04)]'
+                                            : 'border-white/15 bg-transparent text-white/75 hover:bg-black/20 hover:text-white'
+                                }`}
+                            >
+                                {isMainWindowClickThroughEnabled ? <Lock size={14} /> : <LockOpen size={14} />}
+                            </button>
+                        </div>
+                        {/* 点击穿透时窗口按钮都藏了，切歌按钮放在锁的左边，跟锁一起出现（#471）。
+                            右缘离锁 6px：锁在 right-[180px]/right-[224px]、宽 28px，这组宽 86px。
+                            不放锁右边：那样热区要伸到离右边 84px，压住下面窗口的最小化/最大化按钮。 */}
+                        <div
+                            className={`pointer-events-none absolute top-0 z-20 h-full flex items-center ${
+                                hasFullscreenTitlebarButton ? 'right-[258px]' : 'right-[214px]'
+                            }`}
+                            // 只在点击穿透时扣出不可拖的区域：平时这组按钮不出现，标题栏这一段照常能拖窗口。
+                            style={isMainWindowClickThroughEnabled ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : undefined}
+                        >
+                            <ClickThroughMediaControls
+                                visible={isMainWindowClickThroughEnabled && showMainWindowClickThroughToggle}
+                                isDaylight={isDaylight}
+                                onAction={onClickThroughTransportAction}
+                            />
+                        </div>
+                        <div className="pointer-events-auto absolute top-0 right-0 z-10 h-full">
+                            <WindowControls
+                                revealed={areTitlebarControlsVisible}
+                                isDaylight={isDaylight}
+                                isMainWindowClickThroughEnabled={isMainWindowClickThroughEnabled}
+                                hideFullscreenButton={hideFullscreenButton}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
       {audioElement}
       <SettingsKitThemeContext.Provider value={kitTheme}>

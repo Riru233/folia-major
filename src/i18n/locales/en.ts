@@ -703,6 +703,7 @@ export default {
       "lyric-staff-absorb-cycle": { "title": "Opening credits absorb mode", "description": "Cycle whether neighbouring lines are folded into the credit block" },
       "settings-obs-browser-source": { "title": "OBS browser source", "description": "Open OBS browser source settings" },
       "obs-toggle-keep-main-window-animation": { "title": "OBS: keep main window animation", "description": "Toggle whether the main window keeps its animation while OBS is connected" },
+      "obs-toggle-track-card": { "title": "OBS: show the now playing card", "description": "Toggle whether the now playing card is drawn in the OBS browser source" },
       "desktop-toggle-lyric-api": { "title": "Lyrics API", "description": "Toggle the local unauthenticated lyrics endpoint" },
       "settings-obs-copy-css": { "title": "Copy OBS CSS", "description": "Copy the OBS Browser Source Custom CSS carrying uploaded assets" },
       "settings-storage": { "title": "Storage settings", "description": "Open cache and storage settings" },
@@ -1843,6 +1844,13 @@ export default {
     "version": "Version"
   },
   "qishui": { "recentPlayed": "Recently played on Qishui", "recommended": "Recommended for you" },
+  "listeningRank": {
+    "week": "Listening ranking · Last week",
+    "all": "Listening ranking · All time",
+    "description": "Songs ranked by this account's listening on the platform",
+    "listenCount_one": "Played {{count}} time",
+    "listenCount_other": "Played {{count}} times"
+  },
   "lyricProvider": {
     "qishui": "Qishui Music",
     "netease": "NetEase Cloud Music",
@@ -2464,6 +2472,8 @@ export default {
     "stageTrackPillMode_never": "Never show",
     "stageTrackPillOnHome": "Show on the home page too",
     "stageTrackPillOnHomeDesc": "Off keeps the card on the player and play queue. On also shows it on home, including after launch or a track change there.",
+    "stageTrackPillInObs": "Show in the browser source",
+    "stageTrackPillInObsDesc": "On also draws the card in the OBS browser source, with the display mode, duration and position above. On the web, copy the OBS link again for it to apply.",
     "stageTrackPillTimeout": "Visible duration",
     "disableVisualizerVignette": "Disable vignette",
     "visualizerVignette": "Vignette",

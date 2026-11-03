@@ -10,6 +10,7 @@ import { useNowPlayingCardLayoutStore } from './now-playing-toast/nowPlayingCard
 import { useNowPlayingCardPosition } from './now-playing-toast/useNowPlayingCardPosition';
 import { NowPlayingCardPositioner } from './now-playing-toast/NowPlayingCardPositioner';
 import { useGlass } from "@/shinoinject/useGlass";
+import type { NowPlayingCardPosition } from '../../../utils/nowPlayingCardPosition';
 useGlass;
 
 // src/components/app/overlays/NowPlayingToast.tsx
@@ -42,36 +43,39 @@ export interface NowPlayingToastSong {
 }
 
 type NowPlayingToastProps = {
-  song: NowPlayingToastSong;
-  trackKey: string;
-  isDaylight: boolean;
-  /** 显示模式：auto=限时，always=常驻，never=不渲染 */
-  mode?: StageTrackPillMode;
-  /** auto 模式显示时长（秒） */
-  timeoutSec?: number;
-  /** 自动切歌预览的数据（下一首）；isNextUp 时整卡展示它 */
-  nextUp?: NowPlayingToastSong | null;
-  /** 预览态：下一首内容 + 接下来播放标签 + 挂起 auto 隐藏计时 */
-  isNextUp?: boolean;
-  /** 描边取 accentColor，和全屏圆环同一个颜色 */
-  theme?: Theme;
-  /** 点卡片做什么；不给就还是个纯展示的卡片，不吃鼠标 */
-  onActivate?: () => void;
-  /** onActivate 的无障碍名字，说清楚点下去会发生什么 */
-  activateLabel?: string;
+    song: NowPlayingToastSong;
+    trackKey: string;
+    isDaylight: boolean;
+    /** 显示模式：auto=限时，always=常驻，never=不渲染 */
+    mode?: StageTrackPillMode;
+    /** auto 模式显示时长（秒） */
+    timeoutSec?: number;
+    /** 自动切歌预览的数据（下一首）；isNextUp 时整卡展示它 */
+    nextUp?: NowPlayingToastSong | null;
+    /** 预览态：下一首内容 + 接下来播放标签 + 挂起 auto 隐藏计时 */
+    isNextUp?: boolean;
+    /** 描边取 accentColor，和全屏圆环同一个颜色 */
+    theme?: Theme;
+    /** 点卡片做什么；不给就还是个纯展示的卡片，不吃鼠标 */
+    onActivate?: () => void;
+    /** onActivate 的无障碍名字，说清楚点下去会发生什么 */
+    activateLabel?: string;
+    /** 卡片位置；不给就读设置里存的那个（OBS 浏览器源读不到主窗口的设置，由它传进来） */
+    position?: NowPlayingCardPosition | null;
 };
 
 const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
-  song,
-  trackKey,
-  isDaylight,
-  mode = "auto",
-  timeoutSec = 10,
-  nextUp = null,
-  isNextUp = false,
-  theme,
-  onActivate,
-  activateLabel,
+    song,
+    trackKey,
+    isDaylight,
+    mode = 'auto',
+    timeoutSec = 10,
+    nextUp = null,
+    isNextUp = false,
+    theme,
+    onActivate,
+    activateLabel,
+    position: positionOverride,
 }) => {
   const { t } = useTranslation();
 
@@ -149,7 +153,7 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
     return () => observer.disconnect();
   }, [visible]);
 
-    const position = useNowPlayingCardPosition(frameRef, cardSize, bottomBarBottomPx, visible, invalidateLayout);
+    const position = useNowPlayingCardPosition(frameRef, cardSize, bottomBarBottomPx, visible, invalidateLayout, positionOverride);
 
     return (
         <>
