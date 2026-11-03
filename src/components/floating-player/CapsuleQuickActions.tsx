@@ -6,7 +6,6 @@ import { COMMAND_PALETTE_COMMANDS } from '../command-palette/commandRegistry';
 import { readCommandFrequencyState } from '../command-palette/commandFrequency';
 import { getCommandTitle } from '../command-palette/commandText';
 import type { CommandPaletteCommand } from '../command-palette/types';
-import { capsuleGlassClass, capsuleGlassStyle } from './capsuleGlass';
 import { openCommandPalette } from '../../stores/useAppViewStore';
 import { resolveCapsuleQuickActions } from './capsuleQuickActionSelection';
 import {
@@ -15,6 +14,7 @@ import {
     type PlayerControlSlotActionId,
     type PlayerControlSlotContext,
 } from './playerControlSlotActions';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/floating-player/CapsuleQuickActions.tsx
 // 胶囊上方浮出的一排命令：指针在胶囊上停一会儿才出现，挑哪几条见 capsuleQuickActionSelection。
@@ -22,7 +22,7 @@ import {
 // 手指没有悬停：播放页上点开胶囊、或者暂停时，由 FloatingPlayerControls 直接浮出 4 秒。
 
 /** 胶囊悬停展开后再停这么久才浮出：路过的指针不该每次都带出一排按钮。 */
-const DWELL_MS = 250;
+const DWELL_MS = 400;
 
 /**
  * 指针在胶囊上停够了没有。只看悬停：暂停时胶囊自己展开不算停留。
@@ -92,24 +92,46 @@ const CapsuleQuickActions: React.FC<CapsuleQuickActionsProps> = ({
     }), [context, counts, slotPrimary, slotSecondary, touch]);
     const buttonPadding = touch ? 'p-3' : 'p-2';
     const iconSize = touch ? 20 : 16;
-
+    useGlass();
     return (
+        // 上浮位移放在这层不带玻璃的包裹上：transform 会形成 backdrop-filter 的取样根，
+        // 玻璃节点自身只做 opacity 淡入，第一帧就能取到背后的画面。
         <motion.div
             // 下边距画在自己身上而不是外层：指针从胶囊往上挪到这排按钮时一直在悬停区里，胶囊不会中途收起。
             className="pointer-events-auto pb-3"
             data-testid="capsule-quick-actions"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
+            initial={{ y: 6 }}
+            animate={{ y: 0 }}
+            exit={{ y: 6 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
             onClick={event => event.stopPropagation()}
         >
-            <div
+            <motion.div
+                // 玻璃层和动画层是同一个元素：祖先上只要有 opacity < 1 / transform 就会成为
+                // backdrop-filter 的取样根，玻璃采样不到背后的画面，表现为「动画放完才出玻璃」。
+                // 面板自己的 opacity 不参与取样根判定（同 CommandPalette），所以淡入放这一层。
+                data-glass data-glass-light data-glass-jelly
                 role="group"
                 aria-label={t('player.capsuleQuickActions')}
-                className={`flex items-center gap-0.5 rounded-full p-1 ${capsuleGlassClass(isDaylight)}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.16, ease: 'easeOut' }}
+                className={`flex items-center gap-0.5 rounded-full p-1`}
+                style={{
+                  backgroundColor: isDaylight
+                    ? "rgba(255,255,255,0.42)"
+                    : "rgba(0, 0, 0, 0.42)",
+                  borderTop: isDaylight
+                    ? "1px solid rgba(0,0,0,0.08)"
+                    : "1px solid rgba(255,255,255,0.12)",
+                  borderBottom: isDaylight
+                    ? "1px solid rgba(0,0,0,0.08)"
+                    : "1px solid rgba(255,255,255,0.12)",
+                  outline: "1px solid rgba(40,40,40,0.2)",
+                  boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                }}
                 // 和进度条胶囊同一层玻璃。
-                style={capsuleGlassStyle(isDaylight)}
             >
                 {commands.map(command => {
                     const button = resolveButton(command, context);
@@ -146,7 +168,7 @@ const CapsuleQuickActions: React.FC<CapsuleQuickActionsProps> = ({
                 >
                     <Command size={iconSize} />
                 </button>
-            </div>
+            </motion.div>
         </motion.div>
     );
 };
