@@ -23,7 +23,7 @@ import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX, clampPlayerBottomBarOffset, resolvePl
 import type { PlayerControlSlotActionId, PlayerControlSlotContext } from './floating-player/playerControlSlotActions';
 import { usePlayerOverlayObstacle } from '../hooks/usePlayerOverlayLayout';
 import { useGlass } from '../shinoinject/useGlass.tsx';
-import { releaseGlassJelly } from '../shinoinject/liquidglass.ts';
+import { releaseGlassJelly, isGlassJellyDragging } from '../shinoinject/liquidglass.ts';
 import { useSupportsFinePointer } from '../hooks/useSupportsFinePointer';
 import { resolvePlayerCapsuleNavigationTarget } from '../hooks/useAppNavigation';
 import { useCapsulePaletteStore } from '../stores/useCapsulePaletteStore';
@@ -160,8 +160,12 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     const { t } = useTranslation();
     const slotCustomization = usePlayerControlSlotCustomization(slotPrimary, slotSecondary);
     const { slotPicker, closeSlotPicker, slotSuggestion } = slotCustomization;
+    // 果冻拖拽会话是否进行中。触屏按住那排命令拖动时，浏览器可能判定为手势接管并发 pointercancel，
+    // 控制条的自动隐藏会在 3 秒后把整条标记为隐藏；但手指还没松开，这时淡出/收起就是
+    // 「拖到容器外自动收回」。拖拽期间整条控制条保持可见。
+    const [jellyDragging, setJellyDragging] = useState(false);
     // 自动隐藏播放页控件只看鼠标移动：盯着更换浮层看选项时不动鼠标，浮层不能跟着整条控制条一起淡出。
-    const isHidden = isChromeHidden && slotPicker === null;
+    const isHidden = isChromeHidden && slotPicker === null && !jellyDragging;
     const { ref: layoutRef, invalidate: invalidateLayout } = usePlayerOverlayObstacle('player-controls', 'playback', !isHidden);
     // 命令面板从胶囊原地长出来时要量它，所以胶囊节点除了交给遮挡登记，也留一份自己的。
     const capsuleElementRef = useRef<HTMLDivElement | null>(null);
@@ -328,14 +332,17 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     // 主指针是触屏的设备不走停留；带触屏的笔记本主指针是鼠标，再按这一次进来的是不是手指拦。
     // 手指另走下面的 showTouchQuickActions：点开胶囊或暂停时直接浮出。
     const supportsFinePointer = useSupportsFinePointer();
-    const hasDwelled = useCapsuleQuickActionsDwell(isHovered && !isTouchHover);
+    // 果冻拖拽期间按「还在悬停」算：指针被拖到容器外时 mouseleave 会清掉悬停态，
+    // 那排命令会当场卸载——拖到容器外就自动收回。拖拽优先级高于悬停/隐藏，松手后再按实际状态走。
+    const hasDwelled = useCapsuleQuickActionsDwell((isHovered && !isTouchHover) || jellyDragging);
     // 手指浮出的只在播放页：首页点胶囊是去播放页，歌曲墙上是定位到当前歌曲，都不是要这排。
     const touchRowAllowed = currentView === 'player' && !showSlotSuggestion && slotPicker === null
         && !isHidden && !isPositioning && !controlsDisabled;
     const showTouchQuickActions = isTouchRevealed && touchRowAllowed;
     touchRowShownRef.current = showTouchQuickActions;
     touchRowAllowedRef.current = touchRowAllowed;
-    const showQuickActions = showTouchQuickActions || (supportsFinePointer && hasDwelled && !showSlotSuggestion && slotPicker === null
+    // 拖拽优先级最高：只要还在拖，那排就保持浮出，不看悬停、不看自动隐藏。
+    const showQuickActions = jellyDragging || showTouchQuickActions || (supportsFinePointer && hasDwelled && !showSlotSuggestion && slotPicker === null
         && !isHidden && !isPositioning && !controlsDisabled);
     // 播放页上点胶囊本来就在要去的地方，这一下改成把胶囊变成命令面板；播放入口设成歌曲墙时
     // 这一下仍然去墙，不抢原有的跳转。
@@ -354,7 +361,8 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     // 刚换完按钮也再展开一会儿，让人看见换上去的结果。
     // 变成命令面板期间胶囊照常收起或展开，只是看不见：它在面板接手的那一刻就立刻隐去，
     // 收起时透过遮罩看不到它往下缩；面板收回时量的正是它此刻的样子，收回去的宽度就对得上。
-    const showExpanded = isPositioning || playerBarPinned || hoverExpands || (isTouchRevealed && currentView === 'player') || slotPicker !== null || showSlotSuggestion || slotCustomization.isShowingChange || (canAutoExpand && playerState !== PlayerState.PLAYING && currentView !== 'home');
+    // 果冻拖拽期间保持展开：那排命令贴着胶囊上沿，胶囊缩下去会把正在拖的东西一起带走。
+    const showExpanded = jellyDragging || isPositioning || playerBarPinned || hoverExpands || (isTouchRevealed && currentView === 'player') || slotPicker !== null || showSlotSuggestion || slotCustomization.isShowingChange || (canAutoExpand && playerState !== PlayerState.PLAYING && currentView !== 'home');
     showExpandedRef.current = showExpanded;
 
     // 一暂停就浮出：只在播放页、主指针是触屏（或者上一次碰胶囊的是手指）时。只认从播放到暂停那一下，
@@ -381,6 +389,45 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
 
     // 浮着的时候：在悬停区里按下先停住计时（拖进度条、长按槽位时不能半路收起），抬起再重新数 4 秒；
     // 在外面按下（包括命令面板、换按钮的浮层）立刻收。只在浮着时挂监听，都是按下抬起级别的事件。
+    // 另外盯住果冻会话：手指按住那排拖到容器外时，控制条的自动隐藏会在 3 秒后把 isHidden 置真，
+    // 但手指还没松开——记下拖拽状态，让上面那条判断在拖拽期间不因 isHidden 收排。
+    useEffect(() => {
+        const syncJellyDragging = () => setJellyDragging(isGlassJellyDragging());
+        // 果冻的会话由 liquidglass 的 window 级监听驱动，这里只需要在按下/抬起后读一次状态；
+        // pointermove 是高频路径，用 rAF 合并到每帧最多读一次。
+        let raf = 0;
+        const scheduleSync = () => {
+            if (raf) return;
+            raf = requestAnimationFrame(() => {
+                raf = 0;
+                syncJellyDragging();
+            });
+        };
+        // 触屏的会话由 touch 事件收场（pointercancel 对触屏不收摊），松手后要同步回落。
+        const syncNow = () => {
+            if (raf) {
+                cancelAnimationFrame(raf);
+                raf = 0;
+            }
+            syncJellyDragging();
+        };
+        window.addEventListener('pointerdown', syncNow, true);
+        window.addEventListener('pointermove', scheduleSync, { passive: true, capture: true });
+        window.addEventListener('pointerup', syncNow, true);
+        window.addEventListener('pointercancel', syncNow, true);
+        window.addEventListener('touchend', syncNow);
+        window.addEventListener('touchcancel', syncNow);
+        return () => {
+            if (raf) cancelAnimationFrame(raf);
+            window.removeEventListener('pointerdown', syncNow, true);
+            window.removeEventListener('pointermove', scheduleSync, true);
+            window.removeEventListener('pointerup', syncNow, true);
+            window.removeEventListener('pointercancel', syncNow, true);
+            window.removeEventListener('touchend', syncNow);
+            window.removeEventListener('touchcancel', syncNow);
+        };
+    }, []);
+
     useEffect(() => {
         if (!isTouchRevealed) {
             return;
@@ -573,6 +620,12 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
         if (expandTimeoutRef.current !== null) {
             window.clearTimeout(expandTimeoutRef.current);
             expandTimeoutRef.current = null;
+        }
+
+        // 果冻拖拽期间指针被带着离开悬停区（拖到容器外），这不是真的「离开」：
+        // 收起悬停态会让那排命令当场卸载。松手后再走正常收起。
+        if (jellyDragging) {
+            return;
         }
 
         if (!isHovered || collapseTimeoutRef.current !== null) {

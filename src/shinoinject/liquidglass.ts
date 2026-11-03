@@ -777,6 +777,11 @@ export const releaseGlassJelly = () => {
   if (jEl || jDragging) jellyFinish();
 };
 
+// 当前是否正有果冻会话（手指/指针按住拖拽）在进行。触屏拖动会被浏览器判定为手势接管而发
+// pointercancel，控制条的自动隐藏在 3 秒后把整条控制条标记为隐藏；但手指还没松开，
+// 外部据此区分「拖拽中」与「真的松手了」，避免拖到容器外就被收起。
+export const isGlassJellyDragging = () => jDragging;
+
 /* —— 拖拽光效（data-glass-light 注入）——
    指针悬停在带 data-glass-light 的元素上时，在该容器内挂一层铺满 inset:0 的光晕，光点中心跟随指针
    （换算成元素自身布局坐标），强度是悬停的微光；按下时同一个光晕升到最强，松手回到悬停微光（指针还
