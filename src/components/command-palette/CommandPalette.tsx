@@ -426,6 +426,19 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                     onMouseDown={onClose}
                 >
                     <motion.div
+                        data-folia-keyboard-window="true"
+                        className={`fixed w-full h-full top-0`}
+                        // 遮罩淡入改用背景色而不是元素 opacity：任何祖先 opacity < 1 都会把
+                        // backdrop-filter 的取样根截断在该祖先内，玻璃面板在动画期间拿不到背景，
+                        // 要等遮罩 opacity 落到 1 才突然出现。
+                        initial={{ backdropFilter: "blur(0px)" }}
+                        animate={{backdropFilter: "blur(2px)"}}
+                        exit={{  backdropFilter: "blur(0px)" }}
+                        transition={{ duration: 0.16 }}
+                        onMouseDown={onClose}
+                    >
+                    </motion.div>
+                    <motion.div
                         className="w-full max-w-2xl"
                         // 外层不做 opacity：祖先 opacity < 1 会截断 backdrop-filter 的取样根，
                         // 玻璃面板在动画期间拿不到背景，要等动画结束才突然出现。淡入淡出交给面板自身。
