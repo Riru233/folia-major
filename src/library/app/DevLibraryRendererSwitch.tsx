@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { listLibrarySuites } from '../registry';
 import { useActiveLibrarySuiteId } from './librarySuiteChoice';
 import { switchLibrarySuite } from './switchLibrarySuite';
+<<<<<<< HEAD
 import { useGlass } from '@/shinoinject/useGlass';
+=======
+import { resolveReducedMotion, useMotionSettingsStore } from '../../stores/useMotionSettingsStore';
+>>>>>>> 8abd1091c9a3a3df8670c2708bf1eb9f6dfe7329
 
 // src/library/app/DevLibraryRendererSwitch.tsx
 // 开发验证浮层：在各套 UI suite 之间切换当前打开的集合，
@@ -27,7 +31,12 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
 }) => {
     const { t } = useTranslation();
     const activeSuite = useActiveLibrarySuiteId();
+<<<<<<< HEAD
     useGlass();
+=======
+    const reduceMotion = useMotionSettingsStore(state => resolveReducedMotion(state, 'uiMicroMotion'));
+
+>>>>>>> 8abd1091c9a3a3df8670c2708bf1eb9f6dfe7329
     return (
         <div
             data-glass
@@ -52,7 +61,7 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
                     data-suite={suite.id}
                     aria-pressed={activeSuite === suite.id}
                     onClick={() => switchLibrarySuite(sessionKey, suite.id)}
-                    className={`rounded-full px-2 py-0.5 ${activeSuite === suite.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
+                    className={`rounded-full px-2 py-0.5 ${reduceMotion ? 'transition-none' : 'transition-[background-color,opacity] duration-150'} ${activeSuite === suite.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
                 >
                     {t(suite.labelKey)}
                 </button>
