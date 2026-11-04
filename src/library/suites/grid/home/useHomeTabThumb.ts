@@ -1,6 +1,17 @@
 import type React from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useSpring } from 'framer-motion';
+import { animate, useMotionValue, useMotionValueEvent, useSpring, useTransform } from 'framer-motion';
+import {
+    SPEED_SAMPLE_MIN_MS,
+    SPEED_SMOOTHING,
+    STRETCH_IDLE_MS,
+    STRETCH_RETURN_EASE,
+    STRETCH_RETURN_SECONDS,
+    STRETCH_SPRING,
+    STRETCH_X,
+    STRETCH_Y,
+    stretchAmountFromSpeed,
+} from './thumbStretch';
 
 // src/library/suites/grid/home/useHomeTabThumb.ts
 // iOS-style active-tab thumb for the Grid3D center tab switcher. The thumb is a single element
@@ -35,7 +46,10 @@ interface UseHomeTabThumbOptions<K extends string> {
 // re-targets (fast clicks, resize, drag release) stay velocity-continuous instead of restarting.
 const THUMB_SPRING = { stiffness: 320, damping: 32, mass: 0.9 } as const;
 const DRAG_SCALE = 2;
+// 拖动时放大到 DRAG_SCALE 用的弹簧，与原来 animate 的 scale transition 一致。
+const DRAG_SCALE_SPRING = { stiffness: 500, damping: 30 } as const;
 const TAP_MOVE_THRESHOLD_PX = 4;
+// 拖动时的速度形变（squash & stretch）的全部参数在 ./thumbStretch.ts，这里只负责采样和写入。
 // 松手把摇杆吸附到最近页签后不立刻切页面：等摇杆真的停下再等这样一拍，来回拖动时松手就不会
 // 连发页面切换、把界面顶得卡顿。吸附弹簧本身仍可被下一次按下随时打断（见 handlePointerDown）。
 const ACTIVATE_SETTLE_DELAY_MS = 150;
@@ -44,6 +58,13 @@ const activeKeyToIndex = <K extends string>(items: HomeTabThumbItem<K>[], key: K
     const index = items.findIndex(item => item.key === key);
     return index < 0 ? 0 : index;
 };
+
+// 系统开了「减少动态效果」时不做速度形变（与 data-glass-jelly 的判断一致），只保留按住放大。
+const prefersReducedMotion = () => (
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+);
 
 export const useHomeTabThumb = <K extends string>({
     trackRef,
@@ -57,6 +78,19 @@ export const useHomeTabThumb = <K extends string>({
     // is used only for a true teleport (first placement, live drag) where no animation is wanted.
     const thumbLeft = useSpring(0, THUMB_SPRING);
     const thumbWidth = useSpring(0, THUMB_SPRING);
+    // 按住时的基础缩放（1 → DRAG_SCALE）与速度形变强度（0 → 1）分开存，相乘后得到 scaleX / scaleY：
+    // 松手时基础缩放回到 1、形变同时收回 0，两段互不干扰。这些都是 MotionValue，拖动期间不触发 React 重渲染。
+    const dragScale = useSpring(1, DRAG_SCALE_SPRING);
+    // 速度算出来的目标形变（0 → 1）先写进 stretchTarget，再由 stretch 这个弹簧追上去：
+    // 拖动时形变因此有迟滞和轻微过冲，像被手指拖着甩的对象，而不是硬贴着速度缩放。
+    const stretchTarget = useMotionValue(0);
+    const stretch = useSpring(stretchTarget, STRETCH_SPRING);
+    const thumbScaleX = useTransform([dragScale, stretch], ([scale, amount]: number[]) => (
+        scale * (1 + amount * STRETCH_X)
+    ));
+    const thumbScaleY = useTransform([dragScale, stretch], ([scale, amount]: number[]) => (
+        scale * (1 - amount * STRETCH_Y)
+    ));
     const [dragging, setDragging] = useState(false);
 
     const layoutRef = useRef<{ left: number; width: number }[]>([]);
@@ -69,6 +103,13 @@ export const useHomeTabThumb = <K extends string>({
     const trackScaleRef = useRef(1);
     // Live pointer gesture: stays null when idle. `moved` flips true past the tap threshold.
     const gestureRef = useRef<{ pointerId: number; startX: number; moved: boolean } | null>(null);
+    // 形变的采样状态：上一次采样的位置/时间、平滑后的横向速度、停止计时器与正在跑的收回动画。
+    const stretchSampleRef = useRef<{ x: number; t: number } | null>(null);
+    const stretchSpeedRef = useRef(0);
+    const stretchIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const stretchReturnRef = useRef<{ stop: () => void } | null>(null);
+    // 这一轮手势是否做速度形变（按「减少动态效果」在按下时决定）。
+    const stretchAllowedRef = useRef(true);
     // Mirror volatile inputs into refs so measuring/dragging never has to depend on array identity.
     const itemsRef = useRef(items);
     const activeKeyRef = useRef(activeKey);
@@ -214,6 +255,100 @@ export const useHomeTabThumb = <K extends string>({
         return Math.min(activeKeyToIndex(itemsRef.current, activeKeyRef.current), Math.max(0, layout.length - 1));
     }, []);
 
+    const clearStretchIdleTimer = useCallback(() => {
+        if (stretchIdleTimerRef.current !== null) {
+            clearTimeout(stretchIdleTimerRef.current);
+            stretchIdleTimerRef.current = null;
+        }
+    }, []);
+
+    // 速度降下来或停住：用 0.3s 把目标形变拉回 0，scaleY 回升、scaleX 缩回拖动时的基础值。
+    // 写目标值而不是直接写形变，是为了让上面的弹簧继续接管：收回去的过程也带一点回弹。
+    // 走 tween 而不是弹簧，是因为这里要的正是一段固定时长、可预期的回弹。
+    const settleStretch = useCallback(() => {
+        clearStretchIdleTimer();
+        stretchReturnRef.current?.stop();
+        stretchSpeedRef.current = 0;
+        stretchReturnRef.current = animate(stretchTarget, 0, {
+            duration: STRETCH_RETURN_SECONDS,
+            ease: STRETCH_RETURN_EASE,
+        });
+    }, [clearStretchIdleTimer, stretchTarget]);
+
+    // 把「这一刻的横向移动速度」写进目标形变，并重新排停手计时。拖动时速度来自指针，滑行时来自摇杆自身，
+    // 两条来源共用这一处，形变的手感和收回时机才不会分叉。
+    const applyStretchSpeed = useCallback((signedSpeed: number) => {
+        // 新的移动接上了：停掉正在收回的动画，形变重新交给速度。
+        stretchReturnRef.current?.stop();
+        stretchReturnRef.current = null;
+        stretchTarget.set(stretchAmountFromSpeed(signedSpeed));
+        // 停下不动时没有新的采样，靠这个计时器把形变收回。
+        clearStretchIdleTimer();
+        stretchIdleTimerRef.current = setTimeout(settleStretch, STRETCH_IDLE_MS);
+    }, [clearStretchIdleTimer, settleStretch, stretchTarget]);
+
+    // 不拖动的移动（点页签后摇杆自己滑过去、重新测量、松手吸附回最近页签）也要有形变：
+    // 这时没有指针速度可采样，改用摇杆自身的横向速度。速度是 MotionValue 的实时值，
+    // 只在摇杆真的在动时才有 change 事件，静止时这段监听不产生任何工作。
+    useMotionValueEvent(thumbLeft, 'change', () => {
+        if (draggingRef.current) return; // 拖动中一律用指针速度，避免和 jump 打架
+        if (prefersReducedMotion()) return;
+        applyStretchSpeed(thumbLeft.getVelocity());
+    });
+
+    // 兜底收尾：在元素外松开、拖到窗口外松手、切走窗口（blur）时，pointerup 不一定派发到切换器上，
+    // 手势会一直挂在 dragging，形变也就一直挂着、看起来像「过一会儿才恢复」。这里只负责把这一轮
+    // 手势结束并把形变收回，不切页签（切页签只走 endDrag 那条正常路径）。
+    // 正常松手时 endDrag 先清掉 gestureRef，这个监听随后拿到空手势，直接跳过。
+    useEffect(() => {
+        if (!dragging) return;
+        const release = (event: Event) => {
+            const gesture = gestureRef.current;
+            if (!gesture) return;
+            if (event instanceof PointerEvent && event.pointerId !== gesture.pointerId) return;
+            gestureRef.current = null;
+            draggingRef.current = false;
+            stretchSampleRef.current = null;
+            setDragging(false);
+            dragScale.set(1);
+            settleStretch();
+        };
+        window.addEventListener('pointerup', release);
+        window.addEventListener('pointercancel', release);
+        window.addEventListener('blur', release);
+        return () => {
+            window.removeEventListener('pointerup', release);
+            window.removeEventListener('pointercancel', release);
+            window.removeEventListener('blur', release);
+        };
+    }, [dragging, dragScale, settleStretch]);
+
+    // 每次移动采样一次横向速度，平滑后经 stretchAmountFromSpeed 过一道曲线（有最小速度门槛）
+    // 写进目标形变，不进 React state；弹簧负责把目标化成形变。
+    // 采样间隔太短时先跳过、不推进采样点，让下一次拿到一个稳定的时间窗。
+    const sampleStretchSpeed = useCallback((clientX: number, timeStamp: number) => {
+        const sample = stretchSampleRef.current;
+        if (!sample) {
+            stretchSampleRef.current = { x: clientX, t: timeStamp };
+            return;
+        }
+        const dt = timeStamp - sample.t;
+        if (dt < SPEED_SAMPLE_MIN_MS) return;
+        // 速度带方向：clientX 变大（向右）为正，变小时为负。反向拖时估计值穿过 0，形变也就经过零，
+        // 不会从「向左的满形变」直接跳到「向右的满形变」。
+        const instantSpeed = ((clientX - sample.x) / dt) * 1000;
+        stretchSpeedRef.current = stretchSpeedRef.current * SPEED_SMOOTHING
+            + instantSpeed * (1 - SPEED_SMOOTHING);
+        stretchSampleRef.current = { x: clientX, t: timeStamp };
+        applyStretchSpeed(stretchSpeedRef.current);
+    }, [applyStretchSpeed]);
+
+    useEffect(() => () => {
+        stretchReturnRef.current?.stop();
+        stretchReturnRef.current = null;
+        if (stretchIdleTimerRef.current !== null) clearTimeout(stretchIdleTimerRef.current);
+    }, []);
+
     // 按下切换器任意处：摇杆平滑滑到鼠标正下方，进入按住状态；此时不夺指针、不阻止默认行为，
     // 所以纯点击仍会走页签自身的 click。
     const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -229,7 +364,15 @@ export const useHomeTabThumb = <K extends string>({
         trackScaleRef.current = track && rect && track.offsetWidth > 0 ? rect.width / track.offsetWidth : 1;
         gestureRef.current = { pointerId: event.pointerId, startX: event.clientX, moved: false };
         thumbLeft.set(pointerTargetLeft(event.clientX));
-    }, [cancelPendingActivation, pointerTargetLeft, thumbLeft, trackRef]);
+        dragScale.set(DRAG_SCALE);
+        // 系统开了「减少动态效果」就只保留放大、不做速度形变（与 data-glass-jelly 的处理一致）。
+        stretchAllowedRef.current = !prefersReducedMotion();
+        if (!stretchAllowedRef.current) return;
+        // 形变从按下这一刻重新采样：上一次手势残留的速度不能带进来。
+        clearStretchIdleTimer();
+        stretchSpeedRef.current = 0;
+        stretchSampleRef.current = { x: event.clientX, t: event.timeStamp };
+    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, pointerTargetLeft, thumbLeft, trackRef]);
 
     // 越过阈值才算真正拖动：这时才夺指针并阻止默认行为（否则点页签的 click 会被吞掉）。
     const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -243,7 +386,9 @@ export const useHomeTabThumb = <K extends string>({
         // 跟手用 jump 保持即时响应、不引入弹簧滞后；松手/吸附才交给弹簧。jump 会清掉正在跑的
         // 弹簧，所以松手时 .set 会从当前指针位置重新起弹，不会「飞回来」。
         thumbLeft.jump(pointerTargetLeft(event.clientX));
-    }, [pointerTargetLeft, thumbLeft]);
+        // 越慢越平、越快越扁长：形变跟着这一下的横向速度走。
+        if (gesture.moved && stretchAllowedRef.current) sampleStretchSpeed(event.clientX, event.timeStamp);
+    }, [pointerTargetLeft, sampleStretchSpeed, thumbLeft]);
 
     const endDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         const gesture = gestureRef.current;
@@ -254,6 +399,11 @@ export const useHomeTabThumb = <K extends string>({
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
+
+        // 松手：基础缩放回 1（弹簧），形变同时用 0.3s 收回拖动时的值；两段一起收，看起来就是一下弹回。
+        dragScale.set(1);
+        settleStretch();
+        stretchSampleRef.current = null;
 
         // 松手：按「松手指针位置」而不是摇杆当前值算最近页签——纯点击时吸附动画才刚开始，
         // 当前的 thumbLeft 还停在旧位置，用它取整会选错页签并来回摆动。
@@ -266,13 +416,14 @@ export const useHomeTabThumb = <K extends string>({
             armActivationAfterSettle(key);
         }
         if (!gesture.moved) onTapActive?.();
-    }, [armActivationAfterSettle, glideToIndex, nearestTabIndex, onTapActive, pointerTargetLeft, thumbWidth]);
+    }, [armActivationAfterSettle, dragScale, glideToIndex, nearestTabIndex, onTapActive, pointerTargetLeft, settleStretch, thumbWidth]);
 
     return {
         thumbLeft,
         thumbWidth,
         thumbDragging: dragging,
-        thumbScale: dragging ? DRAG_SCALE : 1,
+        thumbScaleX,
+        thumbScaleY,
         thumbHandlers: {
             onPointerDown: handlePointerDown,
             onPointerMove: handlePointerMove,

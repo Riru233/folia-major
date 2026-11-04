@@ -103,3 +103,6 @@ public/nebbia-strokes.json
 
 # 忽略补丁
 patch/
+
+# wb记忆不走代码库
+.workbuddy/

@@ -320,7 +320,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
     // 白色摇杆：脱离 button 的独立元素，可拖动、拖动时放大、按所在页签激活；点击页签时自动吸附。
     const pillTrackRef = useRef<HTMLDivElement>(null);
-    const { thumbLeft, thumbWidth, thumbDragging, thumbScale, thumbHandlers } =
+    const { thumbLeft, thumbWidth, thumbDragging, thumbScaleX, thumbScaleY, thumbHandlers } =
         useHomeTabThumb({
             trackRef: pillTrackRef,
             items: homeTabs.map(tab => ({
@@ -675,7 +675,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
                     {/* Center Tab Switcher */}
                     <div
-                        data-glass-jelly
+                        // data-glass-jelly
                         className="flex justify-center order-3 md:order-none col-span-2 md:col-span-1"
                     >
                         <div className="relative scale-90 md:scale-100 origin-center rounded-full -inset-1" style={{ overflow: 'visible' }}>
@@ -698,7 +698,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             {/* 摇杆：按住切换器任意处即吸附到鼠标并跟手，松手按最近页签吸附。层级与玻璃层平级，
                                 pointer-events-none 让按下穿透到下面的页签轨道，不挡拖动与点击。 */}
                             <motion.div
-                                data-glass-jelly
+                                // data-glass-jelly
                                 data-glass
                                 data-glass-strength="200"
                                 data-glass-blur="0"
@@ -709,18 +709,18 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 style={{
                                     left: thumbLeft,
                                     width: thumbWidth,
+                                    // 拖动时按速度压扁/拉长（useHomeTabThumb 里算好），松手后各自收回。
+                                    scaleX: thumbScaleX,
+                                    scaleY: thumbScaleY,
                                     pointerEvents: 'none',
                                     // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的流体玻璃；底色与阴影的进出
                                     // 由上面的 transition 补间，松手复原时不再瞬间跳变。
-                                    boxShadow: thumbDragging ? '0 0 4px #000,0 0 8px #fffa' : '',
+                                    boxShadow: thumbDragging ? '0 0 8px #000a' : '',
                                 }}
-                                // 摇杆的 opacity 交给 framer-motion（和 scale 同一个 animate），不写 CSS transition，
+                                // 摇杆的 opacity 交给 framer-motion，不写 CSS transition，
                                 // 免得覆盖上面底色与阴影的补间；元素自己的 opacity 不影响 backdrop-filter。
-                                animate={{ scale: thumbScale, opacity: isGridMapOpen ? 0 : 1 }}
-                                transition={{
-                                    scale: { type: 'spring', stiffness: 500, damping: 30 },
-                                    opacity: { duration: 0.3, ease: 'easeInOut' },
-                                }}
+                                animate={{ opacity: isGridMapOpen ? 0 : 1 }}
+                                transition={{ opacity: { duration: 0.3, ease: 'easeInOut' } }}
                             />
                             <div
                                 ref={pillTrackRef}

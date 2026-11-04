@@ -53,7 +53,7 @@ export const GridViewTabs: React.FC<GridViewTabsProps> = ({ tabs, isDaylight, on
                         event.currentTarget.blur();
                         onOpenMap();
                     }}
-                    className={`flex h-6 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors ${chrome.softText}`}
+                    className={`flex h-6 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors select-none ${chrome.softText}`}
                 >
                     {mapIcon}
                     <span className="whitespace-nowrap">{mapLabel}</span>
