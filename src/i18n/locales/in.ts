@@ -3305,6 +3305,8 @@ export default {
     "liquidGlassStrengthDesc": "Seberapa kuat tepi kaca membiaskan isi di belakangnya.",
     "liquidGlassBend": "Jarak Bidang Bias",
     "liquidGlassBendDesc": "Seberapa jauh tepi yang dibiaskan menjangkau dari tepi ke pusat, dalam piksel. Makin besar nilainya, makin kecil area datar di tengah.",
+    "liquidGlassGamma": "Kurva Redaman Tepi",
+    "liquidGlassGammaDesc": "Seberapa cepat kekuatan bias meredup dari tepi ke pusat. Nilai lebih kecil membuat pita bias lebih lebar dan transisi lebih halus; nilai lebih besar memusatkannya di tepi.",
     "liquidGlassBlur": "Blur",
     "liquidGlassBlurDesc": "Nilai blur elemen transparan.",
     "liquidGlassSat": "Saturasi",

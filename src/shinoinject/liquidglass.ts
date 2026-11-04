@@ -6,8 +6,10 @@ let uid = 0;
 const SVGNS = "http://www.w3.org/2000/svg";
 // 默认参数：出厂值就是这里，设置面板（useLiquidGlassSettingsStore）的兜底也读它。
 // bend = 最大弯曲距离：边缘受折射的区域从边缘向中心延伸多少 px，平面（不受折射）区在中心，bend 越大平面越小。
+// gamma = 边缘衰减曲线指数：位移强度按 pow(边缘系数, gamma) 衰减，越小折射带越宽、边缘过渡越平缓，
+//         越大折射越集中在边框。默认 2 等同于旧版固定的 m * m（保留原观感）。
 // ★ 配置位置①：默认弯曲距离（px）。测试直接改下行的 bend 数字，或给元素加 data-glass-bend="80" 单元素覆盖。
-const global = { strength: 2.25, blur: 2, sat: 180, bend: 60 };
+const global = { strength: 2.25, blur: 2, sat: 180, bend: 60, gamma: 2 };
 export type LiquidGlassParams = typeof global;
 export const LIQUID_GLASS_DEFAULTS: LiquidGlassParams = { ...global };
 // 边缘扭曲（位移滤镜）与饱和度需要 backdrop-filter 能引用 SVG 位移图：Chromium 内核画得了，
@@ -28,6 +30,7 @@ export const LIQUID_GLASS_STORAGE_KEYS = {
   blur: "liquidglass_blur",
   sat: "liquidglass_sat",
   bend: "liquidglass_bend",
+  gamma: "liquidglass_gamma",
 } as const;
 // 每个参数的量程：设置面板的滑杆和钳制共用同一份，UI 不会调出存不下的值。
 export const LIQUID_GLASS_PARAM_BOUNDS: Record<keyof LiquidGlassParams, { min: number; max: number }> = {
@@ -36,6 +39,8 @@ export const LIQUID_GLASS_PARAM_BOUNDS: Record<keyof LiquidGlassParams, { min: n
   sat: { min: 100, max: 300 },
   // ★ 配置位置③：设置面板滑杆量程（弯曲距离最终还会被容器半个短边封顶，见 rebuild）。
   bend: { min: 0, max: 300 },
+  // 与 liquidtool.html 的 Gamma 量程一致；小于 1 让折射带更宽，大于 1 更集中在边缘。
+  gamma: { min: 1, max: 3 },
 };
 // 预设：一组强度/模糊/弯曲距离（不碰饱和度），一键切到常见观感。通透流体与朦胧流体靠扭曲滤镜，
 // 只有画得了位移图的渲染器才有（见 LIQUID_GLASS_DISTORTION_SUPPORTED），其它平台不列出
@@ -63,8 +68,9 @@ const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
 export const clampLiquidGlassParam = <K extends keyof LiquidGlassParams>(key: K, value: number) => {
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "strength") return LIQUID_GLASS_DEFAULTS.strength;
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "sat") return 1;
-  // bend 只作用于位移图，画不了位移图的平台上钉回默认值，state / localStorage 保持一致。
+  // bend / gamma 只作用于位移图，画不了位移图的平台上钉回默认值，state / localStorage 保持一致。
   if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "bend") return LIQUID_GLASS_DEFAULTS.bend;
+  if (!LIQUID_GLASS_DISTORTION_SUPPORTED && key === "gamma") return LIQUID_GLASS_DEFAULTS.gamma;
   const { min, max } = LIQUID_GLASS_PARAM_BOUNDS[key];
   return Number.isFinite(value) ? clamp(value, min, max) : LIQUID_GLASS_DEFAULTS[key];
 };
@@ -79,6 +85,7 @@ export const readStoredLiquidGlassParams = (): LiquidGlassParams => ({
   blur: readStoredParam("blur"),
   sat: readStoredParam("sat"),
   bend: readStoredParam("bend"),
+  gamma: readStoredParam("gamma"),
 });
 // 光效（data-glass-light）与果冻效果（data-glass-jelly）是两个开关（不是数值参数），单独一组键。
 // 默认都开；本模块启动时读回，store 的初始状态也走这里，两边永远一致。
@@ -152,13 +159,14 @@ type Glass = {
   id: string;
   strength: number;
   zoom: number;
-  // 每元素覆盖：带 data-glass-blur / data-glass-strength / data-glass-sat / data-glass-bend（值是数字）的玻璃
-  // 固定用自身值，未设置（null）时回落到全局 global 参数。仅在元素同时带 data-glass 时存在
-  // （只有 [data-glass] 会走 makeGlass），所以这四个属性离开 data-glass 不生效。
+  // 每元素覆盖：带 data-glass-blur / data-glass-strength / data-glass-sat / data-glass-bend / data-glass-gamma
+  // （值是数字）的玻璃固定用自身值，未设置（null）时回落到全局 global 参数。仅在元素同时带 data-glass 时存在
+  // （只有 [data-glass] 会走 makeGlass），所以这些属性离开 data-glass 不生效。
   blurOverride: number | null;
   strengthOverride: number | null;
   satOverride: number | null;
   bendOverride: number | null;
+  gammaOverride: number | null;
   builtW: number; // 上次成图时的元素尺寸（尺寸变化节流的比对基准）
   builtH: number;
   builtKey: string; // 上次成图的指纹（尺寸 + 影响位移图的参数），相同则跳过重建
@@ -178,6 +186,7 @@ const buildDisplacementMap = (
   bh: number,
   radius: number,
   bezel: number,
+  gamma: number,
   strength: number,
   zoom: number,
 ) => {
@@ -202,7 +211,7 @@ const buildDisplacementMap = (
         cy = (y + 0.5) * stepY - hh;
       const d = roundedRectSDF(cx, cy, hw, hh, radius);
       let m = smoothStep(-bezel, 0, d); // 0=深处 → 1=边缘
-      m = m * m; // 平滑衰减，中心几乎无形变
+      m = Math.pow(m, gamma); // gamma 控制衰减曲线：越小折射带越宽，中心越容易受影响（默认 2 同旧版）
       const len = Math.hypot(cx, cy) || 1;
       // 边缘折射（幅度与元素大小无关）+ 整体放大（放大镜模式）
       const dx = -(cx / len) * m * k * bezel - cx * zoom;
@@ -226,7 +235,7 @@ const buildDisplacementMap = (
 };
 
 // 解析每元素参数覆盖：属性缺失或非有限数时返回 null（回落全局），否则钳到该参数量程。
-// 画不了位移图的平台上 strength / sat / bend 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
+// 画不了位移图的平台上 strength / sat / bend / gamma 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
 const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParams) => {
   if (raw === undefined) return null;
   const parsed = parseFloat(raw);
@@ -276,6 +285,7 @@ export const makeGlass = (el: HTMLElement) => {
     strengthOverride: parseGlassOverride(el.dataset.glassStrength, "strength"),
     satOverride: parseGlassOverride(el.dataset.glassSat, "sat"),
     bendOverride: parseGlassOverride(el.dataset.glassBend, "bend"),
+    gammaOverride: parseGlassOverride(el.dataset.glassGamma, "gamma"),
     builtW: 0,
     builtH: 0,
     builtKey: "",
@@ -291,6 +301,8 @@ export const makeGlass = (el: HTMLElement) => {
       const effGlobalStrength = this.strengthOverride ?? global.strength;
       // 最大弯曲距离：每元素覆盖 data-glass-bend 优先于全局，两者都进指纹（改设置要重建成图）。
       const effBend = this.bendOverride ?? global.bend;
+      // 衰减曲线指数：每元素覆盖 data-glass-gamma 优先于全局，同样参与位移图并进指纹。
+      const effGamma = this.gammaOverride ?? global.gamma;
       // 折射关着（强度或弯曲距离为 0）就不成图：即便有 pending 的节流重建也直接跳过，不浪费一次 O(w·h)。
       if (!(curFilter && this.strength > 0 && effGlobalStrength > 0 && effBend > 0)) return;
       if (curFilter && curFeImage && curFeDisp) {
@@ -310,6 +322,7 @@ export const makeGlass = (el: HTMLElement) => {
           Math.max(1, Math.round(h * k)),
           radius,
           bezel,
+          effGamma,
           this.strength,
           this.zoom * effGlobalStrength,
         );
@@ -324,7 +337,7 @@ export const makeGlass = (el: HTMLElement) => {
       }
       this.builtW = w;
       this.builtH = h;
-      this.builtKey = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}|${effBend}`;
+      this.builtKey = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}|${effBend}|${effGamma}`;
       this.builtAt = performance.now();
     },
     // 长宽变化的节流入口：窗口内只排一次尾补（窗口到期才成图），窗口已过则同步成图。
@@ -357,11 +370,12 @@ export const makeGlass = (el: HTMLElement) => {
         curFilter.setAttribute("y", "0");
       }
       // 画不了位移图的平台没有扭曲滤镜：只剩纯 blur 的 backdrop（顺带保证 blur/sat 拖滑杆即时生效）。
-      // 每元素覆盖（data-glass-blur / -sat / -strength / -bend）优先于全局，未设置时回落 global。
+      // 每元素覆盖（data-glass-blur / -sat / -strength / -bend / -gamma）优先于全局，未设置时回落 global。
       const blur = this.blurOverride ?? global.blur;
       const sat = this.satOverride ?? global.sat;
       const effGlobalStrength = this.strengthOverride ?? global.strength;
       const effBend = this.bendOverride ?? global.bend;
+      const effGamma = this.gammaOverride ?? global.gamma;
       // 性能/资源：强度或弯曲距离为 0 → 位移图恒为零，不挂折射滤镜（省掉 feDisplacementMap 与逐像素成图）；
       // 模糊为 0 → 不挂 blur。没有扭曲滤镜的平台 curFilter 为空，只按 blur 决定。
       const refractionOn = !!curFilter && this.strength > 0 && effGlobalStrength > 0 && effBend > 0;
@@ -374,7 +388,7 @@ export const makeGlass = (el: HTMLElement) => {
       // lib.dom 没有 webkitBackdropFilter，用 setProperty 写 -webkit 别名，保持原来的双写行为。
       el.style.setProperty("-webkit-backdrop-filter", backdrop);
       if (!curFilter || !curFeImage || !curFeDisp) return;
-      const key = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}|${effBend}`;
+      const key = `${w}x${h}|${this.strength}|${this.zoom}|${effGlobalStrength}|${effBend}|${effGamma}`;
       if (key === this.builtKey) return; // 尺寸与建图参数都没变，无事可做
       // 折射关着就不重建位移图（成图是 O(w·h)+PNG 编码，最贵的一步）；builtKey 不更新，
       // 重新打开时 key 与旧值不等，自然会补建。
@@ -410,6 +424,7 @@ export const applyLiquidGlassParams = (next: Partial<LiquidGlassParams>) => {
   if (next.blur !== undefined) global.blur = clampLiquidGlassParam("blur", next.blur);
   if (next.sat !== undefined) global.sat = clampLiquidGlassParam("sat", next.sat);
   if (next.bend !== undefined) global.bend = clampLiquidGlassParam("bend", next.bend);
+  if (next.gamma !== undefined) global.gamma = clampLiquidGlassParam("gamma", next.gamma);
   refreshAllGlasses();
 };
 
