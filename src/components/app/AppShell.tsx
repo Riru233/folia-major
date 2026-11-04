@@ -228,7 +228,7 @@ const AppShell: React.FC<AppShellProps> = ({
                         </motion.div>
                         <TitlebarDragZone active={usesCustomWindowChrome} />
                         <div
-                            className={`pointer-events-auto absolute top-0 z-20 h-full flex items-center ${
+                            className={`pointer-events-auto absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} z-20 h-full flex items-center ${
                                 hasFullscreenTitlebarButton ? 'right-[254px]' : 'right-[210px]'
                             }`}
                             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
@@ -259,7 +259,7 @@ const AppShell: React.FC<AppShellProps> = ({
                             右缘离锁 6px：锁在 right-[180px]/right-[224px]、宽 28px，这组宽 86px。
                             不放锁右边：那样热区要伸到离右边 84px，压住下面窗口的最小化/最大化按钮。 */}
                         <div
-                            className={`pointer-events-none absolute top-0 z-20 h-full flex items-center ${
+                            className={`pointer-events-none absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} z-20 h-full flex items-center ${
                                 hasFullscreenTitlebarButton ? 'right-[288px]' : 'right-[244px]'
                             }`}
                             // 只在点击穿透时扣出不可拖的区域：平时这组按钮不出现，标题栏这一段照常能拖窗口。

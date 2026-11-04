@@ -101,8 +101,13 @@ dist-runtime/
 # 旧做法手动放在 public/ 下的这份也不提交：插件生成的那份会盖住它，插件没生成时它不附授权文本
 public/nebbia-strokes.json
 
+<<<<<<< HEAD
 # 忽略补丁
 patch/
 
 # wb记忆不走代码库
 .workbuddy/
+=======
+# Generated system-WebView companions
+/build/apple-music-native/
+>>>>>>> 8abd1091c9a3a3df8670c2708bf1eb9f6dfe7329
