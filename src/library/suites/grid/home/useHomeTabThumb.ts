@@ -46,7 +46,7 @@ interface UseHomeTabThumbOptions<K extends string> {
 // re-targets (fast clicks, resize, drag release) stay velocity-continuous instead of restarting.
 const THUMB_SPRING = { stiffness: 320, damping: 32, mass: 0.9 } as const;
 const DRAG_SCALE = 2;
-// 拖动时放大到 DRAG_SCALE 用的弹簧，与原来 animate 的 scale transition 一致。
+// 按住时把基准盒子放大到 DRAG_SCALE 倍用的弹簧（现在放大落在 width / height 上，不再是 scale）。
 const DRAG_SCALE_SPRING = { stiffness: 500, damping: 30 } as const;
 const TAP_MOVE_THRESHOLD_PX = 4;
 // 拖动时的速度形变（squash & stretch）的全部参数在 ./thumbStretch.ts，这里只负责采样和写入。
@@ -76,21 +76,35 @@ export const useHomeTabThumb = <K extends string>({
     // Persistent springs: continuous motion stays in MotionValues, and because these follow-values
     // retarget in place, every non-drag reposition is interruptible and keeps its velocity. `jump`
     // is used only for a true teleport (first placement, live drag) where no animation is wanted.
+    // 摇杆的「基准盒子」：未放大、未形变时的位置与尺寸，所有手势与吸附几何（指针换算、边界钳制、
+    // 最近页签）都只认这三个值，跟放大/形变完全解耦。三个都是弹簧：切换页签、重新测量、松手吸附时
+    // 一起平滑滑到新盒子。宽度和高度现在直接写进 style（不再走 transform: scale），所以高度也必须
+    // 从轨道量出来（见 measure），不能再靠 top-0 bottom-0 白拿。
     const thumbLeft = useSpring(0, THUMB_SPRING);
     const thumbWidth = useSpring(0, THUMB_SPRING);
-    // 按住时的基础缩放（1 → DRAG_SCALE）与速度形变强度（0 → 1）分开存，相乘后得到 scaleX / scaleY：
+    const thumbHeight = useSpring(0, THUMB_SPRING);
+    // 按住时的基础缩放（1 → DRAG_SCALE）与速度形变强度（0 → 1）分开存，相乘后得到两个轴的比例：
     // 松手时基础缩放回到 1、形变同时收回 0，两段互不干扰。这些都是 MotionValue，拖动期间不触发 React 重渲染。
     const dragScale = useSpring(1, DRAG_SCALE_SPRING);
     // 速度算出来的目标形变（0 → 1）先写进 stretchTarget，再由 stretch 这个弹簧追上去：
     // 拖动时形变因此有迟滞和轻微过冲，像被手指拖着甩的对象，而不是硬贴着速度缩放。
     const stretchTarget = useMotionValue(0);
     const stretch = useSpring(stretchTarget, STRETCH_SPRING);
-    const thumbScaleX = useTransform([dragScale, stretch], ([scale, amount]: number[]) => (
-        scale * (1 + amount * STRETCH_X)
+    const widthRatio = useTransform([dragScale, stretch], ([grow, amount]: number[]) => (
+        grow * (1 + amount * STRETCH_X)
     ));
-    const thumbScaleY = useTransform([dragScale, stretch], ([scale, amount]: number[]) => (
-        scale * (1 - amount * STRETCH_Y)
+    const heightRatio = useTransform([dragScale, stretch], ([grow, amount]: number[]) => (
+        grow * (1 - amount * STRETCH_Y)
     ));
+    // 上面两个比例不进 transform，而是直接乘到宽高上——摇杆靠 width / height 长大和形变。
+    // 锚点是摇杆中心：宽了就把 left 往回补「多出来的宽度的一半」，高了一样把 top 补「多出来高度的一半」，
+    // 于是中心恒在 thumbLeft + 基准宽/2、基准高/2 上不动，只有两条边对称地往外/往里跑。
+    const thumbBoxWidth = useTransform([thumbWidth, widthRatio], ([base, ratio]: number[]) => base * ratio);
+    const thumbBoxHeight = useTransform([thumbHeight, heightRatio], ([base, ratio]: number[]) => base * ratio);
+    const thumbBoxLeft = useTransform([thumbLeft, thumbWidth, thumbBoxWidth], ([left, base, box]: number[]) => (
+        left - (box - base) / 2
+    ));
+    const thumbBoxTop = useTransform([thumbHeight, thumbBoxHeight], ([base, box]: number[]) => (base - box) / 2);
     const [dragging, setDragging] = useState(false);
 
     const layoutRef = useRef<{ left: number; width: number }[]>([]);
@@ -101,6 +115,8 @@ export const useHomeTabThumb = <K extends string>({
     // to land in the buttons' own layout space where thumbLeft/offsetLeft live.
     const trackRectLeftRef = useRef(0);
     const trackScaleRef = useRef(1);
+    // 轨道高度（摇杆基准盒子的高度）。各页签同高，所以只存一个数，不跟 left/width 一起进 layout 数组。
+    const trackHeightRef = useRef(0);
     // Live pointer gesture: stays null when idle. `moved` flips true past the tap threshold.
     const gestureRef = useRef<{ pointerId: number; startX: number; moved: boolean } | null>(null);
     // 形变的采样状态：上一次采样的位置/时间、平滑后的横向速度、停止计时器与正在跑的收回动画。
@@ -143,17 +159,21 @@ export const useHomeTabThumb = <K extends string>({
         if (!track) return;
         const buttons = Array.from(track.querySelectorAll<HTMLElement>('[data-home-tab]'));
         layoutRef.current = buttons.map(button => ({ left: button.offsetLeft, width: button.offsetWidth }));
+        // 摇杆高度 = 轨道高度：所有页签一样高，宽度按页签量、高度整条轨道一个值。
+        trackHeightRef.current = track.offsetHeight;
     }, [trackRef]);
 
     // Glide onto a tab's measured box; used by every non-drag reposition so motion stays smooth.
     const glideToIndex = useCallback((index: number) => {
         const entry = layoutRef.current[Math.min(index, layoutRef.current.length - 1)];
         if (!entry) return;
+        const height = trackHeightRef.current;
         if (!positionedRef.current) {
             // First placement has nothing to glide from: teleport so the thumb never slides in
             // from the wrong spot on mount.
             thumbLeft.jump(entry.left);
             thumbWidth.jump(entry.width);
+            thumbHeight.jump(height);
             positionedRef.current = true;
             return;
         }
@@ -161,7 +181,9 @@ export const useHomeTabThumb = <K extends string>({
         // which is what makes rapid clicks interruptible rather than restarting from scratch.
         thumbLeft.set(entry.left);
         thumbWidth.set(entry.width);
-    }, [thumbLeft, thumbWidth]);
+        // 高度通常在切页签/重测时并不变，set 同一个目标值不会产生运动，所以可以无条件写。
+        thumbHeight.set(height);
+    }, [thumbHeight, thumbLeft, thumbWidth]);
 
     // 摇杆吸附停稳后再延一拍才换页签；期间任何一次新的拖动/吸附都会让这次切换作废。
     const armActivationAfterSettle = useCallback((key: K) => {
@@ -262,7 +284,7 @@ export const useHomeTabThumb = <K extends string>({
         }
     }, []);
 
-    // 速度降下来或停住：用 0.3s 把目标形变拉回 0，scaleY 回升、scaleX 缩回拖动时的基础值。
+    // 速度降下来或停住：用 0.3s 把目标形变拉回 0，高度回升、宽度缩回基准尺寸。
     // 写目标值而不是直接写形变，是为了让上面的弹簧继续接管：收回去的过程也带一点回弹。
     // 走 tween 而不是弹簧，是因为这里要的正是一段固定时长、可预期的回弹。
     const settleStretch = useCallback(() => {
@@ -419,11 +441,16 @@ export const useHomeTabThumb = <K extends string>({
     }, [armActivationAfterSettle, dragScale, glideToIndex, nearestTabIndex, onTapActive, pointerTargetLeft, settleStretch, thumbWidth]);
 
     return {
+        // 基准盒子（未放大、未形变）：位置与宽度仍是吸附/几何的唯一来源，一般不需要直接渲染。
         thumbLeft,
         thumbWidth,
         thumbDragging: dragging,
-        thumbScaleX,
-        thumbScaleY,
+        // 真正写进 style 的盒子：宽高已含按住放大与速度形变，left / top 已按中心锚点补偿好。
+        // 直接用这四个量撑住摇杆的 left / top / width / height，不要再用 transform: scale。
+        thumbBoxLeft,
+        thumbBoxTop,
+        thumbBoxWidth,
+        thumbBoxHeight,
         thumbHandlers: {
             onPointerDown: handlePointerDown,
             onPointerMove: handlePointerMove,

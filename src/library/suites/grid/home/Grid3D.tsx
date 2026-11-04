@@ -36,11 +36,15 @@ import { cycleIndex, isOnlineHomeTab } from '../../../core/home/homeSources';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
 import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
 import { useGlass } from '@/shinoinject/useGlass';
+import { isChromiumRenderer } from '../../../../utils/platform';
 import { useHomeTabThumb } from './useHomeTabThumb';
 
 // src/library/suites/grid/home/Grid3D.tsx
 // Glassmorphic interactive desktop home view replacing the legacy 3D carousel.
 // Supports cover sliding with auto-fading header controls and delegates GridView opening upward.
+
+// 摇杆边缘的色散滤镜 id：滤镜定义在本组件的 <svg> 里，用 backdrop-filter: url(#…) 引用。
+const DISPERSION_FILTER_ID = 'grid3d-dispersion';
 
 interface Grid3DProps {
     /** 在线账户 controller（宿主创建，见 LibraryHomeSurfaceProps）：登录按钮与右下角的切换器读它，换平台、登录、退出都在登录窗口里。 */
@@ -320,7 +324,14 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
     // 白色摇杆：脱离 button 的独立元素，可拖动、拖动时放大、按所在页签激活；点击页签时自动吸附。
     const pillTrackRef = useRef<HTMLDivElement>(null);
-    const { thumbLeft, thumbWidth, thumbDragging, thumbScaleX, thumbScaleY, thumbHandlers } =
+    const {
+        thumbDragging,
+        thumbBoxLeft,
+        thumbBoxTop,
+        thumbBoxWidth,
+        thumbBoxHeight,
+        thumbHandlers,
+    } =
         useHomeTabThumb({
             trackRef: pillTrackRef,
             items: homeTabs.map(tab => ({
@@ -331,6 +342,16 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             onActivate: setHomeViewTab,
             onTapActive: focusActiveSlider,
         });
+
+    // 摇杆里的霜面层（渐进模糊 + 色散）在按住拖动时淡出、松手淡回：
+    // 拖动中摇杆会放大一倍并跟手，那圈贴着圆角的磨砂边留着一圈就显脏，按下时让它退掉更干净。
+    // 必须逐个元素写 opacity，不能套一层动 opacity 的父级——Chromium 在祖先做 opacity 动画时会把后代
+    // 整段 backdrop-filter 丢掉（见本文件开头那条注释）；元素自己的 opacity 不影响它自己的 backdrop-filter。
+    // 摇杆自身的流体玻璃（第一个 data-glass 子层）不在其中：那是拖动时唯一还在的质感。
+    const frostFadeStyle = {
+        opacity: thumbDragging ? 1 : 0,
+        transition: 'opacity 260ms ease-out',
+    } as const;
 
     // Tab / Shift+Tab 在可用页签之间循环，切完把焦点交回海报轨道，和点胶囊一样。
     // Tab / Shift+Tab includes contributed pages; opening one hands keyboard focus to its own navigation.
@@ -695,33 +716,147 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     ...headerFadeStyle,
                                 }}
                             />
+                            {/* 色散滤镜定义（不占位、不显示）：给下面的 #distort 层当 backdrop-filter 用。
+                                做法是把背景拆成 R / G / B 三个通道，红往左上、蓝往右下各错开一点、绿不动，再合回去：
+                                平的地方三个通道重合、颜色不变，只有边缘因为错位才泛出彩色毛边——就是棱镜边上那种色散。
+                                dx / dy 就是错开的像素量，想更明显就调大（超过 2px 文字边缘会开始发脏、像故障风）；
+                                想只在一个方向散就把另一项改成 0。 */}
+                            <svg
+                                aria-hidden="true"
+                                width="0"
+                                height="0"
+                                style={{ position: 'absolute', left: 0, top: 0 }}
+                            >
+                                <filter
+                                    id={DISPERSION_FILTER_ID}
+                                    // 区域放宽一圈，错位后的通道才不会被边界提前切掉、在边上留下缺色的硬边。
+                                    x="-20%"
+                                    y="-20%"
+                                    width="140%"
+                                    height="140%"
+                                    colorInterpolationFilters="sRGB"
+                                >
+                                    <feColorMatrix
+                                        in="SourceGraphic"
+                                        type="matrix"
+                                        values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                                        result="dispR"
+                                    />
+                                    <feColorMatrix
+                                        in="SourceGraphic"
+                                        type="matrix"
+                                        values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                                        result="dispG"
+                                    />
+                                    <feColorMatrix
+                                        in="SourceGraphic"
+                                        type="matrix"
+                                        values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+                                        result="dispB"
+                                    />
+                                    <feOffset in="dispR" dx="-2.4" dy="-2.4" result="dispRShift" />
+                                    <feOffset in="dispB" dx="2.4" dy="2.4" result="dispBShift" />
+                                    {/* 三通道必须用 screen 相加，不能用 feMerge：feMerge 是「盖上去」，
+                                        每个通道都是不透明的，后画的会把先画的整个盖掉，最后只剩蓝色一层。
+                                        screen 在两个不透明图层上就是逐通道相加（交叠项为 0），
+                                        于是三个通道重合的地方还原成原色，只有错开的那 1px 露出彩边。 */}
+                                    <feBlend in="dispRShift" in2="dispG" mode="screen" result="dispRG" />
+                                    <feBlend in="dispRG" in2="dispBShift" mode="screen" />
+                                </filter>
+                            </svg>
                             {/* 摇杆：按住切换器任意处即吸附到鼠标并跟手，松手按最近页签吸附。层级与玻璃层平级，
                                 pointer-events-none 让按下穿透到下面的页签轨道，不挡拖动与点击。 */}
                             <motion.div
-                                // data-glass-jelly
-                                data-glass
-                                data-glass-strength="200"
-                                data-glass-blur="0"
-                                data-glass-bend="15"
-                                data-glass-gamma="10"
                                 aria-hidden="true"
-                                className={`absolute top-0 bottom-0 z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(40,40,40,0.2)] ${isDaylight ? 'border-y border-black/[0.08]' : 'border-y border-white/[0.12]'} ${thumbDragging ? 'bg-transparent z-888 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]' : 'bg-[var(--text-accent)]/20 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]'}`}
+                                className={`absolute z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(40,40,40,0.2)] ${thumbDragging ? 'bg-transparent z-888 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]' : 'bg-[var(--text-accent)]/20 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]'}`}
                                 style={{
-                                    left: thumbLeft,
-                                    width: thumbWidth,
-                                    // 拖动时按速度压扁/拉长（useHomeTabThumb 里算好），松手后各自收回。
-                                    scaleX: thumbScaleX,
-                                    scaleY: thumbScaleY,
+                                    // 摇杆的放大与速度形变全部用 width / height 表达、锚点是中心（useHomeTabThumb
+                                    // 里补偿好的 left / top），不再用 transform: scale：这样圆角、边框、玻璃
+                                    // 位移图都按真实尺寸来，不会被非等比缩放拉歪。
+                                    left: thumbBoxLeft,
+                                    top: thumbBoxTop,
+                                    width: thumbBoxWidth,
+                                    height: thumbBoxHeight,
+                                    borderTop: isDaylight
+                                        ? "1px solid rgba(255,255,255,0.32)"
+                                        : "1px solid rgba(255,255,255,0.22)",
+                                    borderBottom: isDaylight
+                                        ? "1px solid rgba(255,255,255,0.32)"
+                                        : "1px solid rgba(255,255,255,0.22)",
                                     pointerEvents: 'none',
                                     // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的流体玻璃；底色与阴影的进出
                                     // 由上面的 transition 补间，松手复原时不再瞬间跳变。
-                                    boxShadow: thumbDragging ? '0 0 8px #000a' : '',
+                                    boxShadow: thumbDragging ? '0 0 20px #0006' : '',
                                 }}
                                 // 摇杆的 opacity 交给 framer-motion，不写 CSS transition，
                                 // 免得覆盖上面底色与阴影的补间；元素自己的 opacity 不影响 backdrop-filter。
                                 animate={{ opacity: isGridMapOpen ? 0 : 1 }}
                                 transition={{ opacity: { duration: 0.3, ease: 'easeInOut' } }}
-                            />
+                            >
+                                
+                                <div 
+                                    data-glass
+                                    data-glass-len="0.95"
+                                    data-glass-strength="10"
+                                    data-glass-blur="0"
+                                    data-glass-bend="80"
+                                    data-glass-gamma="15"
+                                    data-glass-sat="1.2"
+                                    className="rounded-full relative top-0 left-0"
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                    }}
+                                ></div>
+                                {/* 色散：最外那一圈玻璃边缘的彩色分离。滤镜见上面的 #grid3d-dispersion，
+                                    用 backdrop-filter 引进来——它只改「身后的画面」，所以这层自己不画任何东西。
+                                    WebKit 不支持 backdrop-filter 引 SVG 滤镜（见 utils/platform），那里直接不挂，
+                                    这一层就成了空 div，什么也不影响。 */}
+                                <div 
+                                    id={"distort"}
+                                    className="rounded-full relative top-[-100%] left-0"
+                                    style={{
+                                        // 只留边缘那一圈：色散放在边缘才像玻璃棱边，铺满整块会把页签文字也染出彩边。
+                                        // 透明度渐变照前面的渐进模糊那样由内向外收紧，外面那条实线就是这层的边界。
+                                        ...frostFadeStyle,
+                                        backdropFilter: isChromiumRenderer() ? `url(#${DISPERSION_FILTER_ID})` : undefined,
+                                        maskImage: "radial-gradient(ellipse at center, #0000 60%, #000 80%)",
+                                        width: "100%",
+                                        height: "100%",
+                                    }}
+                                ></div>
+                                {/* 渐进模糊滤镜 */}
+                                <div 
+                                    className="rounded-full relative top-[-200%] left-0"
+                                    style={{
+                                        ...frostFadeStyle,
+                                        backdropFilter: "blur(1px)",
+                                        maskImage: "radial-gradient(ellipse at center, #0000 calc(100% - 50px), #000 calc(100% - 25px))",
+                                        width: "100%",
+                                        height: "100%",
+                                    }}
+                                ></div>
+                                <div 
+                                    className="rounded-full relative top-[-300%] left-0"
+                                    style={{
+                                        ...frostFadeStyle,
+                                        backdropFilter: "blur(2px)",
+                                        maskImage: "radial-gradient(ellipse at center, #0000 calc(100% - 30px), #000 calc(100% - 15px))",
+                                        width: "100%",
+                                        height: "100%",
+                                    }}
+                                ></div>
+                                <div 
+                                    className="rounded-full relative top-[-400%] left-0"
+                                    style={{
+                                        ...frostFadeStyle,
+                                        backdropFilter: "blur(5px)",
+                                        maskImage: "radial-gradient(ellipse at center, #0000 calc(100% - 20px), #000 calc(100% - 10px))",
+                                        width: "100%",
+                                        height: "100%",
+                                    }}
+                                ></div>
+                            </motion.div>
                             <div
                                 ref={pillTrackRef}
                                 {...thumbHandlers}
