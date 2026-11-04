@@ -130,6 +130,9 @@ const O = {
   glassBend: option(GLASS, "liquidGlassBend", "options.liquidGlassBend", {
     available: () => GLASS_DISTORTION,
   }),
+  glassGamma: option(GLASS, "liquidGlassGamma", "options.liquidGlassGamma", {
+    available: () => GLASS_DISTORTION,
+  }),
   glassBlur: option(GLASS, "liquidGlassBlur", "options.liquidGlassBlur"),
   glassSat: option(GLASS, "liquidGlassSat", "options.liquidGlassSat", {
     available: () => GLASS_DISTORTION,
@@ -265,12 +268,14 @@ const GraphicsPage: React.FC = () => {
       blur: state.blur,
       sat: state.sat,
       bend: state.bend,
+      gamma: state.gamma,
       light: state.light,
       jelly: state.jelly,
       setStrength: state.handleSetLiquidGlassStrength,
       setBlur: state.handleSetLiquidGlassBlur,
       setSat: state.handleSetLiquidGlassSat,
       setBend: state.handleSetLiquidGlassBend,
+      setGamma: state.handleSetLiquidGlassGamma,
       setLight: state.handleSetLiquidGlassLight,
       setJelly: state.handleSetLiquidGlassJelly,
       setParams: state.handleSetLiquidGlassParams,
@@ -470,6 +475,22 @@ const GraphicsPage: React.FC = () => {
                 step={2}
                 onChange={glass.setBend}
                 format={(value) => `${Math.round(value)}px`}
+              />
+            </Row>
+          )}
+          {GLASS_DISTORTION && (
+            <Row
+              option={O.glassGamma}
+              disabled={GLASS_GPU_BLOCKED}
+              hint={t("options.liquidGlassGammaDesc")}
+            >
+              <Slider
+                value={glass.gamma}
+                min={LIQUID_GLASS_PARAM_BOUNDS.gamma.min}
+                max={LIQUID_GLASS_PARAM_BOUNDS.gamma.max}
+                step={0.1}
+                onChange={glass.setGamma}
+                format={(value) => value.toFixed(1)}
               />
             </Row>
           )}

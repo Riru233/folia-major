@@ -3303,6 +3303,8 @@ export default {
     "liquidGlassStrengthDesc": "How strongly the glass edges refract what sits behind them.",
     "liquidGlassBend": "Refraction Distance",
     "liquidGlassBendDesc": "How far, in pixels, the refracted edge reaches from the border toward the centre. The larger it is, the smaller the flat area in the middle becomes.",
+    "liquidGlassGamma": "Edge Falloff Curve",
+    "liquidGlassGammaDesc": "How the refraction strength falls off from the edge toward the centre. Lower values widen the refracted band and soften the transition; higher values concentrate it at the border.",
     "liquidGlassBlur": "Blur",
     "liquidGlassBlurDesc": "Blur amount of transparent elements.",
     "liquidGlassSat": "Saturation",

@@ -3303,6 +3303,8 @@ export default {
     "liquidGlassStrengthDesc": "玻璃边缘折射背后内容的强弱。",
     "liquidGlassBend": "折射面距离",
     "liquidGlassBendDesc": "边缘受折射的区域从边框向中心延伸多少像素。数值越大，中间不受折射的平面区越小。",
+    "liquidGlassGamma": "边缘衰减曲线",
+    "liquidGlassGammaDesc": "折射强度从边缘向中心衰减的曲线。数值越小，折射带越宽、过渡越平缓；数值越大，折射越集中在边框。",
     "liquidGlassBlur": "模糊",
     "liquidGlassBlurDesc": "透明元素模糊值。",
     "liquidGlassSat": "饱和度",
