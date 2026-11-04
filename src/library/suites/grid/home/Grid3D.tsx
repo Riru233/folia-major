@@ -700,10 +700,10 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             <motion.div
                                 data-glass-jelly
                                 data-glass
-                                data-glass-strength="6"
+                                data-glass-strength="200"
                                 data-glass-blur="0"
-                                data-glass-bend="10"
-                                data-glass-gamma="3"
+                                data-glass-bend="15"
+                                data-glass-gamma="10"
                                 aria-hidden="true"
                                 className={`absolute top-0 bottom-0 z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(40,40,40,0.2)] ${isDaylight ? 'border-y border-black/[0.08]' : 'border-y border-white/[0.12]'} ${thumbDragging ? 'bg-transparent z-888 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]' : 'bg-[var(--text-accent)]/20 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]'}`}
                                 style={{

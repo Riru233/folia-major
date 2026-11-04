@@ -6,8 +6,8 @@ let uid = 0;
 const SVGNS = "http://www.w3.org/2000/svg";
 // 默认参数：出厂值就是这里，设置面板（useLiquidGlassSettingsStore）的兜底也读它。
 // bend = 最大弯曲距离：边缘受折射的区域从边缘向中心延伸多少 px，平面（不受折射）区在中心，bend 越大平面越小。
-// gamma = 边缘衰减曲线指数：位移强度按 pow(边缘系数, gamma) 衰减，越小折射带越宽、边缘过渡越平缓，
-//         越大折射越集中在边框。默认 2 等同于旧版固定的 m * m（保留原观感）。
+// gamma = 边缘衰减曲线指数：边缘系数 E 在折射带内随到边框的距离线性从 1 降到 0，
+//         位移强度按 pow(E, gamma) 衰减，越小折射带越宽、边缘过渡越平缓，越大折射越集中在边框。
 // ★ 配置位置①：默认弯曲距离（px）。测试直接改下行的 bend 数字，或给元素加 data-glass-bend="80" 单元素覆盖。
 const global = { strength: 2.25, blur: 2, sat: 180, bend: 60, gamma: 2 };
 export type LiquidGlassParams = typeof global;
@@ -39,7 +39,8 @@ export const LIQUID_GLASS_PARAM_BOUNDS: Record<keyof LiquidGlassParams, { min: n
   sat: { min: 100, max: 300 },
   // ★ 配置位置③：设置面板滑杆量程（弯曲距离最终还会被容器半个短边封顶，见 rebuild）。
   bend: { min: 0, max: 300 },
-  // 与 liquidtool.html 的 Gamma 量程一致；小于 1 让折射带更宽，大于 1 更集中在边缘。
+  // 设置面板滑杆量程；小于 1 让折射带更宽，大于 1 更集中在边缘。
+  // 只限制设置面板（以及全局值），data-glass-gamma 单元素覆盖不受上限约束，可传更大的值。
   gamma: { min: 1, max: 3 },
 };
 // 预设：一组强度/模糊/弯曲距离（不碰饱和度），一键切到常见观感。通透流体与朦胧流体靠扭曲滤镜，
@@ -103,10 +104,6 @@ export const readStoredLiquidGlassEffects = (): LiquidGlassEffects => ({
   jelly: readStoredFlag(LIQUID_GLASS_EFFECT_KEYS.jelly),
 });
 Object.assign(global, readStoredLiquidGlassParams());
-const smoothStep = (a: number, b: number, t: number) => {
-  t = clamp((t - a) / (b - a), 0, 1);
-  return t * t * (3 - 2 * t);
-};
 const roundedRectSDF = (
   x: number,
   y: number,
@@ -210,8 +207,9 @@ const buildDisplacementMap = (
       const cx = (x + 0.5) * stepX - hw,
         cy = (y + 0.5) * stepY - hh;
       const d = roundedRectSDF(cx, cy, hw, hh, radius);
-      let m = smoothStep(-bezel, 0, d); // 0=深处 → 1=边缘
-      m = Math.pow(m, gamma); // gamma 控制衰减曲线：越小折射带越宽，中心越容易受影响（默认 2 同旧版）
+      // 线性 E（同 liquidtool.html）：边框处为 1，向中心到 -bezel 处线性降到 0，再按 gamma 取指数。
+      const e = clamp(1 + d / bezel, 0, 1);
+      const m = Math.pow(e, gamma); // gamma 越大折射越贴近边框，越小折射带越宽
       const len = Math.hypot(cx, cy) || 1;
       // 边缘折射（幅度与元素大小无关）+ 整体放大（放大镜模式）
       const dx = -(cx / len) * m * k * bezel - cx * zoom;
@@ -236,10 +234,17 @@ const buildDisplacementMap = (
 
 // 解析每元素参数覆盖：属性缺失或非有限数时返回 null（回落全局），否则钳到该参数量程。
 // 画不了位移图的平台上 strength / sat / bend / gamma 本就不可调，clampLiquidGlassParam 会把它钉回固定值，覆盖随之失效。
+// gamma 例外：设置面板只到 3，但 data-glass-gamma 用于单元素微调，不设上限（仅要求为正数），
+// 这样 10、80 这类值能真正产生区别。
 const parseGlassOverride = (raw: string | undefined, key: keyof LiquidGlassParams) => {
   if (raw === undefined) return null;
   const parsed = parseFloat(raw);
-  return Number.isFinite(parsed) ? clampLiquidGlassParam(key, parsed) : null;
+  if (!Number.isFinite(parsed)) return null;
+  if (key === "gamma") {
+    if (!LIQUID_GLASS_DISTORTION_SUPPORTED) return LIQUID_GLASS_DEFAULTS.gamma;
+    return parsed > 0 ? parsed : null;
+  }
+  return clampLiquidGlassParam(key, parsed);
 };
 
 // 给元素挂流体玻璃滤镜（幂等）：同一元素只建一次，滤镜同步进文档，
