@@ -444,8 +444,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                         onMouseDown={(event) => event.stopPropagation()}
                     >
                         <motion.div
-                            className={`overflow-hidden rounded-3xl border shadow-2xl ${panelBg}`}
-                            data-glass
+                            className={`overflow-hidden rounded-3xl shadow-2xl ${panelBg}`}
+                            data-glass data-glass-light
                             data-testid="command-palette-panel"
                             // 面板自己的 opacity 不参与 backdrop-filter 的取样根判定，淡入淡出放这一层
                             // 才能既保留过渡感、又不打断玻璃。
@@ -454,7 +454,16 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.18, ease: 'easeOut' }}
                             style={{
-                                borderColor: isDaylight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.12)',
+                                backgroundColor: isDaylight
+                                    ? "rgba(255,255,255,0.42)"
+                                    : "rgba(0, 0, 0, 0.42)",
+                                borderTop: isDaylight
+                                    ? "1px solid rgba(0,0,0,0.08)"
+                                    : "1px solid rgba(255,255,255,0.12)",
+                                borderBottom: isDaylight
+                                    ? "1px solid rgba(0,0,0,0.08)"
+                                    : "1px solid rgba(255,255,255,0.12)",
+                                outline: "1px solid rgba(40,40,40,0.2)",
                                 color: 'var(--text-primary)',
                             }}
                         >
