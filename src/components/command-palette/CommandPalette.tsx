@@ -426,6 +426,19 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                     onMouseDown={onClose}
                 >
                     <motion.div
+                        data-folia-keyboard-window="true"
+                        className={`fixed w-full h-full top-0`}
+                        // 遮罩淡入改用背景色而不是元素 opacity：任何祖先 opacity < 1 都会把
+                        // backdrop-filter 的取样根截断在该祖先内，玻璃面板在动画期间拿不到背景，
+                        // 要等遮罩 opacity 落到 1 才突然出现。
+                        initial={{ backdropFilter: "blur(0px)" }}
+                        animate={{backdropFilter: "blur(2px)"}}
+                        exit={{  backdropFilter: "blur(0px)" }}
+                        transition={{ duration: 0.16 }}
+                        onMouseDown={onClose}
+                    >
+                    </motion.div>
+                    <motion.div
                         className="w-full max-w-2xl"
                         // 外层不做 opacity：祖先 opacity < 1 会截断 backdrop-filter 的取样根，
                         // 玻璃面板在动画期间拿不到背景，要等动画结束才突然出现。淡入淡出交给面板自身。
@@ -444,8 +457,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                         onMouseDown={(event) => event.stopPropagation()}
                     >
                         <motion.div
-                            className={`overflow-hidden rounded-3xl border shadow-2xl ${panelBg}`}
-                            data-glass
+                            className={`overflow-hidden rounded-3xl shadow-2xl ${panelBg}`}
+                            data-glass data-glass-light
                             data-testid="command-palette-panel"
                             // 面板自己的 opacity 不参与 backdrop-filter 的取样根判定，淡入淡出放这一层
                             // 才能既保留过渡感、又不打断玻璃。
@@ -454,7 +467,16 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.18, ease: 'easeOut' }}
                             style={{
-                                borderColor: isDaylight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.12)',
+                                backgroundColor: isDaylight
+                                    ? "rgba(215,215,215,0.42)"
+                                    : "rgba(40, 40, 40, 0.42)",
+                                borderTop: isDaylight
+                                    ? "1px solid rgba(255,255,255,0.32)"
+                                    : "1px solid rgba(255,255,255,0.22)",
+                                borderBottom: isDaylight
+                                    ? "1px solid rgba(255,255,255,0.32)"
+                                    : "1px solid rgba(255,255,255,0.22)",
+                                outline: "1px solid rgba(40,40,40,0.2)",
                                 color: 'var(--text-primary)',
                             }}
                         >

@@ -284,13 +284,15 @@ export const ExploreScrollbar: React.FC<ExploreScrollbarProps> = ({ list: listRe
                     onKeyDown={onKeyDown}
                     data-glass
                     data-glass-light
-                    className={`pointer-events-auto absolute inset-0 touch-none rounded-full outline outline-1 outline-[rgba(40,40,40,0.2)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--text-primary)] ${isDaylight ? 'border-y border-black/[0.08] bg-white/35' : 'border-y border-white/[0.12] bg-black/35'}`}
+                    data-glass-jelly
+                    className={`pointer-events-auto absolute inset-0 touch-none rounded-full outline outline-1 outline-[rgba(40,40,40,0.2)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)] focus-visible:outline-2 transition-transform duration-300 ease-out active:scale-x-[1.8] active:scale-y-[0.99] active:translate-x-[-10px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--text-primary)] ${isDaylight ? 'border-y border-black/[0.08] bg-white/35' : 'border-y border-white/[0.12] bg-black/35'}`}
                 >
                     <div
                         ref={thumbRef}
                         aria-hidden
-                        className="absolute inset-x-0 top-0 z-10 mx-auto w-2 cursor-grab rounded-full active:cursor-grabbing"
+                        className="absolute inset-x-0 top-0 z-10 mx-auto w-2 cursor-grab rounded-full active:cursor-grabbing active:opacity-0"
                         style={{
+                            transition: 'all 0.3s ease',
                             height: 0,
                             backgroundColor: 'color-mix(in srgb, var(--text-primary) 45%, transparent)',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.25)',

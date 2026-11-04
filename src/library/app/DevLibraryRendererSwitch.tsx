@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listLibrarySuites } from '../registry';
 import { useActiveLibrarySuiteId } from './librarySuiteChoice';
 import { switchLibrarySuite } from './switchLibrarySuite';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/library/app/DevLibraryRendererSwitch.tsx
 // 开发验证浮层：在各套 UI suite 之间切换当前打开的集合，
@@ -26,18 +27,23 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
 }) => {
     const { t } = useTranslation();
     const activeSuite = useActiveLibrarySuiteId();
-
+    useGlass();
     return (
         <div
+            data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed ${PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border border-dashed border-current/30 px-2 py-1 font-mono text-[11px]`}
-            style={{
-                backgroundColor: 'color-mix(in srgb, var(--bg-color) 80%, transparent)',
-                color: 'var(--text-primary)',
-            }}
+            className={`fixed ${PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
+            
+                    style={{
+                        backgroundColor: "rgba(40, 40, 40, 0.42)",
+                        borderTop:  "1px solid rgba(255,255,255,0.22)",
+                        borderBottom: "1px solid rgba(255,255,255,0.22)",
+                        outline: "1px solid rgba(40,40,40,0.2)",
+                        color: '#fffa',
+                    }}
         >
-            <span className="px-1 opacity-50">{`DEV · ${t('libraryTui.rendererSwitch')}`}</span>
+            <span className="px-1 opacity-50">{`Dev · ${t('libraryTui.rendererSwitch')}`}</span>
             {listLibrarySuites().map(suite => (
                 <button
                     key={suite.id}

@@ -1001,11 +1001,11 @@ export const GridMap: React.FC<GridMapProps> = ({
                             ? "rgba(255,255,255,0.4)"
                             : "rgba(0,0,0,0.4)",
                         borderTop: isDaylight
-                            ? "1px solid rgba(0,0,0,0.08)"
-                            : "1px solid rgba(255,255,255,0.12)",
+                            ? "1px solid rgba(255,255,255,0.32)"
+                            : "1px solid rgba(255,255,255,0.22)",
                         borderBottom: isDaylight
-                            ? "1px solid rgba(0,0,0,0.08)"
-                            : "1px solid rgba(255,255,255,0.12)",
+                            ? "1px solid rgba(255,255,255,0.32)"
+                            : "1px solid rgba(255,255,255,0.22)",
                         outline: "1px solid rgba(40,40,40,0.2)",
                         boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                     }}
@@ -1031,11 +1031,11 @@ export const GridMap: React.FC<GridMapProps> = ({
                             ? "rgba(255,255,255,0.4)"
                             : "rgba(0,0,0,0.4)",
                         borderTop: isDaylight
-                            ? "1px solid rgba(0,0,0,0.08)"
-                            : "1px solid rgba(255,255,255,0.12)",
+                            ? "1px solid rgba(255,255,255,0.32)"
+                            : "1px solid rgba(255,255,255,0.22)",
                         borderBottom: isDaylight
-                            ? "1px solid rgba(0,0,0,0.08)"
-                            : "1px solid rgba(255,255,255,0.12)",
+                            ? "1px solid rgba(255,255,255,0.32)"
+                            : "1px solid rgba(255,255,255,0.22)",
                         outline: "1px solid rgba(40,40,40,0.2)",
                         boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                         color: 'var(--text-primary)',

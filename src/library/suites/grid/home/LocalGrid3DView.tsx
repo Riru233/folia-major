@@ -15,6 +15,7 @@ import { resolveLocalHomeActions } from '../../../core/home/localHomeModel';
 import { useLibraryHomeLocal, useLocalDirectoryTrees, useLocalHomeBatchConfig } from '../../../core/home/useLibraryHomeLocal';
 import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions';
 import { useLibraryHomeListRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/library/suites/grid/home/LocalGrid3DView.tsx
 // Desktop-only local music Grid3D overview that opens GridView instead of legacy carousel details.
@@ -179,17 +180,29 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
         },
         importPlaylistFile: async file => (await homeActions.importPlaylistFile(file)).ok,
     });
-
+    useGlass();
     if (isEmptyLibrary) {
         const scanning = Boolean(actionState.scan?.active);
         return (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-4 opacity-60">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                 <Music size={64} />
                 <p className="text-lg">{t('localMusic.noLocalMusic')}</p>
                 <button
+                    data-glass data-glass-light data-glass-jelly
+                    style={{
+                        background: "linear-gradient(to bottom,#9dafd722,#19309566,#48cbfa77)",
+                        borderTop: isDaylight
+                            ? "1px solid rgba(255,255,255,0.32)"
+                            : "1px solid rgba(255,255,255,0.22)",
+                        borderBottom: isDaylight
+                            ? "1px solid rgba(255,255,255,0.32)"
+                            : "1px solid rgba(255,255,255,0.22)",
+                        outline: "1px solid rgba(40,40,40,0.2)",
+                        color: '#fffa',
+                    }}
                     onClick={() => void homeActions.importFolder()}
                     disabled={importBusy}
-                    className="px-6 py-3 rounded-full transition-colors text-sm flex items-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 rounded-full transition-colors text-sm flex items-center gap-2 bg-white/10 hover:bg-white/20 disabled:bg-gray disabled:cursor-not-allowed"
                 >
                     {importBusy ? <Loader2 size={16} className="animate-spin" /> : <FolderOpen size={16} />}
                     {scanning ? t('options.scanning') : actionState.importingFolder ? t('localMusic.importing') : t('localMusic.importFolder')}

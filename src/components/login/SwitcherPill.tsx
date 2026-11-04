@@ -158,14 +158,14 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
         className="flex items-center rounded-[26px] bg-[var(--st-menu)] p-0.5 text-[color:var(--st-t1)] shadow-lg md:p-1.5"
         style={{
           backgroundColor: isDaylight
-            ? "rgba(255,255,255,0.42)"
-            : "rgba(0, 0, 0, 0.42)",
+            ? "rgba(215,215,215,0.42)"
+            : "rgba(40, 40, 40, 0.42)",
           borderTop: isDaylight
-            ? "1px solid rgba(0,0,0,0.08)"
-            : "1px solid rgba(255,255,255,0.12)",
+            ? "1px solid rgba(255,255,255,0.32)"
+            : "1px solid rgba(255,255,255,0.22)",
           borderBottom: isDaylight
-            ? "1px solid rgba(0,0,0,0.08)"
-            : "1px solid rgba(255,255,255,0.12)",
+            ? "1px solid rgba(255,255,255,0.32)"
+            : "1px solid rgba(255,255,255,0.22)",
           outline: "1px solid rgba(40,40,40,0.2)",
           boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
         }}
