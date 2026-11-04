@@ -20,13 +20,13 @@ export const CLICK_THROUGH_UNLOCK_HOTSPOT = {
 } as const;
 
 // Right-edge offsets (px from the window's right edge) of the unlock button in AppShell.
-export const CLICK_THROUGH_UNLOCK_BUTTON_RIGHT_OFFSET = 224;
-export const CLICK_THROUGH_UNLOCK_BUTTON_RIGHT_OFFSET_WITH_FULLSCREEN_BUTTON = 300;
+export const CLICK_THROUGH_UNLOCK_BUTTON_RIGHT_OFFSET = 210;
+export const CLICK_THROUGH_UNLOCK_BUTTON_RIGHT_OFFSET_WITH_FULLSCREEN_BUTTON = 258;
 export const CLICK_THROUGH_UNLOCK_BUTTON_WIDTH = 28;
 
 // Right-edge offsets and width of the media button group beside the unlock button in AppShell.
-export const CLICK_THROUGH_MEDIA_CONTROLS_RIGHT_OFFSET = 214;
-export const CLICK_THROUGH_MEDIA_CONTROLS_RIGHT_OFFSET_WITH_FULLSCREEN_BUTTON = 258;
+export const CLICK_THROUGH_MEDIA_CONTROLS_RIGHT_OFFSET = 244;
+export const CLICK_THROUGH_MEDIA_CONTROLS_RIGHT_OFFSET_WITH_FULLSCREEN_BUTTON = 288;
 export const CLICK_THROUGH_MEDIA_CONTROLS_WIDTH = 86;
 
 // Whether a viewport point lies inside the unlock hotspot of a window `viewportWidth` px wide.
