@@ -110,7 +110,7 @@ const density = (sh: ReturnType<typeof shape>, blur: number): Uint8ClampedArray 
         x.save(); x.rotate(a.ang);
         x.strokeStyle = 'rgba(255,255,255,0.55)'; x.lineWidth = a.w * R;
         x.beginPath(); x.moveTo(0, 0); x.lineTo(a.len * R, 0); x.stroke();
-        x.strokeStyle = 'rgba(255,255,255,0.42)'; x.lineWidth = a.w * R * 0.75;
+        x.strokeStyle = 'rgba(215,215,215,0.42)'; x.lineWidth = a.w * R * 0.75;
         for (const b of a.branches) for (const s of [-1, 1]) {
             if (b.side && b.side !== s) continue;
             x.beginPath(); x.moveTo(b.at * R, 0); x.lineTo((b.at + Math.cos(b.ang) * b.len) * R, s * Math.sin(b.ang) * b.len * R); x.stroke();
