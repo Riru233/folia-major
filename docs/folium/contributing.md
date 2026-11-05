@@ -13,7 +13,7 @@
 
 ## 1. 开始之前
 
-- **先确认接口边界。** 稳定扩展接口目前只有 UI 相关部分、歌词原文解析（`folium.lyrics.parse` 与 `getLyrics` 的返回形状），以及播放控制补全（音量、静音、循环模式、播放队列）、首页页面（`homeTabs`）、播放失败通知（`playback.failed`）与 main 入口的文件目录（`api.storage.paths`）；1.7 加了 main 入口向 client 推送消息（`api.rpc.send` / `folium.rpc.on`）、密钥类设置字段（`secret`）、登录状态（`folium.account`）、可以放进系统级全局快捷键的命令（`globalShortcut`）、整表替换播放队列（`folium.playback.replaceQueue`，权限 `playback.queue`），经 Omni 只读在线音源的 `folium.omni`（搜索、按 id 解析、歌词、专辑与歌手），以及音效（`folium.equalizer`：读宿主的均衡器、切换用户的音效、施加模组自己的曲线）；1.8 加了歌词画布渲染质量（`folium.visualizer`：读写「性能与动效」里 canvas / WebGL 歌词样式默认跟随的全局分辨率与抗锯齿）。其余部分，尤其是 `omni.providers` 等 Omni provider 接口和平台后端直通 `platform.raw`，仍属实验接口，能力尚不能与应用内置 Omni provider 对等。在 Folium v2 发布前，请绝对不要尝试制作超出当前实验接口能力的完整音源模组；这类实现必然遇到接口缺口，浪费开发者和维护者的时间。
+- **先确认接口边界。** 稳定扩展接口目前只有 UI 相关部分、歌词原文解析（`folium.lyrics.parse` 与 `getLyrics` 的返回形状），以及播放控制补全（音量、静音、循环模式、播放队列）、首页页面（`homeTabs`）、播放失败通知（`playback.failed`）与 main 入口的文件目录（`api.storage.paths`）；1.7 加了 main 入口向 client 推送消息（`api.rpc.send` / `folium.rpc.on`）、密钥类设置字段（`secret`）、登录状态（`folium.account`）、可以放进系统级全局快捷键的命令（`globalShortcut`）、整表替换播放队列（`folium.playback.replaceQueue`，权限 `playback.queue`），经 Omni 只读在线音源的 `folium.omni`（搜索、按 id 解析、歌词、专辑与歌手），以及音效（`folium.equalizer`：读宿主的均衡器、切换用户的音效、施加模组自己的曲线）；1.8 加了歌词画布渲染质量（`folium.visualizer`：读写「动画与性能」里 canvas / WebGL 歌词样式默认跟随的全局分辨率与抗锯齿）。其余部分，尤其是 `omni.providers` 等 Omni provider 接口和平台后端直通 `platform.raw`，仍属实验接口，能力尚不能与应用内置 Omni provider 对等。在 Folium v2 发布前，请绝对不要尝试制作超出当前实验接口能力的完整音源模组；这类实现必然遇到接口缺口，浪费开发者和维护者的时间。
 - **原始音频导出模组不得上架。** 任何尝试导出 provider 的原始音频流或解密之后的原始音频文件的模组，都有极高的平台法律风险。无论采用何种实现方式，此类模组都不会上架官方模组市场。
 - **模组是可信代码，不是沙箱。** `client` 入口运行在主界面的渲染进程里，`main` 入口运行在主进程里、拥有完整的 Node.js 权限。`mod.json` 里的权限是功能开关，不是安全边界。
 - **只在桌面版可用。** 网页版和 PWA 没有模组系统。
@@ -133,7 +133,7 @@ function mountHello(folium, container, ctx) {
 | 给内置模式加调参项 | `registries.tunings` | — | [FoliumTuningDef](api.md#foliumtuningdef)，`k3panel` |
 | 模组自己的设置 | `registries.settingsSections` | — | [FoliumSettingsSectionDef](api.md#foliumsettingssectiondef) |
 | 命令（模组面板与命令面板） | `registries.commands` | — | [FoliumCommandDef](api.md#foliumcommanddef) |
-| 系统级热键（Folia 在后台也能按，1.7） | 无参数的命令标 `globalShortcut: true`，用户在「设置 → 全局快捷键」里给它选键；不要在 main 入口用 Electron 的 `globalShortcut`。原生 Wayland 下暂不提供 | — | [FoliumCommandDef](api.md#foliumcommanddef)，规范里的「系统级全局快捷键」，`dev/folium/sample-account-console` |
+| 系统级热键（Folia 在后台也能按，1.7） | 无参数的命令标 `globalShortcut: true`，用户在「设置 → 全局快捷键」里按下组合键（一般两个以上修饰键，规则由宿主管）；不要在 main 入口用 Electron 的 `globalShortcut`。原生 Wayland 下暂不提供 | — | [FoliumCommandDef](api.md#foliumcommanddef)，规范里的「系统级全局快捷键」，`dev/folium/sample-account-console` |
 | 播放器面板里的标签页 | `registries.playerPanelTabs` | — | [FoliumPlayerPanelTabDef](api.md#foliumplayerpaneltabdef) |
 | 首页导航里的完整页面 | `registries.homeTabs`，用 `folium.ui.openHomeTab` 打开 | — | [FoliumHomeTabDef](api.md#foliumhometabdef)，[首页页面](home-tabs.md)，`dev/folium/sample-home-tab` |
 | 进度条旁的按钮、轨道上的标记 | `registries.progressButtons` / `progressLayers` | — | [FoliumProgressContext](api.md#foliumprogresscontext)，`sample-progress-bar` |
@@ -275,7 +275,7 @@ const mount = async (container, ctx) => {
 
 ### 系统级热键
 
-- 想让用户在 Folia 不在前台时也能按键触发模组的动作，就给一条没有参数的命令标上 `globalShortcut: true`（Folium 1.7）。它会出现在桌面版「设置 → 快捷操作 → 全局快捷键」的命令下拉框里，键由用户选，修饰键、保留键、重复键和被别的程序占用的提示都由宿主管。按下时 `run` 拿到空的 `values`，结果不显示，需要反馈就用 `folium.ui.toast`。
+- 想让用户在 Folia 不在前台时也能按键触发模组的动作，就给一条没有参数的命令标上 `globalShortcut: true`（Folium 1.7）。它会出现在桌面版「设置 → 快捷操作 → 全局快捷键」的命令下拉框里，键由用户按下组合键选定（一般两个以上修饰键），保留组合、重复组合和被别的程序占用的提示都由宿主管。按下时 `run` 拿到空的 `values`，结果不显示，需要反馈就用 `folium.ui.toast`。
 - 不要在 main 入口 `require('electron')` 拿 `globalShortcut` 自己注册，再用 `executeJavaScript` 把动作塞进窗口：那样会绕开宿主的规则，在 Windows 上独占别的程序的组合键，也可能先占走宿主自己的键，让宿主注册失败。`globalShortcut.unregisterAll()` 会把宿主的键一起清掉。
 - 媒体键（播放/暂停、上一首、下一首）由宿主经 Media Session 处理，不要抢。
 - 原生 Wayland 下暂不提供：那里的全局快捷键由桌面环境的快捷键门户接管，宿主交出去的是固定的播放命令整表。

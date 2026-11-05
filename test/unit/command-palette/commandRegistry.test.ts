@@ -160,6 +160,7 @@ const createContext = (overrides: CommandPaletteContextOverrides = {}): CommandP
             toggleLocalLibraryAutoScan: vi.fn(),
             canReportPlayback: vi.fn(() => false),
             togglePlaybackReport: vi.fn(),
+            toggleAutoAiLyricSegmentation: vi.fn(),
             voiceInputPauseSupported: false,
             modSystemEnabled: false,
             toggleVoiceInputPause: vi.fn(),
