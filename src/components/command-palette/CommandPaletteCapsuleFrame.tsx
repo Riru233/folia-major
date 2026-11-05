@@ -81,13 +81,22 @@ const CommandPaletteCapsuleFrame: React.FC<CommandPaletteCapsuleFrameProps> = ({
                 data-palette-frame="capsule"
                 className={`fixed inset-0 z-[150] flex items-end justify-center px-4`}
                 style={{ ...containerStyle, paddingBottom: frame.bottomGap }}
-                initial={{ background: `linear-gradient(to top,${withZeroAlpha(backdropColor)} 20%,transparent)` }}
-                animate={{ background: `linear-gradient(to top,${backdropColor} 40%,transparent)`, transition: { duration: 0.2 } }}
+                initial={{ background: `linear-gradient(to top,${withZeroAlpha(backdropColor)} 10%,transparent 20%)` }}
+                animate={{ background: `linear-gradient(to top,${backdropColor} 10%,transparent 20%)`, transition: { duration: 0.2 } }}
                 // The backdrop outlasts the panel folding back into the bar, or the fold plays out
                 // half transparent and reads as a plain fade.
-                exit={{ background: `linear-gradient(to top,${withZeroAlpha(backdropColor)} 20%,transparent)`, transition: { duration: 0.3, ease: [0.7, 0, 1, 1] } }}
+                exit={{ background: `linear-gradient(to top,${withZeroAlpha(backdropColor)} 10%,transparent 20%)`, transition: { duration: 0.3, ease: [0.7, 0, 1, 1] } }}
                 onMouseDown={onClose}
             >
+                <div className={"fixed top-0 left-0 w-full h-full backdrop-blur-[0.9px]"} style={{
+                    maskImage: "linear-gradient(to bottom, transparent 20%, #000 80%)"
+                }} />
+                <div className={"fixed top-0 left-0 w-full h-full backdrop-blur-[2px]"} style={{
+                    maskImage: "linear-gradient(to bottom, transparent 40%, #000 90%)"
+                }} />
+                <div className={"fixed top-0 left-0 w-full h-full backdrop-blur-[5px]"} style={{
+                    maskImage: "linear-gradient(to bottom, transparent 50%, #000 95%)"
+                }} />
                 <div className="w-full max-w-2xl" onMouseDown={(event) => event.stopPropagation()}>
                     {/* 只推 y，不淡 opacity：置顶那几颗按钮自己挂着玻璃，祖先 opacity < 1 会把它们的
                         取样根截在这一层，淡入那段就只剩平涂。淡入淡出交给按钮自己（PinnedCommandRow）。 */}
