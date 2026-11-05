@@ -284,7 +284,7 @@ export default {
       "localTitle": "Belum ada musik lokal yang diimpor",
       "localBody": "Pilih “{{action}}” di menu “⋯” pada strip info, lalu folder, album, dan artis Anda akan memenuhi dinding ini."
     },
-    "special": {"liked": "Lagu Disukai", "cloud": "Cloud Drive", "personal-fm": "FM Pribadi", "daily": "Harian", "all-songs": "Semua Lagu", "local-favorites": "Favorit", "navidrome-random": "Acak", "navidrome-favorites": "Berbintang"}
+    "special": {"liked": "Lagu Disukai", "cloud": "Cloud Drive", "personal-fm": "FM Pribadi", "fm-station": "Radio", "daily": "Harian", "all-songs": "Semua Lagu", "local-favorites": "Favorit", "navidrome-random": "Acak", "navidrome-favorites": "Berbintang"}
   },
   "libraryTui": {
     "back": "Kembali",
@@ -743,8 +743,10 @@ export default {
     "sleepTimerUnexpectedMinutes": "--off tidak menerima durasi",
     "sleepTimerDurationRequired": "Masukkan menit sebelum menyalakan timer",
     "fmModeTitle": "Mode FM Pribadi",
+    "fmModeTitleOf": "Mode {{name}}",
     "fmModeHint": "Pilih suasana untuk langsung masuk ke mode suasana",
     "fmModeFilterPlaceholder": "Ketik untuk menyaring mode dan suasana",
+    "recommendationPreferencesPlaceholder": "Atur preferensi di bawah",
     "sourceCurrent": "sumber saat ini",
     "sourceLocal": "perpustakaan lokal",
     "sourceNavidrome": "Navidrome",
@@ -791,6 +793,8 @@ export default {
       "queue": { "title": "Antrean", "description": "Cari antrean; gunakan @ untuk metadata dan -- untuk aksi massal" },
       "playback-volume": { "title": "Volume", "description": "Atur volume pemutaran" },
       "playback-fm-mode": { "title": "Mode FM Pribadi", "description": "Ganti mode atau suasana FM Pribadi" },
+      "playback-station-mode": { "title": "Mode radio", "description": "Ganti mode atau suasana radio yang sedang diputar" },
+      "playback-recommendation-preferences": { "title": "Preferensi", "description": "Atur preferensi di akun Anda yang memengaruhi rekomendasi" },
       "settings-help": { "title": "Buka Bantuan", "description": "Buka panduan dan pintasan" },
       "ponder-current-page": { "title": "Ponder halaman ini", "description": "Buka panduan interaktif untuk halaman saat ini" },
       "settings-options": { "title": "Buka Opsi", "description": "Buka pusat opsi" },
@@ -924,6 +928,7 @@ export default {
       "artist-reload": { "title": "Muat ulang artis", "description": "Muat ulang halaman artis dari sumbernya" },
       "artist-retry-albums": { "title": "Lanjutkan memuat album", "description": "Coba lagi halaman album yang gagal dan lanjutkan memuat sisanya" },
       "artist-edit-entity": { "title": "Edit info artis", "description": "Buka editor pustaka lokal untuk artis ini" },
+      "artist-open-all-songs": { "title": "Buka semua lagu", "description": "Tampilkan semua lagu artis ini dalam satu halaman, termasuk single di luar album" },
       "settings-interaction": { "title": "Pengaturan interaksi", "description": "Buka pengaturan papan ketik, pintasan, dan interaksi kisi" },
       "settings-global-shortcuts": { "title": "Pintasan global", "description": "Langsung ke pintasan tingkat sistem untuk pemutaran dan perintah mod" },
       "settings-custom-shortcut": { "title": "Pintasan khusus", "description": "Langsung ke pengaturan pintasan papan ketik khusus" },
@@ -1536,6 +1541,7 @@ export default {
   },
   "personalFmMode": {
     "openPicker": "Ganti mode FM Pribadi",
+    "openPickerOf": "Ganti mode {{name}}",
     "category": {
       "mode": "Mode",
       "mood": "Suasana Hati",
@@ -1597,7 +1603,27 @@ export default {
     "statusPending": "Mode FM Pribadi",
     "statusApplied": "FM Pribadi beralih ke",
     "statusEmpty": "Mode FM Pribadi ini tidak mengembalikan lagu",
-    "statusFailed": "Gagal mengganti mode FM Pribadi"
+    "statusFailed": "Gagal mengganti mode FM Pribadi",
+    "statusAppliedOf": "{{name}} beralih ke",
+    "statusEmptyOf": "Mode {{name}} ini tidak mengembalikan lagu",
+    "statusFailedOf": "Gagal mengganti mode {{name}}"
+  },
+  "recommendationPreferences": {
+    "open": "Preferensi",
+    "noteDefault": "Disimpan di akun Anda",
+    "less": "Kurangi rekomendasi",
+    "default": "Default",
+    "more": "Tambah rekomendasi",
+    "reset": "Atur ulang",
+    "save": "Simpan",
+    "saving": "Menyimpan…",
+    "loading": "Membaca preferensi…",
+    "loadFailed": "Preferensi tidak terbaca",
+    "retry": "Coba lagi",
+    "empty": "Tidak ada yang bisa diatur",
+    "saved": "Tersimpan",
+    "unconfirmed": "Terkirim, tetapi belum terkonfirmasi. Buka lagi nanti untuk memeriksa.",
+    "saveFailed": "Gagal menyimpan. Pilihan Anda masih ada, jadi bisa dicoba lagi."
   },
   "login": {
     "title": "Masuk",
@@ -1906,6 +1932,12 @@ export default {
     "qqNewSongs": "Lagu baru",
     "qqNewAlbums": "Album baru",
     "qqCharts": "Tangga lagu",
+    "qqFeedForYou": "Untukmu",
+    "qqRecommendedPlaylists": "Playlist rekomendasi",
+    "qqGuessYouLike": "Mungkin Kamu Suka",
+    "qqGuessYouLikeDescription": "Radio Mungkin Kamu Suka dari QQ Music; ganti mode dengar saat diputar",
+    "qqGuessYouLikeSuggested": "Saran",
+    "qqGuessYouLikeOther": "Lainnya",
     "personalFm": "FM Pribadi",
     "dailyRecommendations": "Rekomendasi Harian",
     "dailyRecommendationsDescription": "Campuran harian yang dibuat khusus untuk Anda",
@@ -1985,11 +2017,33 @@ export default {
   },
   "qishui": { "recentPlayed": "Terakhir diputar di Qishui", "recommended": "Rekomendasi untuk Anda" },
   "listeningRank": {
+    "qqWeek": "Peringkat dengar · Minggu ini",
+    "qqYear": "Peringkat dengar · Tahunan",
+    "qqWeekDescription": "Peringkat QQ Music minggu ini, dihitung dari hari Senin; minggu yang belum selesai dihitung sampai hari ini",
+    "qqYearDescription": "Peringkat tahunan QQ Music, dihitung selama tahun lalu (1 Januari sampai 31 Desember)",
     "week": "Peringkat dengar · Minggu terakhir",
     "all": "Peringkat dengar · Sepanjang waktu",
     "description": "Lagu yang diurutkan menurut riwayat dengar akun ini di platform",
     "listenCount_one": "Diputar {{count}} kali",
     "listenCount_other": "Diputar {{count}} kali"
+  },
+  "qqPreferences": {
+    "note": "Disimpan di akun; memengaruhi semua lagu yang direkomendasikan",
+    "familiarity": "Keakraban lagu",
+    "familiarityExplore": "Lebih banyak yang baru",
+    "keep": "Tetap seperti sekarang",
+    "familiarityFamiliar": "Lebih akrab",
+    "mood": "Suasana musik",
+    "moodSad": "Lebih sedih",
+    "moodHappy": "Lebih ceria",
+    "coverLive": "Cover & live",
+    "instrumental": "Instrumental",
+    "mandarin": "Mandarin",
+    "english": "Inggris",
+    "japanese": "Jepang",
+    "korean": "Korea",
+    "cantonese": "Kanton",
+    "ai": "Lagu AI"
   },
   "lyricProvider": {
     "qishui": "Qishui Music",
@@ -4919,6 +4973,8 @@ export default {
     "stageLocalInputDescription": "Stage dalam mode input tunggal lokal. Perangkat eksternal dapat mengirim lirik atau media, tetapi pemutaran dan tampilan dikendalikan oleh Folia itu sendiri."
   },
   "libraryBravaisArtist": {
+    "allSongsCountUnit_one": "lagu",
+    "allSongsCountUnit_other": "lagu",
     "playTopSongs": "Putar lagu populer",
     "songCount_one": "{{count}} lagu",
     "songCount_other": "{{count}} lagu",
@@ -4949,6 +5005,8 @@ export default {
     "topSongsAddedToQueue_one": "{{count}} lagu teratas ditambahkan ke antrean putar",
     "topSongsAddedToQueue_other": "{{count}} lagu teratas ditambahkan ke antrean putar",
     "noTopSongsToQueue": "Tidak ada lagu teratas yang bisa diantrekan",
+    "allSongs": "Semua lagu",
+    "allSongsCollectionName": "Semua lagu {{artistName}}",
   },
   "obs": {
     "connecting": "Menghubungkan ke Folia",

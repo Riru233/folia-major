@@ -284,7 +284,7 @@ export default {
       "localTitle": "Chưa nhập nhạc cục bộ",
       "localBody": "Chọn “{{action}}” dưới mục “⋯” trên thanh thông tin; thư mục, album và nghệ sĩ của bạn sẽ lấp đầy bức tường này."
     },
-    "special": {"liked": "Bài hát yêu thích", "cloud": "Ổ đám mây", "personal-fm": "FM cá nhân", "daily": "Gợi ý hàng ngày", "all-songs": "Tất cả bài hát", "local-favorites": "Yêu thích", "navidrome-random": "Ngẫu nhiên", "navidrome-favorites": "Đã gắn sao"}
+    "special": {"liked": "Bài hát yêu thích", "cloud": "Ổ đám mây", "personal-fm": "FM cá nhân", "fm-station": "Radio", "daily": "Gợi ý hàng ngày", "all-songs": "Tất cả bài hát", "local-favorites": "Yêu thích", "navidrome-random": "Ngẫu nhiên", "navidrome-favorites": "Đã gắn sao"}
   },
   "libraryTui": {
     "back": "Quay lại",
@@ -741,8 +741,10 @@ export default {
     "sleepTimerUnexpectedMinutes": "--off không nhận giá trị thời lượng",
     "sleepTimerDurationRequired": "Nhập số phút trước khi bật hẹn giờ",
     "fmModeTitle": "Chế độ FM cá nhân",
+    "fmModeTitleOf": "Chế độ {{name}}",
     "fmModeHint": "Chọn ngữ cảnh để chuyển thẳng sang chế độ ngữ cảnh",
     "fmModeFilterPlaceholder": "Nhập để lọc chế độ và ngữ cảnh",
+    "recommendationPreferencesPlaceholder": "Điều chỉnh sở thích bên dưới",
     "sourceCurrent": "nguồn hiện tại",
     "sourceLocal": "thư viện nội bộ",
     "sourceNavidrome": "Navidrome",
@@ -789,6 +791,8 @@ export default {
       "queue": { "title": "Hàng đợi", "description": "Tìm trong hàng đợi; dùng @ cho siêu dữ liệu và -- cho thao tác hàng loạt" },
       "playback-volume": { "title": "Âm lượng", "description": "Điều chỉnh âm lượng phát" },
       "playback-fm-mode": { "title": "Chế độ FM cá nhân", "description": "Chuyển chế độ hoặc ngữ cảnh FM cá nhân" },
+      "playback-station-mode": { "title": "Chế độ đài", "description": "Chuyển chế độ hoặc ngữ cảnh của đài đang phát" },
+      "playback-recommendation-preferences": { "title": "Sở thích", "description": "Điều chỉnh sở thích lưu trong tài khoản, ảnh hưởng đến những gì được gợi ý" },
       "settings-help": { "title": "Mở Trợ giúp", "description": "Mở trợ giúp và phím tắt" },
       "ponder-current-page": { "title": "Khám phá trang này", "description": "Mở hướng dẫn tương tác cho trang hiện tại" },
       "settings-options": { "title": "Mở Tùy chọn", "description": "Mở trung tâm tùy chọn" },
@@ -922,6 +926,7 @@ export default {
       "artist-reload": { "title": "Tải lại nghệ sĩ", "description": "Tải lại trang nghệ sĩ từ nguồn" },
       "artist-retry-albums": { "title": "Tiếp tục tải album", "description": "Thử lại trang album bị lỗi và tiếp tục tải phần còn lại" },
       "artist-edit-entity": { "title": "Sửa thông tin nghệ sĩ", "description": "Mở trình chỉnh sửa thư viện nội bộ cho nghệ sĩ này" },
+      "artist-open-all-songs": { "title": "Mở tất cả bài hát", "description": "Liệt kê mọi bài hát của nghệ sĩ này trên một trang, kể cả đĩa đơn không thuộc album nào" },
       "settings-interaction": { "title": "Cài đặt tương tác", "description": "Mở cài đặt bàn phím, phím tắt và tương tác lưới" },
       "settings-global-shortcuts": { "title": "Phím tắt toàn cục", "description": "Đi đến phần gán phím tắt điều khiển phát nhạc toàn hệ thống" },
       "settings-custom-shortcut": { "title": "Phím tắt tùy chỉnh", "description": "Đi đến phần gán phím tắt bàn phím tùy chỉnh" },
@@ -1529,6 +1534,7 @@ export default {
   },
   "personalFmMode": {
     "openPicker": "Chuyển chế độ FM cá nhân",
+    "openPickerOf": "Chuyển chế độ {{name}}",
     "category": {
       "mode": "Chế độ",
       "mood": "Tâm trạng",
@@ -1590,7 +1596,27 @@ export default {
     "statusPending": "Chế độ FM cá nhân",
     "statusApplied": "FM cá nhân đã chuyển sang",
     "statusEmpty": "Chế độ FM cá nhân này không có bài hát",
-    "statusFailed": "Chuyển chế độ FM cá nhân thất bại"
+    "statusFailed": "Chuyển chế độ FM cá nhân thất bại",
+    "statusAppliedOf": "{{name}} đã chuyển sang",
+    "statusEmptyOf": "Chế độ {{name}} này không có bài hát",
+    "statusFailedOf": "Chuyển chế độ {{name}} thất bại"
+  },
+  "recommendationPreferences": {
+    "open": "Sở thích",
+    "noteDefault": "Lưu trong tài khoản",
+    "less": "Đề xuất ít hơn",
+    "default": "Mặc định",
+    "more": "Đề xuất nhiều hơn",
+    "reset": "Đặt lại",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "loading": "Đang đọc sở thích…",
+    "loadFailed": "Không đọc được sở thích",
+    "retry": "Thử lại",
+    "empty": "Không có gì để điều chỉnh",
+    "saved": "Đã lưu",
+    "unconfirmed": "Đã gửi nhưng chưa được xác nhận. Hãy mở lại sau để kiểm tra.",
+    "saveFailed": "Không lưu được. Lựa chọn của bạn vẫn còn, có thể thử lại."
   },
   "login": {
     "title": "Đăng nhập",
@@ -1897,6 +1923,12 @@ export default {
     "qqNewSongs": "Bài hát mới",
     "qqNewAlbums": "Album mới",
     "qqCharts": "Bảng xếp hạng",
+    "qqFeedForYou": "Dành cho bạn",
+    "qqRecommendedPlaylists": "Playlist đề xuất",
+    "qqGuessYouLike": "Có thể bạn thích",
+    "qqGuessYouLikeDescription": "Đài Có thể bạn thích của QQ Music; đổi chế độ nghe khi đang phát",
+    "qqGuessYouLikeSuggested": "Gợi ý",
+    "qqGuessYouLikeOther": "Khác",
     "personalFm": "FM cá nhân",
     "dailyRecommendations": "Gợi ý hàng ngày",
     "dailyRecommendationsDescription": "Bản phối hàng ngày dành riêng cho bạn",
@@ -1976,11 +2008,33 @@ export default {
   },
   "qishui": { "recentPlayed": "Gần đây đã phát trên Qishui", "recommended": "Được đề xuất cho bạn" },
   "listeningRank": {
+    "qqWeek": "Bảng xếp hạng nghe · Tuần này",
+    "qqYear": "Bảng xếp hạng nghe · Năm",
+    "qqWeekDescription": "Bảng xếp hạng tuần này của QQ Music, tính từ thứ Hai; tuần chưa hết thì tính đến hôm nay",
+    "qqYearDescription": "Bảng xếp hạng năm của QQ Music, tính trọn năm ngoái (1/1 đến 31/12)",
     "week": "Xếp hạng nghe · Tuần qua",
     "all": "Xếp hạng nghe · Mọi lúc",
     "description": "Bài hát xếp theo lịch sử nghe của tài khoản này trên nền tảng",
     "listenCount_one": "Đã nghe {{count}} lần",
     "listenCount_other": "Đã nghe {{count}} lần"
+  },
+  "qqPreferences": {
+    "note": "Lưu trên tài khoản; ảnh hưởng đến mọi bài hát được đề xuất",
+    "familiarity": "Độ quen thuộc của bài hát",
+    "familiarityExplore": "Khám phá thêm",
+    "keep": "Giữ nguyên",
+    "familiarityFamiliar": "Quen thuộc hơn",
+    "mood": "Cảm xúc âm nhạc",
+    "moodSad": "Buồn hơn",
+    "moodHappy": "Vui hơn",
+    "coverLive": "Cover & live",
+    "instrumental": "Nhạc không lời",
+    "mandarin": "Tiếng Quan Thoại",
+    "english": "Tiếng Anh",
+    "japanese": "Tiếng Nhật",
+    "korean": "Tiếng Hàn",
+    "cantonese": "Tiếng Quảng Đông",
+    "ai": "Bài hát AI"
   },
   "lyricProvider": {
     "qishui": "Qishui Music",
@@ -4881,6 +4935,8 @@ export default {
     "stageLocalInputDescription": "Stage đang ở chế độ nhập nội bộ đơn luồng. Thiết bị ngoài có thể đẩy lời hoặc phương tiện, nhưng Folia sẽ tự kiểm soát phát và hiển thị.",
   },
   "libraryBravaisArtist": {
+    "allSongsCountUnit_one": "bài hát",
+    "allSongsCountUnit_other": "bài hát",
     "playTopSongs": "Phát bài nổi bật",
     "songCount_one": "{{count}} bài hát",
     "songCount_other": "{{count}} bài hát",
@@ -4911,6 +4967,8 @@ export default {
     "topSongsAddedToQueue_one": "Đã thêm {{count}} bài nổi bật vào hàng đợi phát",
     "topSongsAddedToQueue_other": "Đã thêm {{count}} bài nổi bật vào hàng đợi phát",
     "noTopSongsToQueue": "Không có bài hát nổi bật để thêm vào hàng đợi",
+    "allSongs": "Tất cả bài hát",
+    "allSongsCollectionName": "Tất cả bài hát của {{artistName}}",
   },
   "obs": {
     "connecting": "Đang kết nối Folia",

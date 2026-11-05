@@ -406,129 +406,58 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             />
         );
     }
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    data-folia-keyboard-window="true"
-                    className={`fixed inset-0 z-[150] flex items-start justify-center px-4 pt-[18vh]`}
-                    // 遮罩淡入改用背景色而不是元素 opacity：任何祖先 opacity < 1 都会把
-                    // backdrop-filter 的取样根截断在该祖先内，玻璃面板在动画期间拿不到背景，
-                    // 要等遮罩 opacity 落到 1 才突然出现。
-                    initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
-                    animate={{
-                        backgroundColor: hasClearBackdrop
-                            ? ('rgba(0,0,0,0.16)')
-                            : ('rgba(0,0,0,0.48)'),
-                    }}
-                    exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
-                    transition={{ duration: 0.16 }}
-                    onMouseDown={onClose}
+
+    const headerRow = (
+        <div className={`flex items-center gap-3 px-4 py-3 ${capsuleFrame ? 'border-t' : 'border-b'}`} style={{ borderColor: isDaylight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.10)' }}>
+            {isExecuting ? (
+                <Loader2 size={18} className="animate-spin opacity-60 text-zinc-400" />
+            ) : (
+                <Search size={18} className="opacity-45" />
+            )}
+            {activeCommand && (
+                <div
+                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all ${isDaylight
+                        ? 'bg-zinc-100 border-zinc-200 text-zinc-800'
+                        : 'bg-zinc-800/80 border-zinc-700 text-zinc-200'
+                        }`}
+                    style={{ borderColor: isDaylight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)' }}
                 >
-                    <motion.div
-                        data-folia-keyboard-window="true"
-                        className={`fixed w-full h-full top-0`}
-                        // 遮罩淡入改用背景色而不是元素 opacity：任何祖先 opacity < 1 都会把
-                        // backdrop-filter 的取样根截断在该祖先内，玻璃面板在动画期间拿不到背景，
-                        // 要等遮罩 opacity 落到 1 才突然出现。
-                        initial={{ backdropFilter: "blur(0px)" }}
-                        animate={{backdropFilter: "blur(2px)"}}
-                        exit={{  backdropFilter: "blur(0px)" }}
-                        transition={{ duration: 0.16 }}
-                        onMouseDown={onClose}
-                    >
-                    </motion.div>
-                    <motion.div
-                        className="w-full max-w-2xl"
-                        // 外层不做 opacity：祖先 opacity < 1 会截断 backdrop-filter 的取样根，
-                        // 玻璃面板在动画期间拿不到背景，要等动画结束才突然出现。淡入淡出交给面板自身。
-                        initial={{ scale: 1.05 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 1.05 }}
-                        transition={{ duration: 0.18, ease: 'easeOut' }}
-                        onAnimationComplete={() => {
-                            // iOS Safari blocks overflow scrolling in sibling containers
-                            // when an input is focused inside a fixed + backdrop-blur panel.
-                            // Blur proactively so the first touch-scroll works immediately.
-                            if ('ontouchstart' in window) {
-                                inputRef.current?.blur();
-                            }
+                    <span>{activeCommand.activeTitle?.(context) || getCommandTitle(activeCommand, t)}</span>
+                    <button
+                        type="button"
+                        disabled={isExecuting}
+                        onClick={() => {
+                            onActiveCommandChange(null);
+                            onQueryChange('');
+                            onActiveIndexChange(0);
                         }}
-                        onMouseDown={(event) => event.stopPropagation()}
+                        className="hover:opacity-100 opacity-60 transition-opacity disabled:opacity-30 disabled:pointer-events-none"
+                        aria-label={t('ui.clearActiveCommand')}
                     >
-                        <motion.div
-                            className={`overflow-hidden rounded-3xl shadow-2xl ${panelBg}`}
-                            data-glass data-glass-light
-                            data-testid="command-palette-panel"
-                            // 面板自己的 opacity 不参与 backdrop-filter 的取样根判定，淡入淡出放这一层
-                            // 才能既保留过渡感、又不打断玻璃。
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.18, ease: 'easeOut' }}
-                            style={{
-                                backgroundColor: isDaylight
-                                    ? "rgba(215,215,215,0.42)"
-                                    : "rgba(40, 40, 40, 0.42)",
-                                borderTop: isDaylight
-                                    ? "1px solid rgba(255,255,255,0.32)"
-                                    : "1px solid rgba(255,255,255,0.22)",
-                                borderBottom: isDaylight
-                                    ? "1px solid rgba(255,255,255,0.32)"
-                                    : "1px solid rgba(255,255,255,0.22)",
-                                outline: "1px solid rgba(40,40,40,0.2)",
-                                color: 'var(--text-primary)',
-                            }}
-                        >
-                        <div  className="flex items-center gap-3 border-b px-4 py-3" style={{ borderColor: isDaylight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.10)' }}>
-                            {isExecuting ? (
-                                <Loader2 size={18} className="animate-spin opacity-60 text-zinc-400" />
-                            ) : (
-                                <Search size={18} className="opacity-45" />
-                            )}
-                            {activeCommand && (
-                                <div
-                                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all ${isDaylight
-                                        ? 'bg-zinc-100 border-zinc-200 text-zinc-800'
-                                        : 'bg-zinc-800/80 border-zinc-700 text-zinc-200'
-                                        }`}
-                                    style={{ borderColor: isDaylight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)' }}
-                                >
-                                    <span>{getCommandTitle(activeCommand, t)}</span>
-                                    <button
-                                        type="button"
-                                        disabled={isExecuting}
-                                        onClick={() => {
-                                            onActiveCommandChange(null);
-                                            onQueryChange('');
-                                            onActiveIndexChange(0);
-                                        }}
-                                        className="hover:opacity-100 opacity-60 transition-opacity disabled:opacity-30 disabled:pointer-events-none"
-                                        aria-label={t('ui.clearActiveCommand')}
-                                    >
-                                        <X size={12} />
-                                    </button>
-                                </div>
-                            )}
-                            {renderQueryInput('min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:opacity-45 disabled:opacity-50')}
-                            <button
-                                type="button"
-                                onClick={() => setIsShowingAllCommands(current => !current)}
-                                className={`rounded-full p-2 transition-colors ${isShowingAllCommands ? itemActiveBg : (isDaylight ? 'hover:bg-black/10' : 'hover:bg-white/10')}`}
-                                aria-label={t('commandPalette.showAllCommands') || 'Show all commands'}
-                                title={t('commandPalette.showAllCommands') || 'Show all commands'}
-                            >
-                                <CircleHelp size={17} />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className={`rounded-full p-2 transition-colors ${isDaylight ? 'hover:bg-black/10' : 'hover:bg-white/10'}`}
-                                aria-label={t('commandPalette.close') || 'Close command palette'}
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
+                        <X size={12} />
+                    </button>
+                </div>
+            )}
+            {renderQueryInput('min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:opacity-45 disabled:opacity-50')}
+            <button
+                type="button"
+                onClick={() => setIsShowingAllCommands(current => !current)}
+                className={`rounded-full p-2 transition-colors ${isShowingAllCommands ? itemActiveBg : (isDaylight ? 'hover:bg-black/10' : 'hover:bg-white/10')}`}
+                aria-label={t('commandPalette.showAllCommands') || 'Show all commands'}
+                title={t('commandPalette.showAllCommands') || 'Show all commands'}
+            >
+                <CircleHelp size={17} />
+            </button>
+            <button
+                type="button"
+                onClick={onClose}
+                className={`rounded-full p-2 transition-colors ${isDaylight ? 'hover:bg-black/10' : 'hover:bg-white/10'}`}
+                aria-label={t('commandPalette.close') || 'Close command palette'}
+            >
+                <X size={16} />
+            </button>
+        </div>
+    );
 
                         {/* Removed activePreview top panel, it is now shown inline in the list items description */}
 

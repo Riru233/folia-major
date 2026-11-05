@@ -284,7 +284,7 @@ export default {
       "localTitle": "还没有导入本地音乐",
       "localBody": "在信息条的「⋯」里选「{{action}}」，文件夹、专辑和歌手会铺满这面墙。"
     },
-    "special": {"liked": "我喜欢的音乐", "cloud": "云盘", "personal-fm": "私人FM", "daily": "每日推荐", "all-songs": "全部歌曲", "local-favorites": "我喜欢", "navidrome-random": "随机音乐", "navidrome-favorites": "收藏"}
+    "special": {"liked": "我喜欢的音乐", "cloud": "云盘", "personal-fm": "私人FM", "fm-station": "电台", "daily": "每日推荐", "all-songs": "全部歌曲", "local-favorites": "我喜欢", "navidrome-random": "随机音乐", "navidrome-favorites": "收藏"}
   },
   "libraryTui": {
     "back": "返回",
@@ -743,8 +743,10 @@ export default {
     "sleepTimerUnexpectedMinutes": "--off 不能指定时长",
     "sleepTimerDurationRequired": "请先输入分钟数再开启定时器",
     "fmModeTitle": "私人 FM 模式",
+    "fmModeTitleOf": "{{name}}模式",
     "fmModeHint": "点下方场景即可直接切到场景模式",
     "fmModeFilterPlaceholder": "输入以筛选模式和场景",
+    "recommendationPreferencesPlaceholder": "在下方调整偏好",
     "sourceCurrent": "当前来源",
     "sourceLocal": "本地音乐",
     "sourceNavidrome": "Navidrome",
@@ -791,6 +793,8 @@ export default {
       "queue": { "title": "队列", "description": "搜索队列；使用 @ 筛选元数据，使用 -- 批量操作" },
       "playback-volume": { "title": "音量条", "description": "调整播放音量" },
       "playback-fm-mode": { "title": "私人 FM 模式", "description": "切换私人 FM 的模式或场景" },
+      "playback-station-mode": { "title": "电台模式", "description": "切换正在播的电台的模式或场景" },
+      "playback-recommendation-preferences": { "title": "偏好设置", "description": "调整保存在账号上、影响推荐的偏好" },
       "settings-help": { "title": "打开帮助", "description": "打开帮助和快捷键" },
       "ponder-current-page": { "title": "思索当前页面", "description": "打开当前页面的交互式介绍" },
       "settings-options": { "title": "打开选项", "description": "打开设置中心" },
@@ -924,6 +928,7 @@ export default {
       "artist-reload": { "title": "重新加载歌手", "description": "从来源重新加载这个歌手页" },
       "artist-retry-albums": { "title": "继续加载专辑", "description": "重试失败的那一页专辑，并继续加载其余的" },
       "artist-edit-entity": { "title": "编辑歌手信息", "description": "打开本地曲库里这位歌手的编辑窗口" },
+      "artist-open-all-songs": { "title": "打开全部歌曲", "description": "在一页里列出这位歌手的全部歌曲，包括不在专辑里的单曲" },
       "settings-interaction": { "title": "交互设置", "description": "打开键盘、快捷键与网格交互设置" },
       "settings-global-shortcuts": { "title": "全局快捷键", "description": "直接跳到系统级的快捷键：播放控制与模组命令" },
       "settings-custom-shortcut": { "title": "自定义快捷键", "description": "直接跳到自定义键盘快捷键的绑定处" },
@@ -1534,6 +1539,7 @@ export default {
   },
   "personalFmMode": {
     "openPicker": "切换私人 FM 模式",
+    "openPickerOf": "切换{{name}}模式",
     "category": {
       "mode": "模式",
       "mood": "情绪",
@@ -1595,7 +1601,27 @@ export default {
     "statusPending": "私人 FM 模式",
     "statusApplied": "私人 FM 已切换到",
     "statusEmpty": "该私人 FM 模式没有返回歌曲",
-    "statusFailed": "切换私人 FM 模式失败"
+    "statusFailed": "切换私人 FM 模式失败",
+    "statusAppliedOf": "{{name}}已切换到",
+    "statusEmptyOf": "该{{name}}模式没有返回歌曲",
+    "statusFailedOf": "切换{{name}}模式失败"
+  },
+  "recommendationPreferences": {
+    "open": "偏好设置",
+    "noteDefault": "保存在账号上",
+    "less": "减少推荐",
+    "default": "默认",
+    "more": "增加推荐",
+    "reset": "重置",
+    "save": "保存",
+    "saving": "正在保存…",
+    "loading": "正在读取偏好…",
+    "loadFailed": "偏好没读到",
+    "retry": "重试",
+    "empty": "没有可以调整的偏好",
+    "saved": "已保存",
+    "unconfirmed": "已发出，还没确认生效，稍后再打开看看",
+    "saveFailed": "保存失败，选择还在，可以再试一次"
   },
   "login": {
     "title": "登录",
@@ -1904,6 +1930,12 @@ export default {
     "qqNewSongs": "新歌速递",
     "qqNewAlbums": "新碟上架",
     "qqCharts": "排行榜",
+    "qqFeedForYou": "为你推荐",
+    "qqRecommendedPlaylists": "推荐歌单",
+    "qqGuessYouLike": "猜你喜欢",
+    "qqGuessYouLikeDescription": "QQ 音乐的猜你喜欢电台，播放时可以换听歌模式",
+    "qqGuessYouLikeSuggested": "为你建议",
+    "qqGuessYouLikeOther": "其他",
     "personalFm": "私人FM",
     "dailyRecommendations": "每日推荐",
     "dailyRecommendationsDescription": "为你定制的每日歌曲",
@@ -1983,11 +2015,33 @@ export default {
   },
   "qishui": { "recentPlayed": "汽水最近播放", "recommended": "为你推荐" },
   "listeningRank": {
+    "qqWeek": "听歌排行 · 本周",
+    "qqYear": "听歌排行 · 年榜",
+    "qqWeekDescription": "QQ 音乐的本周排行，从周一算起，这一周没过完就只算到今天",
+    "qqYearDescription": "QQ 音乐的年榜，统计去年一整年（1 月 1 日到 12 月 31 日）",
     "week": "听歌排行 · 最近一周",
     "all": "听歌排行 · 所有时间",
     "description": "按这个账号在平台上的收听记录排出的歌",
     "listenCount_one": "听过 {{count}} 次",
     "listenCount_other": "听过 {{count}} 次"
+  },
+  "qqPreferences": {
+    "note": "保存在账号上，会影响所有推荐的歌",
+    "familiarity": "歌曲熟悉度",
+    "familiarityExplore": "更探索",
+    "keep": "保持现状",
+    "familiarityFamiliar": "更熟悉",
+    "mood": "音乐情绪",
+    "moodSad": "更伤感",
+    "moodHappy": "更欢快",
+    "coverLive": "翻唱与现场",
+    "instrumental": "纯音乐",
+    "mandarin": "国语",
+    "english": "英语",
+    "japanese": "日语",
+    "korean": "韩语",
+    "cantonese": "粤语",
+    "ai": "AI 歌曲"
   },
   "lyricProvider": {
     "qishui": "汽水音乐",
@@ -4917,6 +4971,8 @@ export default {
     "stageLocalInputDescription": "Stage 现在是本地单项输入模式。外部可以推送一份完整歌词对象或一段媒体，播放与展示仍由 Folia 自己控制。",
   },
   "libraryBravaisArtist": {
+    "allSongsCountUnit_one": "首",
+    "allSongsCountUnit_other": "首",
     "playTopSongs": "播放热门",
     "songCount_one": "{{count}} 首歌",
     "songCount_other": "{{count}} 首歌",
@@ -4947,6 +5003,8 @@ export default {
     "topSongsAddedToQueue_one": "已加入 {{count}} 首热门歌曲到播放队列",
     "topSongsAddedToQueue_other": "已加入 {{count}} 首热门歌曲到播放队列",
     "noTopSongsToQueue": "没有可加入队列的热门歌曲",
+    "allSongs": "全部歌曲",
+    "allSongsCollectionName": "{{artistName}} 的全部歌曲",
   },
   "obs": {
     "connecting": "正在连接 Folia",

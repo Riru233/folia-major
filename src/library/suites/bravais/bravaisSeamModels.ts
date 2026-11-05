@@ -51,6 +51,8 @@ export type BravaisSeamDaily = {
     };
     /** 正在看风格推荐：日期步进换成选中的风格，点它翻出风格选择。 */
     style?: { label: string; title: string; onOpen: () => void };
+    /** 「偏好设置」（平台声明了每日推荐的偏好入口才给）：放在「默认推荐 / 风格推荐」的位置，打开命令面板里的偏好面板。 */
+    preferences?: { label: string; onOpen: () => void };
 };
 
 /**
@@ -113,6 +115,14 @@ export type BravaisSeamForm = {
     onCancel: () => void;
 };
 
+/** 元数据行上的「重新拉取」。 */
+export type BravaisSeamReload = {
+    label: string;
+    disabled: boolean;
+    pending: boolean;
+    run: () => void;
+};
+
 /** 集合层在缝里的那一部分（首页没有）。 */
 export type BravaisSeamCollection = {
     /**
@@ -125,6 +135,11 @@ export type BravaisSeamCollection = {
     status?: BravaisSeamStatus;
     notice?: BravaisSeamNotice | null;
     daily?: BravaisSeamDaily;
+    /**
+     * 重新拉取：不进「⋯ 更多」，画成元数据行（「N 首」）本身的按钮，计数后面一个刷新图标；读首页时转圈、禁用。
+     * 只有在线集合有（core 的 reload 能力 ∩ suite 声明）。
+     */
+    reload?: BravaisSeamReload;
     menu: readonly BravaisSeamMenuItem[];
     moreLabel: string;
     /** 打开列表面板（只有支持面板的层有）。 */
@@ -192,6 +207,19 @@ export type BravaisLayerEntries = {
 };
 
 /** B8 歌手页在缝里的信息块（设计稿 §10.4「缝承载 ArtistGridView 的信息」）：都是已翻译的展示文字。 */
+/**
+ * 歌手的「全部歌曲」那一层（#918，在线集合 artist_songs）：完整等级照样画成歌手页那种倾斜海报，做一点变体——
+ * 大字是歌手名、旁边的小词是「全部歌曲」，热门三首换成一个超大的歌曲数（BravaisSeamPoster）。
+ */
+export type BravaisSeamArtistSongs = {
+    /** 歌手名（海报大字）。 */
+    name: string;
+    /** 歌手头像（定妆照）。 */
+    coverUrl?: string;
+    /** 歌手的歌曲总数（平台给的；补页期间就是终点）。 */
+    trackCount: number;
+};
+
 export type BravaisSeamArtist = {
     coverUrl?: string;
     /** 别名（「又名 …」已拼好）；没有就不显示。 */

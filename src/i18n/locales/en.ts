@@ -284,7 +284,7 @@ export default {
       "localTitle": "No local music imported yet",
       "localBody": "Choose “{{action}}” under “⋯” in the info strip, and your folders, albums and artists will fill this wall."
     },
-    "special": {"liked": "Liked Songs", "cloud": "Cloud Drive", "personal-fm": "Personal FM", "daily": "Daily Picks", "all-songs": "All Songs", "local-favorites": "Favorites", "navidrome-random": "Random", "navidrome-favorites": "Starred"}
+    "special": {"liked": "Liked Songs", "cloud": "Cloud Drive", "personal-fm": "Personal FM", "fm-station": "Radio", "daily": "Daily Picks", "all-songs": "All Songs", "local-favorites": "Favorites", "navidrome-random": "Random", "navidrome-favorites": "Starred"}
   },
   "libraryTui": {
     "back": "Back",
@@ -743,8 +743,10 @@ export default {
     "sleepTimerUnexpectedMinutes": "--off does not accept a duration",
     "sleepTimerDurationRequired": "Enter minutes before turning the timer on",
     "fmModeTitle": "Personal FM mode",
+    "fmModeTitleOf": "{{name}} mode",
     "fmModeHint": "Pick a scene to switch straight into scene mode",
     "fmModeFilterPlaceholder": "Type to filter modes and scenes",
+    "recommendationPreferencesPlaceholder": "Adjust your preferences below",
     "sourceCurrent": "current source",
     "sourceLocal": "local library",
     "sourceNavidrome": "Navidrome",
@@ -791,6 +793,8 @@ export default {
       "queue": { "title": "Queue", "description": "Search the queue; use @ for metadata and -- for batch actions" },
       "playback-volume": { "title": "Volume", "description": "Adjust playback volume" },
       "playback-fm-mode": { "title": "Personal FM mode", "description": "Switch the Personal FM mode or scene" },
+      "playback-station-mode": { "title": "Radio mode", "description": "Switch the mode or scene of the radio on air" },
+      "playback-recommendation-preferences": { "title": "Preferences", "description": "Adjust the preferences kept on your account that steer what is recommended" },
       "settings-help": { "title": "Open Help", "description": "Open help and shortcuts" },
       "ponder-current-page": { "title": "Ponder this page", "description": "Open the interactive guide for the current page" },
       "settings-options": { "title": "Open Options", "description": "Open the options center" },
@@ -924,6 +928,7 @@ export default {
       "artist-reload": { "title": "Reload artist", "description": "Load the artist page again from the source" },
       "artist-retry-albums": { "title": "Resume loading albums", "description": "Retry the album page that failed and keep loading the rest" },
       "artist-edit-entity": { "title": "Edit artist info", "description": "Open the local library editor for this artist" },
+      "artist-open-all-songs": { "title": "Open all songs", "description": "List every song by this artist on one page, including singles outside any album" },
       "settings-interaction": { "title": "Interaction settings", "description": "Open keyboard, shortcut and grid interaction settings" },
       "settings-global-shortcuts": { "title": "Global shortcuts", "description": "Jump to the system-wide shortcuts for playback and mod commands" },
       "settings-custom-shortcut": { "title": "Custom shortcuts", "description": "Jump to the custom keyboard shortcut bindings" },
@@ -1534,6 +1539,7 @@ export default {
   },
   "personalFmMode": {
     "openPicker": "Switch the Personal FM mode",
+    "openPickerOf": "Switch the {{name}} mode",
     "category": {
       "mode": "Mode",
       "mood": "Mood",
@@ -1595,7 +1601,27 @@ export default {
     "statusPending": "Personal FM mode",
     "statusApplied": "Personal FM switched to",
     "statusEmpty": "This Personal FM mode returned nothing",
-    "statusFailed": "Failed to switch the Personal FM mode"
+    "statusFailed": "Failed to switch the Personal FM mode",
+    "statusAppliedOf": "{{name}} switched to",
+    "statusEmptyOf": "This {{name}} mode returned nothing",
+    "statusFailedOf": "Failed to switch the {{name}} mode"
+  },
+  "recommendationPreferences": {
+    "open": "Preferences",
+    "noteDefault": "Kept on your account",
+    "less": "Recommend less",
+    "default": "Default",
+    "more": "Recommend more",
+    "reset": "Reset",
+    "save": "Save",
+    "saving": "Saving…",
+    "loading": "Reading your preferences…",
+    "loadFailed": "Couldn't read your preferences",
+    "retry": "Retry",
+    "empty": "Nothing to adjust",
+    "saved": "Saved",
+    "unconfirmed": "Sent, but not confirmed yet. Open this again later to check.",
+    "saveFailed": "Couldn't save. Your choices are still here, so you can try again."
   },
   "login": {
     "title": "Log in",
@@ -1904,6 +1930,12 @@ export default {
     "qqNewSongs": "New songs",
     "qqNewAlbums": "New albums",
     "qqCharts": "Charts",
+    "qqFeedForYou": "For you",
+    "qqRecommendedPlaylists": "Recommended playlists",
+    "qqGuessYouLike": "Guess You Like",
+    "qqGuessYouLikeDescription": "QQ Music's Guess You Like radio; switch its listening mode while it plays",
+    "qqGuessYouLikeSuggested": "Suggested",
+    "qqGuessYouLikeOther": "Other",
     "personalFm": "Personal FM",
     "dailyRecommendations": "Daily Recommendations",
     "dailyRecommendationsDescription": "A daily mix made for you",
@@ -1983,11 +2015,33 @@ export default {
   },
   "qishui": { "recentPlayed": "Recently played on Qishui", "recommended": "Recommended for you" },
   "listeningRank": {
+    "qqWeek": "Listening rank · This week",
+    "qqYear": "Listening rank · Year",
+    "qqWeekDescription": "QQ Music's ranking for this week, counted from Monday; a week not over yet counts up to today",
+    "qqYearDescription": "QQ Music's yearly ranking, counted over all of last year (1 January to 31 December)",
     "week": "Listening ranking · Last week",
     "all": "Listening ranking · All time",
     "description": "Songs ranked by this account's listening on the platform",
     "listenCount_one": "Played {{count}} time",
     "listenCount_other": "Played {{count}} times"
+  },
+  "qqPreferences": {
+    "note": "Saved on your account; affects every song recommended to you",
+    "familiarity": "Song familiarity",
+    "familiarityExplore": "More new",
+    "keep": "Keep as is",
+    "familiarityFamiliar": "More familiar",
+    "mood": "Music mood",
+    "moodSad": "Sadder",
+    "moodHappy": "Happier",
+    "coverLive": "Covers & live",
+    "instrumental": "Instrumental",
+    "mandarin": "Mandarin",
+    "english": "English",
+    "japanese": "Japanese",
+    "korean": "Korean",
+    "cantonese": "Cantonese",
+    "ai": "AI songs"
   },
   "lyricProvider": {
     "qishui": "Qishui Music",
@@ -4917,6 +4971,8 @@ export default {
     "stageLocalInputDescription": "Stage is in local single-input mode. External devices can push lyrics or media, but playback and display are controlled by Folia itself.",
   },
   "libraryBravaisArtist": {
+    "allSongsCountUnit_one": "song",
+    "allSongsCountUnit_other": "songs",
     "playTopSongs": "Play top songs",
     "songCount_one": "{{count}} song",
     "songCount_other": "{{count}} songs",
@@ -4947,6 +5003,8 @@ export default {
     "topSongsAddedToQueue_one": "Added {{count}} top song to the play queue",
     "topSongsAddedToQueue_other": "Added {{count}} top songs to the play queue",
     "noTopSongsToQueue": "No top songs available to queue",
+    "allSongs": "All songs",
+    "allSongsCollectionName": "All songs by {{artistName}}",
   },
   "obs": {
     "connecting": "Connecting to Folia",
