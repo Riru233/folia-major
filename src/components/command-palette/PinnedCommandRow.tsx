@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { Command } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Theme } from "../../types";
@@ -45,9 +46,15 @@ const PinnedCommandRow: React.FC<PinnedCommandRowProps> = ({
         const Icon = command.icon ?? Command;
         const title = getCommandTitle(command, t);
         return (
-          <button
+          // 淡入淡出挂在按钮自己身上，不挂在包裹层：按钮自己是玻璃，挂在外面的 opacity 会把它
+          // 的取样根截在那一层，淡入那段玻璃就没了（自己这层的 opacity 不影响自己的 backdrop-filter）。
+          <motion.button
             data-glass
             data-glass-jelly data-glass-light
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
             key={`${index}-${command.id}`}
             type="button"
             disabled={isExecuting}
@@ -70,7 +77,7 @@ const PinnedCommandRow: React.FC<PinnedCommandRowProps> = ({
           >
             <Icon size={15} className="shrink-0" style={{ color: "#fffa" }} />
             <span className="min-w-0 truncate">{title}</span>
-          </button>
+          </motion.button>
         );
       })}
     </div>

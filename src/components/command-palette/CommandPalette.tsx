@@ -662,8 +662,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
     const panelBox = (
         <motion.div
             className={`overflow-hidden rounded-3xl shadow-2xl ${panelBg}`}
-            data-glass data-glass-light
             data-testid="command-palette-panel"
+            // 胶囊模式下面板是带 clip-path 的外框的孩子（见 CommandPaletteCapsuleFrame）：clip-path 会
+            // 截断 backdrop-filter 的取样根，玻璃只能挂在那层外框上，这里再挂一次就是两层玻璃。
+            // 普通遮罩没有那一层，玻璃就挂在这里。
+            data-glass={capsuleFrame ? undefined : ''}
+            data-glass-light={capsuleFrame ? undefined : ''}
             // 面板自己的 opacity 不参与 backdrop-filter 的取样根判定，淡入淡出放这一层
             // 才能既保留过渡感、又不打断玻璃。
             initial={{ opacity: 0 }}
@@ -717,7 +721,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                 frame={capsuleFrame}
                 exitFrame={capsuleExitFrameRef.current ?? capsuleFrame}
                 isOpen={isOpen}
-                hasClearBackdrop={hasClearBackdrop}
                 backdropStyle={overlayBackdrop}
                 onClose={onClose}
                 pinnedRow={pinnedRow}
