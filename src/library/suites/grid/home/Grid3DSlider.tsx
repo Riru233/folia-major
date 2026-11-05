@@ -810,6 +810,21 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
 
     return (
         <div ref={containerRef} className="w-full flex-1 flex flex-col justify-center relative min-h-0 h-full select-none">
+            {!isLoading && focusedItem && (
+                <div
+                    className={`relative shrink-0 text-left z-10 px-8 pointer-events-none ml-[30px] ${
+                        hasFloatingPlayer ? 'pt-6 md:pt-8 pb-0 -mb-4 md:-mb-6' : 'pt-5 md:pt-6 pb-4'
+                    }`}
+                >
+                    <div className="text-4xl truncate mx-auto" style={{ color: 'var(--text-primary)' }}>
+                        {focusedDisplayName}
+                    </div>
+                    <p className="text-m opacity-50 mt-1" style={{ color: 'var(--text-secondary)' }}>
+                        {focusedItem.trackCount !== undefined ? `${focusedItem.trackCount} ${t('playlist.tracks') || 'songs'}` : ''}
+                        {focusedSecondaryText ? ` • ${focusedSecondaryText}` : ''}
+                    </p>
+                </div>
+            )}
             <div
                 ref={scrollContainerRef}
                 data-grid3d-slider
@@ -910,7 +925,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                                     )}
                                                 </div>
                                                 <div className="w-full text-left pt-2 min-w-0">
-                                                    <h3 className="font-bold text-sm truncate max-w-full tracking-tight">
+                                                    <h3 className="text-m truncate max-w-full tracking-tight">
                                                         {displayName}
                                                     </h3>
                                                     {secondaryText && (
@@ -982,22 +997,6 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                     )}
                 </div>
             </div>
-
-            {!isLoading && focusedItem && (
-                <div
-                    className={`relative shrink-0 text-center z-10 px-8 pointer-events-none ${
-                        hasFloatingPlayer ? 'pt-6 md:pt-8 pb-0 -mb-4 md:-mb-6' : 'pt-5 md:pt-6 pb-4'
-                    }`}
-                >
-                    <h3 className="font-bold text-2xl truncate max-w-xl mx-auto" style={{ color: 'var(--text-primary)' }}>
-                        {focusedDisplayName}
-                    </h3>
-                    <p className="text-xs opacity-50 font-mono mt-1" style={{ color: 'var(--text-secondary)' }}>
-                        {focusedItem.trackCount !== undefined ? `${focusedItem.trackCount} ${t('playlist.tracks') || 'songs'}` : ''}
-                        {focusedSecondaryText ? ` • ${focusedSecondaryText}` : ''}
-                    </p>
-                </div>
-            )}
         </div>
     );
 };

@@ -566,7 +566,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 inert={isGridMapOpen}
                 className={`z-[20] select-none ${isGridMapOpen ? 'pointer-events-none' : ''}`}
             >
-                <div className="grid grid-cols-2 md:grid-cols-3 items-center w-full max-w-7xl mx-auto p-4 md:p-8 gap-y-4 md:gap-y-0">
+                <div className="grid grid-cols-2 md:grid-cols-2 items-center w-full py-4 md:py-10 md:px-4 gap-y-4 md:gap-y-0">
                     {/* Left title and settings */}
                     <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
                         {/* 左侧按钮组 */}
@@ -599,41 +599,40 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 </span>
                             )}
                         </button>
-                        
-            {onOpenLattice && currentTrack && (
-              <button
-                data-glass
-                data-glass-jelly
-                data-glass-light
-                onClick={() => onOpenLattice(opensExploreWall ? 'explore' : 'queue')}
-                data-testid="home-lattice-pill"
-                title={t("home.lattice")}
-                aria-label={t("home.lattice")}
-                className={`group relative inline-flex items-center justify-center p-2.5 rounded-full text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap ${navPillInactiveText} min-w-[40px] h-[40px]`}
-                style={{
-                  backgroundColor: isDaylight
-                    ? "rgba(215,215,215,0.42)"
-                    : "rgba(40, 40, 40, 0.42)",
-                  borderTop: isDaylight
-                    ? "1px solid rgba(255,255,255,0.32)"
-                    : "1px solid rgba(255,255,255,0.22)",
-                  borderBottom: isDaylight
-                    ? "1px solid rgba(255,255,255,0.32)"
-                    : "1px solid rgba(255,255,255,0.22)",
-                  outline: "1px solid rgba(40,40,40,0.2)",
-                  boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                  ...headerFadeStyle,
-                }}
-              >
-                <PanelsTopLeft size={18} className="relative shrink-0" />
-                <span
-                  aria-hidden="true"
-                  className="relative z-10 max-w-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-2.5 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:max-w-28 group-focus-visible:opacity-100"
-                >
-                  {t("home.latticeLabel")}
-                </span>
-              </button>
-            )}
+                        {onOpenLattice && currentTrack && (
+                        <button
+                            data-glass
+                            data-glass-jelly
+                            data-glass-light
+                            onClick={() => onOpenLattice(opensExploreWall ? 'explore' : 'queue')}
+                            data-testid="home-lattice-pill"
+                            title={t("home.lattice")}
+                            aria-label={t("home.lattice")}
+                            className={`group relative inline-flex items-center justify-center p-2.5 rounded-full text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap ${navPillInactiveText} min-w-[40px] h-[40px]`}
+                            style={{
+                            backgroundColor: isDaylight
+                                ? "rgba(215,215,215,0.42)"
+                                : "rgba(40, 40, 40, 0.42)",
+                            borderTop: isDaylight
+                                ? "1px solid rgba(255,255,255,0.32)"
+                                : "1px solid rgba(255,255,255,0.22)",
+                            borderBottom: isDaylight
+                                ? "1px solid rgba(255,255,255,0.32)"
+                                : "1px solid rgba(255,255,255,0.22)",
+                            outline: "1px solid rgba(40,40,40,0.2)",
+                            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                            ...headerFadeStyle,
+                            }}
+                        >
+                            <PanelsTopLeft size={18} className="relative shrink-0" />
+                            {/* <span
+                            aria-hidden="true"
+                            className="relative z-10 max-w-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-2.5 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:max-w-28 group-focus-visible:opacity-100"
+                            >
+                            {t("home.latticeLabel")}
+                            </span> */}
+                        </button>
+                        )}
                         {scanProgress?.active && (
                             <div
                                 className="relative ml-3"
@@ -692,14 +691,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 </AnimatePresence>
                             </div>
                         )}
-                    </div>
-
-                    {/* Center Tab Switcher */}
-                    <div
-                        // data-glass-jelly
-                        className="flex justify-center order-3 md:order-none col-span-2 md:col-span-1"
-                    >
-                        <div className="relative scale-90 md:scale-100 origin-center rounded-full -inset-1" style={{ overflow: 'visible' }}>
+                        
+                        <div className="relative scale-90 md:scale-100 mt-[5px] ml-[10px] origin-center rounded-full -inset-1" style={{ overflow: 'visible' }}>
                             {/* 玻璃底色单独做绝对定位层，与摇杆、页签同为兄弟层级：摇杆不再嵌在玻璃元素里，
                                 否则它自己的流体玻璃 backdrop 只能采到父级已经模糊过的背景，被削弱。 */}
                             <div
@@ -910,6 +903,13 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Center Tab Switcher */}
+                    {/* <div
+                        // data-glass-jelly
+                        className="flex justify-left order-3 md:order-none col-span-2 md:col-span-1"
+                    >
+                    </div> */}
 
                     {/* Right Search Bar */}
                     <div className="flex justify-end order-2 md:order-none">
