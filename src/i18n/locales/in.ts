@@ -169,6 +169,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "Menu vertikal",
+    "navLabel": "Bagian pustaka",
+    "exploreAll": "Semua",
+    "needsSignIn": "Masuk ke {{name}} untuk melihat ini",
+    "loading": "Memuat…",
+    "exploreUnavailable": "Platform ini tidak punya halaman jelajah",
+    "backToPlayer": "Kembali ke pemutar"
+  },
   "libraryBravais": {
     "suiteName": "Dinding Bravais",
     "homeTitle": "Pustaka",

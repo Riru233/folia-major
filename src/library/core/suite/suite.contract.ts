@@ -441,6 +441,11 @@ export type LibrarySuiteManifest = {
     labelKey: string;
     /** false 时 registry 当它不存在（例如开发版专用的 suite 在生产构建里）。缺省为可用。 */
     available?: boolean;
+    /**
+     * 测试阶段的 suite：registry 照常收它（DEV 浮层、构建变量的初始选择、已存的记录都还能切到它），但设置项的
+     * 「资料库界面」与命令面板的 picker 不列它（src/library/app/librarySuiteChoice）。缺省为已发布。
+     */
+    preview?: boolean;
     surfaces: { readonly [Surface in LibrarySurfaceId]?: LibrarySurfaceDeclaration<LibrarySurfacePropsMap[Surface]> };
     transitions?: LibrarySuiteTransitions;
     /** 有布局记录的 suite 才给（网格：集合与歌手页的 sessionStorage 记录）。 */

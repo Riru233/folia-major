@@ -25,8 +25,8 @@ import type { LibrarySuiteManifest } from '@/library/core/suite/suite.contract';
 
 describe('library suite registry', () => {
     it('discovers the grid (default, first), bravais and the dev-only TUI', () => {
-        // B6 起 bravais 进 registry（正式 suite，不门控）。
-        expect(listLibrarySuites().map(suite => suite.id)).toEqual(['grid', 'bravais', 'tui']);
+        // B6 起 bravais 进 registry（正式 suite，不门控）；垂直样式同样不门控。
+        expect(listLibrarySuites().map(suite => suite.id)).toEqual(['grid', 'bravais', 'tui', 'vertical']);
         expect(DEFAULT_LIBRARY_SUITE_ID).toBe('grid');
         expect(hasLibrarySuite('tui')).toBe(true);
         expect(hasLibrarySuite('renderer')).toBe(false);

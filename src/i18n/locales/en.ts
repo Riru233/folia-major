@@ -169,6 +169,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "Vertical menu",
+    "navLabel": "Library sections",
+    "exploreAll": "All",
+    "needsSignIn": "Sign in to {{name}} to see this",
+    "loading": "Loading…",
+    "exploreUnavailable": "This platform has no explore page",
+    "backToPlayer": "Back to the player"
+  },
   "libraryBravais": {
     "suiteName": "Bravais wall",
     "homeTitle": "Library",

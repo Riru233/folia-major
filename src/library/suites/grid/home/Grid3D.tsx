@@ -575,7 +575,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             data-glass-jelly
                             data-glass-light
                             onClick={() => onOpenSettings?.('help')}
-                            className={`relative flex items-center gap-1.5 p-2.5 rounded-full hover:bg-white/10 transition-all ml-4 w-[40px] h-[40px]`}
+                            className={`relative flex items-center gap-1.5 p-2.5 rounded-full hover:bg-white/10 transition-all ml-2 w-[40px] h-[40px]`}
                             style={{
                                 backgroundColor: isDaylight
                                 ? "rgba(215,215,215,0.42)"

@@ -169,6 +169,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "Menu dọc",
+    "navLabel": "Mục thư viện",
+    "exploreAll": "Tất cả",
+    "needsSignIn": "Đăng nhập {{name}} để xem",
+    "loading": "Đang tải…",
+    "exploreUnavailable": "Nền tảng này không có trang khám phá",
+    "backToPlayer": "Quay lại trình phát"
+  },
   "libraryBravais": {
     "suiteName": "Không gian Bravais",
     "homeTitle": "Thư viện",

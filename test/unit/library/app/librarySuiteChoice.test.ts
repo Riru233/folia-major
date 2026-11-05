@@ -4,6 +4,7 @@ import {
     chooseLibrarySuite,
     getActiveLibrarySuiteId,
     hasOnboardingLibrarySuiteChoice,
+    hasSelectableLibrarySuite,
     LIBRARY_HOME_SESSION_KEY,
     listLibrarySuiteOptions,
     listOnboardingLibrarySuiteIds,
@@ -11,7 +12,7 @@ import {
     resolveCurrentLibrarySessionKey,
 } from '@/library/app/librarySuiteChoice';
 import { switchLibrarySuite } from '@/library/app/switchLibrarySuite';
-import { hasLibrarySuiteChoice, resolveActiveLibrarySuiteId } from '@/library/registry';
+import { hasLibrarySuiteChoice, listLibrarySuites, resolveActiveLibrarySuiteId } from '@/library/registry';
 import { useLibrarySuiteStore } from '@/library/core/suite/useLibrarySuiteStore';
 import { registerLibrarySessionFlush } from '@/library/core/shared/useLibraryBrowseSessionStore';
 import { useCollectionNavigationStore } from '@/stores/useCollectionNavigationStore';
@@ -63,13 +64,21 @@ describe('effective library suite', () => {
         expect(getActiveLibrarySuiteId()).toBe('tui');
     });
 
-    it('lists the available suites as options, default first', () => {
+    it('lists the published suites as options, default first', () => {
         expect(listLibrarySuiteOptions()).toEqual([
             { id: 'grid', labelKey: 'libraryTui.rendererGrid' },
             { id: 'bravais', labelKey: 'libraryBravais.suiteName' },
             { id: 'tui', labelKey: 'libraryTui.rendererTui' },
         ]);
         expect(listLibrarySuiteOptions()).toBe(listLibrarySuiteOptions());
+    });
+
+    // 2026-11-06 用户：垂直样式还在测试阶段，设置里先不出现。registry 照常收它（DEV 浮层与构建变量仍能选到），
+    // 只是不进设置项与命令面板的选项。
+    it('keeps the vertical suite registered but out of the options', () => {
+        expect(listLibrarySuites().map(suite => suite.id)).toContain('vertical');
+        expect(listLibrarySuiteOptions().map(option => option.id)).not.toContain('vertical');
+        expect(resolveActiveLibrarySuiteId('vertical')).toBe('vertical');
     });
 });
 
@@ -135,8 +144,9 @@ describe('current session key', () => {
 });
 
 describe('whether there is a choice', () => {
-    it('offers one with grid, bravais and the dev TUI available', () => {
+    it('offers one with grid, bravais and the dev TUI published', () => {
         expect(hasLibrarySuiteChoice()).toBe(true);
+        expect(hasSelectableLibrarySuite()).toBe(true);
     });
 
     it('hides the settings commands with the same predicate the settings section uses', () => {
@@ -164,12 +174,39 @@ describe('whether there is a choice', () => {
                 const actual = await importOriginal<typeof import('@/library/suites/bravais/entry')>();
                 return { ...actual, default: { ...actual.default, available: false } };
             });
+            // 垂直样式同样在 registry 里：一并标成不可用，才是「只有 grid」的构建。
+            vi.doMock('@/library/suites/vertical/entry', async importOriginal => {
+                const actual = await importOriginal<typeof import('@/library/suites/vertical/entry')>();
+                return { ...actual, default: { ...actual.default, available: false } };
+            });
             const registry = await import('@/library/registry');
             expect(registry.listLibrarySuites().map(suite => suite.id)).toEqual(['grid']);
             expect(registry.hasLibrarySuiteChoice()).toBe(false);
+            expect((await import('@/library/app/librarySuiteChoice')).hasSelectableLibrarySuite()).toBe(false);
             // 初始选择不可用时回退网格（B0 合入时 bravais 不在 registry 里）。
             expect(registry.resolveActiveLibrarySuiteId('bravais')).toBe('grid');
             vi.doUnmock('@/library/suites/bravais/entry');
+            vi.doUnmock('@/library/suites/vertical/entry');
+        });
+
+        // 只剩 grid 与一套测试中的 suite：registry 里是两套，但设置项没得选，那一节不出现。
+        it('offers none when the only other suite is still in preview', async () => {
+            vi.resetModules();
+            vi.stubEnv('VITE_LIBRARY_TUI', 'false');
+            for (const path of ['@/library/suites/bravais/entry', '@/library/suites/tui/entry']) {
+                vi.doMock(path, async importOriginal => {
+                    const actual = await importOriginal<Record<string, unknown>>();
+                    return { ...actual, default: { ...(actual.default as object), available: false } };
+                });
+            }
+            const registry = await import('@/library/registry');
+            const choice = await import('@/library/app/librarySuiteChoice');
+            expect(registry.listLibrarySuites().map(suite => suite.id)).toEqual(['grid', 'vertical']);
+            expect(registry.hasLibrarySuiteChoice()).toBe(true);
+            expect(choice.listLibrarySuiteOptions().map(option => option.id)).toEqual(['grid']);
+            expect(choice.hasSelectableLibrarySuite()).toBe(false);
+            vi.doUnmock('@/library/suites/bravais/entry');
+            vi.doUnmock('@/library/suites/tui/entry');
         });
     });
 });

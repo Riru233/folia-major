@@ -169,6 +169,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "垂直样式",
+    "navLabel": "书库分区",
+    "exploreAll": "全部",
+    "needsSignIn": "登录 {{name}} 后显示",
+    "loading": "加载中…",
+    "exploreUnavailable": "当前平台没有探索页",
+    "backToPlayer": "回到播放器"
+  },
   "libraryBravais": {
     "suiteName": "Bravais 墙面",
     "homeTitle": "书库",

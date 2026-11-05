@@ -23,6 +23,8 @@
 
 .bravais-tile {
     position: absolute;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #fffa 20%, transparent 50%);
     top: 0;
     left: 0;
 }
@@ -78,6 +80,9 @@
 .bravais-tile.is-expanded { z-index: 20; }
 
 .bravais-tile-face {
+    border-top: #fffa 1px solid;
+    border-bottom: #fffa 1px solid;
+    outline: #444a 1px solid;
     border-radius: var(--bravais-tile-radius, 30px);
     inset: 0;
     transform-origin: 50% 50%;
@@ -603,7 +608,7 @@
 }
 
 .bravais-block-plate > path {
-    fill: var(--bg-color, #070707);
+    fill: transparent;
 }
 
 /* 窗：没有内容、不可聚焦、不可点；内容层透明，只垫一层很淡的光晕。 */

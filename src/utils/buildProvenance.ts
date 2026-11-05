@@ -9,7 +9,7 @@ export type BuildKind = 'official' | 'self-hosted' | 'unofficial';
  */
 export const BUILD_KIND_TAGS: Readonly<Record<Exclude<BuildKind, 'official'>, string>> = {
     'self-hosted': 'Self-hosted',
-    unofficial: 'Unofficial build',
+    unofficial: 'Unofficial build deluxe',
 };
 
 export const getBuildKind = (): BuildKind => {

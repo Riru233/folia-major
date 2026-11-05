@@ -28,13 +28,22 @@ export const chooseLibrarySuite = (suiteId: LibrarySuiteId): void => {
 
 export type LibrarySuiteOption = { id: LibrarySuiteId; labelKey: string };
 
-// 可用的 suite 在构建时就定了，选项算一次，引用稳定。
+// 可用的 suite 在构建时就定了，选项算一次，引用稳定。测试阶段的 suite（manifest 的 preview，例如垂直样式）留在
+// registry 里让 DEV 浮层与构建变量照常选得到，但不进这份列表：设置项与命令面板的 picker 只列已发布的。
 const SUITE_OPTIONS: readonly LibrarySuiteOption[] = Object.freeze(
-    listLibrarySuites().map(suite => ({ id: suite.id, labelKey: suite.labelKey })),
+    listLibrarySuites()
+        .filter(suite => suite.preview !== true)
+        .map(suite => ({ id: suite.id, labelKey: suite.labelKey })),
 );
 
-/** 设置项与命令面板列出的选项：registry 里可用的 suite（默认 suite 在最前）。 */
+/** 设置项与命令面板列出的选项：已发布的 suite（默认 suite 在最前）。 */
 export const listLibrarySuiteOptions = (): readonly LibrarySuiteOption[] => SUITE_OPTIONS;
+
+/**
+ * 设置项与命令面板有没有得选：看列出来的选项，不看 registry 的可用套数——只剩 grid 与一套测试中的 suite 时
+ * 用户没得选，设置节不该出现。
+ */
+export const hasSelectableLibrarySuite = (): boolean => SUITE_OPTIONS.length > 1;
 
 /**
  * 首启引导第一页只问这两套：网格（经典）与 bravais（无限），顺序固定。TUI 这类开发用 suite 即使在这个构建里

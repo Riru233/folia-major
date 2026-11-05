@@ -1,0 +1,433 @@
+/* src/library/suites/vertical/vertical.css
+   垂直样式（Windows Media Center 那种）：一级页签是一列竖着循环滚动的标题，中间那个展开自己的内容。
+   标题靠 framer-motion 动 y / scale（.vertical-wheel-slot），这里只给位置、字号与配色；配色只取主题变量，
+   日光（浅底深字）与午夜（深底浅字）同一套规则。 */
+
+[data-vertical-home] {
+    --vertical-ink: var(--text-primary, #f7f4ee);
+    --vertical-pane: rgb(255 255 255 / 7%);
+    --vertical-pane-line: rgb(255 255 255 / 13%);
+    --vertical-pane-on: rgb(255 255 255 / 17%);
+    --vertical-shadow: 0 12px 30px rgb(0 0 0 / 34%);
+}
+
+[data-vertical-home][data-daylight] {
+    --vertical-pane: rgb(0 0 0 / 5%);
+    --vertical-pane-line: rgb(0 0 0 / 12%);
+    --vertical-pane-on: rgb(0 0 0 / 12%);
+    --vertical-shadow: 0 12px 30px rgb(42 35 27 / 16%);
+}
+
+/* ---------- 顶部：只有设置、队列拼贴、搜索 ---------- */
+
+/* 内边距与网格首页的头部逐项对齐：容器 py-4 / md:py-10 md:px-4，左侧那组按钮再各退 ml-4。
+   所以移动端只有上下 16px、左边靠按钮自己的 ml-4 让出 16px；桌面是上下 40px、左右各 16px。 */
+[data-vertical-home] .vertical-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: 0 0 auto;
+    padding: 16px 0;
+}
+
+@media (min-width: 768px) {
+    [data-vertical-home] .vertical-topbar {
+        padding: 40px 16px;
+    }
+}
+
+/* 这一组（按钮、搜索框）的外观不在这里定：底色、亮边、描边、投影都跟网格首页一样走 inline style，
+   再由 liquidglass 按 [data-glass] 补上折射与高光。CSS 只管尺寸、圆角和排版，免得两层底色打架。 */
+[data-vertical-home] .vertical-icon-button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--vertical-ink);
+    cursor: pointer;
+    transition: background-color 200ms ease;
+}
+
+[data-vertical-home] .vertical-icon-button:hover {
+    background-color: rgb(255 255 255 / 10%);
+}
+
+[data-vertical-home][data-daylight] .vertical-icon-button:hover {
+    background-color: rgb(0 0 0 / 8%);
+}
+
+[data-vertical-home] .vertical-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    /* 网格的搜索框是 w-56，聚焦时胀到 w-72。 */
+    width: clamp(140px, 26vw, 224px);
+    height: 40px;
+    flex: 0 1 auto;
+    border-radius: 999px;
+    transition: width 200ms ease;
+}
+
+[data-vertical-home] .vertical-search:focus-within {
+    width: clamp(160px, 32vw, 288px);
+}
+
+[data-vertical-home] .vertical-search input {
+    width: 100%;
+    height: 100%;
+    padding: 0 16px 0 40px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+}
+
+[data-vertical-home] .vertical-search input::placeholder {
+    color: currentColor;
+    opacity: 0.4;
+    font-style: italic;
+}
+
+[data-vertical-home] .vertical-search input:focus {
+    outline: none;
+}
+
+/* ---------- 树：单列，内容固定在正中，标题绕着它排 ---------- */
+
+/* 舞台只负责裁切：中间那块内容钉在正中，标题是一根单独平移的轨道，从内容上下两侧滑过。 */
+[data-vertical-home] .vertical-tree-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    /* 上下边缘淡出：住在边上的标题是露一半的，直接切一刀会像画错了。 */
+    mask-image: linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%);
+}
+
+/* 标题轨道：整体平移（弹簧），当前那一根的底边永远停在内容块上沿。 */
+[data-vertical-home] .vertical-tree-rail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    will-change: transform;
+}
+
+[data-vertical-home] .vertical-tree {
+    position: relative;
+    width: 100%;
+    margin: 0;
+    padding: 0 clamp(20px, 5vw, 64px) 0 clamp(24px, 6vw, 96px);
+    list-style: none;
+}
+
+/* 当前枝下面留出的空档：正好让开中间那块内容，下面的标题才会落到内容块下方。 */
+[data-vertical-home] .vertical-tree-gap {
+    pointer-events: none;
+}
+
+/* 树的主干：一条竖线，从第一根穿到最后一根。 */
+[data-vertical-home] .vertical-tree::before {
+    content: '';
+    position: absolute;
+    top: 0.9em;
+    bottom: 0.9em;
+    left: clamp(11px, 3vw, 48px);
+    width: 1px;
+    background: currentColor;
+    opacity: 0.16;
+    pointer-events: none;
+}
+
+[data-vertical-home] .vertical-branch {
+    position: relative;
+    padding-left: clamp(22px, 2.4vw, 34px);
+}
+
+[data-vertical-home] .vertical-branch-label {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    color: var(--vertical-ink);
+    font: inherit;
+    font-size: clamp(30px, 4.2vw, 58px);
+    font-weight: 600;
+    line-height: 1.16;
+    letter-spacing: -0.015em;
+    text-align: left;
+    transform-origin: left center;
+    cursor: pointer;
+}
+
+/* 每根自己的那段横枝：从主干斜出来，连到标题左缘。 */
+[data-vertical-home] .vertical-branch-label::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: calc(-1 * clamp(22px, 2.4vw, 34px));
+    width: clamp(22px, 2.4vw, 34px);
+    height: 1px;
+    background: currentColor;
+    opacity: 0.16;
+}
+
+[data-vertical-home] .vertical-branch[data-open] .vertical-branch-label::before {
+    opacity: 0.5;
+}
+
+[data-vertical-home] .vertical-branch-label:disabled {
+    cursor: not-allowed;
+}
+
+[data-vertical-home] .vertical-branch-label:focus-visible {
+    outline: none;
+    box-shadow: -14px 0 0 -12px var(--text-accent, currentColor);
+}
+
+[data-vertical-home] .vertical-branch[data-open] .vertical-branch-label {
+    font-weight: 700;
+}
+
+/* ---------- 展开的内容：钉在舞台正中，高度固定（换枝时不会跟着跳） ---------- */
+
+[data-vertical-home] .vertical-tree-panel {
+    position: absolute;
+    top: 50%;
+    left: calc(clamp(24px, 6vw, 96px) + clamp(22px, 2.4vw, 34px));
+    right: clamp(20px, 5vw, 64px);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: min(52%, 400px);
+    translate: 0 -50%;
+    /* 内容比块矮时上下均分留白，块本身不可见，所以看起来是「内容正中对齐」。 */
+    justify-content: center;
+    padding: 4px 0;
+    overflow: hidden;
+}
+
+[data-vertical-home] .vertical-panel-body {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+}
+
+[data-vertical-home] .vertical-entries {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+}
+
+[data-vertical-home] .vertical-entry {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--vertical-ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.42;
+    cursor: pointer;
+    transition: opacity 200ms ease;
+}
+
+[data-vertical-home] .vertical-entry:hover,
+[data-vertical-home] .vertical-entry[data-active] {
+    opacity: 1;
+}
+
+[data-vertical-home] .vertical-entry-mark {
+    display: block;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--vertical-pane-line);
+    border-radius: 8px;
+    background: var(--vertical-pane);
+}
+
+[data-vertical-home] .vertical-entry[data-active] .vertical-entry-mark {
+    background: var(--vertical-pane-on);
+    box-shadow: inset 0 0 0 1px var(--text-accent, transparent);
+}
+
+[data-vertical-home] .vertical-caption {
+    color: var(--vertical-ink);
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.7;
+}
+
+[data-vertical-home] .vertical-note {
+    padding: 6px 0;
+    color: var(--vertical-ink);
+    font-size: 13px;
+    opacity: 0.55;
+}
+
+/* ---------- 封面架 ---------- */
+
+[data-vertical-home] .vertical-shelf {
+    display: flex;
+    gap: 12px;
+    padding: 2px 0 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+[data-vertical-home] .vertical-shelf::-webkit-scrollbar {
+    display: none;
+}
+
+[data-vertical-home] .vertical-shelf-card {
+    display: flex;
+    flex: 0 0 clamp(84px, 8vw, 118px);
+    flex-direction: column;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--vertical-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+[data-vertical-home] .vertical-shelf-cover {
+    position: relative;
+    display: block;
+    width: 10vw;height:10vw;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 10px;
+    background: var(--vertical-pane);
+    box-shadow: var(--vertical-shadow);
+    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.25, 1);
+}
+
+[data-vertical-home] .vertical-shelf-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+[data-vertical-home] .vertical-shelf-fallback {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(150deg, var(--vertical-pane-on), transparent 70%);
+}
+
+[data-vertical-home] .vertical-shelf-card:hover .vertical-shelf-cover {
+    transform: translateY(-3px);
+}
+
+[data-vertical-home] .vertical-shelf-name {
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+[data-vertical-home] .vertical-shelf-sub {
+    overflow: hidden;
+    font-size: 11px;
+    opacity: 0.55;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+[data-vertical-home] .vertical-shelf-note {
+    padding: 4px 0;
+    font-size: 13px;
+    opacity: 0.5;
+}
+
+/* ---------- 回到播放器（底部一行，不占顶部那三个入口，也不压在树上） ---------- */
+
+[data-vertical-home] .vertical-footer {
+    display: flex;
+    flex: 0 0 auto;
+    padding: 8px 16px 18px clamp(24px, 6vw, 96px);
+}
+
+[data-vertical-home] .vertical-back {
+    padding: 6px 14px;
+    border: 1px solid var(--vertical-pane-line);
+    border-radius: 999px;
+    background: var(--vertical-pane);
+    color: var(--vertical-ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.65;
+    cursor: pointer;
+}
+
+[data-vertical-home] .vertical-back:hover {
+    opacity: 1;
+    background: var(--vertical-pane-on);
+}
+
+/* ---------- 窄屏：标题小一号，主干往左收 ---------- */
+
+@media (max-width: 760px) {
+    [data-vertical-home] .vertical-tree {
+        padding-right: 20px;
+        padding-left: 44px;
+    }
+
+    [data-vertical-home] .vertical-tree::before {
+        left: 30px;
+    }
+
+    [data-vertical-home] .vertical-branch {
+        padding-left: 20px;
+    }
+
+    [data-vertical-home] .vertical-branch-label {
+        font-size: clamp(26px, 8.4vw, 40px);
+    }
+
+    [data-vertical-home] .vertical-branch-label::before {
+        left: -20px;
+        width: 20px;
+    }
+
+    [data-vertical-home] .vertical-shelf-card {
+        flex-basis: 84px;
+    }
+
+    [data-vertical-home] .vertical-shelf-sub {
+        display: none;
+    }
+
+    [data-vertical-home] .vertical-footer {
+        padding: 0 20px 16px 44px;
+    }
+}
+
+:root[data-reduce-motion~='lattice'] [data-vertical-home] .vertical-shelf-cover,
+:root[data-reduce-motion~='lattice'] [data-vertical-home] .vertical-entry {
+    transition: none;
+}
