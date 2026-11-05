@@ -768,7 +768,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 pointer-events-none 让按下穿透到下面的页签轨道，不挡拖动与点击。 */}
                             <motion.div
                                 aria-hidden="true"
-                                className={`absolute z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(40,40,40,0.2)] ${thumbDragging ? 'bg-transparent z-888 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]' : 'bg-[var(--text-accent)]/20 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]'}`}
+                                className={`absolute z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(40,40,40,0.2)] ${thumbDragging ? 'bg-transparent z-888 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]' : 'bg-[var(--text-accent)]/40 shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]'}`}
                                 style={{
                                     // 摇杆的放大与速度形变全部用 width / height 表达、锚点是中心（useHomeTabThumb
                                     // 里补偿好的 left / top），不再用 transform: scale：这样圆角、边框、玻璃
