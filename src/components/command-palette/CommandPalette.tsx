@@ -685,6 +685,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                     ? "1px solid rgba(255,255,255,0.32)"
                     : "1px solid rgba(255,255,255,0.22)",
                 outline: "1px solid rgba(40,40,40,0.2)",
+                width: "calc(100% - 2px)",
+                margin: 1,
                 color: 'var(--text-primary)',
             }}
         >

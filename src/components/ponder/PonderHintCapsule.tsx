@@ -129,7 +129,6 @@ const PonderHintCapsule: React.FC<PonderHintCapsuleProps> = ({
     useGlass();
     return (
         <motion.div
-            data-glass
             ref={rootRef}
             style={{ ...(isPinned ? {} : { x, y }), ...ponderLayerTokens(isDaylight, theme) }}
             initial={{ opacity: 0 }}
@@ -147,6 +146,7 @@ const PonderHintCapsule: React.FC<PonderHintCapsuleProps> = ({
         >
             {/* 从指针那个角长出来；钉在底部的那个从自己的底边长出来。 */}
             <motion.div
+                data-glass
                 initial={{ scale: small }}
                 animate={{ scale: 1 }}
                 exit={{ scale: small }}
