@@ -1351,6 +1351,7 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
                         disabled={!capabilities['enqueue-scope'].enabled}
                         toneClassName={closeBtnBg}
                         dataAction="enqueue-scope"
+                        isDaylight = {isDaylight}
                     />
                 )}
                 {offers('open-all-songs') && (capabilities['open-all-songs'].enabled || capabilities['open-all-songs'].reason === 'loading') && (
@@ -1383,9 +1384,6 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
                 data-glass-jelly data-glass-light
                 className="group/grid-title absolute left-1/2 top-5 -translate-x-1/2 z-[70] text-center flex flex-col items-center select-none cursor-pointer hover:scale-[1.01] active:scale-98 transition-all px-5 py-2 rounded-2xl backdrop-blur-md"
                 style={{
-                    backgroundColor: isDaylight
-                        ? "rgba(215,215,215,0.42)"
-                        : "rgba(40, 40, 40, 0.42)",
                     borderTop: isDaylight
                         ? "1px solid rgba(255,255,255,0.32)"
                         : "1px solid rgba(255,255,255,0.22)",
