@@ -44,7 +44,7 @@ export default function WindowControls({
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const buttonBaseClass = `flex items-center justify-center w-9 h-[calc(100% - 6px)] mb-[6px] transition-all border-[1px] border-[#fff7] border-solid duration-200 text-white outline outline-1 outline-solid outline-[rgba(120,120,120,0.5)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]
+  const buttonBaseClass = `flex items-center justify-center h-[calc(100% - 6px)] mb-[6px] transition-all border-[1px] border-[#fff7] border-solid duration-200 text-white outline outline-1 outline-solid outline-[rgba(120,120,120,0.5)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]
   ${
         isMac ? 'before:top-1.5 before:-bottom-0.5' : 'before:top-0.5 before:bottom-0.5'}`
   // 指针是否停在控制栏上：没固定时靠它把按钮留在可见状态，移开就随标题栏一起收起。
@@ -135,24 +135,24 @@ export default function WindowControls({
 
   const remoteControlVisible = controlsVisible;
   const standardControlsVisible = controlsVisible;
-  const remoteBtnClass = `${buttonBaseClass} mr-[1px] ${
+  const remoteBtnClass = `${buttonBaseClass} w-9 mr-[1px] ${
     remoteControlVisible
       ? isDaylight
         ? "pointer-events-auto translate-y-0 bg-[linear-gradient(135deg,#fffa_20%,transparent)] hover:bg-[#307aa9]"
         : "pointer-events-auto translate-y-0 bg-[linear-gradient(135deg,#333a_20%,transparent)] hover:bg-[#324b5a]"
       : "pointer-events-none opacity-0 -translate-y-1"
   }`;
-  const btnClass = `${buttonBaseClass} mr-[1px] ${
+  const btnClass = `${buttonBaseClass} w-11 mr-[1px] ${
     standardControlsVisible
       ? isDaylight
         ? "pointer-events-auto translate-y-0 bg-[linear-gradient(135deg,#fffa_20%,transparent)] hover:bg-[#307aa9]"
         : "pointer-events-auto translate-y-0 bg-[linear-gradient(135deg,#333a_20%,transparent)] hover:bg-[#324b5a]"
       : "pointer-events-none opacity-0 -translate-y-1"
   }`;
-  const pinBtnClass = `${remoteBtnClass} mr-[1px] ${
+  const pinBtnClass = `${remoteBtnClass} w-9 mr-[1px] ${
     isTitlebarPinned ? "bg-[#307aa9] shadow-[inset_0_0_0_1px_#fff8]" : ""
   }`;
-  const closeBtnClass = `${buttonBaseClass} mr-[3px] ${
+  const closeBtnClass = `${buttonBaseClass} w-11 mr-[3px] ${
     standardControlsVisible
       ? isDaylight
         ? "pointer-events-auto translate-y-0 bg-[linear-gradient(135deg,#a97874aa_20%,#cc361ccc)]"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { CAPSULE_MORPH_DURATION_S, PANEL_OPEN_CLIP, capsuleClipPath, type CapsuleFrame } from './capsuleFrame';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/command-palette/CommandPaletteCapsuleFrame.tsx
 // The palette grown up out of the player bar instead of dropped in from the top.
@@ -14,7 +15,6 @@ type CommandPaletteCapsuleFrameProps = {
     /** The bar as it is when the palette closes: what the panel folds back into. */
     exitFrame: CapsuleFrame;
     isOpen: boolean;
-    hasClearBackdrop: boolean;
     backdropStyle: React.CSSProperties;
     onClose: () => void;
     /** Built by the palette with its 'above' placement. */
@@ -25,6 +25,15 @@ type CommandPaletteCapsuleFrameProps = {
 };
 
 const MORPH_EASE = [0.22, 1, 0.36, 1] as const;
+
+/**
+ * 同一个颜色的零透明度写法：遮罩的淡入淡出走 alpha，颜色本身不跟着从黑（或白）爬回来。
+ * 认不出的写法（含空格分隔的现代语法）退回全透明，不在渲染期抛错。
+ */
+const withZeroAlpha = (color: string) => {
+    const match = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*[\d.]+\s*)?\)$/i.exec(color.trim());
+    return match ? `rgba(${match[1]}, ${match[2]}, ${match[3]}, 0)` : 'rgba(0, 0, 0, 0)';
+};
 
 // Driven by `custom`: the opening clip is the bar at open, the closing one is passed through
 // AnimatePresence so the exit reads the bar measured at close — the props an exiting child was last
@@ -52,40 +61,54 @@ const CommandPaletteCapsuleFrame: React.FC<CommandPaletteCapsuleFrameProps> = ({
     frame,
     exitFrame,
     isOpen,
-    hasClearBackdrop,
     backdropStyle,
     onClose,
     pinnedRow,
     panel,
     onOpened,
-}) => (
+}) => {
+    useGlass();
+    // 遮罩只淡填色，不动整层的 opacity：任何 opacity < 1 的祖先都会成为 backdrop-filter 的取样根，
+    // 面板的玻璃在动画期间就只取到这一层平涂，看上去整块玻璃没了，要等淡入落到 1 才突然回来。
+    // 因此背景色单独交给下面这个渐变值，容器本身不参与透明度动画（普通遮罩那条分支同理）。
+    const { backgroundColor, ...containerStyle } = backdropStyle;
+    const backdropColor = typeof backgroundColor === 'string' ? backgroundColor : 'transparent';
+    return (
     <AnimatePresence custom={capsuleClipPath(exitFrame)}>
         {isOpen && (
             <motion.div
                 data-folia-keyboard-window="true"
                 data-palette-frame="capsule"
-                className={`fixed inset-0 z-[150] flex items-end justify-center px-4 ${hasClearBackdrop ? '' : 'backdrop-blur-md'}`}
-                style={{ ...backdropStyle, paddingBottom: frame.bottomGap }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1, transition: { duration: 0.2 } }}
+                className={`fixed inset-0 z-[150] flex items-end justify-center px-4`}
+                style={{ ...containerStyle, paddingBottom: frame.bottomGap }}
+                initial={{ background: `linear-gradient(to top,${withZeroAlpha(backdropColor)} 20%,transparent)` }}
+                animate={{ background: `linear-gradient(to top,${backdropColor} 40%,transparent)`, transition: { duration: 0.2 } }}
                 // The backdrop outlasts the panel folding back into the bar, or the fold plays out
                 // half transparent and reads as a plain fade.
-                exit={{ opacity: 0, transition: { duration: 0.3, ease: [0.7, 0, 1, 1] } }}
+                exit={{ background: `linear-gradient(to top,${withZeroAlpha(backdropColor)} 20%,transparent)`, transition: { duration: 0.3, ease: [0.7, 0, 1, 1] } }}
                 onMouseDown={onClose}
             >
                 <div className="w-full max-w-2xl" onMouseDown={(event) => event.stopPropagation()}>
+                    {/* 只推 y，不淡 opacity：置顶那几颗按钮自己挂着玻璃，祖先 opacity < 1 会把它们的
+                        取样根截在这一层，淡入那段就只剩平涂。淡入淡出交给按钮自己（PinnedCommandRow）。 */}
                     <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 8 }}
+                        initial={{ y: 8 }}
+                        animate={{ y: 0 }}
+                        exit={{ y: 8 }}
                         transition={{ duration: 0.18, delay: 0.08 }}
                     >
                         {pinnedRow}
                     </motion.div>
                     {/* Unfolds from the bar's own shape and folds back into it. Not a shared layoutId
                         across the two layers — the bar and the palette do not share a stacking
-                        context, and the backdrop blur should not be recomputed under a scale. */}
+                        context, and the backdrop blur should not be recomputed under a scale.
+                        The glass sits here rather than on the panel: an ancestor's clip-path ends the
+                        backdrop's sampling, so a panel carrying the glass inside this clipped box
+                        would sample nothing at all. */}
                     <motion.div
+                        data-glass data-glass-light
+                        // 圆角不是为了好看：位移图按这一层的 border-radius 生成折射带，缺了它四角的折射会按直角算。
+                        className="rounded-3xl"
                         custom={capsuleClipPath(frame)}
                         variants={panelVariants}
                         initial="start"
@@ -103,6 +126,7 @@ const CommandPaletteCapsuleFrame: React.FC<CommandPaletteCapsuleFrameProps> = ({
             </motion.div>
         )}
     </AnimatePresence>
-);
+    );
+};
 
 export default CommandPaletteCapsuleFrame;
