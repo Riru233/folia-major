@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Loader2, Settings, PanelsTopLeft } from 'lucide-react';
+import { Search, Loader2, Settings, LayoutDashboard } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../../stores/useSearchNavigationStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -624,7 +624,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             ...headerFadeStyle,
                             }}
                         >
-                            <PanelsTopLeft size={18} className="relative shrink-0" />
+                            <LayoutDashboard size={18} className="relative shrink-0" />
                             {/* <span
                             aria-hidden="true"
                             className="relative z-10 max-w-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-2.5 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:max-w-28 group-focus-visible:opacity-100"
