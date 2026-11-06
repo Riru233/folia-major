@@ -6,8 +6,11 @@ import { getSizedCoverUrl } from '../../../../utils/coverUrl';
 import { useHomeLayoutSettingsStore } from '../../../../stores/useHomeLayoutSettingsStore';
 import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
 import { hasBlockingWindow } from '../../../../utils/keyboardTargets';
+import { GridViewTabs, gridChromeClassesFor } from './GridViewTabs';
+import { Map as MapIcon } from 'lucide-react';
 import { CARD_TITLE_ATTR, MORPH_FRAME_ATTR } from '../transitions/gridMorphContract';
 import { LoadingRing } from '@/components/shared/LoadingRing';
+import { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 
 // src/library/suites/grid/home/Grid3DSlider.tsx
 // Controlled desktop Grid3D slider shared by Netease, local music, and Navidrome overview surfaces.
@@ -34,6 +37,11 @@ interface Grid3DSliderProps {
     emptyMessage?: string;
     isDaylight: boolean;
     hasFloatingPlayer?: boolean;
+    tabs: DesktopGrid3DAction[];
+    mapButtonLabel: string;
+    openGridMap: ()=> void;
+    ponderControls?: 'local-grid-controls'
+    actions: DesktopGrid3DAction[];
 }
 
 const compactDescription = (description?: string, maxLength = 72) => {
@@ -232,6 +240,11 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     emptyMessage,
     isDaylight,
     hasFloatingPlayer = false,
+    tabs,
+    mapButtonLabel,
+    openGridMap,
+    ponderControls,
+    actions
 }) => {
     const { t } = useTranslation();
     const grid3dCardStyle = useHomeLayoutSettingsStore(state => state.grid3dCardStyle);
@@ -807,22 +820,58 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     const focusedItem = items[safeFocusedIndex];
     const focusedDisplayName = focusedItem ? getGrid3DSliderDisplayName(focusedItem) : '';
     const focusedSecondaryText = focusedItem ? getGrid3DSliderSecondaryText(focusedItem) : '';
+    const chrome = gridChromeClassesFor(isDaylight);
 
     return (
-        <div ref={containerRef} className="w-full flex-1 flex flex-col justify-center relative min-h-0 h-full select-none">
+        <div ref={containerRef} className="w-full flex-1 flex flex-col relative h-full select-none">
             {!isLoading && focusedItem && (
                 <div
-                    className={`relative shrink-0 text-left z-10 px-8 pointer-events-none ml-[30px] ${
+                    className={`relative shrink-0 text-left z-10 px-8 pointer-events-none ml-[30px] overflow-none ${
                         hasFloatingPlayer ? 'pt-6 md:pt-8 pb-0 -mb-4 md:-mb-6' : 'pt-5 md:pt-6 pb-4'
-                    }`}
+                    } ${isDaylight? '[text-shadow:0_0_5px_#fff,0_0_10px_#fff,0_0_20px_#fff]':' [text-shadow:0_0_5px_#000,0_0_10px_#fff,0_0_20px_#000]'}`}
                 >
-                    <div className="text-4xl truncate mx-auto" style={{ color: 'var(--text-primary)' }}>
+                    <div className="text-4xl mx-auto" style={{ color: 'var(--text-primary)' }}>
                         {focusedDisplayName}
                     </div>
                     <p className="text-m opacity-50 mt-1" style={{ color: 'var(--text-secondary)' }}>
                         {focusedItem.trackCount !== undefined ? `${focusedItem.trackCount} ${t('playlist.tracks') || 'songs'}` : ''}
                         {focusedSecondaryText ? ` • ${focusedSecondaryText}` : ''}
                     </p>
+                    <div className="mt-2 pointer-events-none absolute inset-x-0 z-10">
+                        <div className="mx-auto px-4 md:px-8">
+                            <div className="flex flex-row gap-3">
+                                {(!isLoading || tabs.length > 0) && (
+                                    <GridViewTabs
+                                        tabs={tabs}
+                                        isDaylight={isDaylight}
+                                        onOpenMap={isLoading ? undefined : openGridMap}
+                                        mapLabel={mapButtonLabel}
+                                        mapIcon={<MapIcon size={13} />}
+                                        ponderId={ponderControls}
+                                    />
+                                )}
+                                {actions.length > 0 && (
+                                    <div data-ponder={ponderControls} className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
+                                        {actions.map(action => (
+                                            <button
+                                                data-glass
+                                                key={action.id}
+                                                onClick={action.onClick}
+                                                disabled={action.disabled}
+                                                title={action.title}
+                            className={`flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isDaylight ? "border-y border-black/[0.08] bg-[#fff4]" : "border-y border-white/[0.12] bg-[#0004]"} outline outline-1 outline-[rgba(40,40,40,0.2)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]  ${
+                            action.active ? chrome.strongText : chrome.softText
+                            }`}
+                                            >
+                                                {action.icon}
+                                                <span className="whitespace-nowrap">{action.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
             <div
@@ -834,7 +883,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUpOrLeave}
                 onMouseLeave={handleMouseUpOrLeave}
-                className={`w-full flex items-center overflow-x-auto overflow-y-hidden py-24 custom-scrollbar focus:outline-none ${
+                className={`w-full flex-1 flex items-center overflow-x-auto overflow-y-hidden py-24 custom-scrollbar focus:outline-none ${
                     isInteractive ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
                 }`}
                 style={{ scrollbarWidth: 'none' }}
