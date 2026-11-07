@@ -607,6 +607,7 @@ export const compressConfig = (config: any): string => {
     if (config.libraryWallSeamDirection !== undefined) minified.lwsd = config.libraryWallSeamDirection;
     if (config.latticeBadgeCurrentOnly !== undefined) minified.lbco = config.latticeBadgeCurrentOnly;
     if (config.playerHeaderBlur !== undefined) minified.phb = config.playerHeaderBlur;
+    if (config.scratchpadHandleStyle !== undefined) minified.sphs = config.scratchpadHandleStyle;
 
     const jsonStr = JSON.stringify(minified);
     const bytes = new TextEncoder().encode(jsonStr);
@@ -683,7 +684,10 @@ export const decompressConfig = (str: string): any => {
         || parsed.lbco !== undefined
         // 流体玻璃只有自己一组时，也要认成短码形态。
         || parsed.lgt !== undefined
-        || parsed.phb !== undefined;
+        || parsed.phb !== undefined
+        || parsed.phb !== undefined
+        // The scratchpad side tab's resting look, for the same reason.
+        || parsed.sphs !== undefined;
     if (isMinified) {
         const decompressed: any = {};
         if (parsed.t) {
@@ -765,6 +769,7 @@ export const decompressConfig = (str: string): any => {
         if (parsed.lwsd !== undefined) decompressed.libraryWallSeamDirection = parsed.lwsd;
         if (parsed.lbco !== undefined) decompressed.latticeBadgeCurrentOnly = parsed.lbco;
         if (parsed.phb !== undefined) decompressed.playerHeaderBlur = parsed.phb;
+        if (parsed.sphs !== undefined) decompressed.scratchpadHandleStyle = parsed.sphs;
 
         return decompressed;
     } else {
@@ -790,6 +795,7 @@ export const decompressConfig = (str: string): any => {
             'libraryWallSeamClear', 'libraryWallSeamStyle', 'libraryWallBackdropLyrics', 'libraryWallBackdropBlur',
             'libraryWallSeamDirection',
             'playerHeaderBlur',
+            'scratchpadHandleStyle',
         ];
         const hasValidKey = validKeys.some(k => parsed[k] !== undefined);
         if (!hasValidKey) {
