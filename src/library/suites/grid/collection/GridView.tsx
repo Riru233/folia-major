@@ -1653,7 +1653,7 @@ export const GridView: React.FC<GridViewProps> = ({
             <div className='fixed top-0 left-0 right-0 h-[130px] z-[69] bg-gradient-to-b from-[var(--bg-color)] to-transparent'>
 
             </div>
-            <div className="absolute left-6 top-10 z-[70] flex items-center gap-3">
+            <div className="absolute left-6 top-9 z-[70] flex items-center gap-3">
                 <button
                     // 返回按钮表示看完了（onDone）：宿主清掉浏览会话、让每套 suite 忘掉布局记录（网格的 sessionStorage
                     // 记录经 entry 的 layout.forget），再返回。Escape 与浏览器后退保留（onBack）。P4.5 起不在这里清。
@@ -1674,7 +1674,7 @@ export const GridView: React.FC<GridViewProps> = ({
                     />
                 )}
                 <div className={"flex flex-col"}>
-                    <h2 className="text-lg font-normal tracking-tight flex items-center gap-1.5 justify-center">
+                    <h2 className="text-lg font-normal tracking-tight flex gap-1.5">
                         {infoCollection?.name || collectionName || title}
                     </h2>
                     {(infoCollection?.description || subtitle) && (
