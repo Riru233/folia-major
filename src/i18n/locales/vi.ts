@@ -1893,7 +1893,7 @@ export default {
     "qrSelfCheckItemClock": "Đồng hồ hệ thống",
     "closeLogin": "Đóng đăng nhập",
     "logout": "Đăng xuất",
-    "backToPlayer": "Về trình phát",
+    "backToPlayer": "Về áp phích lời nhạc",
     "backToHome": "Về trang chủ",
     "playAll": "Phát tất cả",
     "loadMore": "Tải thêm",
@@ -6679,7 +6679,7 @@ export default {
       },
       "signIn": {
         "homeButton": "Khi chưa có ai đăng nhập, trang chủ có một nút \"Đăng nhập\" ở chính giữa. Nút này sẽ mở cửa sổ đăng nhập và bạn có thể chọn nền tảng bên trong cửa sổ.",
-        "pill": "Viên thuốc nhỏ ở góc dưới bên phải luôn hiển thị. Nhấp vào ảnh đại diện hoặc biểu tượng nền tảng bên trái để mở cửa sổ đăng nhập cho nền tảng đang dùng; mũi tên bên phải để quay về trình phát.",
+        "pill": "Trên màn hình rộng nó nằm bên trái ô tìm kiếm, trên màn hình hẹp ở góc dưới bên phải, và luôn hiển thị. Nhấp để mở cửa sổ đăng nhập cho nền tảng đang dùng; đổi nền tảng và đăng xuất cũng trong cửa sổ đó.",
         "platforms": "Cột bên trái liệt kê tất cả các nền tảng. Nền tảng đã đăng nhập có ảnh đại diện ở phía bên phải; hàng bị mờ là không thể chọn, rê chuột vào sẽ hiển thị lý do.",
         "code": "Chọn một nền tảng và phía bên phải sẽ hiển thị cách đăng nhập. Phần lớn là quét mã QR bằng ứng dụng điện thoại; một số yêu cầu chọn phương thức trước, một số mở trình duyệt chỉ với một cú nhấp.",
         "steps": "Dãy biểu tượng nhỏ ở góc dưới bên phải biểu thị tiến độ đăng nhập: tạo mã QR, xác nhận trên điện thoại, đọc thông tin tài khoản.",

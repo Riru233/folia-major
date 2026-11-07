@@ -911,8 +911,16 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     >
                     </div> */}
 
-                    {/* Right Search Bar */}
-                    <div className="flex justify-end order-2 md:order-none">
+                    {/* Right Search Bar（左边紧挨着平台切换与返回歌词画报两颗圆钮） */}
+                    <div className="flex items-center justify-end gap-3 order-2 md:order-none">
+                        {/* 窄屏这一行放不下两颗圆钮（左边的页签胶囊会顶过来），那里仍用右脚那颗浮层，见文件末尾。 */}
+                        <div className="hidden md:flex">
+                            <SwitcherPill
+                                variant="header"
+                                account={account}
+                                surfaceStyle={headerFadeStyle}
+                            />
+                        </div>
                         <form
                         onSubmit={handleSearch}
                         className="relative w-full md:w-56 transition-all focus-within:md:w-72  rounded-full"
@@ -994,8 +1002,11 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 })}
             </div>
 
-            {/* The active account and the way back to the player; the sign-in window opens from it. */}
-            <SwitcherPill account={account} onBackToPlayer={onBackToPlayer} />
+            {/* 窄屏的平台切换：还是原来右脚那颗浮层（md 起挪进页头，见上面的搜索栏）。
+                返回歌词画报的箭头在播放条上，这里不再有它。 */}
+            <div className="md:hidden">
+                <SwitcherPill account={account} />
+            </div>
 
         </div>
     );

@@ -1336,7 +1336,7 @@
       },
       "signIn": {
         "homeButton": "没有人登录时，主页中间有一颗「登录」按钮。它打开登录窗口，平台在窗口里选。",
-        "pill": "右下角这一枚一直都在。点左边的头像或平台记号，打开同一个窗口，停在正在用的平台上；右边的箭头返回播放器。",
+        "pill": "宽屏时它在首页搜索栏的左边，窄屏时在右下角，一直都在。点它打开登录窗口，停在正在用的平台上；换平台、退出登录都在那个窗口里。",
         "platforms": "左边一列是全部平台。已经登录的那一行右端有头像；灰着的行不能选，悬停会写原因。",
         "code": "选中一个平台，右边就是它的登录方式。多数是一张二维码，用那个平台的手机应用扫；有的要先选方式，有的点一下按钮去浏览器里登录。",
         "steps": "右下角这一串小图标是登录走到哪一步：二维码、手机上确认、读到账号。",
@@ -1711,7 +1711,7 @@
 | `side-panel` | `side-panel-tabs` | 换标签页 | `ponder.captions.sidePanel.cycle` | 不必去点那一排小格子。面板开着时按 Tab，就在标签页之间往后循环一格。 | tabs：标签页 | `ponder.anchors.sidePanel.tabs` |
 | `side-panel` | `side-panel-tabs` | 换标签页 | `ponder.captions.sidePanel.cycleReverse` | Shift + Tab 往回一格。循环只在当前真的有的那几页之间走 —— 来源不同，页数也不同。 | tabs：标签页 | `ponder.anchors.sidePanel.tabs` |
 | `sign-in` | `sign-in-entries` | 两个入口 | `ponder.captions.signIn.homeButton` | 没有人登录时，主页中间有一颗「登录」按钮。它打开登录窗口，平台在窗口里选。 | homeButton：登录 | `ponder.anchors.signIn.homeButton` |
-| `sign-in` | `sign-in-entries` | 两个入口 | `ponder.captions.signIn.pill` | 右下角这一枚一直都在。点左边的头像或平台记号，打开同一个窗口，停在正在用的平台上；右边的箭头返回播放器。 | pill：切换在线音乐平台 | `ponder.anchors.signIn.pill` |
+| `sign-in` | `sign-in-entries` | 两个入口 | `ponder.captions.signIn.pill` | 宽屏时它在首页搜索栏的左边，窄屏时在右下角，一直都在。点它打开登录窗口，停在正在用的平台上；换平台、退出登录都在那个窗口里。 | pill：切换在线音乐平台 | `ponder.anchors.signIn.pill` |
 | `sign-in` | `sign-in-window` | 选平台，再登录 | `ponder.captions.signIn.platforms` | 左边一列是全部平台。已经登录的那一行右端有头像；灰着的行不能选，悬停会写原因。 | platforms：平台 | `ponder.anchors.signIn.platforms` |
 | `sign-in` | `sign-in-window` | 选平台，再登录 | `ponder.captions.signIn.code` | 选中一个平台，右边就是它的登录方式。多数是一张二维码，用那个平台的手机应用扫；有的要先选方式，有的点一下按钮去浏览器里登录。 | tile：二维码 | `ponder.anchors.signIn.tile` |
 | `sign-in` | `sign-in-window` | 选平台，再登录 | `ponder.captions.signIn.steps` | 右下角这一串小图标是登录走到哪一步：二维码、手机上确认、读到账号。 | steps：步骤 | `ponder.anchors.signIn.steps` |

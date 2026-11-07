@@ -1898,7 +1898,7 @@ export default {
     "qrSelfCheckItemClock": "System clock",
     "closeLogin": "Close login",
     "logout": "Logout",
-    "backToPlayer": "Back to Player",
+    "backToPlayer": "Back to the lyrics poster",
     "backToHome": "Return to Home",
     "playAll": "Play All",
     "loadMore": "Load More",
@@ -6715,7 +6715,7 @@ export default {
       },
       "signIn": {
         "homeButton": "While nobody is signed in, the home page has a “Login” button in the middle. It opens the sign-in window; the platform is picked there.",
-        "pill": "The pill at the bottom right is always there. Click the picture or platform mark on its left to open the same window on the platform in use; the arrow on its right goes back to the player.",
+        "pill": "On a wide screen it sits left of the search bar, on a narrow one at the bottom right, and it is always there. Click it to open the sign-in window on the platform in use; switching platforms and logging out happen in that window.",
         "platforms": "The column on the left lists every platform. A signed-in one has its picture at the right end of the row; a greyed row cannot be chosen, and hovering says why.",
         "code": "Choose a platform and the right side shows how it signs in. Mostly that is a QR code to scan with the platform’s phone app; some ask for a method first, some open the browser at a click.",
         "steps": "The small icons at the bottom right show how far the sign-in has got: the code, the confirmation on the phone, the account.",

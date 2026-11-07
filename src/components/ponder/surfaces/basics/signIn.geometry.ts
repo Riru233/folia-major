@@ -15,7 +15,7 @@ export const SIGN_IN_GEOMETRY = {
     title: { left: 0.42, top: 0.415, width: 0.16, height: 0.03 },
     prompt: { left: 0.39, top: 0.46, width: 0.22, height: 0.04 },
     homeButton: { left: 0.442, top: 0.526, width: 0.116, height: 0.064 },
-    pill: { right: 0.017, bottom: 0.027, width: 0.088, height: 0.07 },
+    pill: { right: 0.017, bottom: 0.027, width: 0.07, height: 0.07 },
     window: { left: 0.232, top: 0.267, width: 0.536, height: 0.467 },
 } satisfies Record<string, PonderRelativeRect>;
 

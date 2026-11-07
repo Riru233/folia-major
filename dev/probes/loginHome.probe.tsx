@@ -51,7 +51,7 @@ function LoginHomeProbe(props: ProbeProps) {
                 style={{ '--text-primary': isDaylight ? '#18181b' : '#f4f4f5' } as React.CSSProperties}
             >
                 {state !== 'signed-in' && <HomeLoginPanel account={account} />}
-                <SwitcherPill account={account} onBackToPlayer={() => { }} />
+                <SwitcherPill account={account} />
                 {said && <AppDialogs model={{ statusToast: { ...said, isDaylight, toastKey: message ?? '' } }} />}
             </div>
         </SettingsKitThemeContext.Provider>

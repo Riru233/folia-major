@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Play, Pause, Pin } from 'lucide-react';
+import { Play, Pause, Pin, ChevronRight } from 'lucide-react';
 import { MotionValue } from 'framer-motion';
 import ProgressBar from './ProgressBar';
 import { PlayerState, LyricData, Theme } from '../types';
@@ -857,6 +857,8 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                                     slotSecondary={slotSecondary}
                                     isPinned={playerBarPinned}
                                     onTogglePinned={() => togglePlayerBarPinned(!playerBarPinned)}
+                                    showReturnToPlayer={currentView !== 'player'}
+                                    onReturnToPlayer={onNavigateToPlayer}
                                     slotContext={resolvedSlotContext}
                                     onCustomizePrimary={slotCustomization.openPrimaryPicker}
                                     onCustomizeSecondary={slotCustomization.openSecondaryPicker}
@@ -963,6 +965,9 @@ interface ExpandedViewProps {
     /** 播放条被固定：固定后它不再收缩，按钮呈高亮态。 */
     isPinned: boolean;
     onTogglePinned: () => void;
+    /** 不在播放页时才给「返回歌词画报」的箭头（在播放页上它没有去处）。 */
+    showReturnToPlayer?: boolean;
+    onReturnToPlayer?: () => void;
 }
 
 const ExpandedView: React.FC<ExpandedViewProps> = ({
@@ -988,9 +993,12 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
     onCustomizeSecondary,
     isPinned,
     onTogglePinned,
+    showReturnToPlayer = false,
+    onReturnToPlayer,
 }) => {
     const { t } = useTranslation();
     const pinLabel = t(isPinned ? 'options.playerBarUnpin' : 'options.playerBarPin');
+    const returnToPlayerLabel = t('home.backToPlayer');
     const isHifiRoute = useIsHifiRoute();
     const progressBar = (
         <ProgressBar
@@ -1104,6 +1112,26 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                         fill={isPinned ? "currentColor" : "none"}
                     />
                 </button>
+                {/* 返回歌词画报：从别的页面回播放页。窄屏上点胶囊本身就去播放页，
+                    这里放不下第四个按钮，所以它从 sm 起才画。 */}
+                {showReturnToPlayer && onReturnToPlayer && (
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onReturnToPlayer();
+                        }}
+                        disabled={controlsDisabled}
+                        className={`hidden rounded-full p-2 transition-colors sm:flex ${
+                            isDaylight ? "hover:bg-black/5" : "hover:bg-white/10"
+                        } ${controlsDisabled ? "cursor-not-allowed opacity-40" : "opacity-60 hover:opacity-100"}`}
+                        style={{ color: primaryColor }}
+                        title={returnToPlayerLabel}
+                        aria-label={returnToPlayerLabel}
+                    >
+                        <ChevronRight size={20} className="sm:h-[18px] sm:w-[18px]" />
+                    </button>
+                )}
             </div>
 
             {/* Row 2: Current Time, Progress Bar, Duration */}

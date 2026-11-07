@@ -1900,7 +1900,7 @@ export default {
     "qrSelfCheckItemClock": "Jam sistem",
     "closeLogin": "Tutup login",
     "logout": "Logout",
-    "backToPlayer": "Kembali ke Pemutar",
+    "backToPlayer": "Kembali ke poster lirik",
     "backToHome": "Kembali ke Beranda",
     "playAll": "Putar Semua",
     "loadMore": "Muat Lebih Banyak",
@@ -6717,7 +6717,7 @@ export default {
       },
       "signIn": {
         "homeButton": "Selama belum ada yang masuk, beranda punya tombol “Login” di tengah. Ia membuka jendela masuk; platformnya dipilih di sana.",
-        "pill": "Pil di kanan bawah selalu ada. Klik gambar atau tanda platform di kirinya untuk membuka jendela yang sama pada platform yang sedang dipakai; panah di kanannya kembali ke pemutar.",
+        "pill": "Di layar lebar letaknya di kiri kolom pencarian, di layar sempit di kanan bawah, dan selalu ada. Klik untuk membuka jendela login pada platform yang sedang dipakai; ganti platform dan logout juga di jendela itu.",
         "platforms": "Kolom di kiri memuat semua platform. Yang sudah masuk punya gambar di ujung kanan barisnya; baris yang kelabu tidak bisa dipilih, dan menyorotnya menyebutkan alasannya.",
         "code": "Pilih satu platform dan sisi kanan menampilkan cara masuknya. Kebanyakan berupa kode QR untuk dipindai dengan aplikasi ponsel platform itu; ada yang meminta memilih cara dulu, ada yang membuka browser dengan sekali klik.",
         "steps": "Ikon-ikon kecil di kanan bawah menunjukkan sudah sampai mana proses masuk: kode, konfirmasi di ponsel, akun.",
