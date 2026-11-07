@@ -156,6 +156,8 @@ const FIELD_GROUPS: Record<string, ImportGroup> = {
     // Numbering only the playing song styles the tiles of both walls (queue collage and bravais): the
     // library wall group is where the other tile looks are.
     latticeBadgeCurrentOnly: 'libraryWall',
+    // The scratchpad's side tab sits on the library's edge and follows the wall's look: same group.
+    scratchpadHandleStyle: 'libraryWall',
 
     // 流体玻璃的三个全局参数：一套玻璃的调参，和别的分组没有从属关系，单独成组。
     liquidGlass: 'liquidGlass',
@@ -209,6 +211,8 @@ const TRUTHY_GUARDED_FIELDS = new Set([
     'libraryWallSeamStyle',
     // Likewise a known info strip direction (auto / auto-reverse / vertical / horizontal).
     'libraryWallSeamDirection',
+    // Likewise a known scratchpad side tab style.
+    'scratchpadHandleStyle',
 ]);
 
 // Per-renderer tunings the import skips whenever the visualizerTunings bundle is present. The three
