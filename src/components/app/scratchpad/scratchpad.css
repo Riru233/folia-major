@@ -236,9 +236,10 @@
    顶上 32px 是窗口标题栏的拖动区（AppShell，z 9999，盖在一切之上），所以面板里的东西从 40px 起。 */
 .scratchpad-drawer {
     position: fixed;
-    top: 0;
+    top: 60px;
     bottom: 0;
     left: 0;
+    margin: 20px;
     z-index: 95;
     display: flex;
     width: var(--scratchpad-width);
