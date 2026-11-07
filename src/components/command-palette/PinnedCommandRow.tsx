@@ -35,7 +35,7 @@ const PinnedCommandRow: React.FC<PinnedCommandRowProps> = ({
 
   return (
     <div
-      className={`${placement === "above" ? "mb-3" : "mt-4"} grid grid-cols-3 gap-3 px-2 sm:px-5`}
+      className={`${placement === "above" ? "mb-3" : "mt-4"} grid grid-cols-2 gap-3 px-2 sm:px-5`}
       data-testid="command-palette-pinned-row"
     >
       {commands.slice(0, 3).map((command, index) => {
