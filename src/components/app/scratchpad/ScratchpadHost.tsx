@@ -532,7 +532,6 @@ const ScratchpadHost: React.FC<ScratchpadHostProps> = ({ isDaylight, playback, q
         </div>
     );
 
->>>>>>> dbdb6f33bada5e5728e1c33785cb9e7c16d042be
     return (
         <div
             className={`scratchpad-root${isDaylight ? ' is-daylight' : ''}${isCovered ? ' is-covered' : ''}${calm ? ' is-calm' : ''}`}
@@ -558,9 +557,7 @@ const ScratchpadHost: React.FC<ScratchpadHostProps> = ({ isDaylight, playback, q
             <AnimatePresence custom={{ toSheet: isExpanded } satisfies PanelMotionCustom}>
                 {isOpen && !isExpanded && (
                     <motion.aside
-<<<<<<< HEAD
                         data-glass data-glass-light
-                        key="scratchpad-drawer"
                         style={{
                             backgroundColor: isDaylight
                                 ? "rgba(215,215,215,0.42)"
@@ -574,12 +571,9 @@ const ScratchpadHost: React.FC<ScratchpadHostProps> = ({ isDaylight, playback, q
                             outline: "1px solid rgba(40,40,40,0.2)",
                             boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                         }}
-                        className={`scratchpad-drawer${isExpanded ? ' is-expanded' : ''}`}
-=======
                         key="scratchpad-panel"
                         className="scratchpad-drawer is-panel"
                         data-page={tab}
->>>>>>> dbdb6f33bada5e5728e1c33785cb9e7c16d042be
                         data-testid="scratchpad-drawer"
                         data-ponder="scratchpad"
                         aria-label={t('scratchpad.title')}
