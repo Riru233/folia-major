@@ -442,13 +442,11 @@ const ScratchpadHost: React.FC<ScratchpadHostProps> = ({ isDaylight, playback, q
     }, [isExpanded]);
     const openPage = useCallback((next: ScratchpadTab) => {
         setTab(next);
-<<<<<<< HEAD
         requestAnimationFrame(() => document.getElementById(`scratchpad-tab-${next}`)?.focus());
-    };
-    useGlass();
-=======
         setShowOverview(false);
     }, [setTab]);
+    
+    useGlass();
     const notesSide = useMemo<CanvasSide>(() => ({
         jumpLabel: t('scratchpad.jumpTo'),
         tipsLabel: t('scratchpad.tipsTitle'),
