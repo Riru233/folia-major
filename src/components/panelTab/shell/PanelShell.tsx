@@ -1,8 +1,10 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useTransform, type MotionStyle } from 'framer-motion';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, motionValue, useTransform, type MotionStyle } from 'framer-motion';
 import type { Theme } from '../../../types';
 import { usePlayerBottomBarBottomPx } from '../../../hooks/usePlayerBottomBarBottomPx';
 import { usePlayerOverlayObstacle } from '../../../hooks/usePlayerOverlayLayout';
+import { usePlayerChromeSettingsStore } from '../../../stores/usePlayerChromeSettingsStore';
+import { DOCKED_PLAYER_BAR_HEIGHT_PX } from '../../docked-player/DockedPlayerBar';
 import { kitTransition, useKitReducedMotion } from '../../modal/settings/kit/motion';
 import { panelTokens } from './panelTheme';
 import { FOLDED_PX } from './SongHeader';
@@ -28,6 +30,24 @@ const DOCK_HEIGHT_PX = 36;
 const DOCK_GAP_PX = 12;
 /** Above the open tab: the gap, the hairline, and the gap under it. */
 const BODY_TOP_PX = { gap: 12, line: 1, under: 8 } as const;
+/** 停靠样式：面板站在那条通栏播放栏的上沿再留一道缝。 */
+const ABOVE_DOCKED_BAR_GAP_PX = 12;
+
+/**
+ * 面板（以及它下面那颗齿轮）离窗口底边的距离。
+ *
+ * 浮动样式沿用全局基线，跟着用户拖动胶囊一起抬；停靠样式下栏是通栏的，面板必须整块站在它上面，
+ * 而栏「自动隐藏控制栏」时会滑出窗口——面板仍然停在这个固定高度，不跟着上下动。
+ */
+const usePanelBottomPx = () => {
+    const playerBarStyle = usePlayerChromeSettingsStore(state => state.playerBarStyle);
+    const floatingBottomPx = usePlayerBottomBarBottomPx();
+    const dockedBottomPx = useMemo(
+        () => motionValue(DOCKED_PLAYER_BAR_HEIGHT_PX + ABOVE_DOCKED_BAR_GAP_PX),
+        [],
+    );
+    return playerBarStyle === 'docked' ? dockedBottomPx : floatingBottomPx;
+};
 
 type PanelShellProps = {
     isOpen: boolean;
@@ -58,7 +78,7 @@ type PanelSurfaceProps = Omit<PanelShellProps, 'isOpen' | 'handle'> & {
 
 const PanelSurface: React.FC<PanelSurfaceProps> = ({ hasHandle, isCover, tabKey, theme, isDaylight, header, dock, children, layoutRef, onLayoutUpdate }) => {
     const reduced = useKitReducedMotion();
-    const bottomBarBottomPx = usePlayerBottomBarBottomPx();
+    const bottomBarBottomPx = usePanelBottomPx();
     // What is under the surface: the handle, or a small gap. A variable, so the two heights below follow it at once.
     const underPx = hasHandle ? HANDLE_ROOM_PX : BARE_GAP_PX;
     // Never taller than the window allows, wherever the bottom bar's baseline has been lifted to.
@@ -100,7 +120,7 @@ const PanelSurface: React.FC<PanelSurfaceProps> = ({ hasHandle, isCover, tabKey,
             data-glass data-glass-light
             data-testid="unified-panel-surface"
             data-still={isStill || undefined}
-            className="st-window pointer-events-auto @container hide-scrollbar flex w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden rounded-[20px] bg-[var(--pn-glass)] text-[color:var(--st-t1)] shadow-[var(--pn-shadow)] backdrop-blur-[40px] backdrop-saturate-[1.3] [&[data-still]_*]:transition-none"
+            className="st-window pointer-events-auto @container hide-scrollbar flex w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden rounded-[20px] bg-[var(--pn-glass)] text-[color:var(--st-t1)] shadow-[var(--pn-shadow)] backdrop-saturate-[1.3] [&[data-still]_*]:transition-none"
             style={{
                 ...panelTokens(isDaylight, theme, reduced),
                 '--pn-under': `${underPx}px`,
@@ -159,7 +179,7 @@ const PanelSurface: React.FC<PanelSurfaceProps> = ({ hasHandle, isCover, tabKey,
 };
 
 const PanelShell: React.FC<PanelShellProps> = ({ isOpen, handle, ...surface }) => {
-    const bottomBarBottomPx = usePlayerBottomBarBottomPx();
+    const bottomBarBottomPx = usePanelBottomPx();
     const { ref: layoutRef, invalidate: invalidateLayout } = usePlayerOverlayObstacle('player-panel', 'panel');
 
     return (

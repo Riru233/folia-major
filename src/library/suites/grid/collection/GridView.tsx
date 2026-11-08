@@ -1833,7 +1833,7 @@ export const GridView: React.FC<GridViewProps> = ({
                                 <div
                                     {...{ [CARD_TITLE_ATTR]: '' }}
                                     className={fullBleedCover
-                                        ? 'text-sm font-bold tracking-tight leading-snug line-clamp-3 whitespace-normal break-words'
+                                        ? 'text-sm tracking-tight leading-snug line-clamp-3 whitespace-normal break-words'
                                         : 'text-s font-bold tracking-tight opacity-90 max-w-full line-clamp-4 whitespace-normal break-words'}
                                 >
                                     {standIn.title ?? collectionName ?? title}
