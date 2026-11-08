@@ -995,7 +995,7 @@ export const GridMap: React.FC<GridMapProps> = ({
                 <button
                     data-glass data-glass-light data-glass-jelly
                     onClick={onBack}
-                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all pointer-events-auto shadow-lg hover:scale-105 active:scale-95"
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all pointer-events-auto shadow-lg hover:scale-105 active:scale-95"
                     style={{
                         backgroundColor: isDaylight
                             ? "rgba(255,255,255,0.4)"
@@ -1116,11 +1116,12 @@ export const GridMap: React.FC<GridMapProps> = ({
             <AnimatePresence>
                 {showCutInPanel && hasCutInPanel && (
                     <motion.div
+                        data-glass data-glass-light
                         initial={{ opacity: 0, x: -60, scale: 0.95 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -60, scale: 0.95 }}
                         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                        className="absolute left-6 top-24 w-80 rounded-3xl z-[80] flex flex-col p-6 shadow-2xl border backdrop-blur-2xl pointer-events-auto theme-glass-panel"
+                        className="absolute left-6 top-24 w-80 rounded-3xl z-[80] flex flex-col p-6 shadow-2xl border pointer-events-auto theme-glass-panel"
                         style={{ bottom: bottomBarPanelBottomPx }}
                     >
                         {batchConfig ? (

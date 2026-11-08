@@ -42,8 +42,7 @@ export const ArtistGridInfoCutInPanel = ({
         <AnimatePresence>
             {isOpen && (
                 <motion.aside
-                    data-glass
-                    data-glass-jelly data-glass-light
+                    data-glass data-glass-light
                     initial={{ opacity: 0, x: -60, scale: 0.95 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: -60, scale: 0.95 }}
