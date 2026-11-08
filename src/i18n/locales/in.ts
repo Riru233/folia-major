@@ -1200,7 +1200,7 @@ export default {
     "info": "Info",
     "panelExpand": "Perluas",
     "panelCollapse": "Ciutkan",
-    "panelHint": "Klik judul untuk membuka panel samping",
+    "panelHint": "Buka atau tutup panel samping",
     "play": "Putar",
     "pause": "Jeda",
     "close": "Tutup",

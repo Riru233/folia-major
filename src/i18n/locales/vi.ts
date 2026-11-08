@@ -1195,7 +1195,7 @@ export default {
     "info": "Thông tin",
     "panelExpand": "Mở rộng",
     "panelCollapse": "Thu gọn",
-    "panelHint": "Nhấp vào tiêu đề để mở bảng bên",
+    "panelHint": "Mở hoặc đóng bảng bên",
     "play": "Phát",
     "pause": "Tạm dừng",
     "close": "Đóng",

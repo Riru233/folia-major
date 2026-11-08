@@ -33,6 +33,7 @@ const GridPanelToggleButton = ({ isOpen, isDaylight, onToggle }: GridPanelToggle
             aria-expanded={isOpen}
             aria-label={label}
             title={t('ui.panelHint')}
+            data-testid="grid-panel-toggle"
             data-glass
             data-glass-jelly
             data-glass-light

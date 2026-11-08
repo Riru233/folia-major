@@ -1198,7 +1198,7 @@ export default {
     "info": "歌单信息",
     "panelExpand": "展开",
     "panelCollapse": "收起",
-    "panelHint": "点击标题展开左侧面板",
+    "panelHint": "展开或收起左侧面板",
     "play": "播放",
     "pause": "暂停",
     "close": "关闭",

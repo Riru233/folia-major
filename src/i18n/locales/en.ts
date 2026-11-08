@@ -1200,7 +1200,7 @@ export default {
     "info": "Info",
     "panelExpand": "Expand",
     "panelCollapse": "Collapse",
-    "panelHint": "Click the title to open the side panel",
+    "panelHint": "Open or close the side panel",
     "play": "Play",
     "pause": "Pause",
     "close": "Close",

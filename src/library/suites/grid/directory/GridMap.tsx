@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls } from 'framer-motion';
 import { Check, ChevronLeft, Disc, Eye, EyeOff, ListFilter, X } from 'lucide-react';
-import GridPanelToggleIndicator from '../shared/GridPanelToggleIndicator';
+import GridPanelToggleButton from '../shared/GridPanelToggleButton';
+import { gridGlassCircleStyle } from '../shared/gridGlassChrome';
 import { useTranslation } from 'react-i18next';
 import { Theme } from '../../../../types';
 import { useFoliaHexViewport } from '../shared/useFoliaHexViewport';
@@ -266,6 +267,8 @@ export const GridMap: React.FC<GridMapProps> = ({
 }) => {
     const { t } = useTranslation();
     const bottomBarPanelBottomPx = useSidePanelBottomPx();
+    // 地图底色（页头渐变与根节点共用一套值，换色只改这里）。
+    const mapBackgroundColor = isDaylight ? 'rgba(250, 249, 246, 0.95)' : 'rgba(9, 9, 11, 0.95)';
     const containerRef = useRef<HTMLDivElement>(null);
     const dragControls = useDragControls();
     const [focusedIndex, setFocusedIndex] = useState(0);
@@ -985,70 +988,52 @@ export const GridMap: React.FC<GridMapProps> = ({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] overflow-hidden select-none"
             style={{
-                backgroundColor: isDaylight ? 'rgba(250, 249, 246, 0.95)' : 'rgba(9, 9, 11, 0.95)',
+                backgroundColor: mapBackgroundColor,
                 color: 'var(--text-primary)',
                 backdropFilter: 'blur(24px)'
             }}
         >
-            {/* Top Floating Glass Header */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-5 z-[70] bg-gradient-to-b from-black/10 to-transparent">
+            {/* 页头底下压一层底色渐变（与集合页、歌手页同一个值）：标题、副标题落在卡片上也读得清。 */}
+            <div
+                className="pointer-events-none absolute inset-x-0 top-0 z-[69] h-[130px]"
+                style={{
+                    background: `linear-gradient(to bottom, ${mapBackgroundColor}, transparent)`,
+                }}
+            />
+
+            {/* 页头：返回、面板开关两颗玻璃圆钮，右边紧跟标题与副标题（排布照集合页 GridView / 歌手页）。
+                标题本身不再可点：开关只在面板钮上，标题不会误触切换。 */}
+            <div className="absolute left-6 top-9 z-[70] flex items-center gap-3">
                 <button
                     data-glass data-glass-light data-glass-jelly
                     onClick={onBack}
-                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all pointer-events-auto shadow-lg hover:scale-105 active:scale-95"
-                    style={{
-                        backgroundColor: isDaylight
-                            ? "rgba(255,255,255,0.4)"
-                            : "rgba(0,0,0,0.4)",
-                        borderTop: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        borderBottom: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        outline: "1px solid rgba(40,40,40,0.2)",
-                        boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95"
+                    style={{ ...gridGlassCircleStyle(isDaylight), color: 'var(--text-primary)' }}
                 >
                     <ChevronLeft size={20} />
                 </button>
-
-                <button
-                data-glass data-glass-light data-glass-jelly
-                    type="button"
-                    disabled={!hasCutInPanel}
-                    onClick={() => {
-                        if (showCutInPanel) {
-                            closeCutInPanel();
-                        } else {
-                            openCutInPanel();
-                        }
-                    }}
-                    className="group/grid-title text-center flex flex-col items-center select-none pointer-events-auto cursor-pointer hover:scale-[1.01] active:scale-98 transition-all px-5 py-2 rounded-2xl backdrop-blur-md disabled:cursor-default disabled:hover:scale-100"
-                    
-                    style={{
-                        backgroundColor: isDaylight
-                            ? "rgba(255,255,255,0.4)"
-                            : "rgba(0,0,0,0.4)",
-                        borderTop: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        borderBottom: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        outline: "1px solid rgba(40,40,40,0.2)",
-                        boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                        color: 'var(--text-primary)',
-                    }}
-                >
-                    <h2 className="flex items-center justify-center gap-1.5 text-lg font-bold tracking-tight">
-                        {title}
-                        {hasCutInPanel && <GridPanelToggleIndicator isOpen={showCutInPanel} />}
-                    </h2>
-                    {subtitle && <p className="text-xs opacity-50 mt-0.5">{subtitle}</p>}
-                </button>
-
-                <div className="w-10 h-10" />
+                {hasCutInPanel && (
+                    <GridPanelToggleButton
+                        isOpen={showCutInPanel}
+                        isDaylight={isDaylight}
+                        onToggle={() => {
+                            setShowSidePanel(false);
+                            if (showCutInPanel) {
+                                closeCutInPanel();
+                            } else {
+                                openCutInPanel();
+                            }
+                        }}
+                    />
+                )}
+                <div className="pointer-events-none flex h-12 min-w-0 flex-col justify-center">
+                    <h2 className="text-lg font-normal tracking-tight">{title}</h2>
+                    {subtitle && (
+                        <p className="mt-0.5 max-w-[min(40rem,calc(100vw-8rem))] truncate text-xs leading-relaxed opacity-50">
+                            {subtitle}
+                        </p>
+                    )}
+                </div>
             </div>
 
             {/* Honeycomb Drag/Viewport Canvas Area */}
