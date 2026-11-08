@@ -3,6 +3,7 @@ import { Disc, Pencil, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getSizedCoverUrl } from '../../../../utils/coverUrl';
 import { useSidePanelBottomPx } from '../../../../hooks/usePlayerBottomBarBottomPx';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/library/suites/grid/artist/ArtistGridInfoCutInPanel.tsx
 // Presents ArtistGrid metadata in the same left-side cut-in pattern used by GridView.
@@ -36,16 +37,17 @@ export const ArtistGridInfoCutInPanel = ({
         trackCount !== undefined ? `${trackCount} ${t('home.songs')}` : '',
         albumCount !== undefined ? `${albumCount} ${t('home.albums')}` : '',
     ].filter(Boolean).join(' • ');
-
+    useGlass();
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.aside
+                    data-glass data-glass-light
                     initial={{ opacity: 0, x: -60, scale: 0.95 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: -60, scale: 0.95 }}
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute left-6 top-24 z-[80] flex w-80 flex-col overflow-y-auto rounded-3xl border p-6 shadow-2xl backdrop-blur-2xl pointer-events-auto theme-glass-panel"
+                    className="absolute left-6 top-24 z-[80] flex w-80 flex-col overflow-y-auto rounded-3xl border p-6 shadow-2xl pointer-events-auto theme-glass-panel"
                     style={{ bottom: bottomBarBottomPx, boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)' }}
                 >
                     <div className="mb-4 flex items-center justify-between gap-2">
