@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls, useIsPresent } from 'framer-motion';
 import { ChevronLeft, ListMusic, ListPlus, RefreshCw } from 'lucide-react';
-import GridPanelToggleIndicator from '../shared/GridPanelToggleIndicator';
+import GridPanelToggleButton from '../shared/GridPanelToggleButton';
+import { gridGlassCircleStyle } from '../shared/gridGlassChrome';
 import { useTranslation } from 'react-i18next';
 import { SongResult, Theme } from '../../../../types';
 import { getSizedCoverUrl } from '../../../../utils/coverUrl';
@@ -348,7 +349,6 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
     const squareCards = useGridViewSettingsStore(state => state.gridViewSquareCards) && fullBleedCover;
     const minCardScale = useGridViewSettingsStore(state => state.gridViewMinCardScale);
     const minCardOpacity = useGridViewSettingsStore(state => state.gridViewMinCardOpacity);
-    const closeBtnBg = isDaylight ? 'bg-black/5 hover:bg-black/10 text-black/60' : 'bg-black/20 hover:bg-white/10 text-white/60';
     const cardBg = isDaylight ? 'bg-white/60 border border-white/30' : 'bg-zinc-900/60 border border-white/10';
 
     // Viewport Size Observer
@@ -1318,92 +1318,91 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
                 </div>
             )}
 
-            {/* Header Area */}
-            <div className="absolute top-0 left-0 p-6 z-30 flex items-center gap-4">
+            {/* 页头底下压一层底色渐变（与集合页同一个值）：标题、副标题落在卡片上也读得清。 */}
+            <div className="pointer-events-none fixed inset-x-0 top-0 z-[69] h-[130px] bg-gradient-to-b from-[var(--bg-color)] to-transparent" />
+
+            {/* 页头：返回、面板开关两颗玻璃圆钮，右边紧跟歌手名与副标题（排布照集合页 GridView）。
+                三个点那颗菜单钮在页头右端，和右上角的同步 / 重试提示竖着排在一起。 */}
+            <div className="absolute left-6 top-9 z-[70] flex items-center gap-3">
                 <button
                     // 返回按钮表示看完了（onDone）：宿主清掉浏览会话、让每套 suite 忘掉布局记录，再返回
                     // （Escape 与浏览器后退保留）。P4.5 起这条语义在宿主，不在这里清。
                     onClick={onDone}
-                    className={`w-12 h-12 rounded-full ${closeBtnBg} flex items-center justify-center transition-colors cursor-pointer`}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95"
                     data-glass data-glass-jelly data-glass-light
-                    style={{
-                        backgroundColor: isDaylight
-                            ? "rgba(215,215,215,0.42)"
-                            : "rgba(40, 40, 40, 0.42)",
-                        borderTop: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        borderBottom: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        outline: "1px solid rgba(40,40,40,0.2)",
-                        boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                        color: 'var(--text-primary)'
-                    }}
+                    style={{ ...gridGlassCircleStyle(isDaylight), color: 'var(--text-primary)' }}
                 >
                     <ChevronLeft size={20} />
                 </button>
-                {offers('enqueue-scope') && (
-                    <ArtistHeaderPillButton
-                        icon={<ListPlus size={16} />}
-                        label={t('artistGrid.addTopSongsToQueue')}
-                        onClick={() => artistActions.enqueueScope()}
-                        disabled={!capabilities['enqueue-scope'].enabled}
-                        toneClassName={closeBtnBg}
-                        dataAction="enqueue-scope"
-                        isDaylight = {isDaylight}
-                    />
-                )}
-                {offers('open-all-songs') && (capabilities['open-all-songs'].enabled || capabilities['open-all-songs'].reason === 'loading') && (
-                    // #918：热门歌曲只有 10 首，不在任何专辑里的单曲只在「全部歌曲」那一层看得到。
-                    // 加载中先画成不可点；读完确定没有更多歌时不出现（与 Bravais 海报上的按钮一致）。
-                    <ArtistHeaderPillButton
-                        icon={<ListMusic size={16} />}
-                        label={t('artistGrid.allSongs')}
-                        onClick={() => {
-                            // 不是从卡片打开的：丢掉观察窗口里刚点过的那张卡（例如刚播的热门歌曲），
-                            // 新一层按普通的级联入场，不把那张卡的封面飞过去。
-                            useCollectionMorphStore.getState().ackPending();
-                            artistActions.openAllSongs();
-                        }}
-                        disabled={!capabilities['open-all-songs'].enabled}
-                        toneClassName={closeBtnBg}
-                        dataAction="open-all-songs"
-                    />
-                )}
+                <GridPanelToggleButton
+                    isOpen={showCutInPanel}
+                    isDaylight={isDaylight}
+                    onToggle={() => {
+                        closeCommandFilter();
+                        setShowSidePanel(false);
+                        setShowCutInPanel(current => !current);
+                    }}
+                />
+                <div className="flex h-12 min-w-0 flex-col justify-center">
+                    <h2 className="text-lg font-normal tracking-tight flex gap-1.5">
+                        {artistInfo?.name || collection.name}
+                    </h2>
+                    <p className="mt-0.5 max-w-[min(40rem,calc(100vw-8rem))] truncate text-xs leading-relaxed opacity-50">
+                        {t('navidrome.artists') || 'Artists'}
+                    </p>
+                </div>
             </div>
 
-            {/* Title display inside viewport header */}
-            <div
-                onClick={() => {
-                    closeCommandFilter();
-                    setShowSidePanel(false);
-                    setShowCutInPanel(current => !current);
-                }}
-                data-glass
-                data-glass-jelly data-glass-light
-                className="group/grid-title absolute left-1/2 top-5 -translate-x-1/2 z-[70] text-center flex flex-col items-center select-none cursor-pointer hover:scale-[1.01] active:scale-98 transition-all px-5 py-2 rounded-2xl backdrop-blur-md"
-                style={{
-                    borderTop: isDaylight
-                        ? "1px solid rgba(255,255,255,0.32)"
-                        : "1px solid rgba(255,255,255,0.22)",
-                    borderBottom: isDaylight
-                        ? "1px solid rgba(255,255,255,0.32)"
-                        : "1px solid rgba(255,255,255,0.22)",
-                    outline: "1px solid rgba(40,40,40,0.2)",
-                    boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                    color: 'var(--text-primary)'
-                }}
-            >
-                <button
-                    type="button"
-                    className="flex items-center gap-1.5 text-lg font-bold tracking-tight cursor-pointer"
-                    aria-expanded={showCutInPanel}
-                >
-                    {artistInfo?.name || collection.name}
-                    <GridPanelToggleIndicator isOpen={showCutInPanel} />
-                </button>
-                <p className="text-xs opacity-50 mt-0.5">{t('navidrome.artists') || 'Artists'}</p>
+            <div className="absolute right-6 top-9 z-[70] flex flex-col items-end gap-2">
+                <ArtistHeaderPillButton
+                    label={t('artistGrid.moreActions')}
+                    isDaylight={isDaylight}
+                    items={[
+                        // 两项都在同一份菜单里：点三个点展开，各自按能力决定可不可点。
+                        ...(offers('enqueue-scope')
+                            ? [{
+                                key: 'enqueue-scope',
+                                icon: <ListPlus size={16} />,
+                                label: t('artistGrid.addTopSongsToQueue'),
+                                onClick: () => artistActions.enqueueScope(),
+                                disabled: !capabilities['enqueue-scope'].enabled,
+                            }]
+                            : []),
+                        // #918：热门歌曲只有 10 首，不在任何专辑里的单曲只在「全部歌曲」那一层看得到。
+                        // 加载中先画成不可点；读完确定没有更多歌时这一项不出现（与 Bravais 海报上的按钮一致）。
+                        ...(offers('open-all-songs')
+                            && (capabilities['open-all-songs'].enabled || capabilities['open-all-songs'].reason === 'loading')
+                            ? [{
+                                key: 'open-all-songs',
+                                icon: <ListMusic size={16} />,
+                                label: t('artistGrid.allSongs'),
+                                onClick: () => {
+                                    // 不是从卡片打开的：丢掉观察窗口里刚点过的那张卡（例如刚播的热门歌曲），
+                                    // 新一层按普通的级联入场，不把那张卡的封面飞过去。
+                                    useCollectionMorphStore.getState().ackPending();
+                                    artistActions.openAllSongs();
+                                },
+                                disabled: !capabilities['open-all-songs'].enabled,
+                            }]
+                            : []),
+                    ]}
+                />
+                {(progressiveLoading.backgroundLoading || backgroundLoadFailed || loadError) && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            // 加载失败：从头重新加载；专辑分页失败：从失败的那一页续（详情与热门歌曲不重新请求）。
+                            if (loadError) artistActions.reload();
+                            else if (backgroundLoadFailed) artistActions.retryAlbums();
+                        }}
+                        className="flex items-center gap-2 rounded-full px-3 py-2 text-xs backdrop-blur-md"
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--bg-color) 65%, transparent)' }}
+                        title={t('playlist.loading')}
+                    >
+                        <RefreshCw size={14} className={progressiveLoading.backgroundLoading ? 'animate-spin' : ''} />
+                        {backgroundLoadFailed || loadError ? t('ui.retry') : t('playlist.loading')}
+                    </button>
+                )}
             </div>
 
             <ArtistGridInfoCutInPanel
@@ -1422,7 +1421,7 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
             />
 
 
-            {(progressiveLoading.backgroundLoading || backgroundLoadFailed || loadError) && (
+            {/* {(progressiveLoading.backgroundLoading || backgroundLoadFailed || loadError) && (
                 <button
                     type="button"
                     onClick={() => {
@@ -1437,7 +1436,7 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
                     <RefreshCw size={14} className={progressiveLoading.backgroundLoading ? 'animate-spin' : ''} />
                     {backgroundLoadFailed || loadError ? t('ui.retry') : t('playlist.loading')}
                 </button>
-            )}
+            )} */}
 
             {/* Draggable Viewport Canvas */}
             <div

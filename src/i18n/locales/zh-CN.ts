@@ -5133,6 +5133,7 @@ export default {
     "noTopSongsToQueue": "没有可加入队列的热门歌曲",
     "allSongs": "全部歌曲",
     "allSongsCollectionName": "{{artistName}} 的全部歌曲",
+    "moreActions": "更多操作",
   },
   "obs": {
     "connecting": "正在连接 Folia",

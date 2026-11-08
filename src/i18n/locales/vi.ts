@@ -5097,6 +5097,7 @@ export default {
     "noTopSongsToQueue": "Không có bài hát nổi bật để thêm vào hàng đợi",
     "allSongs": "Tất cả bài hát",
     "allSongsCollectionName": "Tất cả bài hát của {{artistName}}",
+    "moreActions": "Thao tác khác",
   },
   "obs": {
     "connecting": "Đang kết nối Folia",

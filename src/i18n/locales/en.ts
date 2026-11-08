@@ -5133,6 +5133,7 @@ export default {
     "noTopSongsToQueue": "No top songs available to queue",
     "allSongs": "All songs",
     "allSongsCollectionName": "All songs by {{artistName}}",
+    "moreActions": "More actions",
   },
   "obs": {
     "connecting": "Connecting to Folia",

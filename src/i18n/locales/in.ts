@@ -5135,6 +5135,7 @@ export default {
     "noTopSongsToQueue": "Tidak ada lagu teratas yang bisa diantrekan",
     "allSongs": "Semua lagu",
     "allSongsCollectionName": "Semua lagu {{artistName}}",
+    "moreActions": "Tindakan lain",
   },
   "obs": {
     "connecting": "Menghubungkan ke Folia",
