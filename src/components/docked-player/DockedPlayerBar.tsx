@@ -244,7 +244,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                         所以传输键看上去仍是一簇，只是不再把播放键往一侧挤。 */}
                     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-[5px]">
                         {/* 左：封面 + 文字信息（左右排布，文字靠左），末尾挂上一曲 */}
-                        <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex min-w-0 items-center gap-3 [text-shadow:_0_0px_4px_var(--bg-color),_0_0px_4px_var(--bg-color)]">
                             {/* 封面：不在播放页时它本身就是回歌词画报的入口（悬停浮一层淡膜 + 箭头提示）。 */}
                             {canReturnToPlayer ? (
                                 <button

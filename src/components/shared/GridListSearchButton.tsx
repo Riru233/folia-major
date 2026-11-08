@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { motion, useIsPresent } from 'framer-motion';
+import { motion, useIsPresent, useTransform } from 'framer-motion';
 import { Command, List, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { openCommandFilter, openCommandPalette } from '../../stores/useAppViewStore';
 import { useInteractionSettingsStore } from '../../stores/useInteractionSettingsStore';
+import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
 import { usePlayerBottomBarBottomPx } from '../../hooks/usePlayerBottomBarBottomPx';
 import { SlideActionButton } from './SlideActionButton';
 
@@ -14,6 +15,15 @@ import { SlideActionButton } from './SlideActionButton';
 // three grids each remembering to keep those three in step is three chances to get it wrong.
 //
 // The gesture itself is SlideActionButton, shared with the poster wall.
+
+/**
+ * 停靠样式下按钮要额外抬起来的高度。
+ *
+ * 浮动胶囊是一小块，基线（`usePlayerBottomBarBottomPx`）留出的净空够它用；停靠栏是通栏的一条，
+ * 拦在同一个高度上会把这颗按钮埋进栏里，所以在停靠样式下再抬 60px 让它整个露在栏的上方。
+ */
+const DOCKED_BAR_LIFT_PX = 60;
+
 interface GridListSearchButtonProps {
     isDaylight: boolean;
     accentColor: string;
@@ -36,7 +46,14 @@ export const GridListSearchButton: React.FC<GridListSearchButtonProps> = ({
     const { t } = useTranslation();
     const slideTarget = useInteractionSettingsStore(state => state.gridActionButtonSlideTarget);
     const opensPalette = slideTarget === 'command-palette';
-    const bottomBarBottomPx = usePlayerBottomBarBottomPx();
+    const baseBottomPx = usePlayerBottomBarBottomPx();
+    // 停靠样式下这条栏贴底通栏，按钮要整体抬到它上面；抬升量直接并进同一个 motion 值，
+    // 这样用户拖动浮动胶囊调整基线时，两种样式的手感仍是一致的。
+    const playerBarStyle = usePlayerChromeSettingsStore(state => state.playerBarStyle);
+    const bottomPx = useTransform(
+        baseBottomPx,
+        value => value + (playerBarStyle === 'docked' ? DOCKED_BAR_LIFT_PX : 0),
+    );
     // 所在的网格层已经在退场时才挂上（打开集合后马上关掉，曲目在退场开始之后才到）就不渲染：
     // 父层退场中途才挂上的带 exit 的 motion 元素，framer 会把它登记为「退场未完成」却不再给它播退场，
     // 宿主的 AnimatePresence 于是等不到完成，透明的整屏网格层卸不掉、挡住首页。挂上时在场的照常随父层淡出；
@@ -53,7 +70,7 @@ export const GridListSearchButton: React.FC<GridListSearchButtonProps> = ({
             exit={{ opacity: 0, x: 20, y: 12, scale: 0.92 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}
             data-testid="grid-list-search-button"
-            style={{ bottom: bottomBarBottomPx }}
+            style={{ bottom: bottomPx }}
             className="pointer-events-auto fixed right-0 z-[60] pr-4 md:pr-8 group w-20 flex flex-col items-end gap-3"
         >
             {above}
