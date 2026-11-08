@@ -15,5 +15,5 @@ export const capsuleGlassClass = (isDaylight: boolean) => (
 /** 投影和边沿：边沿画在阴影里，和播放页面板一样不占布局。文字跟歌曲主题色。 */
 export const capsuleGlassStyle = (isDaylight: boolean): CSSProperties => ({
     boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px ${panelEdgeColor(isDaylight)}`,
-    color: 'var(--text-primary)',
+    color: `${isDaylight ? '#333' : '#ddd'}`,
 });
