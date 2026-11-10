@@ -44,7 +44,7 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
             data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed ${isCompact ? 'top-[76px] left-2' : PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
+            className={`fixed h-[32px] ${isCompact ? 'bottom-[48px] left-2' : PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
                     style={{
                         backgroundColor: "rgba(40, 40, 40, 0.42)",
                         borderTop:  "1px solid rgba(255,255,255,0.22)",
