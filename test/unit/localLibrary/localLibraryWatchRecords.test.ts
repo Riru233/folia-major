@@ -19,6 +19,12 @@ describe('isRelevantLocalLibraryChange', () => {
         expect(isRelevantLocalLibraryChange(record('disappeared', 'Album', 'cover.jpg'))).toBe(true);
     });
 
+    it('keeps imported video files, whose sidecar lyrics change with them', () => {
+        expect(isRelevantLocalLibraryChange(record('appeared', 'Album', 'MV - Song.mp4'))).toBe(true);
+        expect(isRelevantLocalLibraryChange(record('modified', 'Album', 'MV - Song.mkv'))).toBe(true);
+        expect(isRelevantLocalLibraryChange(record('modified', 'Album', 'MV - Song.lrc'))).toBe(true);
+    });
+
     it('keeps extension-less entries, which are usually directories', () => {
         expect(isRelevantLocalLibraryChange(record('appeared', 'New Album'))).toBe(true);
         expect(isRelevantLocalLibraryChange(record('moved', 'Album', 'Disc 2'))).toBe(true);

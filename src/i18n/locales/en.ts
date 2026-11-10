@@ -648,6 +648,7 @@ export default {
     "noPlayableSongs": "No playable songs in this list",
     "songUnavailableTag": "Unavailable",
     "songVideoTag": "MV",
+    "songVideoUnsupported": "This video format cannot be decoded here (MKV needs FFmpeg); playing its audio only",
     "queueShuffled": "Queue shuffled",
     "loopShuffleHint": "Looking for shuffle?",
     "loopShuffleHintAction": "Learn how",

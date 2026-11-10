@@ -646,6 +646,7 @@ export default {
     "noPlayableSongs": "Không có bài hát khả dụng trong danh sách",
     "songUnavailableTag": "Không khả dụng",
     "songVideoTag": "MV",
+    "songVideoUnsupported": "Không giải mã được định dạng video này tại đây (MKV cần FFmpeg); chỉ phát phần âm thanh",
     "queueShuffled": "Đã xáo trộn hàng đợi",
     "loopShuffleHint": "Tìm chế độ xáo trộn?",
     "loopShuffleHintAction": "Tìm hiểu",

@@ -37,7 +37,7 @@ export interface OnlineMetadataCandidate {
     raw: SongResult;
 }
 
-const stripAudioExtension = (fileName: string) => fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i, '');
+const stripAudioExtension = (fileName: string) => fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac|mp4|mkv)$/i, '');
 
 export const buildLocalSongMetadataSearchTarget = (song: LocalSong): OnlineMetadataSearchTarget => ({
     title: song.title || stripAudioExtension(song.fileName),

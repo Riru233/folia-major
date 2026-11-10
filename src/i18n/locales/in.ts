@@ -648,6 +648,7 @@ export default {
     "noPlayableSongs": "Tidak ada lagu yang bisa diputar di daftar ini",
     "songUnavailableTag": "Tidak Tersedia",
     "songVideoTag": "MV",
+    "songVideoUnsupported": "Format video ini tidak bisa didekode di sini (MKV butuh FFmpeg); hanya audionya yang diputar",
     "queueShuffled": "Antrean diacak",
     "loopShuffleHint": "Mencari putar acak?",
     "loopShuffleHintAction": "Pelajari caranya",

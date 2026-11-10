@@ -648,6 +648,7 @@ export default {
     "noPlayableSongs": "列表中没有可播放的歌曲",
     "songUnavailableTag": "已下架",
     "songVideoTag": "MV",
+    "songVideoUnsupported": "这个视频的格式无法在本机解码（MKV 需要 FFmpeg），只播放音轨",
     "queueShuffled": "播放队列已打乱",
     "loopShuffleHint": "想找随机播放吗？",
     "loopShuffleHintAction": "点这里了解",

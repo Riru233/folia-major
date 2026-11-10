@@ -30,6 +30,7 @@ import { useLyricSettingsStore } from '../stores/useLyricSettingsStore';
 import { getLocalLyricFilePriority, isSameLocalLyricFormatOrder, normalizeLocalLyricFormatOrder, type LocalLyricFileFormat } from '../utils/lyrics/localLyricFormatOrder';
 import { readLyricFile } from '../utils/lyrics/lyricFileDecoding';
 import { isLocalFolderIgnored, normalizeLocalFolderPath, runLocalFolderMutation, setLocalFolderIgnored } from './localLibraryFolderIgnore';
+import { VIDEO_MEDIA_EXTENSIONS, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
 
 
 type EmbeddedMetadata = EmbeddedMetadataResult;
@@ -90,7 +91,10 @@ const localCoverAssetRequestMap = new Map<string, Promise<LocalSong>>();
 const songsWithoutEmbeddedCover = new Map<string, string>();
 const BROWSER_AUDIO_EXTENSIONS = /\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i;
 const ELECTRON_FALLBACK_AUDIO_EXTENSIONS = /\.(alac|ape|wv|tta|wma|aif|aiff|caf|dsf|dff)$/i;
-const KNOWN_AUDIO_EXTENSIONS = /\.(mp3|flac|m4a|wav|ogg|opus|aac|alac|ape|wv|tta|wma|aif|aiff|caf|dsf|dff)$/i;
+// 视频（MV）：直接当曲目导入。声音走和音频一样的那条链（<audio> 放它的音轨），画面另由歌词背景使用。
+// mp4 里的 H.264/AAC 浏览器能自己解；mkv 是 Chromium 不认识的容器，音轨要靠转码回退拆出来，
+// 画面只有在运行时能解的时候才显示（见 localSongVideoSource / VideoLayer 的降级）。
+const KNOWN_AUDIO_EXTENSIONS = /\.(mp3|flac|m4a|wav|ogg|opus|aac|alac|ape|wv|tta|wma|aif|aiff|caf|dsf|dff|mp4|mkv)$/i;
 const LYRIC_EXTENSIONS = /\.(lrc|vtt|ttml|qrc|yrc|krc|fia)$/i;
 const TRANSLATION_LYRIC_EXTENSIONS = /\.t\.(lrc|vtt)$/i;
 const IMPORT_CONCURRENCY = 6;
@@ -254,26 +258,27 @@ export function extractMetadataFromFilename(fileName: string): { title?: string;
 // Get audio duration from file
 async function getAudioDuration(file: File): Promise<number> {
     const playbackInput = await repairFlacMetadata(file, true);
+    // 视频文件用 <video> 读时长：<audio> 拿到 mkv 只会报错，mp4 两者都行，但同一份媒体元数据没必要换元素。
+    const probe = isVideoMediaFileName(file.name) ? document.createElement('video') : new Audio();
     return new Promise((resolve) => {
-        const audio = new Audio();
         const url = createSafeObjectUrl(playbackInput);
         if (!url) {
             resolve(0);
             return;
         }
 
-        audio.addEventListener('loadedmetadata', () => {
-            const duration = audio.duration * 1000; // Convert to milliseconds
+        probe.addEventListener('loadedmetadata', () => {
+            const duration = probe.duration * 1000; // Convert to milliseconds
             URL.revokeObjectURL(url);
             resolve(duration);
         });
 
-        audio.addEventListener('error', () => {
+        probe.addEventListener('error', () => {
             URL.revokeObjectURL(url);
             resolve(0); // Default duration on error
         });
 
-        audio.src = url;
+        probe.src = url;
     });
 }
 
@@ -281,13 +286,14 @@ function canImportElectronFallbackAudio(): boolean {
     return typeof window !== 'undefined' && typeof window.electron?.requestTranscodeFallback === 'function';
 }
 
-function isAudioFile(file: File): boolean {
-    return BROWSER_AUDIO_EXTENSIONS.test(file.name)
-        || (canImportElectronFallbackAudio() && ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(file.name));
+/** 这个文件是不是一条可以进曲库的「歌」（音频，或者带音轨的视频）。 */
+function isImportableMediaFile(file: File): boolean {
+    return isImportableMediaFileName(file.name);
 }
 
-function isAudioFileName(fileName: string): boolean {
+function isImportableMediaFileName(fileName: string): boolean {
     return BROWSER_AUDIO_EXTENSIONS.test(fileName)
+        || VIDEO_MEDIA_EXTENSIONS.test(fileName)
         || (canImportElectronFallbackAudio() && ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(fileName));
 }
 
@@ -357,7 +363,7 @@ function getSnapshotFileKind(fileName: string): LocalLibrarySnapshotFile['kind']
     if (getFolderCoverPriority(lowerName) !== -1) {
         return 'cover';
     }
-    if (isAudioFileName(fileName)) {
+    if (isImportableMediaFileName(fileName)) {
         return 'audio';
     }
     return 'other';
@@ -796,7 +802,7 @@ async function buildImportedSong(
     const file = entry.file;
     const getFileMs = 0;
 
-    if (!isAudioFile(file)) {
+    if (!isImportableMediaFile(file)) {
         return {
             song: null,
             metrics: {
@@ -907,6 +913,8 @@ async function buildImportedSong(
         fileLastModified: file.lastModified,
         fileSignature: buildFileSignature(entry.relativePath, file.size, file.lastModified),
         mimeType: file.type,
+        // 视频曲目：名字决定了它是 MV，播放时它的画面被强制当作歌词背景（见 VideoLayer）。
+        mediaKind: resolveLocalMediaKind(file.name),
         bitrate: embeddedMetadata.bitrate || 0,
         addedAt: existingSong?.addedAt || Date.now(),
         title: titleOrigin === 'import' ? importedMetadata.title : existingSong?.title || importedMetadata.title,
@@ -990,6 +998,7 @@ async function hydrateSongMetadata(song: LocalSong): Promise<LocalSong> {
         // makes every cached playback representation look stale and re-transcode on each play.
         song.fileLastModified = file.lastModified;
         song.mimeType = file.type;
+        song.mediaKind = resolveLocalMediaKind(file.name);
         song.bitrate = embeddedMetadata.bitrate || song.bitrate || 0;
         const filenameMetadata = extractMetadataFromFilename(file.name);
         song.importedMetadata = buildImportedMetadataSnapshot({

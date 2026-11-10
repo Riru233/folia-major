@@ -10,6 +10,7 @@ import type { LocalLibraryChangeRecordLike } from '../types/localLibraryWatch';
 const RELEVANT_EXTENSIONS = new Set([
     'mp3', 'flac', 'm4a', 'wav', 'ogg', 'opus', 'aac',
     'alac', 'ape', 'wv', 'tta', 'wma', 'aif', 'aiff', 'caf', 'dsf', 'dff',
+    'mp4', 'mkv',
     'lrc', 'vtt', 'ttml', 'qrc', 'yrc', 'krc', 'fia',
     'png', 'jpg', 'jpeg',
 ]);
