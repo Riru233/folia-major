@@ -7,6 +7,7 @@ import { useGlass } from '@/shinoinject/useGlass';
 import { resolveReducedMotion, useMotionSettingsStore } from '../../stores/useMotionSettingsStore';
 import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
 import { DOCKED_PLAYER_BAR_HEIGHT_PX } from '../../components/docked-player/DockedPlayerBar';
+import { useIsBottomLayoutCompact } from '../../stores/useBottomDockStore';
 
 // src/library/app/DevLibraryRendererSwitch.tsx
 // 开发验证浮层：在各套 UI suite 之间切换当前打开的集合，
@@ -35,13 +36,15 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
     // 底部播放器是停靠栏时它通栏压在最底下，这条浮层就得整体抬到栏上面去，否则两者叠在一起。
     const isDockedPlayerBar = usePlayerChromeSettingsStore(state => state.playerBarStyle) === 'docked';
     const dockedClearance = DOCKED_PLAYER_BAR_HEIGHT_PX + 8;
+    // 紧凑档（窗口窄于 960，progress-bar v3）底部只留进度条胶囊，这条挪到左上角（标题栏和墙的返回按钮下面）。
+    const isCompact = useIsBottomLayoutCompact();
 
     return (
         <div
             data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed ${PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
+            className={`fixed ${isCompact ? 'top-[76px] left-2' : PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
                     style={{
                         backgroundColor: "rgba(40, 40, 40, 0.42)",
                         borderTop:  "1px solid rgba(255,255,255,0.22)",

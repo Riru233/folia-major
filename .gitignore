@@ -111,3 +111,5 @@ patch/
 # Generated system-WebView companions
 /build/apple-music-native/
 >>>>>>> 8abd1091c9a3a3df8670c2708bf1eb9f6dfe7329
+# Coven: the supervisor session's local ledger (packages/coven/README.md)
+.coven/
