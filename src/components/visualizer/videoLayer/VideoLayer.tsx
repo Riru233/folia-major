@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { PlayerState } from '../../../types';
 import { currentTime } from '../../../stores/motionSignals';
@@ -8,6 +8,7 @@ import { ensureVideoLayerFileRestored, useVideoLayerSettingsStore } from '../../
 import { releaseLocalSongVideoSource, resolveLocalSongVideoSource, type LocalSongVideoSource } from '../../../services/localSongVideoSource';
 import { isLocalPlaybackSong } from '../../../utils/appPlaybackGuards';
 import i18n from '../../../i18n/config';
+import { useShinoLabStore } from '../../../shinoinject/lab/useShinoLabStore';
 
 // src/components/visualizer/videoLayer/VideoLayer.tsx
 // Built-in muted video behind the lyrics (above the background, under the lyrics). The video follows
@@ -30,9 +31,11 @@ const SONG_VIDEO_DRIFT_TOLERANCE_SEC = 0.12;
 interface VideoLayerProps {
     /** The shell's pause signal (window hidden etc.); the video stops even while music plays. */
     paused: boolean;
+    /** 静态模式（省资源）只关掉设置里那条装饰视频；曲目自带的画面是这首歌的一部分，照放。 */
+    staticMode?: boolean;
 }
 
-const VideoLayer: React.FC<VideoLayerProps> = ({ paused }) => {
+const VideoLayer: React.FC<VideoLayerProps> = ({ paused, staticMode = false }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const pausedRef = useRef(paused);
     pausedRef.current = paused;
@@ -45,6 +48,8 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused }) => {
         localFileUrl: state.localFileUrl,
     })));
     const settingsSource = localFileUrl ?? (url || null);
+    // 实验室里的视频播放总开关：关掉时这条视频层和视频曲目的画面一起停下。
+    const videoPlaybackEnabled = useShinoLabStore(state => state.videoPlaybackEnabled);
 
     // 当前这首歌是不是一条视频曲目：是就把它自己的画面取来，设置里那条视频层让位。
     const displaySong = usePlaybackStore(selectDisplaySong);
@@ -54,28 +59,52 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused }) => {
     const [unplayableUrl, setUnplayableUrl] = useState<string | null>(null);
 
     useEffect(() => {
+        // 换歌先清空：否则新地址还在解析时，屏幕上留着的上一首画面会被新歌的归零时钟 seek 回开头。
+        setSongVideo(null);
+        setUnplayableUrl(null);
         if (!songVideoId) {
             // 换到在线曲目（或没有歌）了：把上一首 MV 的地址放掉，别攥着一个几百兆的文件。
-            setSongVideo(null);
             releaseLocalSongVideoSource();
             return undefined;
         }
         let cancelled = false;
-        void resolveLocalSongVideoSource(songVideoId).then(source => {
-            if (!cancelled) setSongVideo(source);
-        });
+        void resolveLocalSongVideoSource(songVideoId)
+            .then(source => {
+                if (!cancelled) setSongVideo(source);
+            })
+            .catch(error => {
+                console.warn('[VideoLayer] Failed to resolve the song video source:', error);
+                if (!cancelled) setSongVideo(null);
+            });
         return () => {
             cancelled = true;
         };
     }, [songVideoId]);
 
-    const songVideoSource = songVideo && songVideo.url !== unplayableUrl ? songVideo : null;
+    // 只认当前这首的地址：解析过程中换过一次歌的话，旧结果不能被拿来画。
+    const songVideoSource = songVideo && songVideo.songId === songVideoId && songVideo.url !== unplayableUrl
+        ? songVideo
+        : null;
     const isSongVideo = Boolean(songVideoSource);
     const source = songVideoSource ? songVideoSource.url : settingsSource;
-    const active = isSongVideo || (enabled && Boolean(settingsSource));
+    const active = videoPlaybackEnabled && (isSongVideo || (!staticMode && enabled && Boolean(settingsSource)));
+
+    /**
+     * 这首歌的画面放不出来（容器解不了、或者里面根本没有画面）：提示一次，退回设置里那条合成背景，
+     * 顺手把地址放掉。声音不受影响，它走的是 <audio> 那条链，有它自己的转码回退。
+     */
+    const degradeToSettings = useCallback((reason: string) => {
+        if (!source) return;
+        setUnplayableUrl(source);
+        releaseLocalSongVideoSource();
+        console.warn('[VideoLayer] Cannot show the song video; returning to the configured background', { reason, source });
+        setStatusMessage({ type: 'info', text: i18n.t('status.songVideoUnsupported') });
+    }, [source]);
 
     useEffect(() => {
         ensureVideoLayerFileRestored();
+        // 离开播放页（组件卸载）就把 MV 的地址放掉；下次回到播放页会重新解析。
+        return () => releaseLocalSongVideoSource();
     }, []);
 
     useEffect(() => {
@@ -97,10 +126,17 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused }) => {
         };
         const followState = () => {
             const playing = selectDisplayPlayerState(usePlaybackStore.getState()) === PlayerState.PLAYING;
-            if (playing && !pausedRef.current) void video.play().catch(() => {});
-            else video.pause();
+            // 画面比歌短时已经放到结尾了：play() 会把它带回第一帧，等下一次 align 才拉回来。
+            if (playing && !pausedRef.current && !video.ended) void video.play().catch(() => {});
+            else if (!playing) video.pause();
         };
         const onMetadata = () => {
+            // 容器能解但里面没有画面（纯音轨的 mp4、或视频轨解不了而音轨能放）：此时不会触发 error，
+            // 只会得到 videoWidth === 0。不在这里退场，这一层就是一整块黑屏盖住歌词背景。
+            if (isSongVideo && video.videoWidth === 0) {
+                degradeToSettings('no video track');
+                return;
+            }
             align();
             followState();
         };
@@ -127,7 +163,7 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused }) => {
             video.removeEventListener('loadedmetadata', onMetadata);
             video.pause();
         };
-    }, [active, isSongVideo, source]);
+    }, [active, degradeToSettings, isSongVideo, source]);
 
     // The shell's pause flag changes without touching the source; only play/pause needs to follow.
     useEffect(() => {
@@ -156,12 +192,7 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused }) => {
             className="absolute inset-0 h-full w-full pointer-events-none"
             style={{ opacity: isSongVideo ? 1 : opacity, objectFit: isSongVideo ? 'cover' : fit }}
             onError={() => {
-                // 曲目自带的画面解不开（多半是 MKV 容器）：报一次，然后老老实实回到原来的背景。
-                // 声音不受影响——<audio> 那边有它自己的转码回退。
-                if (!isSongVideo) return;
-                setUnplayableUrl(source);
-                console.warn('[VideoLayer] This runtime cannot decode the song video; playing the audio only', { source });
-                setStatusMessage({ type: 'info', text: i18n.t('status.songVideoUnsupported') });
+                if (isSongVideo) degradeToSettings('media error');
             }}
         />
     );

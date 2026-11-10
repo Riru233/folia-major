@@ -204,6 +204,7 @@ export const APPEARANCE_SHORT_KEYS = [
     'config.harmonySubtitleBackground=hsb',
     'config.hidePlayerTranslationSubtitle=hpts',
     'config.latentBackgroundTuning=lbt',
+    'config.liquidGlass=lgt',
     'config.latticeBadgeCurrentOnly=lbco',
     'config.libraryWallBackdropBlur=lwbb',
     'config.libraryWallBackdropLyrics=lwbl',

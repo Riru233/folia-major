@@ -4,7 +4,7 @@
 //
 // Split out of useSettingsUiStore.
 //
-// @note 这里除 player_header_blur 以外的设置（播放页控件、标题栏、鼠标指针、透明背景、系统材质）是用户明确决定
+// @note 这里除 player_header_blur 以外的设置（播放页控件、底部播放条的样式与固定、标题栏、鼠标指针、透明背景、系统材质）是用户明确决定
 // 「不进外观配置导入导出」的（2026-11-08）：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的，
 // OBS 页面隐藏了这些控件。不要按 settings-feature-integration「视觉设置必须进
 // buildCurrentConfig / compressConfig / decompressConfig / validKeys / handleImportConfig」的规则把它们补进短码或 JSON。

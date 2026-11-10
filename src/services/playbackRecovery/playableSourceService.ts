@@ -15,6 +15,12 @@ const buildRequestId = () => (
 
 const rendererRequests = new Map<string, AbortController>();
 
+/**
+ * 视频曲目（MV）走转码回退时只为了取出音轨，代价却是把整个文件读进渲染进程、再结构化克隆一份过 IPC。
+ * 一部 MV 常见几百兆到几 G，这么干很容易把页面拖死，所以超过这个大小的就不试了，按「这条放不了」处理。
+ */
+const MAX_VIDEO_TRANSCODE_BYTES = 512 * 1024 * 1024;
+
 const throwIfAborted = (signal?: AbortSignal): void => {
     if (signal?.aborted) throw Object.assign(new Error('Transcode cancelled'), { code: 'CANCELLED' });
 };
@@ -33,6 +39,13 @@ export const buildTranscodeFallbackSource = async (
         const file = await getFileFromLocalSong(localSong);
         throwIfAborted(signal);
         if (!file || file.size <= 0) return null;
+        if (localSong.mediaKind === 'video' && file.size > MAX_VIDEO_TRANSCODE_BYTES) {
+            console.warn('[TranscodeFallback] Video file is too large to extract its audio here', {
+                fileName: file.name,
+                sizeMb: Math.round(file.size / (1024 * 1024)),
+            });
+            return null;
+        }
         const data = await file.arrayBuffer();
         throwIfAborted(signal);
         return {

@@ -5,8 +5,8 @@ import { getVisualizerModeLabel, getVisualizerRegistryEntry, VISUALIZER_REGISTRY
 import {
     getVisualizerBackgroundModeLabel,
     getVisualizerBackgroundRegistryEntry,
-    VISUALIZER_BACKGROUND_REGISTRY,
 } from '../../visualizer/backgrounds/registry';
+import { useAvailableBackgroundEntries } from '../../visualizer/backgrounds/availability';
 import { resolveVisualizerBackgroundMode } from '../../../stores/visualizerSettingsPersistence';
 import { useVisualizerModeStepper } from '../../../hooks/useVisualizerModeStepper';
 import { QuickControlChip, QuickControlToggle } from '../../shared/QuickControlChip';
@@ -102,12 +102,14 @@ const AppearanceSection: React.FC<AppearanceSectionProps> = ({
     const visualizerModes = useMemo(() => visualizerOptions.map(option => option.value), [visualizerOptions]);
     const stepVisualizerMode = useVisualizerModeStepper(visualizerModes);
 
+    // 实验性的「视频」背景只在 Shino 实验室里开了那一枚开关之后才进这个列表。
+    const availableBackgrounds = useAvailableBackgroundEntries();
     const backgroundOptions = useMemo(
-        () => VISUALIZER_BACKGROUND_REGISTRY.map(entry => ({
+        () => availableBackgrounds.map(entry => ({
             value: entry.mode,
             label: getVisualizerBackgroundModeLabel(entry.mode, t),
         })),
-        [t],
+        [availableBackgrounds, t],
     );
     const resolvedBackgroundMode = resolveVisualizerBackgroundMode(visualizerBackgroundMode, visualizerMode);
 

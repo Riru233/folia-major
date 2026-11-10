@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { RotateCcw, X } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { getActiveLibrarySuiteId, isWallLibrarySuite, useActiveLibrarySuiteId } from '../../../../library/app/librarySuiteChoice';
@@ -16,9 +16,8 @@ import { setStatusMessage } from '../../../../stores/useStatusMessageStore';
 import { hasNowPlayingCardSong, useNowPlayingCardLayoutStore } from '../../../app/overlays/now-playing-toast/nowPlayingCardLayoutStore';
 import { useStageSettingsStore } from '../../../../stores/useStageSettingsStore';
 import { useTypographySettingsStore } from '../../../../stores/useTypographySettingsStore';
-import { ensureVideoLayerFileRestored, useVideoLayerSettingsStore, VIDEO_LAYER_OPACITY_BOUNDS } from '../../../../stores/useVideoLayerSettingsStore';
 import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX, resolvePlayerBottomBarMaxOffset } from '../../../../utils/playerBottomBarLayout';
-import { Button, FoldedGroup, Group, PictureChoice, Reveal, Row, Segmented, Select, Slider, TextField, Toggle, Value, option, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
+import { Button, FoldedGroup, Group, PictureChoice, Reveal, Row, Segmented, Select, Slider, Toggle, Value, option, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
 import { EntryViewPicture } from './pictures';
 import { useSettingsPage } from './settingsPageContext';
 
@@ -31,7 +30,6 @@ import { useSettingsPage } from './settingsPageContext';
 const VIEW: SettingsGroupDef = { id: 'playbackEntryView', titleKey: 'options.settingsHeadingView' };
 const BAR: SettingsGroupDef = { id: 'bottomUiSettings', titleKey: 'options.settingsHeadingControlBar' };
 const CARD: SettingsGroupDef = { id: 'stageTrackPill', titleKey: 'options.stageTrackPill' };
-const VIDEO: SettingsGroupDef = { id: 'videoLayerSettings', titleKey: 'options.videoLayerSettings' };
 const PLAYER_UI: SettingsGroupDef = { id: 'labPlayerUi', titleKey: 'options.labPlayerUiSection' };
 
 const O = {
@@ -55,11 +53,6 @@ const O = {
     cardOnHome: option(CARD, 'stageTrackPillOnHome', 'options.stageTrackPillOnHome', { available: () => !isWallLibrarySuite(getActiveLibrarySuiteId()) }),
     cardInObs: option(CARD, 'stageTrackPillInObs', 'options.stageTrackPillInObs'),
     cardCloseButton: option(CARD, 'showOpenPanelCloseButton', 'options.showOpenPanelCloseButton'),
-    videoEnabled: option(VIDEO, 'videoLayerEnabled', 'options.videoLayerEnabled'),
-    videoFile: option(VIDEO, 'videoLayerLocalFile', 'options.videoLayerLocalFile'),
-    videoUrl: option(VIDEO, 'videoLayerUrl', 'options.videoLayerUrl'),
-    videoOpacity: option(VIDEO, 'videoLayerOpacity', 'options.videoLayerOpacity'),
-    videoFit: option(VIDEO, 'videoLayerFit', 'options.videoLayerFit'),
     hideProgressBar: option(PLAYER_UI, 'hidePlayerProgressBar', 'options.hidePlayerProgressBar'),
     hideSubtitle: option(PLAYER_UI, 'hidePlayerTranslationSubtitle', 'options.hidePlayerTranslationSubtitle'),
     hidePanelButton: option(PLAYER_UI, 'hidePlayerRightPanelButton', 'options.hidePlayerRightPanelButton'),
@@ -131,22 +124,6 @@ const PlayerPage: React.FC = () => {
         setOnHome: state.handleToggleStageTrackPillOnHome,
         setInObs: state.handleToggleStageTrackPillInObs,
     })));
-    const video = useVideoLayerSettingsStore(useShallow(state => ({
-        enabled: state.videoLayerEnabled,
-        url: state.videoLayerUrl,
-        opacity: state.videoLayerOpacity,
-        fit: state.videoLayerFit,
-        localFileName: state.localFileName,
-        localFileStatus: state.localFileStatus,
-        canPersistLocalFile: state.canPersistLocalFile,
-        setEnabled: state.setVideoLayerEnabled,
-        setUrl: state.setVideoLayerUrl,
-        setOpacity: state.setVideoLayerOpacity,
-        setFit: state.setVideoLayerFit,
-        pickLocalFile: state.pickLocalFile,
-        clearLocalFile: state.clearLocalFile,
-        regrantLocalFile: state.regrantLocalFile,
-    })));
     const hideSubtitle = useTypographySettingsStore(state => state.hidePlayerTranslationSubtitle);
     const setHideSubtitle = useTypographySettingsStore(state => state.handleToggleHidePlayerTranslationSubtitle);
     const hasCurrentSong = usePlaybackStore(state => Boolean(state.currentSong));
@@ -176,23 +153,6 @@ const PlayerPage: React.FC = () => {
         () => PLAYER_CONTROL_SLOT_OPTIONS.map(slot => ({ value: slot.id, label: t(slot.labelKey) })),
         [t],
     );
-
-    // The URL commits on blur/Enter, so a half-typed address never reaches the <video>.
-    const [urlDraft, setUrlDraft] = useState(video.url);
-    useEffect(() => {
-        ensureVideoLayerFileRestored();
-    }, []);
-    useEffect(() => {
-        setUrlDraft(video.url);
-    }, [video.url]);
-    const pickVideo = async () => {
-        try {
-            await video.pickLocalFile();
-        } catch (error) {
-            console.error('[VideoLayer] Failed to pick a video:', error);
-            setStatusMessage({ type: 'error', text: t('options.videoLayerPickFailed') });
-        }
-    };
 
     return (
         <>
@@ -340,70 +300,6 @@ const PlayerPage: React.FC = () => {
                 <Row option={O.cardCloseButton} hint={t('options.showOpenPanelCloseButtonDesc')}>
                     <Toggle checked={chrome.cardCloseButton} onChange={chrome.setCardCloseButton} />
                 </Row>
-            </Group>
-
-            <Group def={VIDEO}>
-                <Row
-                    option={O.videoEnabled}
-                    note={(
-                        <>
-                            {t('options.videoLayerDesc')}
-                            <br />
-                            {t('options.videoLayerNotInExport')}
-                        </>
-                    )}
-                >
-                    <Toggle checked={video.enabled} onChange={video.setEnabled} />
-                </Row>
-                <Reveal when={video.enabled || video.localFileStatus !== 'none'}>
-                    <Row
-                        sub
-                        option={O.videoFile}
-                        note={t(video.canPersistLocalFile ? 'options.videoLayerLocalFileDesc' : 'options.videoLayerLocalFileSessionDesc')}
-                    >
-                        {video.localFileStatus !== 'none' && (
-                            <>
-                                <Value tip={video.localFileName ?? undefined}>{video.localFileName}</Value>
-                                <Button icon={X} tip={t('options.videoLayerClearFile')} onClick={() => void video.clearLocalFile()} />
-                            </>
-                        )}
-                        {video.localFileStatus === 'needs-permission' && (
-                            <Button onClick={() => void video.regrantLocalFile()}>{t('options.videoLayerRegrant')}</Button>
-                        )}
-                        <Button onClick={() => void pickVideo()}>{t('options.videoLayerPickFile')}</Button>
-                    </Row>
-                </Reveal>
-                <Reveal when={video.enabled}>
-                    <Row sub option={O.videoUrl} hint={t('options.videoLayerUrlDesc')}>
-                        <TextField
-                            type="url"
-                            value={urlDraft}
-                            onChange={setUrlDraft}
-                            onCommit={() => video.setUrl(urlDraft)}
-                            placeholder="https://example.com/loop.mp4"
-                        />
-                    </Row>
-                    <Row sub option={O.videoOpacity}>
-                        <Slider
-                            value={video.opacity}
-                            min={VIDEO_LAYER_OPACITY_BOUNDS.min}
-                            max={VIDEO_LAYER_OPACITY_BOUNDS.max}
-                            step={0.05}
-                            onChange={video.setOpacity}
-                            format={percent}
-                        />
-                    </Row>
-                    <Row sub option={O.videoFit}>
-                        <Segmented
-                            value={video.fit}
-                            options={[
-                                { value: 'cover', label: t('options.videoLayerFitCover') },
-                                { value: 'contain', label: t('options.videoLayerFitContain') },
-                            ]}
-                            onChange={video.setFit}
-                        />
-                    </Row>
-                </Reveal>
             </Group>
 
             <FoldedGroup def={PLAYER_UI}>

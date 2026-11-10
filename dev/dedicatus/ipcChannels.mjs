@@ -21,6 +21,11 @@ export const IPC_CHANNELS = {
     'automix-models-present': { level: 'any', why: '只读模型文件在不在' },
     'background-throttling-get': { level: 'first-party', why: '只回主窗口，别处回受限值（内联校验）' },
     'bodian-api-request': { level: 'first-party', why: '现状：有来源校验' },
+    // 实验性「视频」背景（electron/bilibili.cjs）：登录在 bilibili 自己的窗口里完成，接口只读。
+    'bilibili-auth-status': { level: 'first-party', why: '回 bilibili 账号名与头像，属于个人数据（isTrustedMainWindowContents）' },
+    'bilibili-auth-login': { level: 'first-party', why: '开登录窗口并写 bilibili 会话（isTrustedMainWindowContents）' },
+    'bilibili-auth-logout': { level: 'first-party', why: '清 bilibili 会话（isTrustedMainWindowContents）' },
+    'bilibili-request': { level: 'first-party', why: '带登录态代理 api.bilibili.com，只放行该主机（isTrustedMainWindowContents）' },
     'choose-cache-directory': { level: 'first-party', why: '改缓存目录（firstParty）' },
     'clear-audio-cache': { level: 'first-party', why: '清空音频缓存（firstParty）' },
     'clear-cover-cache': { level: 'first-party', why: '清空封面缓存（firstParty）' },

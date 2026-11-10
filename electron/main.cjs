@@ -90,6 +90,7 @@ const { createDisplaySleepBlocker } = require('./displaySleepBlocker.cjs');
 const { createVideoExportFileWriter } = require('./videoExportFileWriter.cjs');
 const { finalizeVideoExportFile } = require('./videoExportMp4.cjs');
 const { createLyricApi } = require('./lyricApi.cjs');
+const { createBilibiliApi, setupBilibiliMediaAccess } = require('./bilibili.cjs');
 const { createLocalCoverAssetStore, getLocalCoverAssetDirectory } = require('./localCoverAssets.cjs');
 const {
   compareVersions,
@@ -2877,6 +2878,10 @@ const lyricApi = createLyricApi({
   port: DEFAULT_LYRIC_API_PORT,
 });
 
+// 实验性「视频」背景：bilibili 的账号与请求（见 electron/bilibili.cjs）。登录用的是它自己那个
+// session 分区，和主窗口的 cookies 分开，退出登录也只清那一份。
+const bilibiliApi = createBilibiliApi();
+
 const discordPresence = createDiscordPresenceController({
   getApplicationId: () => DEFAULT_DISCORD_APPLICATION_ID,
   isEnabled: () => readStoredBoolean(DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY, false),
@@ -3759,6 +3764,9 @@ function setupFileSystemAccessPermissionHandlers() {
 
 function setupCorsBypassHandlers() {
   const ses = session.defaultSession;
+
+  // bilibili 的 CDN 只认它自家站点的 Referer；MV 画面由渲染进程的 <video> 直接拉，所以在这里补。
+  setupBilibiliMediaAccess(ses);
 
   const getKugouMediaRequestInfo = details => {
     const parsedUrl = new URL(details.url);
@@ -8090,6 +8098,35 @@ ipcMain.handle('lyric-proxy-fetch', async (event, url, init) => {
   }
 
   return proxyLyricRequest(url, init);
+});
+
+// 实验性「视频」背景的 bilibili 半边（electron/bilibili.cjs）。只有主窗口能问，和上面几条一样。
+ipcMain.handle('bilibili-auth-status', async (event) => {
+  if (!isTrustedMainWindowContents(event.sender)) {
+    throw new Error('Untrusted renderer attempted to read the bilibili account.');
+  }
+  return bilibiliApi.getStatus();
+});
+
+ipcMain.handle('bilibili-auth-login', async (event) => {
+  if (!isTrustedMainWindowContents(event.sender)) {
+    throw new Error('Untrusted renderer attempted to sign in to bilibili.');
+  }
+  return bilibiliApi.openLogin();
+});
+
+ipcMain.handle('bilibili-auth-logout', async (event) => {
+  if (!isTrustedMainWindowContents(event.sender)) {
+    throw new Error('Untrusted renderer attempted to sign out of bilibili.');
+  }
+  return bilibiliApi.signOut();
+});
+
+ipcMain.handle('bilibili-request', async (event, request) => {
+  if (!isTrustedMainWindowContents(event.sender)) {
+    throw new Error('Untrusted renderer attempted to call the bilibili API.');
+  }
+  return bilibiliApi.request(request);
 });
 
 // Integrate AI logic locally into Electron

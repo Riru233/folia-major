@@ -481,7 +481,8 @@ export const settingsCommands: CommandPaletteCommand[] = [
     gpuPreferenceCommand('high-performance', 'Render GPU: High performance', 'Render on the discrete GPU; applies after a restart', ['render gpu high performance', 'discrete gpu', 'dedicated gpu', 'dgpu', 'nvidia', '渲染显卡高性能', '独显', '独立显卡']),
     gpuPreferenceCommand('low-power', 'Render GPU: Power saving', 'Render on the integrated GPU; applies after a restart', ['render gpu power saving', 'integrated gpu', 'igpu', 'battery', '渲染显卡省电', '核显', '集成显卡']),
     createSettingsCommand('settings-mods', 'Mod settings', 'Open the mod system switch and the installed mods', ['mod manager', 'mod system', 'plugins', '模组设置', '模组系统', '插件'], 'options', 'mods', { platform: ['electron'] }),
-    // The lab category is gone; its largest group, the player page switches, keeps the command.
+    // 实验室这一页是视频播放与 bilibili 视频背景的家；播放页界面那一组仍留在播放页上，所以这个名字还指那儿。
+    createSettingsCommand('settings-shino-lab', 'Shino Lab', 'Open video playback and the experimental bilibili video background', ['lab', 'experimental', 'video playback', 'bilibili', 'mv', '实验室', '实验', '视频播放', '视频背景', 'b站'], 'options', 'lab'),
     createSettingsAnchorCommand('settings-lab', 'Player page interface', 'Jump to the switches that hide or pin parts of the player page', ['player interface', 'hide player controls', 'lab', 'experimental', '播放页界面', '实验', '实验室'], 'labPlayerUi'),
     createSettingsAnchorCommand(
         'settings-ponder-hints',

@@ -810,6 +810,16 @@ declare global {
 
   interface Window {
     electron?: {
+      /**
+       * 实验性「视频」背景的 bilibili 半边（electron/bilibili.cjs）：账号状态、登录窗口，以及一个只放行
+       * api.bilibili.com 的请求代理。网页版没有它，见 services/bilibili/transport.ts。
+       */
+      bilibili?: {
+        getStatus: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
+        openLogin: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
+        signOut: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
+        request: (request: import('./types/bilibili').BilibiliBridgeRequest) => Promise<import('./types/bilibili').BilibiliBridgeResponse>;
+      };
       webUtils?: {
         /** Resolves the OS path of a dropped File (File.path was removed in modern Electron). */
         getPathForFile: (file: File) => string;

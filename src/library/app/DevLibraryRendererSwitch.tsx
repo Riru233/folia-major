@@ -39,12 +39,14 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
     // 紧凑档（窗口窄于 960，progress-bar v3）底部只留进度条胶囊，这条挪到左上角（标题栏和墙的返回按钮下面）。
     const isCompact = useIsBottomLayoutCompact();
 
+    // 固定尺寸：w-max 把宽度锁成内容宽度（max-content），whitespace-nowrap + shrink-0 禁止换行与压缩，
+    // 窗口宽度再怎么变，浮层尺寸（一行）都不再跟着收缩或折行。
     return (
         <div
             data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed ${isCompact ? 'top-[76px] left-2' : PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
+            className={`fixed ${isCompact ? 'top-[76px] left-2' : PLACEMENT_CLASS[placement]} z-[120] flex shrink-0 w-max items-center gap-1 whitespace-nowrap rounded-full border-current/30 px-2 py-1 text-[11px]`}
                     style={{
                         backgroundColor: "rgba(40, 40, 40, 0.42)",
                         borderTop:  "1px solid rgba(255,255,255,0.22)",

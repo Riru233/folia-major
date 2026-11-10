@@ -44,6 +44,8 @@ export const APPEARANCE_DESTINATIONS = {
     'hide_fullscreen_button': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'hide_player_progress_bar': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'hide_player_right_panel_button': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
+    'player_bar_pinned': { config: null, why: '底部播放条固定没固定，OBS 页面没有这条播放条（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
+    'player_bar_style': { config: null, why: '底部播放条是浮动还是停靠，OBS 页面没有这条播放条（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'player_bottom_bar_offset': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'player_control_slot_primary': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'player_control_slot_secondary': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },

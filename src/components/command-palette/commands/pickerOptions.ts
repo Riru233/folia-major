@@ -1,5 +1,7 @@
 import { VISUALIZER_REGISTRY } from '../../visualizer/registry';
 import { VISUALIZER_BACKGROUND_REGISTRY } from '../../visualizer/backgrounds/registry';
+import { isBackgroundModeAvailable } from '../../visualizer/backgrounds/availability';
+import { useShinoLabStore } from '../../../shinoinject/lab/useShinoLabStore';
 import type { VisualizerBackgroundMode, VisualizerMode } from '../../../types';
 import type { CommandPaletteCommand, CommandPaletteContext, CommandPaletteMatch } from '../types';
 
@@ -70,7 +72,10 @@ const buildOptions = (kind: 'visualizer' | 'background', context: CommandPalette
                 apply: (mode: string, ctx: CommandPaletteContext) => ctx.visualizer.setVisualizerMode(mode as VisualizerMode),
             };
         })
-        : VISUALIZER_BACKGROUND_REGISTRY.map(entry => {
+        : VISUALIZER_BACKGROUND_REGISTRY.filter(entry => isBackgroundModeAvailable(entry.mode, {
+            bilibiliMvEnabled: useShinoLabStore.getState().bilibiliMvEnabled,
+            videoPlaybackEnabled: useShinoLabStore.getState().videoPlaybackEnabled,
+        })).map(entry => {
             const label = context.shared.t(entry.labelKey, entry.labelFallback);
             return {
                 id: `${PICKER_ID_PREFIX.background}${entry.mode}`,

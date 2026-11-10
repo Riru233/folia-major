@@ -30,7 +30,7 @@ import { useLyricSettingsStore } from '../stores/useLyricSettingsStore';
 import { getLocalLyricFilePriority, isSameLocalLyricFormatOrder, normalizeLocalLyricFormatOrder, type LocalLyricFileFormat } from '../utils/lyrics/localLyricFormatOrder';
 import { readLyricFile } from '../utils/lyrics/lyricFileDecoding';
 import { isLocalFolderIgnored, normalizeLocalFolderPath, runLocalFolderMutation, setLocalFolderIgnored } from './localLibraryFolderIgnore';
-import { VIDEO_MEDIA_EXTENSIONS, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
+import { BROWSER_VIDEO_EXTENSIONS, ELECTRON_VIDEO_EXTENSIONS, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
 
 
 type EmbeddedMetadata = EmbeddedMetadataResult;
@@ -268,9 +268,10 @@ async function getAudioDuration(file: File): Promise<number> {
         }
 
         probe.addEventListener('loadedmetadata', () => {
-            const duration = probe.duration * 1000; // Convert to milliseconds
+            const seconds = probe.duration;
             URL.revokeObjectURL(url);
-            resolve(duration);
+            // 坏容器/流式文件可能报 Infinity、NaN：按「不知道时长」处理，别把 NaN 写进曲库。
+            resolve(Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0); // Convert to milliseconds
         });
 
         probe.addEventListener('error', () => {
@@ -293,8 +294,12 @@ function isImportableMediaFile(file: File): boolean {
 
 function isImportableMediaFileName(fileName: string): boolean {
     return BROWSER_AUDIO_EXTENSIONS.test(fileName)
-        || VIDEO_MEDIA_EXTENSIONS.test(fileName)
-        || (canImportElectronFallbackAudio() && ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(fileName));
+        // mp4 的 H.264/AAC 浏览器自己就解，和音频一样随时可导入。
+        || BROWSER_VIDEO_EXTENSIONS.test(fileName)
+        // mkv 的容器 Chromium 不认识，音轨得靠主进程的转码回退拆出来——没有那座桥就没有意义。
+        || (canImportElectronFallbackAudio() && (
+            ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(fileName) || ELECTRON_VIDEO_EXTENSIONS.test(fileName)
+        ));
 }
 
 function getFolderCoverPriority(fileName: string): number {
