@@ -203,9 +203,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
     const iconButtonClass = `flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
         controlsDisabled
             ? 'cursor-not-allowed opacity-30'
-            : isDaylight
-                ? 'opacity-60 hover:bg-black/5 hover:opacity-100'
-                : 'opacity-60 hover:bg-white/10 hover:opacity-100'
+            : 'opacity-60 hover:bg-white/10 hover:opacity-100'
     }`;
 
     const coverSurfaceStyle: React.CSSProperties = {
