@@ -12,6 +12,8 @@ import { NowPlayingCardPositioner } from './now-playing-toast/NowPlayingCardPosi
 import { useGlass } from "@/shinoinject/useGlass";
 import type { NowPlayingCardPosition } from '../../../utils/nowPlayingCardPosition';
 useGlass;
+import { useBottomDockStore } from '../../../stores/useBottomDockStore';
+import { useNowPlayingCardVisibility } from './now-playing-toast/useNowPlayingCardVisibility';
 
 // src/components/app/overlays/NowPlayingToast.tsx
 // 播放器与 Lattice 上的 now playing 卡片（playing-toast 样式：圆角 2xl、44px 封面、底部滑入），默认在左下角，
@@ -31,8 +33,20 @@ const NowPlayingToastTransitionBorder = lazy(
   () => import("./now-playing-toast/NowPlayingToastTransitionBorder"),
 );
 
-/** 卡片圆角，和下面的 rounded-2xl 对齐；描边要按它算圆角 */
-const CARD_RADIUS = 16;
+/** 平时卡片从左边滑进来的起点。 */
+const CARD_ENTER_X = -32;
+
+/**
+ * 卡片进场的起点。刚从紧凑档换回桌面档（600 ms 内）时，卡片是从胶囊左端“拿出来”的：起点是紧凑胶囊里
+ * 封面的位置（胶囊居中、两侧留 12、最宽 520，封面在胶囊左内边 8 处），减去卡片自己的左边距 24。
+ * 只按窗口宽度算，不量元素；模组加宽胶囊时起点差几十像素，只是滑得长一点。
+ */
+const resolveCardEnterX = (): number => {
+    if (typeof window === 'undefined' || typeof performance === 'undefined') return CARD_ENTER_X;
+    const { layout, layoutChangedAt } = useBottomDockStore.getState();
+    if (layout !== 'desktop' || layoutChangedAt === 0 || performance.now() - layoutChangedAt > 600) return CARD_ENTER_X;
+    return Math.max(12, (window.innerWidth - 520) / 2) + 8 - 24;
+};
 
 export type StageTrackPillMode = "auto" | "always" | "never";
 
@@ -101,21 +115,24 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
 
     // 可见性状态机：never 不渲染；always 常驻；auto 换歌重新计时。
     // isNextUp（预览下一首）挂起计时，翻回 false 后（即使 trackKey 没变）重新计时。
-    const [visible, setVisible] = useState(mode !== 'never');
+    // 紧凑档里胶囊左端那一份用的是同一个 hook（useNowPlayingCardVisibility）。
     const isPositioning = useNowPlayingCardLayoutStore(state => state.isPositioning);
-    const holdOpen = isPositioning || mode === 'always' || isNextUp || transitionCue !== null;
-    const hideDelayMs = Math.max(3, Math.min(60, Math.round(timeoutSec))) * 1000;
+    const visible = useNowPlayingCardVisibility({
+        mode,
+        timeoutSec,
+        trackKey,
+        isNextUp,
+        isMixing: transitionCue !== null,
+        isPositioning,
+    });
+    // 窗口从紧凑档拉宽、卡片因此重新出现时，从胶囊左端滑回来（progress-bar v3）；平时照旧从左边滑进。
+    // 起点只按窗口宽度算（胶囊居中、最宽 520），不量元素；只在挂载那一刻读一次，之后的进场照旧。
+    const [enterX, setEnterX] = useState(resolveCardEnterX);
     useEffect(() => {
-        if (mode === 'never' && !isPositioning) {
-            setVisible(false);
-            return;
-        }
-        setVisible(true);
-        if (holdOpen) return;
-        // 上一轮的 cleanup 一定在本轮之前跑完，所以不需要额外记 timeout id
-        const timer = window.setTimeout(() => setVisible(false), hideDelayMs);
+        if (enterX === CARD_ENTER_X) return;
+        const timer = window.setTimeout(() => setEnterX(CARD_ENTER_X), 600);
         return () => window.clearTimeout(timer);
-    }, [mode, hideDelayMs, trackKey, holdOpen, isPositioning]);
+    }, [enterX]);
 
   // 描边要的是卡片的实际尺寸（内容撑出来的，没有固定宽高），所以量一下外层容器：
   // 它是 fixed 且没给宽度，会收缩到卡片大小，而且不会随 trackKey 重挂。
@@ -162,38 +179,49 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
                 <motion.div
                     ref={setFrameRef}
                     onUpdate={invalidateLayout}
-                    initial={{ opacity: 0, x: isPositioning ? 0 : -32 }}
+                    initial={{ opacity: 0, x: isPositioning ? 0 : enterX }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -16 }}
-                    transition={{ duration: 0.35, ease: 'easeOut' }}
+                    // 从胶囊左端滑回来那一下和挂件的平移同一条曲线、同一个时长（bottomDock.css 的 --dock-ease、480ms）。
+                    transition={enterX === CARD_ENTER_X
+                        ? { duration: 0.35, ease: 'easeOut' }
+                        : { duration: 0.48, ease: [0.32, 0.72, 0, 1] }}
                     // 底边跟右下角面板开关按钮和中间的进度条胶囊落在同一条基线上，
                     // 由共享 MotionValue 直接驱动 bottom（默认 32，即原来的 bottom-8）。
                     style={position.style}
                     data-now-playing-card=""
                     className={`pointer-events-none fixed w-max max-w-[calc(100vw-48px)] ${isPositioning ? 'z-[65]' : 'z-40'}`}
                 >
+                    {/* 让位层：960–1119 px 之间胶囊展开会碰到卡片，卡片按 <html data-capsule> 淡出（bottomDock.css）。
+                        单独一层、不归 framer 管：framer 每帧写的 opacity 不能再被 CSS 过渡拖慢。 */}
+                    <div
+                        data-card-yield={isPositioning ? 'off' : ''}
+                        className="relative"
+                        // 让位的淡出带一点位移，走完请 player.layout 量一次（CSS 过渡不触发它自己的测量）。
+                        onTransitionEnd={invalidateLayout}
+                    >
                     {/* 描边排在卡片前面：卡片自己是 relative，绘制顺序上压在描边上头，所以
                         描边内侧那一半被卡片背景盖住，露在外面的是外侧 + 辉光。
                         AnimatePresence 在这儿单独开一层，混音结束时描边自己淡出，不用等卡片；
                         Suspense 套在外面而不是里面，否则 chunk 还没到时它会顶掉 AnimatePresence
                         的直接子节点，退场就丢了。 */}
-          <Suspense fallback={null}>
-            <AnimatePresence>
-              {transitionCue && cardSize.width > 0 && (
-                <NowPlayingToastTransitionBorder
-                  key="transition-border"
-                  cue={transitionCue.cue}
-                  startAtMs={transitionCue.startAtMs}
-                  cardWidth={cardSize.width}
-                  cardHeight={cardSize.height}
-                  cardRadius={CARD_RADIUS}
-                  isDaylight={isDaylight}
-                  theme={theme}
-                />
-              )}
-            </AnimatePresence>
-          </Suspense>
-          {/* Toast 卡片（playing-toast 样式）。
+                    <Suspense fallback={null}>
+                        <AnimatePresence>
+                            {transitionCue && cardSize.width > 0 && (
+                                <NowPlayingToastTransitionBorder
+                                    key="transition-border"
+                                    cue={transitionCue.cue}
+                                    startAtMs={transitionCue.startAtMs}
+                                    cardWidth={cardSize.width}
+                                    cardHeight={cardSize.height}
+                                    cardRadius={cardSize.height / 2}
+                                    isDaylight={isDaylight}
+                                    theme={theme}
+                                />
+                            )}
+                        </AnimatePresence>
+                    </Suspense>
+                    {/* Toast 卡片（playing-toast 样式）。
 
                         没有 key，所以卡片在场期间不会因为换内容重挂：正在播放 → 预告下一首 →
                         那首真的播起来，是一条连续的事，中间不该滑出再滑进来。内容就地换掉，宽度
@@ -228,40 +256,27 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
                         animate={{ opacity: 1, x: 0 }}
                         whileTap={onActivate && !isPositioning ? { opacity: 0.85 } : undefined}
                         transition={{ duration: 0.35, ease: 'easeOut' }}
-                        className={`relative flex min-w-[min(240px,calc(100vw-48px))] max-w-[calc(100vw-48px)] items-center gap-3 overflow-hidden rounded-2xl border p-2 pr-4 text-left backdrop-blur-xl shadow-lg transition-colors ${
+                        className={`relative flex min-w-[min(240px,calc(100vw-48px))] max-w-[calc(100vw-48px)] items-center gap-3 overflow-hidden rounded-full border p-2 pr-5 text-left backdrop-blur-xl shadow-lg transition-colors ${
                             isDaylight ? 'border-black/10 bg-white/35 text-zinc-900' : 'border-white/10 bg-black/35 text-white'
                         } ${isPositioning ? 'pointer-events-auto cursor-grab select-none active:cursor-grabbing' : onActivate
                             ? `pointer-events-auto cursor-pointer ${isDaylight ? 'hover:bg-white/55' : 'hover:bg-black/55'}`
                             : ''}`}
                     >
-                        {/* 顶部光线（进场的横向扫光）。混音期间收掉：描边现在正压在卡片边框上，
-                            再叠一条亮线就是同一条边上两层东西，读起来是好几层边框套在一起。 */}
-            <motion.span
-              aria-hidden
-              data-toast-sheen=""
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1, opacity: transitionCue ? 0 : 1 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className={`absolute inset-x-0 top-0 h-[2px] origin-left ${
-                isDaylight
-                  ? "bg-gradient-to-r from-transparent via-black/40 to-transparent"
-                  : "bg-gradient-to-r from-transparent via-white/50 to-transparent"
-              }`}
-            />
-            {/* 封面和文字块也带 layout：卡片的尺寸补间是靠 transform 做的，途中
+                        {/* 原来顶上有一条进场扫光；卡片改成圆头长条（和胶囊同一种形状，progress-bar v3）后去掉了。 */}
+                        {/* 封面和文字块也带 layout：卡片的尺寸补间是靠 transform 做的，途中
                             没有自己 layout 的子节点会被一起拉扁。带上它俩，framer 会逐层把缩放
                             反解掉，封面不变形、歌名不横向压扁。 */}
-            <motion.div
-              layout
-              // Which of the two the frame settled on, so a test can tell "showed the
-              // cover" from "fell back" - the difference used to be invisible from
-              // the outside, which is how the blank square went unnoticed.
-              data-toast-cover={coverSrc ? "image" : "placeholder"}
-              className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg ${
-                isDaylight ? "bg-zinc-200" : "bg-zinc-800"
-              }`}
-            >
-              {/* An <img> rather than a background-image, for the two things a
+                        <motion.div
+                            layout
+                            // Which of the two the frame settled on, so a test can tell "showed the
+                            // cover" from "fell back" - the difference used to be invisible from
+                            // the outside, which is how the blank square went unnoticed.
+                            data-toast-cover={coverSrc ? 'image' : 'placeholder'}
+                            className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full ${
+                                isDaylight ? 'bg-zinc-200' : 'bg-zinc-800'
+                            }`}
+                        >
+                            {/* An <img> rather than a background-image, for the two things a
                                 background cannot do: it reports failure, and the browser parses the
                                 URL instead of the CSS tokenizer (an unquoted url() is voided
                                 outright by a space, a bracket or the comma in a multi-value cover
@@ -322,6 +337,7 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
                             </div>
                         </motion.div>
                     </motion.button>
+                    </div>
                 </motion.div>
             )}
         </AnimatePresence>
