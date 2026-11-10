@@ -7139,8 +7139,8 @@ ipcMain.handle('legacy-models-open', firstParty('legacy-models-open', async () =
 
 // Local folder cards only know their relative path (`A`, `A/B`). showDirectoryPicker() hands the
 // renderer a handle, never an OS path, so the listener picks the imported root on disk the first
-// time they ask to reveal one of its folders. The mapping is kept by root name; nothing is written
-// to disk by this handler - it only opens the system file manager.
+// time they ask to reveal one of its folders. The mapping is kept by root name in electron-store;
+// the user's music files themselves are never written, the handler only opens the file manager.
 const LOCAL_FOLDER_DISK_ROOTS_KEY = 'LOCAL_FOLDER_DISK_ROOTS';
 
 // 路径规则（根名校验、父目录自愈、越界防护）放在 ./localFolderPaths.cjs，便于单测覆盖。
@@ -7151,27 +7151,35 @@ const readLocalFolderDiskRoots = () => {
   return Object.assign(Object.create(null), saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {});
 };
 
+// 每次写回都基于最新快照只改一个根，避免目录选择框等待期间别的窗口刚绑定的根被旧快照覆盖。
+const persistLocalFolderRoot = (rootName, rootPath) => {
+  const fresh = readLocalFolderDiskRoots();
+  fresh[rootName] = rootPath;
+  store.set(LOCAL_FOLDER_DISK_ROOTS_KEY, Object.fromEntries(Object.entries(fresh)));
+};
+
 ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (event, rootName, relativePath, rebind = false) => {
   const parsed = parseLocalFolderRequest(rootName, relativePath);
   if (!parsed) return { ok: false, reason: 'invalid' };
+  // 根名来自渲染端又要进原生对话框标题：先去掉控制字符、限制长度。
+  const safeRootLabel = parsed.rootName.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 60) || 'folder';
 
   const roots = readLocalFolderDiskRoots();
   if (rebind === true || typeof roots[parsed.rootName] !== 'string' || !roots[parsed.rootName]) {
     // 遥控窗口也能调这个通道：目录选择框挂在调用者自己的窗口上，不认全局 mainWindow。
     const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
     const picked = await dialog.showOpenDialog(owner, {
-      title: `Select the imported folder "${parsed.rootName}" itself (not its parent)`,
+      title: `Select the imported folder "${safeRootLabel}" itself (not its parent)`,
       buttonLabel: 'Use this folder',
       defaultPath: app.getPath('music'),
       properties: ['openDirectory'],
     });
     if (picked.canceled || picked.filePaths.length === 0) return { ok: false, reason: 'cancelled' };
     const chosenRoot = resolveImportedFolderRoot(picked.filePaths[0], parsed.rootName, parsed.tail);
-    // 选中的目录里找不到这张歌单：不要把错误位置写进映射，让渲染端提示重新选择。
-    if (!chosenRoot) return { ok: false, reason: 'missing' };
-    roots[parsed.rootName] = chosenRoot;
-    // electron-store 序列化自有可枚举属性：无原型对象写回时摊成普通对象。
-    store.set(LOCAL_FOLDER_DISK_ROOTS_KEY, Object.fromEntries(Object.entries(roots)));
+    // 选中的目录里找不到这张歌单：不要把错误位置写进映射。用户刚亲手选过一次，
+    // 带着 prompted 让渲染端别立刻再弹一个框，只提示他改用「重新指定文件夹位置」。
+    if (!chosenRoot) return { ok: false, reason: 'missing', prompted: true };
+    persistLocalFolderRoot(parsed.rootName, chosenRoot);
   }
 
   const target = resolveSavedLocalFolderDiskPath(
@@ -7181,17 +7189,16 @@ ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (e
   // 自愈：旧映射把父目录（比如「下载」）记成了导入根时，把解析出的真正根写回，
   // 免得每次都跳到父目录。
   if (!target.savedRoot || path.resolve(target.savedRoot) !== target.root) {
-    const freshRoots = readLocalFolderDiskRoots();
-    freshRoots[parsed.rootName] = target.root;
-    store.set(LOCAL_FOLDER_DISK_ROOTS_KEY, Object.fromEntries(Object.entries(freshRoots)));
+    persistLocalFolderRoot(parsed.rootName, target.root);
   }
   if (!localFolderIsDirectory(target.resolved)) return { ok: false, reason: 'missing' };
 
-  // 符号链接会让字符串前缀检查失真：两端都 realpath 之后再确认没有跳出导入根。
+  // 符号链接会让字符串前缀检查失真：两端都 realpath 之后再用 relative 确认没有跳出导入根。
   try {
     const realRoot = fs.realpathSync(target.root);
     const realTarget = fs.realpathSync(target.resolved);
-    if (realTarget !== realRoot && !realTarget.startsWith(realRoot + path.sep)) {
+    const rel = path.relative(realRoot, realTarget);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
       return { ok: false, reason: 'invalid' };
     }
     // 必须用 openPath 直接打开目标目录。showItemInFolder 打开的是「父目录并选中该项」，
@@ -7199,7 +7206,8 @@ ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (e
     const error = await shell.openPath(realTarget);
     if (error) {
       console.warn('[LocalMusic] could not open folder', error);
-      return { ok: false, reason: 'missing' };
+      // 打开失败（资源管理器占用 / 权限）不是映射失效，别让渲染端去重绑目录。
+      return { ok: false, reason: 'invalid' };
     }
   } catch (error) {
     console.warn('[LocalMusic] could not resolve folder on disk', error?.message || error);

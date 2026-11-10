@@ -37,21 +37,34 @@ const parseLocalFolderRequest = (rootName, relativePath) => {
   return { rootName: normalizedRoot, tail: parts.slice(1) };
 };
 
+// 区分大小写的文件系统上，按实际目录名找同名的子目录（`Music` / `music`）。
+const findChildDirectory = (base, name) => {
+  const direct = path.join(base, name);
+  if (isDirectory(direct)) return direct;
+  try {
+    const match = fs.readdirSync(base, { withFileTypes: true })
+      .find(entry => entry.isDirectory() && entry.name.toLowerCase() === name.toLowerCase());
+    return match ? path.join(base, match.name) : null;
+  } catch {
+    return null;
+  }
+};
+
 // 目录选择框常默认停在「下载」，用户很容易直接确认，把父目录当成导入根存下来。
-// 用目标相对路径反推：只有「根 + 相对路径」真的落到存在的目录，才承认这个根。
+// 只接受两种解释，且都必须让「根 + 相对路径」落到真实存在的目录：
+//   1) 选中的就是导入根本身（目录名对得上）；
+//   2) 选中的是导入根的父目录（下面有与根同名的子目录）。
+// 刻意不做「base 下恰好有同名子路径」的兜底：任意目录下都可能碰巧有 `Rock` 这种名字，
+// 那会把「下载」之类无关目录写成导入根，正是这次要修的 bug。磁盘上改过名的目录请走
+// 右键菜单的「重新指定文件夹位置」，由用户明确指定，不自动猜。
 // `tail` 是去掉根名后的相对片段（`A/B` → ['B']）；返回真正该当导入根用的绝对路径。
 const resolveImportedFolderRoot = (basePath, rootName, tail) => {
   if (typeof basePath !== 'string' || !basePath.trim()) return null;
   const base = path.resolve(basePath.trim());
   const nameMatches = path.basename(base).toLowerCase() === rootName.toLowerCase();
-  // 1) 选中的就是导入根：目录名对得上，且目标子目录存在。
   if (nameMatches && isDirectory(path.join(base, ...tail))) return base;
-  // 2) 选中的是导入根的父目录（例如「下载」）：补一层根名再验证。
-  const nested = path.join(base, rootName);
-  if (isDirectory(path.join(nested, ...tail))) return nested;
-  // 3) 导入后被改过名，但目标相对路径确实就在选中目录下。tail 为空时没有任何可验证的
-  //    线索，不能再兜底，否则「下载」这种随便选的目录又会被当成根。
-  if (tail.length > 0 && isDirectory(path.join(base, ...tail))) return base;
+  const nested = findChildDirectory(base, rootName);
+  if (nested && isDirectory(path.join(nested, ...tail))) return nested;
   return null;
 };
 

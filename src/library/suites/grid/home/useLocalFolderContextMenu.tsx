@@ -54,7 +54,7 @@ export const useLocalFolderContextMenu = (
         let result = await revealLocalFolderInSystem(folderPath, forceRebind);
         // 记住的导入根被移走 / 换了盘：重新请用户指一次，再打开。
         // 用户主动「重新指定位置」时不要再弹第二次选择框。
-        if (!result.ok && !forceRebind && result.reason === 'missing') {
+        if (!result.ok && !forceRebind && !result.prompted && result.reason === 'missing') {
             result = await revealLocalFolderInSystem(folderPath, true);
         }
         if (result.ok || result.reason === 'cancelled') return;

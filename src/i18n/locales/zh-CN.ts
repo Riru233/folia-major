@@ -3888,6 +3888,7 @@ export default {
     "videoLayerFitCover": "铺满（裁切）",
     "videoLayerFitContain": "完整显示",
     "videoLayerNotInExport": "不参与视觉配置导入导出，也不在 OBS 源中显示：OBS 使用独立浏览器，无法读取这里选择的本地视频。",
+    "shinoLabEarlyAccessNotice": "该功能属于未来版本内置功能，且仍然处于早期研发阶段，有部分不稳定性，如果想尝鲜使用可打开功能。",
     "shinoLabVideoSection": "视频播放（实验）",
     "shinoLabBilibiliSection": "视频背景 · bilibili（实验）",
     "shinoLabVideoPlayback": "视频播放",

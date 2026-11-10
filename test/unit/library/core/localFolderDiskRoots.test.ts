@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 // 主进程 CJS 路径规则不加载 Electron，直接用 createRequire 验证真实磁盘目录结构。
@@ -26,6 +27,7 @@ describe('本地歌单磁盘根目录解析', () => {
     let music: string;
     let rock: string;
     let empty: string;
+    let other: string;
 
     beforeAll(() => {
         base = fs.mkdtempSync(path.join(os.tmpdir(), 'folia-folder-roots-'));
@@ -33,8 +35,11 @@ describe('本地歌单磁盘根目录解析', () => {
         music = path.join(downloads, 'Music');
         rock = path.join(music, 'Rock');
         empty = path.join(base, 'Empty');
+        // 一个完全无关的目录，但下面碰巧也有名为 Rock 的子目录。
+        other = path.join(base, 'Other');
         fs.mkdirSync(rock, { recursive: true });
         fs.mkdirSync(empty, { recursive: true });
+        fs.mkdirSync(path.join(other, 'Rock'), { recursive: true });
         fs.writeFileSync(path.join(rock, 'song.mp3'), 'x');
     });
 
@@ -73,6 +78,13 @@ describe('本地歌单磁盘根目录解析', () => {
         expect(resolveLocalFolderDiskPath(rock, 'Music', 'Music/Rock/Rock')).toBeNull();
     });
 
+    it('无关目录下碰巧有同名子目录时，不能被误认成导入根', () => {
+        // 回归：旧逻辑只看「base/Rock 存在」，会把「下载」这类随便选的目录写成根。
+        expect(resolveImportedFolderRoot(other, 'Music', ['Rock'])).toBeNull();
+        expect(resolveLocalFolderDiskPath(other, 'Music', 'Music/Rock')).toBeNull();
+        expect(resolveLocalFolderDiskPath(other, 'Music', 'Music')).toBeNull();
+    });
+
     it('用户选父目录 / 选本体都能推出同一个导入根', () => {
         expect(resolveImportedFolderRoot(downloads, 'Music', ['Rock'])).toBe(music);
         expect(resolveImportedFolderRoot(music, 'Music', ['Rock'])).toBe(music);
@@ -94,5 +106,17 @@ describe('本地歌单磁盘根目录解析', () => {
         expect(isSafeLocalFolderRootName('A/B')).toBe(false);
         expect(isSafeLocalFolderRootName('Music')).toBe(true);
         expect(resolveLocalFolderDiskPath(music, 'Music', 'Music/../../Downloads')).toBeNull();
+    });
+
+    it('主进程打开的是目录本体，而不是 showItemInFolder 的父目录（跳到「下载」的回归守卫）', () => {
+        const mainPath = fileURLToPath(new URL('../../../../electron/main.cjs', import.meta.url));
+        const source = fs.readFileSync(mainPath, 'utf8');
+        const start = source.indexOf("ipcMain.handle('local-folder-reveal'");
+        const end = source.indexOf("ipcMain.handle('updates-get-status'", start);
+        expect(start).toBeGreaterThan(-1);
+        expect(end).toBeGreaterThan(start);
+        const handler = source.slice(start, end);
+        expect(handler).toContain('shell.openPath(realTarget)');
+        expect(handler).not.toContain('shell.showItemInFolder');
     });
 });

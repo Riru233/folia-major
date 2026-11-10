@@ -31,7 +31,8 @@ import { getLocalLyricFilePriority, isSameLocalLyricFormatOrder, normalizeLocalL
 import { readLyricFile } from '../utils/lyrics/lyricFileDecoding';
 import { isLocalFolderIgnored, normalizeLocalFolderPath, runLocalFolderMutation, setLocalFolderIgnored } from './localLibraryFolderIgnore';
 import { collectLocalFolderSongIds, normalizeLocalFolderPath as normalizeLocalFolderRecordPath } from '../utils/localFolderPaths';
-import { BROWSER_VIDEO_EXTENSIONS, ELECTRON_VIDEO_EXTENSIONS, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
+import { isImportableVideoFileName, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
+import { isLabVideoPlaybackEnabled } from '../shinoinject/lab/labVideoGate';
 
 
 type EmbeddedMetadata = EmbeddedMetadataResult;
@@ -294,13 +295,16 @@ function isImportableMediaFile(file: File): boolean {
 }
 
 function isImportableMediaFileName(fileName: string): boolean {
+    const canTranscodeFallback = canImportElectronFallbackAudio();
     return BROWSER_AUDIO_EXTENSIONS.test(fileName)
-        // mp4 的 H.264/AAC 浏览器自己就解，和音频一样随时可导入。
-        || BROWSER_VIDEO_EXTENSIONS.test(fileName)
-        // mkv 的容器 Chromium 不认识，音轨得靠主进程的转码回退拆出来——没有那座桥就没有意义。
-        || (canImportElectronFallbackAudio() && (
-            ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(fileName) || ELECTRON_VIDEO_EXTENSIONS.test(fileName)
-        ));
+        // 音频的转码回退只取决于桌面端有没有那座桥，与视频实验无关。
+        || (canTranscodeFallback && ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(fileName))
+        // mp4/mkv 属于 Shino 实验室的「视频播放」：实验关着时本地曲库不识别视频格式，
+        // 打开后才导入（mkv 仍需转码回退）。已有记录的画面由 VideoLayer 按同一个开关关掉。
+        || isImportableVideoFileName(fileName, {
+            videoPlaybackEnabled: isLabVideoPlaybackEnabled(),
+            canTranscodeFallback,
+        });
 }
 
 function getFolderCoverPriority(fileName: string): number {

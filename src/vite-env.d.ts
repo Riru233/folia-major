@@ -833,7 +833,12 @@ declare global {
         rootName: string,
         relativePath: string,
         rebind?: boolean,
-      ) => Promise<{ ok: boolean; reason?: 'cancelled' | 'missing' | 'invalid' | 'desktop-only' }>;
+      ) => Promise<{
+        ok: boolean;
+        reason?: 'cancelled' | 'missing' | 'invalid' | 'desktop-only';
+        /** 主进程已弹过目录选择框，渲染端不要因为失败立刻再弹一次。 */
+        prompted?: boolean;
+      }>;
       /** Beat This! on the CPU in the analysis worker - automix's fallback only. Null when the weights are absent. */
       runBeatThis?: (
         chunks: Array<{ data: Float32Array; frames: number }>,

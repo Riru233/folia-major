@@ -2,7 +2,7 @@
 
 export default {
   "appleMusic": {
-    "libraryPlaylistName": "Tất cả bài hát"
+    "libraryPlaylistName": "Tất cả Media"
   },
   "scratchpad": {
     "title": "Sổ ghi nhanh",
@@ -329,7 +329,7 @@ export default {
       "localTitle": "Chưa nhập nhạc cục bộ",
       "localBody": "Chọn “{{action}}” dưới mục “⋯” trên thanh thông tin; thư mục, album và nghệ sĩ của bạn sẽ lấp đầy bức tường này."
     },
-    "special": {"liked": "Bài hát yêu thích", "cloud": "Ổ đám mây", "personal-fm": "FM cá nhân", "fm-station": "Radio", "daily": "Gợi ý hàng ngày", "all-songs": "Tất cả bài hát", "local-favorites": "Yêu thích", "navidrome-random": "Ngẫu nhiên", "navidrome-favorites": "Đã gắn sao"}
+    "special": {"liked": "Bài hát yêu thích", "cloud": "Ổ đám mây", "personal-fm": "FM cá nhân", "fm-station": "Radio", "daily": "Gợi ý hàng ngày", "all-songs": "Tất cả Media", "local-favorites": "Yêu thích", "navidrome-random": "Ngẫu nhiên", "navidrome-favorites": "Đã gắn sao"}
   },
   "libraryTui": {
     "back": "Quay lại",
@@ -968,7 +968,7 @@ export default {
       "grid-edit-entity": { "title": "Chỉnh sửa album hoặc nghệ sĩ này", "description": "Mở trình chỉnh sửa thực thể thư viện nội bộ cho bộ sưu tập này" },
       "grid-set-cover": { "title": "Đặt ảnh bìa bộ sưu tập", "description": "Chọn ảnh bìa cố định cho thư mục, album hoặc danh sách phát cục bộ này" },
       "grid-toggle-edit-mode": { "title": "Bật/tắt chế độ chỉnh sửa", "description": "Vào hoặc thoát chế độ cho phép xóa bài hát khỏi bộ sưu tập này" },
-      "grid-reload-online-collection": { "title": "Tải lại bộ sưu tập này", "description": "Bỏ qua bộ nhớ đệm và tải lại mọi bài hát của bộ sưu tập trực tuyến này" },
+      "grid-reload-online-collection": { "title": "Tải lại bộ sưu tập này", "description": "Bỏ qua bộ nhớ đệm và tải lại toàn bộ media của bộ sưu tập trực tuyến này" },
       "grid-toggle-subscribe": { "title": "Đăng ký hoặc hủy đăng ký", "description": "Lưu danh sách phát hoặc album trực tuyến này vào thư viện, hoặc xóa nếu đã có" },
       "grid-collect-filtered": { "title": "Thêm các bài này vào sổ ghi nhanh", "description": "Đưa bộ sưu tập này (chỉ các bài đã lọc khi đang lọc) vào sổ ghi nhanh mà không đụng đến hàng đợi" },
       "directory-play-selection": { "title": "Phát các thẻ đã chọn", "description": "Phát bài hát của các thẻ được chọn trên bản đồ theo thứ tự thẻ" },
@@ -987,7 +987,7 @@ export default {
       "artist-reload": { "title": "Tải lại nghệ sĩ", "description": "Tải lại trang nghệ sĩ từ nguồn" },
       "artist-retry-albums": { "title": "Tiếp tục tải album", "description": "Thử lại trang album bị lỗi và tiếp tục tải phần còn lại" },
       "artist-edit-entity": { "title": "Sửa thông tin nghệ sĩ", "description": "Mở trình chỉnh sửa thư viện nội bộ cho nghệ sĩ này" },
-      "artist-open-all-songs": { "title": "Mở tất cả bài hát", "description": "Liệt kê mọi bài hát của nghệ sĩ này trên một trang, kể cả đĩa đơn không thuộc album nào" },
+      "artist-open-all-songs": { "title": "Mở Tất cả Media", "description": "Liệt kê toàn bộ media của nghệ sĩ này trên một trang, kể cả đĩa đơn không thuộc album nào" },
       "settings-interaction": { "title": "Cài đặt tương tác", "description": "Mở cài đặt bàn phím, phím tắt và tương tác lưới" },
       "settings-global-shortcuts": { "title": "Phím tắt toàn cục", "description": "Đi đến phần gán phím tắt điều khiển phát nhạc toàn hệ thống" },
       "settings-custom-shortcut": { "title": "Phím tắt tùy chỉnh", "description": "Đi đến phần gán phím tắt bàn phím tùy chỉnh" },
@@ -1942,7 +1942,7 @@ export default {
     "gridFolderRemoveSelectedTitle": "Xóa các bài hát đã chọn?",
     "gridFolderRemoveSelectedDescription": "Xóa {{count}} bài hát. Thư mục gốc sẽ bị xóa; các thư mục con được chọn toàn bộ sẽ bị bỏ qua khi quét. Tệp trên đĩa giữ nguyên.",
     "gridFolderRemoveRootTitle": "Xóa thư mục gốc đã nhập?",
-    "gridFolderRemoveRootDescription": "Xóa {{path}} cùng toàn bộ bài hát khỏi Folia? Tệp trên đĩa sẽ không bị xóa.",
+    "gridFolderRemoveRootDescription": "Xóa {{path}} cùng toàn bộ media khỏi Folia? Tệp trên đĩa sẽ không bị xóa.",
     "login": "Đăng nhập",
     "welcomeBack": "Chào mừng trở lại",
     "guestTitle": "Thử tìm vài bài hát trước",
@@ -3852,6 +3852,7 @@ export default {
     "videoLayerFitCover": "Phủ kín (cắt viền)",
     "videoLayerFitContain": "Vừa khung (nguyên vẹn)",
     "videoLayerNotInExport": "Không kèm trong nhập/xuất giao diện và không hiện trên nguồn OBS: OBS dùng trình duyệt riêng nên không thể đọc video nội bộ tại đây.",
+    "shinoLabEarlyAccessNotice": "Tính năng này dự kiến có trong phiên bản tương lai và vẫn đang ở giai đoạn phát triển sớm, nên một số phần có thể chưa ổn định. Chỉ bật nếu bạn muốn trải nghiệm sớm.",
     "shinoLabVideoSection": "Phát video (thử nghiệm)",
     "shinoLabBilibiliSection": "Nền video · bilibili (thử nghiệm)",
     "shinoLabVideoPlayback": "Phát video",
@@ -4127,14 +4128,14 @@ export default {
       }
     },
     "v0_7_27": {
-      "intro": "Chào mừng bạn đến với 0.7.27. Spotify có thêm cách phát Soloist, nên tài khoản không nhận được khóa âm thanh vẫn nghe được nhạc; âm lượng và tắt tiếng của Apple Music giờ đã hoạt động, thư viện có thêm Tất cả bài hát, và lời từng từ có sẵn sẽ nhường cho nguồn lời bạn ưu tiên; và fnOS Music đăng nhập được từ bên ngoài mạng LAN bằng FN ID.",
+      "intro": "Chào mừng bạn đến với 0.7.27. Spotify có thêm cách phát Soloist, nên tài khoản không nhận được khóa âm thanh vẫn nghe được nhạc; âm lượng và tắt tiếng của Apple Music giờ đã hoạt động, thư viện có thêm Tất cả Media, và lời từng từ có sẵn sẽ nhường cho nguồn lời bạn ưu tiên; và fnOS Music đăng nhập được từ bên ngoài mạng LAN bằng FN ID.",
       "soloist": {
         "title": "Spotify: phát bằng Soloist",
         "description": "Một số tài khoản Spotify (thường là tài khoản tạo sau cuối năm 2024) không bao giờ nhận được khóa âm thanh, nên cách phát của chính Folia không phát được. Giờ khi đăng nhập bạn có thể chọn Tiêu chuẩn hoặc Soloist: Soloist là chương trình phát chính thức của Spotify, tải về riêng và cần một khóa API tạo bằng tài khoản Premium. Với Tiêu chuẩn, sau khi đăng nhập Folia kiểm tra xem tài khoản có lấy được khóa không và gợi ý chuyển sang Soloist nếu không. Danh sách thiết lập hướng dẫn bạn cài chương trình, nhập khóa và ghép đôi thiết bị; mở nó từ trang tài khoản, Thiết lập phát nhạc của nền tảng trong bảng lệnh, hoặc thông báo phát lỗi. Soloist đưa âm thanh thẳng ra đầu ra hệ thống, nên bộ cân bằng, Automix và xuất video của Folia không áp dụng cho nó. Đồng thời sửa lỗi: trên Linux cả ứng dụng có thể bị treo khi phát Spotify lần đầu."
       },
       "amUpdate": {
         "title": "Cải tiến Apple Music",
-        "description": "Thanh âm lượng và nút tắt tiếng giờ điều khiển được âm thanh của Apple Music. Danh sách phát trong thư viện có thêm Tất cả bài hát để duyệt mọi bài bạn đã lưu. Khi khởi động, tài khoản lần trước hiện ngay thay vì để trống chờ vài giây, và trên máy tính bài đang phát không còn dừng khi cửa sổ được dựng lại (ví dụ khi bật tắt cửa sổ trong suốt)—cửa sổ mới phát tiếp. Khi bài hát có sẵn lời từng từ, Folia chuyển sang nguồn được chọn trong Ưu tiên khớp lời bài hát (mặc định là QQ Music) nếu nguồn đó cũng có lời từng từ, nên bạn không phải tự đổi sang lời có bản dịch cho từng bài. Cài đặt lời bài hát mới, Giữ lời từng từ có sẵn của nền tảng, có thể tắt để bài Apple Music chọn lời tốt nhất từ mọi nguồn như các bài khác."
+        "description": "Thanh âm lượng và nút tắt tiếng giờ điều khiển được âm thanh của Apple Music. Danh sách phát trong thư viện có thêm Tất cả Media để duyệt mọi bài bạn đã lưu. Khi khởi động, tài khoản lần trước hiện ngay thay vì để trống chờ vài giây, và trên máy tính bài đang phát không còn dừng khi cửa sổ được dựng lại (ví dụ khi bật tắt cửa sổ trong suốt)—cửa sổ mới phát tiếp. Khi bài hát có sẵn lời từng từ, Folia chuyển sang nguồn được chọn trong Ưu tiên khớp lời bài hát (mặc định là QQ Music) nếu nguồn đó cũng có lời từng từ, nên bạn không phải tự đổi sang lời có bản dịch cho từng bài. Cài đặt lời bài hát mới, Giữ lời từng từ có sẵn của nền tảng, có thể tắt để bài Apple Music chọn lời tốt nhất từ mọi nguồn như các bài khác."
       },
       "fnConnect": {
         "title": "fnOS Music: đăng nhập bằng FN ID",
@@ -4173,7 +4174,7 @@ export default {
       },
       "moreDetails": {
         "title": "Cải tiến khác",
-        "description": "Machi hỗ trợ trang phát trong suốt, không còn khựng khi chuyển, và tự hạ chất lượng theo tần số quét để giữ mượt; khi không bật chuyển động thông minh, đèn neon và màn hình lớn nháy theo nhịp cố định, có thể tắt bằng Nhịp mô phỏng. Khung vẽ lời bài hát có cài đặt độ phân giải và khử răng cưa. Phím tắt toàn cục cho tự chọn phím bổ trợ và phím. Khi bật nhấp xuyên trên máy tính, bên cạnh ổ khóa có thêm bài trước, phát/tạm dừng và bài sau. Trang nghệ sĩ thêm Tất cả bài hát, và có thể mở nghệ sĩ của album từ trang album. Lời bài hát viết từ phải sang trái được xếp đúng chiều. Có thêm tùy chọn Tự tách từ bằng AI. Đã sửa lỗi yêu cầu NetEase bị ngắt trên một số mạng IPv6."
+        "description": "Machi hỗ trợ trang phát trong suốt, không còn khựng khi chuyển, và tự hạ chất lượng theo tần số quét để giữ mượt; khi không bật chuyển động thông minh, đèn neon và màn hình lớn nháy theo nhịp cố định, có thể tắt bằng Nhịp mô phỏng. Khung vẽ lời bài hát có cài đặt độ phân giải và khử răng cưa. Phím tắt toàn cục cho tự chọn phím bổ trợ và phím. Khi bật nhấp xuyên trên máy tính, bên cạnh ổ khóa có thêm bài trước, phát/tạm dừng và bài sau. Trang nghệ sĩ thêm Tất cả Media, và có thể mở nghệ sĩ của album từ trang album. Lời bài hát viết từ phải sang trái được xếp đúng chiều. Có thêm tùy chọn Tự tách từ bằng AI. Đã sửa lỗi yêu cầu NetEase bị ngắt trên một số mạng IPv6."
       }
     },
     "v0_7_25": {
@@ -4588,7 +4589,7 @@ export default {
     "unknownAlbum": "Album không rõ",
     "unknownArtist": "Nghệ sĩ không rõ",
     "folder": "Thư mục",
-    "allSongs": "Tất cả bài hát",
+    "allSongs": "Tất cả Media",
     "sortSongs": "Sắp xếp bài hát",
     "sortDirection": "Thứ tự sắp xếp",
     "sortByFileName": "Tên tệp",
@@ -4642,7 +4643,7 @@ export default {
     "backToParentPlaylist": "Về danh sách phát cha",
     "playlistSongCount": "{{count}} bài",
     "deleteSubfolderMessage": "Xóa “{{folderName}}” và bỏ qua các lần quét sau. Khôi phục ở mục Tất cả. Tệp trên ổ đĩa không đổi.",
-    "deleteRootFolderMessage": "Xóa “{{folderName}}” và toàn bộ bài hát khỏi thư viện. Tệp trên ổ đĩa không đổi.",
+    "deleteRootFolderMessage": "Xóa “{{folderName}}” và toàn bộ media khỏi thư viện. Tệp trên ổ đĩa không đổi.",
     "importNotSupported": "Trình duyệt không hỗ trợ nhập thư mục hoặc tác vụ đã hủy",
     "insecureHttpDisabled": "Thư viện nội bộ bị vô hiệu hóa qua HTTP từ xa. Dùng HTTPS, localhost hoặc ứng dụng Electron.",
     "resyncFailed": "Đồng bộ lại thư mục thất bại. Hãy thử lại.",
@@ -5171,8 +5172,8 @@ export default {
     "topSongsAddedToQueue_one": "Đã thêm {{count}} bài nổi bật vào hàng đợi phát",
     "topSongsAddedToQueue_other": "Đã thêm {{count}} bài nổi bật vào hàng đợi phát",
     "noTopSongsToQueue": "Không có bài hát nổi bật để thêm vào hàng đợi",
-    "allSongs": "Tất cả bài hát",
-    "allSongsCollectionName": "Tất cả bài hát của {{artistName}}",
+    "allSongs": "Tất cả Media",
+    "allSongsCollectionName": "Tất cả Media của {{artistName}}",
     "moreActions": "Thao tác khác",
   },
   "obs": {
@@ -6316,7 +6317,7 @@ export default {
         "homeTabs": "Tại trang chủ, thanh thông tin là một dải hẹp: “Thư viện” cùng nút thu gọn ở trên cùng, bên dưới là các thẻ dọc: Danh sách phát, Radio, Album, Nội bộ, Navidrome.",
         "homeFlip": "Chuyển thẻ sẽ lật toàn bộ thanh thông tin và đổi toàn bộ không gian sang thẻ đó. Trên bàn phím, dùng F6 / Shift + F6 để chuyển qua lại giữa các thẻ.",
         "homeSections": "Mục Nội bộ và Navidrome có thêm một cột phân mục (thư mục, album, nghệ sĩ, danh sách phát…). Chỉ mục được chọn mới hiện tên; các mục còn lại là biểu tượng, rê chuột để xem tên đầy đủ. Chuyển đổi sẽ đổi nội dung hiển thị mà không mở cấp mới.",
-        "homeShortcuts": "Các chữ dọc nhỏ bên dưới là lối tắt: Bài hát yêu thích, FM cá nhân, Tất cả bài hát… Nhấp vào tương tự như nhấp thẻ trong không gian album; FM cá nhân sẽ phát ngay lập tức. Khi hết chỗ, chúng được chuyển vào “⋯”.",
+        "homeShortcuts": "Các chữ dọc nhỏ bên dưới là lối tắt: Bài hát yêu thích, FM cá nhân, Tất cả Media… Nhấp vào tương tự như nhấp thẻ trong không gian album; FM cá nhân sẽ phát ngay lập tức. Khi hết chỗ, chúng được chuyển vào “⋯”.",
         "dockAccount": "Ngay phía trên lưới công cụ là lối vào tài khoản: ảnh đại diện và tên khi đã đăng nhập, hoặc “Kết nối dịch vụ phát nhạc” khi chưa đăng nhập.",
         "dockTools": "Bốn ô dưới cùng: tìm kiếm nền tảng trực tuyến, cài đặt, hàng đợi poster (vào Lattice) và “⋯”.",
         "dockMenu": "Mọi thứ khác nằm trong “⋯”: ưu tiên mục của thẻ hiện tại (lọc trang này, thư mục, quản lý ẩn, nhập…), sau vạch phân cách là các điều hướng như “Quay lại trình phát”.",
@@ -6557,7 +6558,7 @@ export default {
         "collection": "Album, danh sách phát và thư mục hiển thị hiệu ứng xếp lớp lệch mép ở góc dưới bên phải, kèm nhãn “loại · số bài”. Nhấn mở sẽ hiện danh sách bài. Hiệu ứng xếp lớp có thể tắt trong cài đặt.",
         "artist": "Nghệ sĩ hiển thị dưới dạng chân dung hai tông màu (duotone) với tên lớn hơn và không có phụ đề.",
         "artistHover": "Di chuột vào hoặc chuyển tiêu điểm bàn phím tới, chân dung sẽ trở về màu sắc ban đầu.",
-        "special": "Các thẻ đặc biệt như Bài hát đã thích, FM cá nhân và Tất cả bài hát có nhãn màu nhấn kèm biểu tượng nhỏ phía trước. FM cá nhân là luồng radio: nhấp vào sẽ phát ngay thay vì mở lớp mới.",
+        "special": "Các thẻ đặc biệt như Bài hát đã thích, FM cá nhân và Tất cả Media có nhãn màu nhấn kèm biểu tượng nhỏ phía trước. FM cá nhân là luồng radio: nhấp vào sẽ phát ngay thay vì mở lớp mới.",
         "open": "Nhấp vào một bộ sưu tập không chuyển sang trang mới. Ô được nhấp lập tức trở thành bài 1 của lớp mới (bìa bộ sưu tập thường là bìa bài đầu tiên), và các ô xung quanh lần lượt lật mở nội dung mới theo từng vòng.",
         "openSeam": "Thanh thông tin vẫn giữ nguyên vị trí mở; nội dung bên trong chuyển sang thông tin của bộ sưu tập này.",
         "back": "Khi quay lại (nút ‹ trên thanh thông tin, phím Esc hoặc nút quay lại của trình duyệt), không gian lật về lớp trước từ thanh thông tin ra ngoài, và tiêu điểm bàn phím trở về ô đã nhấp ban đầu.",
@@ -6640,7 +6641,7 @@ export default {
         "atSign": "Nhập @ để liệt kê các nghệ sĩ và album trong hàng đợi kèm số bài hát tương ứng — chỉ nhập riêng @ sẽ liệt kê nghệ sĩ và album của bài đang phát.",
         "narrowed": "Chọn một mục để thu gọn thành thẻ trong ô nhập, chỉ giữ lại các bài của mục đó. Đây là nơi duy nhất trong ứng dụng có thể chọn “chỉ bài hát của nghệ sĩ này” — không có nút nào thay thế.",
         "flags": "Sau khi chọn phạm vi, nhập hai dấu gạch nối để xem các tác vụ hàng loạt: --remove để xóa khỏi hàng đợi, --next để chuyển phát tiếp theo, --end để chuyển xuống cuối. Không cần ghi nhớ; chỉ cần nhập -- để gợi ý.",
-        "scope": "Lưu ý quan trọng: thao tác không tác động lên dòng được chọn mà áp dụng cho tất cả kết quả khớp. Đó là lý do thanh bên dưới hiển thị số bài bị ảnh hưởng — hãy kiểm tra con số đó trước khi nhấn.",
+        "scope": "Lưu ý quan trọng: thao tác không tác động lên dòng được chọn mà áp dụng cho toàn bộ media khớp. Đó là lý do thanh bên dưới hiển thị số bài bị ảnh hưởng — hãy kiểm tra con số đó trước khi nhấn.",
         "guards": "Hai cơ chế bảo vệ: khi không có từ khóa tìm kiếm và không có bộ lọc @, lệnh sẽ từ chối thực thi để tránh xóa sạch hàng đợi bằng một phím; ngoài ra bài đang phát sẽ được loại trừ, như phần xem trước hiển thị."
       },
       "desktop": {

@@ -2,7 +2,7 @@
 
 export default {
   "appleMusic": {
-    "libraryPlaylistName": "Semua lagu"
+    "libraryPlaylistName": "Semua Media"
   },
   "scratchpad": {
     "title": "Buku catatan",
@@ -329,7 +329,7 @@ export default {
       "localTitle": "Belum ada musik lokal yang diimpor",
       "localBody": "Pilih “{{action}}” di menu “⋯” pada strip info, lalu folder, album, dan artis Anda akan memenuhi dinding ini."
     },
-    "special": {"liked": "Lagu Disukai", "cloud": "Cloud Drive", "personal-fm": "FM Pribadi", "fm-station": "Radio", "daily": "Harian", "all-songs": "Semua Lagu", "local-favorites": "Favorit", "navidrome-random": "Acak", "navidrome-favorites": "Berbintang"}
+    "special": {"liked": "Lagu Disukai", "cloud": "Cloud Drive", "personal-fm": "FM Pribadi", "fm-station": "Radio", "daily": "Harian", "all-songs": "Semua Media", "local-favorites": "Favorit", "navidrome-random": "Acak", "navidrome-favorites": "Berbintang"}
   },
   "libraryTui": {
     "back": "Kembali",
@@ -970,7 +970,7 @@ export default {
       "grid-edit-entity": { "title": "Sunting album atau artis ini", "description": "Buka penyunting entitas pustaka lokal untuk koleksi ini" },
       "grid-set-cover": { "title": "Atur sampul koleksi", "description": "Pilih sampul tetap untuk folder, album, atau daftar putar lokal ini" },
       "grid-toggle-edit-mode": { "title": "Alihkan mode sunting", "description": "Masuk atau keluar dari mode yang memungkinkan menghapus lagu dari koleksi ini" },
-      "grid-reload-online-collection": { "title": "Muat ulang koleksi ini", "description": "Lewati cache dan muat ulang semua lagu dari koleksi online ini" },
+      "grid-reload-online-collection": { "title": "Muat ulang koleksi ini", "description": "Lewati cache dan muat ulang semua media dari koleksi online ini" },
       "grid-toggle-subscribe": { "title": "Berlangganan atau berhenti berlangganan", "description": "Simpan playlist atau album online ini ke koleksimu, atau hapus jika sudah tersimpan" },
       "grid-collect-filtered": { "title": "Tambahkan lagu-lagu ini ke buku catatan", "description": "Simpan koleksi ini (hanya lagu yang tersaring saat menyaring) ke buku catatan tanpa mengubah antrean" },
       "directory-play-selection": { "title": "Putar kartu terpilih", "description": "Putar lagu dari kartu yang dipilih di peta, sesuai urutan kartu" },
@@ -989,7 +989,7 @@ export default {
       "artist-reload": { "title": "Muat ulang artis", "description": "Muat ulang halaman artis dari sumbernya" },
       "artist-retry-albums": { "title": "Lanjutkan memuat album", "description": "Coba lagi halaman album yang gagal dan lanjutkan memuat sisanya" },
       "artist-edit-entity": { "title": "Edit info artis", "description": "Buka editor pustaka lokal untuk artis ini" },
-      "artist-open-all-songs": { "title": "Buka semua lagu", "description": "Tampilkan semua lagu artis ini dalam satu halaman, termasuk single di luar album" },
+      "artist-open-all-songs": { "title": "Buka Semua Media", "description": "Tampilkan semua media artis ini dalam satu halaman, termasuk single di luar album" },
       "settings-interaction": { "title": "Pengaturan interaksi", "description": "Buka pengaturan papan ketik, pintasan, dan interaksi kisi" },
       "settings-global-shortcuts": { "title": "Pintasan global", "description": "Langsung ke pintasan tingkat sistem untuk pemutaran dan perintah mod" },
       "settings-custom-shortcut": { "title": "Pintasan khusus", "description": "Langsung ke pengaturan pintasan papan ketik khusus" },
@@ -1946,7 +1946,7 @@ export default {
     "gridFolderRemoveSelectedTitle": "Hapus trek terpilih?",
     "gridFolderRemoveSelectedDescription": "Ini akan menghapus {{count}} trek dari Folia dan playlist-nya. File di disk tidak akan dihapus.",
     "gridFolderRemoveRootTitle": "Hapus root yang diimpor?",
-    "gridFolderRemoveRootDescription": "Hapus {{path}} dan semua trek-nya dari Folia? File di disk tidak akan dihapus.",
+    "gridFolderRemoveRootDescription": "Hapus {{path}} dan semua media di dalamnya dari Folia? File di disk tidak akan dihapus.",
     "login": "Login",
     "welcomeBack": "Selamat Datang Kembali",
     "guestTitle": "Coba cari beberapa lagu dulu",
@@ -3887,6 +3887,7 @@ export default {
     "videoLayerFitCover": "Penuh (dipotong)",
     "videoLayerFitContain": "Utuh",
     "videoLayerNotInExport": "Tidak ikut impor/ekspor konfigurasi visual dan tidak tampil di sumber OBS: OBS memakai browser sendiri dan tidak dapat membuka video lokal yang dipilih di sini.",
+    "shinoLabEarlyAccessNotice": "Fitur ini direncanakan untuk versi mendatang dan masih dalam tahap pengembangan awal, sehingga sebagian di antaranya mungkin belum stabil. Aktifkan hanya jika ingin mencoba lebih dulu.",
     "shinoLabVideoSection": "Pemutaran video (eksperimental)",
     "shinoLabBilibiliSection": "Latar video · bilibili (eksperimental)",
     "shinoLabVideoPlayback": "Pemutaran video",
@@ -4162,14 +4163,14 @@ export default {
       }
     },
     "v0_7_27": {
-      "intro": "Selamat datang di 0.7.27. Spotify mendapat pemutaran Soloist, sehingga akun yang tidak mendapat kunci audio tetap bisa memutar lagu; volume dan bisu Apple Music kini berfungsi, pustakanya menambah Semua lagu, dan lirik per kata bawaannya mengalah pada sumber lirik prioritasmu; dan fnOS Music bisa masuk dari luar jaringan lokal dengan FN ID.",
+      "intro": "Selamat datang di 0.7.27. Spotify mendapat pemutaran Soloist, sehingga akun yang tidak mendapat kunci audio tetap bisa memutar lagu; volume dan bisu Apple Music kini berfungsi, pustakanya menambah Semua Media, dan lirik per kata bawaannya mengalah pada sumber lirik prioritasmu; dan fnOS Music bisa masuk dari luar jaringan lokal dengan FN ID.",
       "soloist": {
         "title": "Spotify: pemutaran Soloist",
         "description": "Sebagian akun Spotify (umumnya yang dibuat setelah akhir 2024) tidak pernah menerima kunci audio, sehingga pemutaran bawaan Folia tidak bisa memutarnya. Saat masuk, kini kamu bisa memilih Standar atau Soloist: Soloist adalah program pemutar resmi Spotify yang diunduh terpisah dan memerlukan kunci API yang dibuat dengan akun Premium. Dengan Standar, setelah masuk Folia memeriksa apakah akun itu bisa mendapat kunci dan menyarankan Soloist jika tidak. Daftar pengaturan memandumu memasang program, mengisi kunci, dan memasangkan perangkat; buka dari halaman akun, Pengaturan pemutaran platform di palet perintah, atau pemberitahuan gagal putar. Soloist mengirim suaranya langsung ke keluaran sistem, jadi equalizer, Automix, dan ekspor video Folia tidak berlaku untuknya. Juga diperbaiki: di Linux seluruh aplikasi bisa macet saat Spotify pertama kali diputar."
       },
       "amUpdate": {
         "title": "Peningkatan Apple Music",
-        "description": "Penggeser volume dan tombol bisu kini mengendalikan suara Apple Music. Playlist pustakamu menambah Semua lagu untuk menjelajah semua lagu yang kamu simpan. Saat dibuka, akun terakhir langsung tampil tanpa menunggu kosong, dan di desktop lagu yang sedang diputar tidak lagi berhenti saat jendela dibangun ulang (misalnya saat mengubah transparansi jendela)—jendela baru melanjutkannya. Jika lagu punya lirik per kata bawaan, Folia beralih ke sumber yang dipilih di Prioritas pencocokan lirik (bawaannya QQ Music) bila sumber itu juga punya lirik per kata, jadi kamu tak perlu mengganti ke lirik berterjemahan secara manual untuk setiap lagu. Pengaturan lirik baru, Pertahankan lirik per kata bawaan platform, bisa dimatikan agar lagu Apple Music memilih lirik terbaik dari semua sumber seperti lagu lainnya."
+        "description": "Penggeser volume dan tombol bisu kini mengendalikan suara Apple Music. Playlist pustakamu menambah Semua Media untuk menjelajah semua lagu yang kamu simpan. Saat dibuka, akun terakhir langsung tampil tanpa menunggu kosong, dan di desktop lagu yang sedang diputar tidak lagi berhenti saat jendela dibangun ulang (misalnya saat mengubah transparansi jendela)—jendela baru melanjutkannya. Jika lagu punya lirik per kata bawaan, Folia beralih ke sumber yang dipilih di Prioritas pencocokan lirik (bawaannya QQ Music) bila sumber itu juga punya lirik per kata, jadi kamu tak perlu mengganti ke lirik berterjemahan secara manual untuk setiap lagu. Pengaturan lirik baru, Pertahankan lirik per kata bawaan platform, bisa dimatikan agar lagu Apple Music memilih lirik terbaik dari semua sumber seperti lagu lainnya."
       },
       "fnConnect": {
         "title": "fnOS Music: masuk dengan FN ID",
@@ -4208,7 +4209,7 @@ export default {
       },
       "moreDetails": {
         "title": "Peningkatan lainnya",
-        "description": "Machi mendukung halaman pemutar transparan, tidak lagi tersendat saat berganti, dan otomatis menurunkan kualitas menurut refresh rate agar tetap mulus; tanpa gerak cerdas, neon dan layar besarnya berkedip mengikuti ketukan tetap, yang bisa dimatikan lewat Ketukan simulasi. Kanvas lirik punya pengaturan resolusi dan antialiasing. Pintasan global kini bisa memakai tombol pengubah dan tombol pilihanmu sendiri. Saat klik tembus di desktop, tombol sebelumnya, putar/jeda, dan berikutnya ada di samping gembok. Halaman artis menambah Semua Lagu, dan artis album bisa dibuka dari halaman album. Lirik yang ditulis dari kanan ke kiri kini disusun ke arah yang benar. Ada opsi baru Segmentasi AI otomatis. Permintaan NetEase yang terputus di sebagian jaringan IPv6 sudah diperbaiki."
+        "description": "Machi mendukung halaman pemutar transparan, tidak lagi tersendat saat berganti, dan otomatis menurunkan kualitas menurut refresh rate agar tetap mulus; tanpa gerak cerdas, neon dan layar besarnya berkedip mengikuti ketukan tetap, yang bisa dimatikan lewat Ketukan simulasi. Kanvas lirik punya pengaturan resolusi dan antialiasing. Pintasan global kini bisa memakai tombol pengubah dan tombol pilihanmu sendiri. Saat klik tembus di desktop, tombol sebelumnya, putar/jeda, dan berikutnya ada di samping gembok. Halaman artis menambah Semua Media, dan artis album bisa dibuka dari halaman album. Lirik yang ditulis dari kanan ke kiri kini disusun ke arah yang benar. Ada opsi baru Segmentasi AI otomatis. Permintaan NetEase yang terputus di sebagian jaringan IPv6 sudah diperbaiki."
       }
     },
     "v0_7_25": {
@@ -4623,7 +4624,7 @@ export default {
     "unknownAlbum": "Album Tidak Dikenal",
     "unknownArtist": "Artis Tidak Dikenal",
     "folder": "Folder",
-    "allSongs": "Semua Lagu",
+    "allSongs": "Semua Media",
     "sortSongs": "Urutkan lagu",
     "sortDirection": "Arah pengurutan",
     "sortByFileName": "Nama file",
@@ -4677,7 +4678,7 @@ export default {
     "backToParentPlaylist": "Kembali ke daftar putar induk",
     "playlistSongCount": "{{count}} lagu",
     "deleteSubfolderMessage": "Hapus “{{folderName}}” dan lewati pemindaian berikutnya. Pulihkan dari tampilan Semua. File di disk tidak berubah.",
-    "deleteRootFolderMessage": "Hapus “{{folderName}}” beserta semua lagunya dari perpustakaan. File di disk tidak berubah.",
+    "deleteRootFolderMessage": "Hapus “{{folderName}}” beserta semua media di dalamnya dari perpustakaan. File di disk tidak berubah.",
     "importNotSupported": "Impor folder tidak didukung di browser ini atau dibatalkan",
     "insecureHttpDisabled": "Perpustakaan lokal dinonaktifkan di HTTP remote. Gunakan HTTPS, localhost, atau aplikasi Electron.",
     "resyncFailed": "Gagal menyinkronkan ulang folder. Silakan coba lagi.",
@@ -5206,8 +5207,8 @@ export default {
     "topSongsAddedToQueue_one": "{{count}} lagu teratas ditambahkan ke antrean putar",
     "topSongsAddedToQueue_other": "{{count}} lagu teratas ditambahkan ke antrean putar",
     "noTopSongsToQueue": "Tidak ada lagu teratas yang bisa diantrekan",
-    "allSongs": "Semua lagu",
-    "allSongsCollectionName": "Semua lagu {{artistName}}",
+    "allSongs": "Semua Media",
+    "allSongsCollectionName": "Semua Media {{artistName}}",
     "moreActions": "Tindakan lain",
   },
   "obs": {
@@ -6351,7 +6352,7 @@ export default {
         "homeTabs": "Di beranda, strip info adalah celah sempit: “Pustaka” dan tombol lipat di atas, lalu tab yang ditulis vertikal: Playlist, Radio, Album, Lokal, Navidrome.",
         "homeFlip": "Berpindah tab membalik seluruh strip sekali, dan seluruh dinding berganti ke isi tab itu. Di keyboard, F6 / Shift + F6 berganti tab.",
         "homeSections": "Lokal dan Navidrome punya satu kolom bagian tambahan (folder, album, artis, playlist…). Hanya yang terpilih yang menuliskan namanya; sisanya ikon, arahkan untuk nama lengkap. Berganti bagian hanya mengganti isi dinding, tanpa membuka tingkat baru.",
-        "homeShortcuts": "Kata-kata vertikal kecil di bawahnya adalah pintasan: Lagu Disukai, FM Pribadi, Semua Lagu… Mengklik satu sama dengan mengklik kartunya di dinding; FM Pribadi langsung diputar. Kalau tempatnya tidak cukup, pintasan pindah ke “⋯”.",
+        "homeShortcuts": "Kata-kata vertikal kecil di bawahnya adalah pintasan: Lagu Disukai, FM Pribadi, Semua Media… Mengklik satu sama dengan mengklik kartunya di dinding; FM Pribadi langsung diputar. Kalau tempatnya tidak cukup, pintasan pindah ke “⋯”.",
         "dockAccount": "Tepat di atas kisi alat ada pintu masuk akun: avatar dan nama saat masuk, “Hubungkan layanan streaming” saat belum. Tekan untuk membuka jendela masuk; ganti platform, masuk, dan keluar ada di sana.",
         "dockTools": "Empat di paling bawah: cari di platform online, pengaturan, kolase antrean (masuk ke Lattice), dan “⋯”.",
         "dockMenu": "Sisanya ada di “⋯”: butir tab ini lebih dulu (saring halaman ini, direktori, kelola yang disembunyikan, impor…), lalu setelah pemisah tujuan seperti “Kembali ke pemutar”.",
@@ -6592,7 +6593,7 @@ export default {
         "collection": "Album, playlist, dan folder menampilkan tumpukan tepi halaman bergeser di kanan bawah, dan labelnya bertuliskan “jenis · jumlah lagu”. Membukanya memberi daftar lagu. Tepi halaman bisa dimatikan di pengaturan.",
         "artist": "Artis adalah potret dua warna dengan nama lebih besar dan tanpa subjudul.",
         "artistHover": "Arahkan penunjuk ke sana, atau pindahkan fokus papan tombol ke sana, dan potretnya kembali ke warna aslinya.",
-        "special": "Kartu khusus seperti Lagu Disukai, FM Pribadi, dan Semua Lagu mendapat label berwarna aksen dengan ikon kecil di depannya. FM Pribadi adalah radio: mengekliknya langsung memutar, bukan membuka lapisan baru.",
+        "special": "Kartu khusus seperti Lagu Disukai, FM Pribadi, dan Semua Media mendapat label berwarna aksen dengan ikon kecil di depannya. FM Pribadi adalah radio: mengekliknya langsung memutar, bukan membuka lapisan baru.",
         "open": "Mengeklik koleksi tidak berpindah ke halaman baru. Ubin yang diklik menjadi lagu ke-1 lapisan baru di tempatnya (sampul koleksi biasanya sampul lagu pertamanya), dan posisi lain berbalik ke isi baru melingkar dari sana.",
         "openSeam": "Celah tetap terbuka; isinya berbalik menjadi strip info koleksi ini.",
         "back": "Saat kembali (‹ di strip info, Esc, atau tombol kembali peramban), dinding berbalik ke lapisan sebelumnya mulai dari celah, dan fokus papan tombol kembali ke ubin yang tadi diklik.",
@@ -6675,7 +6676,7 @@ export default {
         "atSign": "Ketik @ dan ia mendaftar artis serta album yang ada di antrean, masing-masing dengan berapa lagu yang diwakilinya \u2014 @ sendirian mendaftar artis dan album lagu yang sedang diputar.",
         "narrowed": "Pilih satu dan ia melipat jadi chip di baris masukan, menyisakan hanya lagu dari entri itu. Inilah satu-satunya tempat di aplikasi yang bisa berkata \u201chanya lagu artis ini\u201d \u2014 tidak ada tombol yang menggantikannya.",
         "flags": "Setelah rentangnya ditentukan, ketik dua tanda hubung dan ia mendaftar aksi massal yang tersedia: --remove mengeluarkannya dari antrean, --next memindahkannya ke putar berikutnya, --end memindahkannya ke akhir. Tidak perlu dihafal; mengetik -- berarti bertanya.",
-        "scope": "Satu hal yang harus jelas: ia tidak bekerja pada baris yang tersorot, melainkan pada semua yang cocok. Karena itu strip di bawah menyebut berapa lagu yang akan terpengaruh \u2014 baca angka itu sebelum menekan.",
+        "scope": "Satu hal yang harus jelas: ia tidak bekerja pada baris yang tersorot, melainkan pada semua media yang cocok. Karena itu strip di bawah menyebut berapa lagu yang akan terpengaruh \u2014 baca angka itu sebelum menekan.",
         "guards": "Dua pengaman: tanpa teks pencarian dan tanpa saringan @ ia menolak berjalan sama sekali, jadi kamu tidak bisa mengosongkan seluruh antrean dalam satu ketukan; dan lagu yang sedang diputar dikecualikan, yang juga disebut di pratinjau."
       },
       "desktop": {

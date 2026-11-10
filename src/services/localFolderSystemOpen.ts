@@ -10,6 +10,8 @@ export type LocalFolderRevealReason = 'cancelled' | 'missing' | 'invalid' | 'des
 export interface LocalFolderRevealResult {
     ok: boolean;
     reason?: LocalFolderRevealReason;
+    /** 主进程这次已经弹过目录选择框：渲染端不该因为失败立刻再弹一次。 */
+    prompted?: boolean;
 }
 
 /**

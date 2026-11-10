@@ -2,7 +2,7 @@
 
 export default {
   "appleMusic": {
-    "libraryPlaylistName": "All songs"
+    "libraryPlaylistName": "All Media"
   },
   "scratchpad": {
     "title": "Scratchpad",
@@ -329,7 +329,7 @@ export default {
       "localTitle": "No local music imported yet",
       "localBody": "Choose “{{action}}” under “⋯” in the info strip, and your folders, albums and artists will fill this wall."
     },
-    "special": {"liked": "Liked Songs", "cloud": "Cloud Drive", "personal-fm": "Personal FM", "fm-station": "Radio", "daily": "Daily Picks", "all-songs": "All Songs", "local-favorites": "Favorites", "navidrome-random": "Random", "navidrome-favorites": "Starred"}
+    "special": {"liked": "Liked Songs", "cloud": "Cloud Drive", "personal-fm": "Personal FM", "fm-station": "Radio", "daily": "Daily Picks", "all-songs": "All Media", "local-favorites": "Favorites", "navidrome-random": "Random", "navidrome-favorites": "Starred"}
   },
   "libraryTui": {
     "back": "Back",
@@ -970,7 +970,7 @@ export default {
       "grid-edit-entity": { "title": "Edit this album or artist", "description": "Open the local library entity editor for this collection" },
       "grid-set-cover": { "title": "Set collection cover", "description": "Choose a fixed cover for this local folder, album or playlist" },
       "grid-toggle-edit-mode": { "title": "Toggle edit mode", "description": "Enter or leave the mode that lets you remove songs from this collection" },
-      "grid-reload-online-collection": { "title": "Reload this collection", "description": "Skip the cache and load every song of this online collection again" },
+      "grid-reload-online-collection": { "title": "Reload this collection", "description": "Skip the cache and load all media of this online collection again" },
       "grid-toggle-subscribe": { "title": "Subscribe or unsubscribe", "description": "Save this online playlist or album to your library, or remove it if it is already there" },
       "grid-collect-filtered": { "title": "Add these songs to the scratchpad", "description": "Put this collection (only the filtered songs while filtering) in the scratchpad without touching the queue" },
       "directory-play-selection": { "title": "Play selected cards", "description": "Play the songs of the cards selected on the map, in card order" },
@@ -989,7 +989,7 @@ export default {
       "artist-reload": { "title": "Reload artist", "description": "Load the artist page again from the source" },
       "artist-retry-albums": { "title": "Resume loading albums", "description": "Retry the album page that failed and keep loading the rest" },
       "artist-edit-entity": { "title": "Edit artist info", "description": "Open the local library editor for this artist" },
-      "artist-open-all-songs": { "title": "Open all songs", "description": "List every song by this artist on one page, including singles outside any album" },
+      "artist-open-all-songs": { "title": "Open All Media", "description": "List all media by this artist on one page, including singles outside any album" },
       "settings-interaction": { "title": "Interaction settings", "description": "Open keyboard, shortcut and grid interaction settings" },
       "settings-global-shortcuts": { "title": "Global shortcuts", "description": "Jump to the system-wide shortcuts for playback and mod commands" },
       "settings-custom-shortcut": { "title": "Custom shortcuts", "description": "Jump to the custom keyboard shortcut bindings" },
@@ -1944,7 +1944,7 @@ export default {
     "gridFolderRemoveSelectedTitle": "Remove selected tracks?",
     "gridFolderRemoveSelectedDescription": "Remove {{count}} tracks. Roots are removed; fully selected subfolders are ignored during scans. Disk files stay unchanged.",
     "gridFolderRemoveRootTitle": "Remove imported root?",
-    "gridFolderRemoveRootDescription": "Remove {{path}} and all its tracks from Folia? Files on disk will not be deleted.",
+    "gridFolderRemoveRootDescription": "Remove {{path}} and all its media from Folia? Files on disk will not be deleted.",
     "login": "Login",
     "welcomeBack": "Welcome Back",
     "guestTitle": "Try searching a few songs first",
@@ -3885,6 +3885,7 @@ export default {
     "videoLayerFitCover": "Cover (crop)",
     "videoLayerFitContain": "Contain",
     "videoLayerNotInExport": "Not included in visual config import/export, and not shown in OBS sources: OBS runs its own browser and cannot open the local video picked here.",
+    "shinoLabEarlyAccessNotice": "These features are planned for a future release and are still in early development, so parts of them may be unstable. Turn a feature on only if you want to try it early.",
     "shinoLabVideoSection": "Video playback (experimental)",
     "shinoLabBilibiliSection": "Video background · bilibili (experimental)",
     "shinoLabVideoPlayback": "Video playback",
@@ -4160,14 +4161,14 @@ export default {
       }
     },
     "v0_7_27": {
-      "intro": "Welcome to 0.7.27. Spotify gains Soloist playback, so accounts that cannot get audio keys can still play; Apple Music’s volume and mute now work, the library gets All songs, and its built-in word-timed lyrics give way to your preferred lyric source; and fnOS Music can sign in from outside your LAN with an FN ID.",
+      "intro": "Welcome to 0.7.27. Spotify gains Soloist playback, so accounts that cannot get audio keys can still play; Apple Music’s volume and mute now work, the library gets All Media, and its built-in word-timed lyrics give way to your preferred lyric source; and fnOS Music can sign in from outside your LAN with an FN ID.",
       "soloist": {
         "title": "Spotify: Soloist playback",
         "description": "Some Spotify accounts (often ones created after late 2024) never receive audio keys, so Folia’s own playback cannot play them. When signing in you can now choose between Standard and Soloist: Soloist is Spotify’s official playback program, downloaded separately, and needs an API key generated with a Premium account. With Standard, Folia checks after sign-in whether the account can get keys and suggests Soloist if it cannot. A setup checklist walks you through installing the program, entering the key and pairing; open it from the account page, Platform playback setup in the command palette, or a playback failure notice. Soloist sends its sound straight to the system output, so Folia’s equalizer, Automix and video export do not apply to it. Also fixed: on Linux the whole app could freeze the first time Spotify played."
       },
       "amUpdate": {
         "title": "Apple Music improvements",
-        "description": "The volume slider and mute now control Apple Music’s sound. Your library’s playlists gain All songs, for browsing every song you have saved. Startup shows your last account right away instead of a blank wait, and on desktop the playing song no longer stops when the window is rebuilt (for example when toggling window transparency)—the new window carries on. When a song has built-in word-timed lyrics, Folia switches to the source chosen in Lyric match priority (QQ Music by default) if it also has word-timed lyrics, so you no longer swap in translated lyrics by hand for every song. A new lyric setting, Keep platform word-timed lyrics, can be turned off to let Apple Music songs pick the best lyrics from all sources like any other song."
+        "description": "The volume slider and mute now control Apple Music’s sound. Your library’s playlists gain All Media, for browsing every song you have saved. Startup shows your last account right away instead of a blank wait, and on desktop the playing song no longer stops when the window is rebuilt (for example when toggling window transparency)—the new window carries on. When a song has built-in word-timed lyrics, Folia switches to the source chosen in Lyric match priority (QQ Music by default) if it also has word-timed lyrics, so you no longer swap in translated lyrics by hand for every song. A new lyric setting, Keep platform word-timed lyrics, can be turned off to let Apple Music songs pick the best lyrics from all sources like any other song."
       },
       "fnConnect": {
         "title": "fnOS Music: sign in with an FN ID",
@@ -4206,7 +4207,7 @@ export default {
       },
       "moreDetails": {
         "title": "More improvements",
-        "description": "Machi supports a transparent player page, no longer stalls when switching, and lowers its quality automatically by refresh rate to stay smooth; without smart motion its neon and big screen flash to a steady beat, which you can turn off with Simulated beat. The lyric canvas has resolution and antialiasing settings. Global shortcuts let you pick your own modifier keys and keys. With click-through on the desktop, previous, play/pause and next sit beside the lock. Artist pages add All Songs, and an album’s artist can be opened from its page. Right-to-left lyrics are laid out in the right direction. A new Automatic AI segmentation option is available. NetEase requests being cut off on some IPv6 networks are fixed."
+        "description": "Machi supports a transparent player page, no longer stalls when switching, and lowers its quality automatically by refresh rate to stay smooth; without smart motion its neon and big screen flash to a steady beat, which you can turn off with Simulated beat. The lyric canvas has resolution and antialiasing settings. Global shortcuts let you pick your own modifier keys and keys. With click-through on the desktop, previous, play/pause and next sit beside the lock. Artist pages add All Media, and an album’s artist can be opened from its page. Right-to-left lyrics are laid out in the right direction. A new Automatic AI segmentation option is available. NetEase requests being cut off on some IPv6 networks are fixed."
       }
     },
     "v0_7_25": {
@@ -4621,7 +4622,7 @@ export default {
     "unknownAlbum": "Unknown Album",
     "unknownArtist": "Unknown Artist",
     "folder": "Folder",
-    "allSongs": "All Songs",
+    "allSongs": "All Media",
     "sortSongs": "Sort songs",
     "sortDirection": "Sort direction",
     "sortByFileName": "File name",
@@ -4675,7 +4676,7 @@ export default {
     "backToParentPlaylist": "Back to parent playlist",
     "playlistSongCount": "{{count}} songs",
     "deleteSubfolderMessage": "Remove “{{folderName}}” and skip future scans. Restore in All view. Disk files stay unchanged.",
-    "deleteRootFolderMessage": "Remove “{{folderName}}” and all its tracks from the library. Disk files stay unchanged.",
+    "deleteRootFolderMessage": "Remove “{{folderName}}” and all its media from the library. Disk files stay unchanged.",
     "importNotSupported": "Folder import not supported in this browser or cancelled",
     "insecureHttpDisabled": "Local library is disabled on remote HTTP. Use HTTPS, localhost, or the Electron app.",
     "resyncFailed": "Failed to resync folder. Please try again.",
@@ -5204,8 +5205,8 @@ export default {
     "topSongsAddedToQueue_one": "Added {{count}} top song to the play queue",
     "topSongsAddedToQueue_other": "Added {{count}} top songs to the play queue",
     "noTopSongsToQueue": "No top songs available to queue",
-    "allSongs": "All songs",
-    "allSongsCollectionName": "All songs by {{artistName}}",
+    "allSongs": "All Media",
+    "allSongsCollectionName": "All Media by {{artistName}}",
     "moreActions": "More actions",
   },
   "obs": {
@@ -6349,7 +6350,7 @@ export default {
         "homeTabs": "On the home page the info strip is a narrow gap: “Library” and the fold button at the top, then the tabs written vertically: Playlists, Radio, Albums, Local, Navidrome.",
         "homeFlip": "Switching tabs flips the whole strip once, and the whole wall changes to that tab. On the keyboard, F6 / Shift + F6 cycle through the tabs.",
         "homeSections": "Local and Navidrome get an extra column of sections (folders, albums, artists, playlists…). Only the selected one spells out its name; the rest are icons, hover for the full name. Switching changes the wall without opening a new level.",
-        "homeShortcuts": "The small vertical words below are shortcuts: Liked Songs, Personal FM, All Songs… Clicking one is the same as clicking its card on the wall; Personal FM starts playing straight away. When space runs out they move into “⋯”.",
+        "homeShortcuts": "The small vertical words below are shortcuts: Liked Songs, Personal FM, All Media… Clicking one is the same as clicking its card on the wall; Personal FM starts playing straight away. When space runs out they move into “⋯”.",
         "dockAccount": "Right above the tool grid is the account entry: your avatar and name when signed in, “Connect a streaming service” when not. Press it to open the sign-in window, where you switch platforms, sign in and sign out.",
         "dockTools": "The bottom four: search online platforms, settings, the queue collage (into Lattice), and “⋯”.",
         "dockMenu": "Everything else lives in “⋯”: this tab’s items first (filter this page, directory, manage hidden, import…), then after a divider the places to go, like “Back to the player”.",
@@ -6590,7 +6591,7 @@ export default {
         "collection": "Albums, playlists and folders show a stack of offset page edges at the bottom right, and their label reads “kind · track count”. Opening one gives you a track list. The page edges can be turned off in settings.",
         "artist": "An artist is a duotone portrait with a larger name and no subtitle.",
         "artistHover": "Point at it, or move the keyboard focus onto it, and the portrait returns to its original colors.",
-        "special": "Special cards such as Liked Songs, Personal FM and All Songs get a label in the accent color with a small icon in front. Personal FM is a radio stream: clicking it starts playback right away instead of opening a new layer.",
+        "special": "Special cards such as Liked Songs, Personal FM and All Media get a label in the accent color with a small icon in front. Personal FM is a radio stream: clicking it starts playback right away instead of opening a new layer.",
         "open": "Clicking a collection does not jump to a new page. The tile you clicked becomes track 1 of the new layer in place (a collection’s cover is usually its first song’s), and every other spot flips to new content in rings around it.",
         "openSeam": "The seam stays open; its content flips to this collection’s info strip.",
         "back": "Going back (‹ in the info strip, Esc, or browser back) flips the wall to the previous layer outward from the seam, and keyboard focus returns to the tile you clicked.",
@@ -6673,7 +6674,7 @@ export default {
         "atSign": "Type an @ and it lists the artists and albums that are in the queue, each with how many songs it accounts for \u2014 an @ on its own lists the artist and album of the song playing right now.",
         "narrowed": "Pick one and it folds into a chip in the input line, leaving only that entry\u2019s songs. This is the only place in the app that can say \u201cjust this artist\u2019s songs\u201d \u2014 no button replaces it.",
         "flags": "With the range set, type two dashes and it lists the bulk actions it has: --remove takes them out of the queue, --next moves them to play next, --end moves them to the end. You do not have to remember them; typing -- is how you ask.",
-        "scope": "One thing to be clear about: it does not act on the highlighted row, it acts on everything that matched. That is why the strip below says how many songs will be affected \u2014 read that number before pressing.",
+        "scope": "One thing to be clear about: it does not act on the highlighted row, it acts on all matched media. That is why the strip below says how many songs will be affected \u2014 read that number before pressing.",
         "guards": "Two guards: with no search text and no @ filter it refuses to run at all, so you cannot empty the whole queue in one keystroke; and the song playing right now is left out, which the preview says too."
       },
       "desktop": {

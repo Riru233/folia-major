@@ -4,6 +4,7 @@ import { DEFAULT_VISUALIZER_BACKGROUND_MODE } from '../../types/visualizerModes'
 import { getStoredBoolean, setStoredBoolean } from '../../stores/storagePrimitives';
 import { setStatusMessage } from '../../stores/useStatusMessageStore';
 import { useVisualizerSettingsStore } from '../../stores/useVisualizerSettingsStore';
+import { isLabVideoPlaybackEnabled, LAB_VIDEO_PLAYBACK_KEY } from './labVideoGate';
 
 // src/shinoinject/lab/useShinoLabStore.ts
 // 「Shino 实验室」的两个实验：视频播放（曲目自带的画面、设置里那条视频层），以及把 bilibili 上
@@ -13,7 +14,6 @@ import { useVisualizerSettingsStore } from '../../stores/useVisualizerSettingsSt
 // 实验性背景的开关还负责一件事：关掉时如果正停在「视频」背景上，就退回默认背景，不然界面会
 // 停在一个已经不可选的背景上。登录状态不在这里，它在 useBilibiliMvStore 里，一次登录全局共享。
 
-const LAB_VIDEO_PLAYBACK_KEY = 'shino_lab_video_playback';
 const LAB_HIDE_LYRICS_ON_VIDEO_KEY = 'shino_lab_hide_lyrics_on_video';
 const LAB_BILIBILI_MV_KEY = 'shino_lab_bilibili_mv';
 const LAB_BILIBILI_AUTO_MATCH_KEY = 'shino_lab_bilibili_auto_match';
@@ -45,7 +45,7 @@ export type ShinoLabState = {
 };
 
 export const useShinoLabStore = create<ShinoLabState>((set, get) => ({
-    videoPlaybackEnabled: getStoredBoolean(LAB_VIDEO_PLAYBACK_KEY, true),
+    videoPlaybackEnabled: isLabVideoPlaybackEnabled(),
     hideLyricStyleDuringVideo: getStoredBoolean(LAB_HIDE_LYRICS_ON_VIDEO_KEY, false),
     bilibiliMvEnabled: getStoredBoolean(LAB_BILIBILI_MV_KEY, false),
     bilibiliAutoMatch: getStoredBoolean(LAB_BILIBILI_AUTO_MATCH_KEY, true),

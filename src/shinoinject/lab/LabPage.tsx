@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LogIn, LogOut, RotateCcw, X } from 'lucide-react';
+import { Info, LogIn, LogOut, RotateCcw, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { selectDisplaySong, usePlaybackStore } from '../../stores/usePlaybackStore';
@@ -149,6 +149,14 @@ const LabPage: React.FC = () => {
 
     return (
         <>
+            {/* 实验室整页的免责说明：放在所有分组之前，跟开关状态无关，始终可见。 */}
+            <div
+                role="note"
+                className="mt-5 flex items-start gap-2 rounded-xl border border-[var(--st-line)] bg-[var(--st-fill)] px-3 py-2.5 text-[12px] leading-5 text-[color:var(--st-t2)]"
+            >
+                <Info size={14} className="mt-0.5 shrink-0 opacity-70" />
+                <span>{t('options.shinoLabEarlyAccessNotice')}</span>
+            </div>
             <Group def={VIDEO}>
                 <Row
                     option={O.videoPlayback}
