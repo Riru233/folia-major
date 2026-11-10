@@ -139,8 +139,6 @@ const CapsuleQuickActions: React.FC<CapsuleQuickActionsProps> = ({
                   outline: "1px solid rgba(40,40,40,0.2)",
                   boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                 }}
-                // 和进度条胶囊同一层玻璃。
-                style={inline ? { color: 'var(--text-primary)' } : capsuleGlassStyle(isDaylight)}
             >
                 {commands.map(command => {
                     const button = resolveButton(command, context);
