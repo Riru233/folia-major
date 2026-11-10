@@ -11,6 +11,7 @@ import type { Theme } from "../../../types";
 import { usePlayerBottomBarBottomPx } from "../../../hooks/usePlayerBottomBarBottomPx";
 import { usePlayerOverlayObstacle } from "../../../hooks/usePlayerOverlayLayout";
 import { useGlass } from "@/shinoinject/useGlass";
+import { holdCompanionHover, releaseCompanionHover, useBottomDockStore, useIsDockCompactWithCapsule } from '../../../stores/useBottomDockStore';
 
 // src/components/panelTab/shell/PanelHandle.tsx
 // The round button at the bottom right of the playing page that opens the panel and, white, closes
@@ -43,39 +44,49 @@ const PanelHandle: React.FC<PanelHandleProps> = ({
   onOpenCommandPalette,
   isCommandPaletteOpen,
 }) => {
-  const [showGuideLine, setShowGuideLine] = React.useState(false);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const guideHideTimeoutRef = React.useRef<number | null>(null);
-  const bottomBarBottomPx = usePlayerBottomBarBottomPx();
-  // The button is in the way of a mod's player layout, as the open panel above it is.
-  const { ref: layoutRef, invalidate: invalidateLayout } =
-    usePlayerOverlayObstacle("panel-toggle", "panel");
-  const supportsHover =
-    typeof window !== "undefined" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  const commandSlideRef = React.useRef<{
-    startX: number;
-    startY: number;
-    triggered: boolean;
-  } | null>(null);
-  const suppressToggleClickRef = React.useRef(false);
-  const toggleButtonRef = React.useRef<HTMLButtonElement | null>(null);
-  const trackEndIconRef = React.useRef<HTMLDivElement | null>(null);
-  const trackFillRef = React.useRef<HTMLDivElement | null>(null);
-  const canSlideOpenCommandPalette = !isOpen && Boolean(onOpenCommandPalette);
-  const isGuideLineVisible =
-    canSlideOpenCommandPalette && (showGuideLine || isPanelGuideHotspotActive);
-  const toggleButtonMotionClass =
-    isOpen || isGuideLineVisible || isDragging
-      ? "translate-x-0 opacity-100"
-      : supportsHover
-        ? "translate-x-1/2 opacity-60 group-hover:translate-x-0 group-hover:opacity-100 md:translate-x-0 md:opacity-100 md:hover:scale-105"
-        : "translate-x-1/2 opacity-60";
-  const setCommandDestinationFeedback = (progress: number) => {
-    const iconContainer = trackEndIconRef.current;
-    if (!iconContainer) {
-      return;
-    }
+    const [showGuideLine, setShowGuideLine] = React.useState(false);
+    const [isDragging, setIsDragging] = React.useState(false);
+    const guideHideTimeoutRef = React.useRef<number | null>(null);
+    const bottomBarBottomPx = usePlayerBottomBarBottomPx();
+    // The button is in the way of a mod's player layout, as the open panel above it is.
+    const { ref: layoutRef, invalidate: invalidateLayout } = usePlayerOverlayObstacle('panel-toggle', 'panel');
+    const supportsHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const commandSlideRef = React.useRef<{ startX: number; startY: number; triggered: boolean; } | null>(null);
+    const suppressToggleClickRef = React.useRef(false);
+    const toggleButtonRef = React.useRef<HTMLButtonElement | null>(null);
+    const trackEndIconRef = React.useRef<HTMLDivElement | null>(null);
+    const trackFillRef = React.useRef<HTMLDivElement | null>(null);
+    // 紧凑档（窗口窄于 960，progress-bar v3）里按钮挂到进度条胶囊的右端：缩成 40、去掉自己的底色，
+    // 位置由 bottomDock.css 按 <html data-bottom-layout> 平移过去。挂着时没有左滑开命令面板的手势：
+    // 滑轨会横在胶囊上；命令面板从点胶囊或快捷行最右那一格开。
+    const isDocked = useIsDockCompactWithCapsule();
+    const canSlideOpenCommandPalette = !isOpen && Boolean(onOpenCommandPalette) && !isDocked;
+    // 按钮这一刻画不画（下面 AnimatePresence 的条件）。它被拿掉时浏览器不会补发 pointerleave：
+    // 不在这里清掉，胶囊会一直当作还在悬停、一直展开着。
+    const isButtonShown = !hideToggleButton && (!isOpen || showOpenPanelCloseButton) && !isCommandPaletteOpen;
+    React.useEffect(() => {
+        if (!isButtonShown) releaseCompanionHover(true);
+    }, [isButtonShown]);
+    const isGuideLineVisible = canSlideOpenCommandPalette && (showGuideLine || isPanelGuideHotspotActive);
+    React.useEffect(() => {
+        if (hideToggleButton) return undefined;
+        const store = useBottomDockStore.getState();
+        store.setCompanion('panel-toggle', true);
+        return () => {
+            useBottomDockStore.getState().setCompanion('panel-toggle', false);
+            releaseCompanionHover(true);
+        };
+    }, [hideToggleButton]);
+    const toggleButtonMotionClass = (isOpen || isGuideLineVisible || isDragging || isDocked)
+        ? 'translate-x-0 opacity-100'
+        : supportsHover
+            ? 'translate-x-1/2 opacity-60 group-hover:translate-x-0 group-hover:opacity-100 md:translate-x-0 md:opacity-100 md:hover:scale-105'
+            : 'translate-x-1/2 opacity-60';
+    const setCommandDestinationFeedback = (progress: number) => {
+        const iconContainer = trackEndIconRef.current;
+        if (!iconContainer) {
+            return;
+        }
 
     iconContainer.style.opacity = String(0.35 + progress * 0.65);
     iconContainer.style.transform = `scale(${1.0 + progress * 0.15}) rotate(${progress * 45}deg)`;
@@ -308,6 +319,18 @@ const PanelHandle: React.FC<PanelHandleProps> = ({
       setShowGuideLine(false);
     }
   };
+    // 挂在胶囊上时，鼠标停在按钮上胶囊也算在悬停，不会从展开缩回去。只认鼠标和笔：
+    // 手指点完浏览器会补发 mouseenter，又没有对应的离开，胶囊就会一直展开着。
+    const handleCompanionPointerEnter = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (isDocked && event.pointerType !== 'touch') {
+            holdCompanionHover();
+        }
+    };
+    const handleCompanionPointerLeave = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.pointerType !== 'touch') {
+            releaseCompanionHover();
+        }
+    };
   const handleToggleHotspotPointerDown = (
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
@@ -358,81 +381,75 @@ const PanelHandle: React.FC<PanelHandleProps> = ({
     [],
   );
 
-  return (
-    <AnimatePresence>
-      {!hideToggleButton &&
-        (!isOpen || showOpenPanelCloseButton) &&
-        !isCommandPaletteOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: 20, y: 12, scale: 0.92 }}
-            animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-            exit={
-              isCommandPaletteOpen
-                ? { opacity: 0, x: 0, y: 0, scale: 1 }
-                : { opacity: 0, x: 20, y: 12, scale: 0.92 }
-            }
-            transition={{ duration: 0.24, ease: "easeOut" }}
-            data-testid="panel-toggle"
-            ref={layoutRef}
-            onUpdate={invalidateLayout}
-            style={{ bottom: bottomBarBottomPx }}
-            className="pointer-events-auto fixed right-0 z-[60] pr-4 md:pr-8 group w-20 flex justify-end"
-            onMouseEnter={handleToggleButtonMouseEnter}
-            onMouseLeave={handleToggleButtonMouseLeave}
-            onPointerDown={handleToggleHotspotPointerDown}
-          >
-            {/* Wrapper for both track and button to guarantee perfect alignment across browsers */}
-            <div
-              className={`relative w-12 h-12 transition-all duration-300 transform ${toggleButtonMotionClass}`}
-            >
-              {/* osu! Slider Track */}
-              <div
-                style={{
-                  width: "96px",
-                  transition: "opacity 200ms ease-out",
-                }}
-                className={`absolute right-0 top-0 h-12 rounded-full border pointer-events-none z-0 ${
-                  isGuideLineVisible || isDragging ? "opacity-100" : "opacity-0"
-                } ${
-                  isDaylight
-                    ? "border-black/10 bg-black/5"
-                    : "border-white/10 bg-white/5"
-                }`}
-              >
-                {/* Semi-transparent command icon at the left end of the track */}
+    return (
+        <AnimatePresence>
+            {isButtonShown && (
                 <motion.div
-                  className="absolute left-3.5 top-[17px] w-3.5 h-3.5 pointer-events-none flex items-center justify-center"
-                  animate={
-                    isGuideLineVisible
-                      ? {
-                          x: [0, -4, 0],
-                          opacity: [0.45, 0.85, 0.45],
-                        }
-                      : {
-                          x: 0,
-                          opacity: 0.45,
-                        }
-                  }
-                  transition={
-                    isGuideLineVisible
-                      ? {
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }
-                      : undefined
-                  }
+                    initial={{ opacity: 0, x: 20, y: 12, scale: 0.92 }}
+                    animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+                    exit={isCommandPaletteOpen
+                        ? { opacity: 0, x: 0, y: 0, scale: 1 }
+                        : { opacity: 0, x: 20, y: 12, scale: 0.92 }
+                    }
+                    transition={{ duration: 0.24, ease: 'easeOut' }}
+                    data-testid="panel-toggle"
+                    ref={layoutRef}
+                    onUpdate={invalidateLayout}
+                    // 挂上、取下只动 CSS 的 translate / scale，尺寸观察和 framer 的 onUpdate 都不会响：
+                    // 平移走完再请模组的 player.layout 量一次，不然它拿到的是半路的位置。
+                    onTransitionEnd={invalidateLayout}
+                    style={{ bottom: bottomBarBottomPx }}
+                    className={`dock-companion dock-companion--panel ${isDocked ? 'is-docked' : ''} pointer-events-auto fixed right-0 z-[60] pr-4 md:pr-8 group w-20 flex justify-end`}
+                    onMouseEnter={handleToggleButtonMouseEnter}
+                    onMouseLeave={handleToggleButtonMouseLeave}
+                    onPointerEnter={handleCompanionPointerEnter}
+                    onPointerLeave={handleCompanionPointerLeave}
+                    onPointerDown={handleToggleHotspotPointerDown}
                 >
-                  <div
-                    ref={trackEndIconRef}
-                    style={{
-                      color: isDaylight ? "#000000" : "#ffffff",
-                    }}
-                    className="w-full h-full flex items-center justify-center"
-                  >
-                    <Command size={14} />
-                  </div>
-                </motion.div>
+                    {/* Wrapper for both track and button to guarantee perfect alignment across browsers */}
+                    <div className={`relative w-12 h-12 transition-all duration-300 transform ${toggleButtonMotionClass}`}>
+                        {/* osu! Slider Track */}
+                        <div
+                            style={{
+                                width: '96px',
+                                transition: 'opacity 200ms ease-out',
+                            }}
+                            className={`absolute right-0 top-0 h-12 rounded-full border pointer-events-none z-0 ${
+                                isGuideLineVisible || isDragging
+                                    ? 'opacity-100'
+                                    : 'opacity-0'
+                            } ${
+                                isDaylight
+                                    ? 'border-black/10 bg-black/5'
+                                    : 'border-white/10 bg-white/5'
+                            }`}
+                        >
+                            {/* Semi-transparent command icon at the left end of the track */}
+                            <motion.div 
+                                className="absolute left-3.5 top-[17px] w-3.5 h-3.5 pointer-events-none flex items-center justify-center"
+                                animate={isGuideLineVisible ? {
+                                    x: [0, -4, 0],
+                                    opacity: [0.45, 0.85, 0.45],
+                                } : {
+                                    x: 0,
+                                    opacity: 0.45,
+                                }}
+                                transition={isGuideLineVisible ? {
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                } : undefined}
+                            >
+                                <div
+                                    ref={trackEndIconRef}
+                                    style={{ 
+                                        color: isDaylight ? '#000000' : '#ffffff',
+                                    }}
+                                    className="w-full h-full flex items-center justify-center"
+                                >
+                                    <Command size={14} />
+                                </div>
+                            </motion.div>
 
                 {/* Track Fill */}
                 <div

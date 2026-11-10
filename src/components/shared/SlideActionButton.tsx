@@ -29,6 +29,11 @@ export interface SlideActionButtonProps {
     /** 拖满时按钮变成强调色底，上面图标的颜色（缺省白色；强调色可能本身就很浅，例如墙面工具按钮读 --text-on-accent）。 */
     accentForeground?: string;
     disabled?: boolean;
+    /**
+     * 挂在紧凑档进度条胶囊的右端（progress-bar v3）：缩成 40、不再半藏在窗口边上、去掉自己的底色
+     * （胶囊的玻璃就是它的底），也没有左滑那一下（滑轨会横在胶囊上），只剩点按。位置由调用方平移。
+     */
+    docked?: boolean;
 }
 
 export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
@@ -42,27 +47,23 @@ export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
     accentColor,
     accentForeground = '#ffffff',
     disabled = false,
+    docked = false,
 }) => {
-  const [showGuideLine, setShowGuideLine] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const gestureRef = useRef<{
-    startX: number;
-    startY: number;
-    triggered: boolean;
-  } | null>(null);
-  const suppressClickRef = useRef(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const trackEndIconRef = useRef<HTMLDivElement>(null);
-  const trackFillRef = useRef<HTMLDivElement>(null);
-  const supportsHover =
-    typeof window !== "undefined" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  const motionClass =
-    showGuideLine || isDragging
-      ? "translate-x-0 opacity-100"
-      : supportsHover
-        ? "translate-x-1/2 opacity-60 group-hover:translate-x-0 group-hover:opacity-100 md:translate-x-0 md:opacity-100 md:hover:scale-105"
-        : "translate-x-1/2 opacity-60";
+    const [showGuideLine, setShowGuideLine] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const gestureRef = useRef<{ startX: number; startY: number; triggered: boolean } | null>(null);
+    const suppressClickRef = useRef(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const trackEndIconRef = useRef<HTMLDivElement>(null);
+    const trackFillRef = useRef<HTMLDivElement>(null);
+    const supportsHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const motionClass = docked
+        ? 'translate-x-0 opacity-100 scale-[0.8333] origin-right'
+        : showGuideLine || isDragging
+            ? 'translate-x-0 opacity-100'
+            : supportsHover
+                ? 'translate-x-1/2 opacity-60 group-hover:translate-x-0 group-hover:opacity-100 md:translate-x-0 md:opacity-100 md:hover:scale-105'
+                : 'translate-x-1/2 opacity-60';
 
   const setDestinationFeedback = (progress: number) => {
     const icon = trackEndIconRef.current;
@@ -228,7 +229,8 @@ export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
         type="button"
         disabled={disabled}
         onPointerDown={(event) => {
-          if (disabled) return;
+          // 挂在胶囊上（docked）时没有滑动，按下就是一次普通的点按。
+          if (disabled || docked) return;
           gestureRef.current = {
             startX: event.clientX,
             startY: event.clientY,
@@ -259,9 +261,7 @@ export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
         }}
         onPointerUp={clearGesture}
         onPointerCancel={clearGesture}
-        onMouseEnter={() => {
-          if (supportsHover) setShowGuideLine(true);
-        }}
+        onMouseEnter={() => { if (supportsHover && !docked) setShowGuideLine(true); }}
         onMouseLeave={() => {
           if (supportsHover) setShowGuideLine(false);
         }}
@@ -275,6 +275,7 @@ export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
           onActivate();
         }}
         style={{
+          touchAction: docked ? undefined : 'none',
           boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
           touchAction: "none",
           backgroundColor: isDaylight
