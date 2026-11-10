@@ -53,6 +53,10 @@ interface DesktopGrid3DSurfaceProps {
     declaredHomeActions?: LibraryDeclaredActions;
     batchConfig?: GridMapBatchConfig;
     gridMapPonderScope?: 'local-grid-map-page';
+    /** 本地首页的控件探针 id，原样交给 Grid3DSlider（本地首页一直传着它，之前在这一层丢了）。 */
+    ponderControls?: 'local-grid-controls';
+    /** 本地文件夹卡片的右键菜单；滑块与地图两种视图共用同一个回调。 */
+    onFolderContextMenu?: (event: React.MouseEvent, folderPath: string) => void;
 }
 
 export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
@@ -76,6 +80,8 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
     declaredHomeActions,
     batchConfig,
     gridMapPonderScope,
+    ponderControls,
+    onFolderContextMenu,
 }) => {
     // GridMap 就是网格里「打开着的目录」（core 的目录会话 store 记着打开的是哪个，见 useLibraryDirectorySessionStore）：
     // 打开地图 = openDirectory，关掉地图 = closeDirectory（退场动画结束之后：地图还在淡出，筛选结果不能先跳回全部；
@@ -181,6 +187,8 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                 mapButtonLabel={mapButtonLabel}
                 openGridMap={openGridMap}
                 actions={actions}
+                ponderControls={ponderControls}
+                onFolderContextMenu={onFolderContextMenu}
             />
 
             <AnimatePresence onExitComplete={handleGridMapExitComplete}>
@@ -189,8 +197,8 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                         directoryKey={directoryKey}
                         declaredHomeActions={declaredHomeActions}
                         title={title}
-                        // 文件夹卡的描述是它的名称（路径）——虚拟的「全部歌曲」也一样，标题下一行照旧是
-                        // 「All Songs / 全部歌曲」。path 只给真实文件夹（契约：虚拟条目没有路径）；GridMap 的卡片
+                        // 文件夹卡的描述是它的名称（路径）——虚拟的「全部媒体」也一样，标题下一行照旧是
+                        // 「All Songs / 全部媒体」。path 只给真实文件夹（契约：虚拟条目没有路径）；GridMap 的卡片
                         // 按 resolveGridMapFolderLabel 把虚拟文件夹的名称放在路径的位置（含「本目录 N 首」）。
                         // 规则在 core/directory/directoryItems，TUI 的目录列表用同一条。
                         items={items.map(item => ({
@@ -218,6 +226,7 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                         onTogglePlaylistHidden={togglePlaylistHidden}
                         batchConfig={batchConfig}
                         ponderPageScope={gridMapPonderScope}
+                        onFolderContextMenu={onFolderContextMenu}
                     />
                 )}
             </AnimatePresence>

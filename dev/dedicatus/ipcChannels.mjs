@@ -64,6 +64,8 @@ export const IPC_CHANNELS = {
     'legacy-models-check': { level: 'first-party', why: '查旧模型目录，会删设置项（firstParty）' },
     'legacy-models-open': { level: 'first-party', why: '在系统里打开文件夹（firstParty）' },
     'legacy-models-resolve': { level: 'first-party', why: '删旧模型文件（firstParty）' },
+    // 本地歌单右键「打开文件夹所在位置」：弹系统目录选择框并打开系统文件管理器，只在第一方窗口可用。
+    'local-folder-reveal': { level: 'first-party', why: '弹目录选择框并在系统文件管理器定位本地目录（firstParty，路径限制在用户选定的导入根内）' },
     'lyric-api-get-status': { level: 'first-party', why: '现状：有来源校验' },
     'lyric-api-publish': { level: 'first-party', why: '现状：有来源校验' },
     'lyric-api-set-enabled': { level: 'first-party', why: '现状：有来源校验' },

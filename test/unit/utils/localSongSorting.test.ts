@@ -95,7 +95,7 @@ describe('localSongSorting', () => {
         ]);
     });
 
-    // 文件夹里混装多张专辑，或者在「全部歌曲」里选专辑号时，先按专辑分组再按音轨号，
+    // 文件夹里混装多张专辑，或者在「全部媒体」里选专辑号时，先按专辑分组再按音轨号，
     // 否则每张专辑的第 1 轨会全挤在最前面。
     it('groups by album before track number', () => {
         const songs = [

@@ -24,8 +24,8 @@ const stripPrefix = (value: string, prefix: string) => (value.startsWith(prefix)
 
 /**
  * 自定义封面的键；不能设的集合（歌手、在线 / Navidrome 的类型）为 null。选的都是重扫、重启后不变的身份：
- * - 文件夹：分组 id `folder-<相对根的路径>` 去掉前缀，就是文件夹路径本身（「全部歌曲」是固定的 `__all-songs__`）；
- *   文件夹名不能改，重新导入同一个文件夹还是同一个路径。不用描述的 name：「全部歌曲」的 name 随界面语言变。
+ * - 文件夹：分组 id `folder-<相对根的路径>` 去掉前缀，就是文件夹路径本身（「全部媒体」是固定的 `__all-songs__`）；
+ *   文件夹名不能改，重新导入同一个文件夹还是同一个路径。不用描述的 name：「全部媒体」的 name 随界面语言变。
  * - 专辑：曲库实体 id（local_library_entities 里存着，重扫按别名归回同一个实体）；catalog 还没读好时的旧分组
  *   （`album-<标签>`）没有实体 id，退回分组 id。
  * - 歌单：本地歌单 id（创建时生成，改名不变）。
@@ -94,7 +94,7 @@ export const applyLocalArtistAlbumCoverOverrides = <T extends { readonly id: str
 
 /**
  * poster.png 去哪个文件夹找（曲库里的文件夹路径，含根文件夹名）；没有对应文件夹时为 null。
- * 文件夹就是它自己（「全部歌曲」没有文件夹）；专辑只有在它的歌全都在同一个文件夹里时才算有文件夹；
+ * 文件夹就是它自己（「全部媒体」没有文件夹）；专辑只有在它的歌全都在同一个文件夹里时才算有文件夹；
  * 歌单是用户自己排的一组歌，没有文件夹。
  */
 export const resolveLocalCollectionPosterFolder = (

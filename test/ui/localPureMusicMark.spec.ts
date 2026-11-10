@@ -87,7 +87,7 @@ const storedSong = (page: Page) => page.evaluate(async (fileName) => {
     } : null;
 }, SONG_FILE);
 
-/** 打开「全部歌曲」，用网格卡片上的播放键开始播放，进入播放页，当前歌词是本地 .lrc。 */
+/** 打开「全部媒体」，用网格卡片上的播放键开始播放，进入播放页，当前歌词是本地 .lrc。 */
 const playFromGrid = async (page: Page) => {
     await page.getByRole('heading', { name: 'All Songs' }).first().click();
     await expect(page.getByText('Midnight Train').first()).toBeVisible();
@@ -133,7 +133,7 @@ const lyricMatchModal = (page: Page) => page.locator('[data-folia-keyboard-windo
 const metadataDialog = (page: Page) => page.getByRole('dialog')
     .filter({ has: page.getByRole('heading', { name: 'Manual Online Match', exact: true }) });
 
-/** 网格「全部歌曲」里聚焦卡上的铅笔（歌名悬停时出现），打开 LocalSongMetadataMatchDialog。 */
+/** 网格「全部媒体」里聚焦卡上的铅笔（歌名悬停时出现），打开 LocalSongMetadataMatchDialog。 */
 const openMetadataDialog = async (page: Page) => {
     await expect(page.getByText('Midnight Train').first()).toBeVisible();
     await page.locator('[data-library-renderer="grid"] [data-ponder="local-metadata-match"]').click();

@@ -11,7 +11,7 @@ import {
 // src/library/core/collection/collectionView.ts
 // 从已加载的曲目派生出「这次展示什么、能播什么、操作作用在哪些歌上」。与渲染形态无关：
 // 网格和列表拿到的是同一份顺序和同一个操作范围。逻辑原样搬自 GridView，包括本地排序只在
-// 文件夹 / 全部歌曲里生效、隐藏集合同时按 key 与 key-下标 两种拼法匹配这些细节。
+// 文件夹 / 全部媒体里生效、隐藏集合同时按 key 与 key-下标 两种拼法匹配这些细节。
 
 export type LocalTrackSortContext = {
     songsById: ReadonlyMap<string, LocalSong>;

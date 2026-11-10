@@ -2,7 +2,7 @@
 
 export default {
   "appleMusic": {
-    "libraryPlaylistName": "全部歌曲"
+    "libraryPlaylistName": "全部媒体"
   },
   "scratchpad": {
     "title": "速记簿",
@@ -329,7 +329,7 @@ export default {
       "localTitle": "还没有导入本地音乐",
       "localBody": "在信息条的「⋯」里选「{{action}}」，文件夹、专辑和歌手会铺满这面墙。"
     },
-    "special": {"liked": "我喜欢的音乐", "cloud": "云盘", "personal-fm": "私人FM", "fm-station": "电台", "daily": "每日推荐", "all-songs": "全部歌曲", "local-favorites": "我喜欢", "navidrome-random": "随机音乐", "navidrome-favorites": "收藏"}
+    "special": {"liked": "我喜欢的音乐", "cloud": "云盘", "personal-fm": "私人FM", "fm-station": "电台", "daily": "每日推荐", "all-songs": "全部媒体", "local-favorites": "我喜欢", "navidrome-random": "随机音乐", "navidrome-favorites": "收藏"}
   },
   "libraryTui": {
     "back": "返回",
@@ -970,7 +970,7 @@ export default {
       "grid-edit-entity": { "title": "编辑此专辑或艺人", "description": "为这个合集打开本地曲库的实体编辑面板" },
       "grid-set-cover": { "title": "设置合集封面", "description": "为这个本地文件夹、专辑或歌单选一张固定的封面" },
       "grid-toggle-edit-mode": { "title": "切换编辑模式", "description": "进入或退出可以从这个合集里移除歌曲的模式" },
-      "grid-reload-online-collection": { "title": "重新加载此合集", "description": "跳过缓存，重新拉取这个在线合集的全部歌曲" },
+      "grid-reload-online-collection": { "title": "重新加载此合集", "description": "跳过缓存，重新拉取这个在线合集的全部媒体" },
       "grid-toggle-subscribe": { "title": "收藏或取消收藏", "description": "把这个在线歌单或专辑加入收藏，已经收藏的就取消" },
       "grid-collect-filtered": { "title": "把当前范围加入速记簿", "description": "把这个集合（筛选时只算筛出的歌）收进速记簿，不动播放队列" },
       "directory-play-selection": { "title": "播放选中的卡片", "description": "按卡片顺序播放地图上选中卡片的歌曲" },
@@ -989,7 +989,7 @@ export default {
       "artist-reload": { "title": "重新加载歌手", "description": "从来源重新加载这个歌手页" },
       "artist-retry-albums": { "title": "继续加载专辑", "description": "重试失败的那一页专辑，并继续加载其余的" },
       "artist-edit-entity": { "title": "编辑歌手信息", "description": "打开本地曲库里这位歌手的编辑窗口" },
-      "artist-open-all-songs": { "title": "打开全部歌曲", "description": "在一页里列出这位歌手的全部歌曲，包括不在专辑里的单曲" },
+      "artist-open-all-songs": { "title": "打开全部媒体", "description": "在一页里列出这位歌手的全部媒体，包括不在专辑里的单曲" },
       "settings-interaction": { "title": "交互设置", "description": "打开键盘、快捷键与网格交互设置" },
       "settings-global-shortcuts": { "title": "全局快捷键", "description": "直接跳到系统级的快捷键：播放控制与模组命令" },
       "settings-custom-shortcut": { "title": "自定义快捷键", "description": "直接跳到自定义键盘快捷键的绑定处" },
@@ -1946,7 +1946,7 @@ export default {
     "gridFolderRemoveSelectedTitle": "移除已选歌曲？",
     "gridFolderRemoveSelectedDescription": "移除 {{count}} 首歌曲。根目录直接移除，完整选中的子文件夹忽略扫描。磁盘文件不变。",
     "gridFolderRemoveRootTitle": "移除导入根目录？",
-    "gridFolderRemoveRootDescription": "从 Folia 移除 {{path}} 及其中全部歌曲？不会删除磁盘文件。",
+    "gridFolderRemoveRootDescription": "从 Folia 移除 {{path}} 及其中全部媒体？不会删除磁盘文件。",
     "login": "登录",
     "welcomeBack": "欢迎回来",
     "guestTitle": "先搜几首喜欢的歌试试看",
@@ -4162,14 +4162,14 @@ export default {
       }
     },
     "v0_7_27": {
-      "intro": "欢迎来到 0.7.27。Spotify 新增 Soloist 播放方式，拿不到音频密钥的账号也能听歌；Apple Music 的音量和静音现在能用了，资料库多了「全部歌曲」，自带的逐字歌词也会让位给你选的优先歌词源；飞牛音乐在局域网外填 FN ID 就能登录。",
+      "intro": "欢迎来到 0.7.27。Spotify 新增 Soloist 播放方式，拿不到音频密钥的账号也能听歌；Apple Music 的音量和静音现在能用了，资料库多了「全部媒体」，自带的逐字歌词也会让位给你选的优先歌词源；飞牛音乐在局域网外填 FN ID 就能登录。",
       "soloist": {
         "title": "Spotify：Soloist 播放",
         "description": "有些 Spotify 账号（多见于 2024 年底以后注册的）拿不到音频密钥，Folia 自己的播放方式放不了。现在登录时可以在「标准播放」和「Soloist 播放」之间二选一：Soloist 是 Spotify 官方的播放程序，需要另外下载，并用 Premium 账号生成一把 API 密钥。选标准播放时，登录后会先试一下这个账号能不能拿到密钥，拿不到就提示改用 Soloist。配置清单一步步带你装好程序、填好密钥、配对设备，也可以从账号页、命令面板的「平台播放设置」或播放失败的提示里打开。Soloist 自己把声音送到系统输出，Folia 的均衡器、Automix 和视频导出不作用于它。另外修复了 Linux 上第一次播放 Spotify 时整个应用卡住的问题。"
       },
       "amUpdate": {
         "title": "Apple Music 改进",
-        "description": "音量条和静音现在能控制 Apple Music 的声音。资料库的歌单里多了「全部歌曲」，可以浏览收藏的所有歌曲。启动时直接显示上次登录的账号，不再空着等几秒；桌面版窗口重建（例如开关窗口透明）时，正在放的歌不再停下，新窗口接着播放。歌曲自带逐字歌词时，「歌词匹配优先级」选的歌词源（默认 QQ 音乐）如果也有逐字歌词，就改用它，想要带翻译的歌词不必每首手动换；歌词设置里新增「保留平台自带的逐字歌词」，关掉后 Apple Music 的歌和其他歌一样，在全部歌词源里择优。"
+        "description": "音量条和静音现在能控制 Apple Music 的声音。资料库的歌单里多了「全部媒体」，可以浏览收藏的所有歌曲。启动时直接显示上次登录的账号，不再空着等几秒；桌面版窗口重建（例如开关窗口透明）时，正在放的歌不再停下，新窗口接着播放。歌曲自带逐字歌词时，「歌词匹配优先级」选的歌词源（默认 QQ 音乐）如果也有逐字歌词，就改用它，想要带翻译的歌词不必每首手动换；歌词设置里新增「保留平台自带的逐字歌词」，关掉后 Apple Music 的歌和其他歌一样，在全部歌词源里择优。"
       },
       "fnConnect": {
         "title": "飞牛音乐：外网用 FN ID 登录",
@@ -4208,7 +4208,7 @@ export default {
       },
       "moreDetails": {
         "title": "更多改进",
-        "description": "「町景」支持播放页透明，切换时不再卡住，按屏幕刷新率自动降低画质保持流畅；没开智能动感时霓虹和大屏按固定节拍闪动，可在「模拟节拍」里关掉。歌词画布可以调分辨率和抗锯齿。全局快捷键可以自己选修饰键和按键。桌面版点击穿透时，锁旁边多了上一首、播放暂停和下一首。歌手页加了「全部歌曲」，专辑页的歌手可以点开。从右往左书写的歌词按正确的方向排词。新增「自动 AI 分词」选项。网易云在部分 IPv6 网络下请求被中断的问题已修复。"
+        "description": "「町景」支持播放页透明，切换时不再卡住，按屏幕刷新率自动降低画质保持流畅；没开智能动感时霓虹和大屏按固定节拍闪动，可在「模拟节拍」里关掉。歌词画布可以调分辨率和抗锯齿。全局快捷键可以自己选修饰键和按键。桌面版点击穿透时，锁旁边多了上一首、播放暂停和下一首。歌手页加了「全部媒体」，专辑页的歌手可以点开。从右往左书写的歌词按正确的方向排词。新增「自动 AI 分词」选项。网易云在部分 IPv6 网络下请求被中断的问题已修复。"
       }
     },
     "v0_7_25": {
@@ -4623,7 +4623,7 @@ export default {
     "unknownAlbum": "未知专辑",
     "unknownArtist": "未知艺术家",
     "folder": "本地",
-    "allSongs": "全部歌曲",
+    "allSongs": "全部媒体",
     "sortSongs": "排序歌曲",
     "sortDirection": "排序方向",
     "sortByFileName": "文件名",
@@ -4657,8 +4657,27 @@ export default {
     "deleteFolderMessage": "您即将从库中移除 \"{{folderName}}\"。",
     "deleteFolderCount": "这将从您的库中移除包含嵌套子目录在内的共 {{count}} 首歌曲。",
     "deleteFolderNote": "磁盘文件不变。",
+    "playlistContextMenu": "歌单菜单",
+    "deletePlaylistFromLibrary": "删除歌单",
+    "deletePlaylistTitle": "删除歌单？",
+    "deletePlaylistMessage": "将从曲库移除「{{name}}」及其子目录中的 {{count}} 首歌曲。",
+    "deletePlaylistSubPlaylists": "同时会清除 {{count}} 个子歌单的曲库记录；删除子歌单不会影响主歌单。",
+    "deletePlaylistNote": "磁盘上的文件和文件夹不会被删除。",
+    "deletePlaylistDone": "已从曲库移除 {{count}} 首歌曲",
+    "deletePlaylistEmpty": "这张歌单在曲库里已经没有歌曲了",
+    "deletePlaylistFailed": "删除歌单失败，请重试。",
+    "openFolderLocation": "打开此文件夹",
+    "relinkFolderLocation": "重新指定文件夹位置",
+    "folderLocationDesktopOnly": "仅桌面版支持打开本地文件夹",
+    "folderLocationMissing": "未找到该文件夹，请在磁盘上选择歌单对应的文件夹本体（不是它的上级目录）",
+    "folderLocationFailed": "打开文件夹所在位置失败，请重试。",
+    "subPlaylists": "子歌单",
+    "mainPlaylist": "主歌单",
+    "subPlaylist": "子歌单",
+    "backToParentPlaylist": "返回上级歌单",
+    "playlistSongCount": "{{count}} 首",
     "deleteSubfolderMessage": "移除“{{folderName}}”并忽略扫描，可在全部视图恢复。磁盘文件不变。",
-    "deleteRootFolderMessage": "从曲库移除“{{folderName}}”及全部歌曲。磁盘文件不变。",
+    "deleteRootFolderMessage": "从曲库移除“{{folderName}}”及全部媒体。磁盘文件不变。",
     "importNotSupported": "当前浏览器不支持文件夹导入",
     "insecureHttpDisabled": "远程 HTTP 环境已禁用本地曲库，请使用 HTTPS、localhost 或 Electron 客户端。",
     "resyncFailed": "重新同步文件夹失败，请重试。",
@@ -5187,8 +5206,8 @@ export default {
     "topSongsAddedToQueue_one": "已加入 {{count}} 首热门歌曲到播放队列",
     "topSongsAddedToQueue_other": "已加入 {{count}} 首热门歌曲到播放队列",
     "noTopSongsToQueue": "没有可加入队列的热门歌曲",
-    "allSongs": "全部歌曲",
-    "allSongsCollectionName": "{{artistName}} 的全部歌曲",
+    "allSongs": "全部媒体",
+    "allSongsCollectionName": "{{artistName}} 的全部媒体",
     "moreActions": "更多操作",
   },
   "obs": {
@@ -6332,7 +6351,7 @@ export default {
         "homeTabs": "首页的信息条是一道窄缝：最上面是「书库」和折叠，下面竖排着一级页签——歌单、推荐、专辑、本地、Navidrome。",
         "homeFlip": "换页签时整条信息条翻一次，墙也整面换成那一页的内容。键盘上 F6 / Shift + F6 轮换页签。",
         "homeSections": "本地和 Navidrome 多一列二级切换（文件夹、专辑、艺术家、歌单……）。只有选中的那项竖着写出名字，其余只留图标，悬停看全名。切换只换墙上的内容，不进新的一层。",
-        "homeShortcuts": "下面那几列竖排小字是直达入口：我喜欢的音乐、私人 FM、全部歌曲……点它和点墙上那张卡一样，私人 FM 直接开播。地方不够时，它们挪进「⋯」。",
+        "homeShortcuts": "下面那几列竖排小字是直达入口：我喜欢的音乐、私人 FM、全部媒体……点它和点墙上那张卡一样，私人 FM 直接开播。地方不够时，它们挪进「⋯」。",
         "dockAccount": "工具格正上方是账户入口：登录了是头像和昵称，没登录时是「连接在线平台」。点它打开登录窗口，换平台、登录、退出都在里面。",
         "dockTools": "最底下四格：搜索在线平台、设置、队列拼贴（进入 Lattice）和「⋯」。",
         "dockMenu": "其余的都在「⋯」里：这一页签的项在前（过滤当前页、目录、管理隐藏、导入……），分隔线之后是「回到播放页」这类去处。",
@@ -6573,7 +6592,7 @@ export default {
         "collection": "专辑、歌单和文件夹的右下角露出一叠错开的页边，标签写成「种类 · 曲目数」，点开是一张曲目表。页边可以在设置里关掉。",
         "artist": "歌手是双色调人像，名字更大，没有副标题。",
         "artistHover": "指针停上去，或者键盘焦点落到它上面时，人像会恢复原来的颜色。",
-        "special": "我喜欢的音乐、私人 FM、全部歌曲这类特殊卡片，标签换成强调色底，前面加一个小图标。私人 FM 是电台，点了直接开始播放，不会打开新的一层。",
+        "special": "我喜欢的音乐、私人 FM、全部媒体这类特殊卡片，标签换成强调色底，前面加一个小图标。私人 FM 是电台，点了直接开始播放，不会打开新的一层。",
         "open": "点一张集合不会跳到新页面：被点的那张原地变成新层的第 1 首（集合封面通常就是第一首的封面），其余位置从它开始，一圈圈翻成新内容。",
         "openSeam": "缝不会合上，里面的内容翻成这个集合的信息条。",
         "back": "返回时（信息条里的 ‹、Esc 或浏览器后退），墙从缝开始往两边翻回上一层，键盘焦点落回当初点的那张。",
@@ -6656,7 +6675,7 @@ export default {
         "atSign": "输入 @ 可筛选队列中的歌手或专辑；后面会显示各项包含的歌曲数。",
         "narrowed": "选中后会收成输入行标签，列表只显示该项的歌曲。",
         "flags": "输入 -- 可查看批量操作：--remove 移除，--next 移到下一首，--end 移到队尾。",
-        "scope": "它操作的是筛选出的全部歌曲，不是高亮行。预览会显示“将影响 N 首”。",
+        "scope": "它操作的是筛选出的全部媒体，不是高亮行。预览会显示“将影响 N 首”。",
         "guards": "没有搜索词或 @ 筛选时拒绝执行，避免清空队列；正在播放的歌曲会排除。"
       },
       "desktop": {

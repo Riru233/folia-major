@@ -27,7 +27,7 @@ export type HomeProbeItem = {
     trackCount?: number;
     trackIds?: string[];
     description?: string;
-    /** 虚拟条目（本地「全部歌曲」「我喜欢」、未知专辑 / 歌手）；不是虚拟条目时不出现。 */
+    /** 虚拟条目（本地「全部媒体」「我喜欢」、未知专辑 / 歌手）；不是虚拟条目时不出现。 */
     isVirtual?: true;
     /** 这类条目能不能隐藏（歌单类）。 */
     hideable: boolean;

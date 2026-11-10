@@ -9,7 +9,7 @@ import type { LibraryPlaybackPort } from '@/library/core/shared/ports.contract';
 import { LIBRARY_ARTIST_ACTION_IDS } from '@/library/core/suite/librarySuites';
 
 // test/unit/library/core/useArtistView.test.ts
-// 歌手页视图里的「全部歌曲」（#918）：宿主给了压栈的口子才出现（能力、命令面板的动作），执行时压进去的是
+// 歌手页视图里的「全部媒体」（#918）：宿主给了压栈的口子才出现（能力、命令面板的动作），执行时压进去的是
 // core 的 artistSongsCollection 给的那一层在线集合，名字按 artistGrid.allSongsCollectionName 翻译。
 
 vi.mock('react-i18next', async importOriginal => ({

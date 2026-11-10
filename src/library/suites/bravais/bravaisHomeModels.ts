@@ -24,7 +24,7 @@ export type BravaisHomeEntry = {
 };
 
 /**
- * 直达入口（特殊集合：我喜欢的音乐、云盘、私人 FM、每日推荐、全部歌曲、本地「我喜欢」、Navidrome 随机 / 收藏）：
+ * 直达入口（特殊集合：我喜欢的音乐、云盘、私人 FM、每日推荐、全部媒体、本地「我喜欢」、Navidrome 随机 / 收藏）：
  * 首页窄缝中段底部并排的几列竖排文字（fb11 起；有二级切换时与它之间有分隔线），显示种类的短名（libraryBravaisHome.special.*）。点了直接进入那张集合，与点墙上那张卡同一条打开路径——
  * stage 先在墙上找这一项（屏内离缝最近的一份），找得到就把它记成起点磁贴、走层描述的 onOpenItem；找不到（别的 section、
  * 被过滤掉、在屏外）就调 open，新层以缝为中心排序。只有此刻真有的那几张才有入口（bravaisHomeProjection 的 projectHomeShortcuts）。

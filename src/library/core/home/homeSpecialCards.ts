@@ -5,7 +5,7 @@ import { NAVIDROME_FAVORITES_PLAYLIST_ID, NAVIDROME_RANDOM_PLAYLIST_ID } from '.
 
 // src/library/core/home/homeSpecialCards.ts
 // 首页卡片里的「特殊集合」：平台或曲库自带、不是用户自建也不是普通条目的那几张（我喜欢的音乐、云盘、私人 FM、每日推荐、
-// 本地的全部歌曲与「我喜欢」、Navidrome 的随机与收藏）。判断只看身份字段——卡片 id、type、isVirtual 与来源对象上的
+// 本地的全部媒体与「我喜欢」、Navidrome 的随机与收藏）。判断只看身份字段——卡片 id、type、isVirtual 与来源对象上的
 // isLiked——不看显示名（名字随语言与 provider 变）。纯函数，任何 suite 都能用；grid / TUI 目前不用它（行为不变）。
 // 不算特殊的：本地的「未知专辑 / 未知歌手」（也是 isVirtual，但只是兜底分组）、Navidrome 的最近添加 / 最近播放
 // （它们是 section，不是卡片）、电台页签里的推荐歌单（普通歌单）。

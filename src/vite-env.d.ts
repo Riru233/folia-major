@@ -824,6 +824,16 @@ declare global {
         /** Resolves the OS path of a dropped File (File.path was removed in modern Electron). */
         getPathForFile: (file: File) => string;
       };
+      /**
+       * 本地歌单右键「打开此文件夹」。渲染端只有相对路径 `A/B`，主进程按导入根名 `A`
+       * 查用户先前选定的磁盘根目录并打开目标目录本身；没绑定时弹系统目录选择框。`rebind` 让位置失效后重选。
+       * 网页版没有这个 API，见 services/localFolderSystemOpen.ts。
+       */
+      openLocalFolderInSystem?: (
+        rootName: string,
+        relativePath: string,
+        rebind?: boolean,
+      ) => Promise<{ ok: boolean; reason?: 'cancelled' | 'missing' | 'invalid' | 'desktop-only' }>;
       /** Beat This! on the CPU in the analysis worker - automix's fallback only. Null when the weights are absent. */
       runBeatThis?: (
         chunks: Array<{ data: Float32Array; frames: number }>,

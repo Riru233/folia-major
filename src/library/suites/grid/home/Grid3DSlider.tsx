@@ -10,7 +10,7 @@ import { GridViewTabs, gridChromeClassesFor } from './GridViewTabs';
 import { Map as MapIcon } from 'lucide-react';
 import { CARD_TITLE_ATTR, MORPH_FRAME_ATTR } from '../transitions/gridMorphContract';
 import { LoadingRing } from '@/components/shared/LoadingRing';
-import { DesktopGrid3DAction } from './DesktopGrid3DSurface';
+import type { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 
 // src/library/suites/grid/home/Grid3DSlider.tsx
 // Controlled desktop Grid3D slider shared by Netease, local music, and Navidrome overview surfaces.
@@ -42,6 +42,8 @@ interface Grid3DSliderProps {
     openGridMap: ()=> void;
     ponderControls?: 'local-grid-controls'
     actions: DesktopGrid3DAction[];
+    /** 本地文件夹卡片的右键菜单（删歌单 / 打开所在位置）；只有本地首页装配，虚拟「全部媒体」不触发。 */
+    onFolderContextMenu?: (event: React.MouseEvent, folderPath: string) => void;
 }
 
 const compactDescription = (description?: string, maxLength = 72) => {
@@ -53,8 +55,8 @@ const compactDescription = (description?: string, maxLength = 72) => {
 type Grid3DSliderTextItem = Pick<Grid3DSliderItem, 'type' | 'description' | 'summary'>
     & Partial<Pick<Grid3DSliderItem, 'name' | 'isVirtual'>>;
 
-// 文件夹卡片的第二行 / 信息行显示文件夹路径（= 名称）。虚拟的「全部歌曲」没有真实路径，但同一个位置照样
-// 显示它的名称（「All Songs / 全部歌曲」），不退回描述「Folder / 本地」：这是一直以来的可见文字，
+// 文件夹卡片的第二行 / 信息行显示文件夹路径（= 名称）。虚拟的「全部媒体」没有真实路径，但同一个位置照样
+// 显示它的名称（「All Songs / 全部媒体」），不退回描述「Folder / 本地」：这是一直以来的可见文字，
 // test/ui 的 local-library 截图基线锁着它。isVirtual 只用于语义判断（批量删除不按文件夹删它）。
 const getLocalFolderPath = (item: Grid3DSliderTextItem): string => (
     item.type === 'folder' && typeof item.name === 'string'
@@ -244,7 +246,8 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     mapButtonLabel,
     openGridMap,
     ponderControls,
-    actions
+    actions,
+    onFolderContextMenu,
 }) => {
     const { t } = useTranslation();
     const grid3dCardStyle = useHomeLayoutSettingsStore(state => state.grid3dCardStyle);
@@ -926,6 +929,11 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                         } else {
                                             scrollToIndex(index);
                                         }
+                                    }}
+                                    onContextMenu={(event) => {
+                                        if (!onFolderContextMenu) return;
+                                        if (item.type !== 'folder' || item.isVirtual || !folderPath) return;
+                                        onFolderContextMenu(event, folderPath);
                                     }}
                                 	>
                                     {grid3dCardStyle === 'image' ? (

@@ -30,6 +30,7 @@ import { useLyricSettingsStore } from '../stores/useLyricSettingsStore';
 import { getLocalLyricFilePriority, isSameLocalLyricFormatOrder, normalizeLocalLyricFormatOrder, type LocalLyricFileFormat } from '../utils/lyrics/localLyricFormatOrder';
 import { readLyricFile } from '../utils/lyrics/lyricFileDecoding';
 import { isLocalFolderIgnored, normalizeLocalFolderPath, runLocalFolderMutation, setLocalFolderIgnored } from './localLibraryFolderIgnore';
+import { collectLocalFolderSongIds, normalizeLocalFolderPath as normalizeLocalFolderRecordPath } from '../utils/localFolderPaths';
 import { BROWSER_VIDEO_EXTENSIONS, ELECTRON_VIDEO_EXTENSIONS, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
 
 
@@ -1768,6 +1769,57 @@ export async function getAudioFromFile(file: File): Promise<string> {
     const url = createSafeObjectUrl(await repairFlacMetadata(file, true));
     if (!url) throw new TypeError('Local audio source must be a File or Blob');
     return url;
+}
+
+/**
+ * 删除一张本地「歌单」（导入文件夹扫描出来的目录卡片）：这个路径以及它下面所有子路径的歌。
+ * 只动曲库侧：IndexedDB 歌曲、封面缓存、歌单里的引用；磁盘上的文件与文件夹一概不动。
+ *
+ * 为了让「删掉」保持成立，必须同时掐断重扫把歌导回来的路，否则下一次刷新 / hydration 就会回滚：
+ * - 子歌单 `A/B`：把这条路径记为曲库侧的扫描忽略（不是磁盘文件），主歌单 `A` 不受影响；
+ * - 主歌单 `A`：整根移除（连目录柄与快照一起清掉），它的所有子歌单按路径前缀一起消失。
+ * 整个操作排进 runLocalFolderMutation，与在途扫描 / hydration 串行，避免互相覆盖。
+ */
+export async function deleteLocalFolderSongRecords(folderPath: string): Promise<number> {
+    const normalizedPath = normalizeLocalFolderRecordPath(folderPath);
+    if (!normalizedPath) return 0;
+    return runLocalFolderMutation(async () => {
+        const allSongs = await getLocalSongs();
+        const songIds = collectLocalFolderSongIds(allSongs, normalizedPath);
+        if (songIds.length === 0) {
+            // 曲库可能刚被别处改动过；仍派发一次事件，让 UI 与曲库对齐。
+            notifyLocalMusicUpdated();
+            return 0;
+        }
+
+        if (!normalizedPath.includes('/')) {
+            await removeImportedRootContents(normalizedPath);
+            return songIds.length;
+        }
+
+        await setLocalFolderIgnored(normalizedPath, true);
+        songIds.forEach(id => {
+            fileHandleMap.delete(id);
+            localCoverAssetRequestMap.delete(id);
+            songsWithoutEmbeddedCover.delete(id);
+        });
+        // 封面缓存清理失败不该让整次删除半途抛错：数据库删除是主线，缓存失败只记日志。
+        const results = await Promise.allSettled([
+            dbDeleteLocalSongs(songIds),
+            ...songIds.map(id => removeCachedCover(`cover_local_${id}`)),
+        ]);
+        const [dbResult, ...coverResults] = results;
+        if (dbResult.status === 'rejected') throw dbResult.reason;
+        coverResults.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                console.warn(`[LocalMusic] Could not clear cover cache for ${songIds[index]}`, result.reason);
+            }
+        });
+        await removeDeletedSongIdsFromPlaylists(songIds);
+        notifyLocalMusicUpdated();
+        console.log(`[LocalMusic] Deleted ${songIds.length} library records under folder ${normalizedPath}`);
+        return songIds.length;
+    });
 }
 
 // Delete songs by their specific IDs

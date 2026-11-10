@@ -6,7 +6,7 @@ import { compactDirectoryTrees, filterDirectoryTreesByItems, flattenExpandedDire
 // 给列表形态的 renderer（TUI 的目录列表）用：树的筛选、压缩单子链、展开都用批量面板同一套纯函数
 // （core/directory/directoryBatch），只是这里把树节点与目录条目对上——节点的路径正好是某个文件夹条目时，
 // 这一行就是那个条目（能打开、能选）；对不上的节点（没有直属歌曲的上层文件夹、被忽略的文件夹）是只用于
-// 展示层级的节点行。没有路径的条目（虚拟的「全部歌曲」）与树里找不到的条目排在树的前面。
+// 展示层级的节点行。没有路径的条目（虚拟的「全部媒体」）与树里找不到的条目排在树的前面。
 
 export type LibraryDirectoryRow<TItem extends LibraryDirectoryItem = LibraryDirectoryItem> =
     | {

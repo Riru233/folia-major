@@ -94,7 +94,7 @@ interface ArtistGridViewProps {
     theme: Theme;
     isDaylight: boolean;
     onEditEntity?: (entityId: string) => void;
-    /** 宿主压入一层集合（「全部歌曲」，#918）；没给时没有这个入口。 */
+    /** 宿主压入一层集合（「全部媒体」，#918）；没给时没有这个入口。 */
     onOpenCollection?: (collection: LibraryCollectionDescriptor) => void;
     isInteractive?: boolean;
     /**
@@ -1368,7 +1368,7 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
                                 disabled: !capabilities['enqueue-scope'].enabled,
                             }]
                             : []),
-                        // #918：热门歌曲只有 10 首，不在任何专辑里的单曲只在「全部歌曲」那一层看得到。
+                        // #918：热门歌曲只有 10 首，不在任何专辑里的单曲只在「全部媒体」那一层看得到。
                         // 加载中先画成不可点；读完确定没有更多歌时这一项不出现（与 Bravais 海报上的按钮一致）。
                         ...(offers('open-all-songs')
                             && (capabilities['open-all-songs'].enabled || capabilities['open-all-songs'].reason === 'loading')

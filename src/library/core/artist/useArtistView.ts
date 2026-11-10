@@ -43,7 +43,7 @@ type UseArtistViewParams = {
     declaredActions: LibraryDeclaredActions;
     onEditEntity?: (entityId: string) => void;
     onOpenAlbum?: (albumId: number | string, album?: LibraryCatalogLinkHint, track?: SongResult) => void;
-    /** 宿主压入一层集合（「全部歌曲」）；没给时 open-all-songs 不出现。 */
+    /** 宿主压入一层集合（「全部媒体」）；没给时 open-all-songs 不出现。 */
     onOpenCollection?: (collection: LibraryCollectionDescriptor) => void;
     /** 「加入热门歌曲」的结果提示（应用的全局提示通道）。 */
     setStatus: (message: StatusMessage) => void;
@@ -94,7 +94,7 @@ export const useArtistView = ({
             playableTopSongCount: playableTopSongs.length,
             queueableTopSongCount: queueableTopSongs.length,
         });
-        // 宿主不给压栈的口子时（直接挂组件、单测）没有「全部歌曲」可去。
+        // 宿主不给压栈的口子时（直接挂组件、单测）没有「全部媒体」可去。
         return canOpenCollection
             ? resolved
             : { ...resolved, 'open-all-songs': { supported: false, enabled: false, pending: false, reason: 'unsupported' } };
@@ -135,7 +135,7 @@ export const useArtistView = ({
             const link = artistAlbumLink(album, latest.current.linkSource);
             latest.current.onOpenAlbum?.(link.id, link);
         },
-        /** 打开这位歌手的「全部歌曲」（在线集合，宿主压栈）；详情没到或不是在线歌手时什么都不做。 */
+        /** 打开这位歌手的「全部媒体」（在线集合，宿主压栈）；详情没到或不是在线歌手时什么都不做。 */
         openAllSongs: () => {
             const { collection: current, snapshot: shot, onOpenCollection: open, t: translate } = latest.current;
             if (!open || shot?.status !== 'ready' || !shot.detail) return;

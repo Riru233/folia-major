@@ -51,7 +51,7 @@ const openLocalLibrary = async (page: Page, entryView: EntryView) => {
     await expect(page.getByText('All Songs').first()).toBeVisible();
 };
 
-/** 打开「全部歌曲」，再用开发浮层把打开着的集合换到 bravais。 */
+/** 打开「全部媒体」，再用开发浮层把打开着的集合换到 bravais。 */
 const openAllSongsInBravais = async (page: Page, entryView: EntryView) => {
     await openLocalLibrary(page, entryView);
     await page.getByRole('heading', { name: 'All Songs' }).first().click();

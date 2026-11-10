@@ -24,6 +24,8 @@ export const STORAGE_KEYS = [
     'main:KUGOU_API_SESSION_V1',
     'main:KUGOU_API_SESSION_V2',
     'main:LAST_SEEN_UPDATE_VERSION',
+    // 本地歌单「打开文件夹所在位置」按导入根名记住用户选定的磁盘根目录。
+    'main:LOCAL_FOLDER_DISK_ROOTS',
     'main:MAIN_WINDOW_ALWAYS_ON_TOP',
     'main:MINIMIZE_TO_TRAY',
     'main:MODELS_DIRECTORY',

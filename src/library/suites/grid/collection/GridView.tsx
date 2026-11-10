@@ -528,7 +528,7 @@ export const GridView: React.FC<GridViewProps> = ({
         && isOnlineResource
         && !isDailyRecommendationsCollection
         && collection?.type !== 'radio';
-    // 本地排序只给文件夹（含虚拟的「全部歌曲」）：这是视图规则，不随变更能力走。
+    // 本地排序只给文件夹（含虚拟的「全部媒体」）：这是视图规则，不随变更能力走。
     const supportsLocalTrackSorting = isLocalCollection && collection?.type === 'folder';
     const {
         isLocalFolderCollection,

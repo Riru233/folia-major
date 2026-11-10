@@ -65,7 +65,7 @@ const BravaisCollection: React.FC<LibraryCollectionSurfaceProps> = ({
     const { snapshot } = useCollectionResourceState(resource);
     const tracks = useMemo(() => snapshot?.tracks ?? [], [snapshot?.tracks]);
     const filter = useBravaisCollectionFilter({ sessionKey, isActive });
-    // 与网格、TUI 同一条规则：只有本地文件夹（含「全部歌曲」）按本地排序。
+    // 与网格、TUI 同一条规则：只有本地文件夹（含「全部媒体」）按本地排序。
     const supportsLocalTrackSorting = collection.source === 'local' && collection.type === 'folder';
     const sortField = useLocalTrackSortStore(state => state.field);
     const sortDirection = useLocalTrackSortStore(state => state.direction);
@@ -301,7 +301,7 @@ const BravaisCollection: React.FC<LibraryCollectionSurfaceProps> = ({
             },
         };
     }, [collection, declaresOpenArtist, snapshot?.detail, t, totalTracks]);
-    // 歌手的「全部歌曲」（#918）：完整等级画成歌手海报的变体（大字是歌手名，热门三首换成歌曲总数）。
+    // 歌手的「全部媒体」（#918）：完整等级画成歌手海报的变体（大字是歌手名，热门三首换成歌曲总数）。
     const seamArtistSongs = useMemo<BravaisSeamArtistSongs | undefined>(() => (
         collection.type === ARTIST_SONGS_COLLECTION_TYPE
             ? { name: collection.artists?.[0]?.name || displayTitle, coverUrl: collection.coverUrl, trackCount: totalTracks }

@@ -37,7 +37,7 @@ import { useBravaisHomeAccount } from './useBravaisHomeAccount';
 // 首页资源；每个来源把自己的列表交给首页 surface 句柄（useLibraryHomeListRegistration），行为探针读它。
 // 墙本身（目录会话、批量、隐藏、层描述）是 BravaisHomeDirectory。私人 FM 卡直接播放（openOnlineCard 判定），不进新层。
 // 特殊集合的直达入口：在线页签看当前页签自己的卡（我喜欢的音乐、云盘在歌单页签，私人 FM、每日推荐在电台页签——电台数据
-// 只在电台页签读，别的页签不为入口多发请求）；本地看文件夹与歌单两行（全部歌曲、「我喜欢」），Navidrome 看歌单 section
+// 只在电台页签读，别的页签不为入口多发请求）；本地看文件夹与歌单两行（全部媒体、「我喜欢」），Navidrome 看歌单 section
 // （随机、收藏），都不限当前 section。
 
 type BravaisHomeSourceCommonProps = {
@@ -213,7 +213,7 @@ export const BravaisHomeLocal: React.FC<BravaisHomeSourceCommonProps & {
     const onOpen = useMemo(() => (card: { raw?: unknown }) => {
         latest.current.homeActions.openLocalGroup(card.raw as LocalLibraryGroup, latest.current.onOpenGridView);
     }, []);
-    // 直达入口（全部歌曲、本地「我喜欢」）不限当前 section：文件夹与歌单两行的卡片。
+    // 直达入口（全部媒体、本地「我喜欢」）不限当前 section：文件夹与歌单两行的卡片。
     const shortcutCards = useMemo(
         () => local.sections.filter(entry => entry.key === 'folders' || entry.key === 'playlists').flatMap(entry => entry.cards),
         [local.sections],

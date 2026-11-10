@@ -39,14 +39,16 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
     // 紧凑档（窗口窄于 960，progress-bar v3）底部只留进度条胶囊，这条挪到左上角（标题栏和墙的返回按钮下面）。
     const isCompact = useIsBottomLayoutCompact();
 
-    // 固定尺寸：w-max 把宽度锁成内容宽度（max-content），whitespace-nowrap + shrink-0 禁止换行与压缩，
-    // 窗口宽度再怎么变，浮层尺寸（一行）都不再跟着收缩或折行。
+    // 固定尺寸且不使用 flex/grid：position: fixed + width: max-content 让宽度只由内容决定，
+    // 与视口宽度无关；whitespace-nowrap 保证窗口再窄也不折行（宁可溢出也不收缩），
+    // h-[32px] 锁死高度。内部改成 inline-block 的常规行内排版，用 align-middle 垂直居中、
+    // mr-1 代替原来的 gap-1，于是布局完全不依赖 flex/grid，玻璃层读到的 offsetWidth/Height 也稳定。
     return (
         <div
             data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed h-[32px] ${isCompact ? 'bottom-[48px] left-2' : PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
+            className={`fixed h-[32px] w-max whitespace-nowrap ${isCompact ? 'bottom-[48px] left-2' : PLACEMENT_CLASS[placement]} z-[120] rounded-full border-current/30 px-2 py-1 text-[11px] leading-[22px]`}
                     style={{
                         backgroundColor: "rgba(40, 40, 40, 0.42)",
                         borderTop:  "1px solid rgba(255,255,255,0.22)",
@@ -57,7 +59,7 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
                         ...(isDockedPlayerBar ? { bottom: dockedClearance } : null),
                     }}
         >
-            <span className="px-1 opacity-50">{`Dev · ${t('libraryTui.rendererSwitch')}`}</span>
+            <span className="mr-1 inline-block px-1 align-middle opacity-50">{`Dev · ${t('libraryTui.rendererSwitch')}`}</span>
             {listLibrarySuites().map(suite => (
                 <button
                     key={suite.id}
@@ -66,7 +68,7 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
                     data-suite={suite.id}
                     aria-pressed={activeSuite === suite.id}
                     onClick={() => switchLibrarySuite(sessionKey, suite.id)}
-                    className={`rounded-full px-2 py-0.5 ${reduceMotion ? 'transition-none' : 'transition-[background-color,opacity] duration-150'} ${activeSuite === suite.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
+                    className={`mr-1 inline-block rounded-full px-2 py-0.5 align-middle leading-none last:mr-0 ${reduceMotion ? 'transition-none' : 'transition-[background-color,opacity] duration-150'} ${activeSuite === suite.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
                 >
                     {t(suite.labelKey)}
                 </button>

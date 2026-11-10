@@ -119,6 +119,12 @@ const { createMpvSession } = require('./hifi/mpvSession.cjs');
 const { registerHifiIpc } = require('./hifi/hifiIpc.cjs');
 const { createPipewireProbe, collectOwnPids } = require('./hifi/pipewireProbe.cjs');
 const { createApprovedMpvPathStore, isReservedHifiSettingKey } = require('./hifi/approvedMpvPath.cjs');
+const {
+  isDirectory: localFolderIsDirectory,
+  parseLocalFolderRequest,
+  resolveImportedFolderRoot,
+  resolveLocalFolderDiskPath: resolveSavedLocalFolderDiskPath,
+} = require('./localFolderPaths.cjs');
 const { registerMprisIpc } = require('./hifi/mpris/mprisIpc.cjs');
 const { sanitizeDualTheme: sanitizeGeneratedDualTheme } = require('../shared/themeSanitizer.cjs');
 const {
@@ -7129,6 +7135,77 @@ ipcMain.handle('legacy-models-resolve', firstParty('legacy-models-resolve', asyn
 ipcMain.handle('legacy-models-open', firstParty('legacy-models-open', async () => {
   const dir = getLegacyModelsDirectory();
   return dir ? (await shell.openPath(dir)) === '' : false;
+}));
+
+// Local folder cards only know their relative path (`A`, `A/B`). showDirectoryPicker() hands the
+// renderer a handle, never an OS path, so the listener picks the imported root on disk the first
+// time they ask to reveal one of its folders. The mapping is kept by root name; nothing is written
+// to disk by this handler - it only opens the system file manager.
+const LOCAL_FOLDER_DISK_ROOTS_KEY = 'LOCAL_FOLDER_DISK_ROOTS';
+
+// 路径规则（根名校验、父目录自愈、越界防护）放在 ./localFolderPaths.cjs，便于单测覆盖。
+
+// 用无原型对象读映射：store 里就算被人塞了奇怪的键，查找也不会翻到 Object.prototype。
+const readLocalFolderDiskRoots = () => {
+  const saved = store.get(LOCAL_FOLDER_DISK_ROOTS_KEY);
+  return Object.assign(Object.create(null), saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {});
+};
+
+ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (event, rootName, relativePath, rebind = false) => {
+  const parsed = parseLocalFolderRequest(rootName, relativePath);
+  if (!parsed) return { ok: false, reason: 'invalid' };
+
+  const roots = readLocalFolderDiskRoots();
+  if (rebind === true || typeof roots[parsed.rootName] !== 'string' || !roots[parsed.rootName]) {
+    // 遥控窗口也能调这个通道：目录选择框挂在调用者自己的窗口上，不认全局 mainWindow。
+    const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    const picked = await dialog.showOpenDialog(owner, {
+      title: `Select the imported folder "${parsed.rootName}" itself (not its parent)`,
+      buttonLabel: 'Use this folder',
+      defaultPath: app.getPath('music'),
+      properties: ['openDirectory'],
+    });
+    if (picked.canceled || picked.filePaths.length === 0) return { ok: false, reason: 'cancelled' };
+    const chosenRoot = resolveImportedFolderRoot(picked.filePaths[0], parsed.rootName, parsed.tail);
+    // 选中的目录里找不到这张歌单：不要把错误位置写进映射，让渲染端提示重新选择。
+    if (!chosenRoot) return { ok: false, reason: 'missing' };
+    roots[parsed.rootName] = chosenRoot;
+    // electron-store 序列化自有可枚举属性：无原型对象写回时摊成普通对象。
+    store.set(LOCAL_FOLDER_DISK_ROOTS_KEY, Object.fromEntries(Object.entries(roots)));
+  }
+
+  const target = resolveSavedLocalFolderDiskPath(
+    readLocalFolderDiskRoots()[parsed.rootName], parsed.rootName, relativePath,
+  );
+  if (!target) return { ok: false, reason: 'missing' };
+  // 自愈：旧映射把父目录（比如「下载」）记成了导入根时，把解析出的真正根写回，
+  // 免得每次都跳到父目录。
+  if (!target.savedRoot || path.resolve(target.savedRoot) !== target.root) {
+    const freshRoots = readLocalFolderDiskRoots();
+    freshRoots[parsed.rootName] = target.root;
+    store.set(LOCAL_FOLDER_DISK_ROOTS_KEY, Object.fromEntries(Object.entries(freshRoots)));
+  }
+  if (!localFolderIsDirectory(target.resolved)) return { ok: false, reason: 'missing' };
+
+  // 符号链接会让字符串前缀检查失真：两端都 realpath 之后再确认没有跳出导入根。
+  try {
+    const realRoot = fs.realpathSync(target.root);
+    const realTarget = fs.realpathSync(target.resolved);
+    if (realTarget !== realRoot && !realTarget.startsWith(realRoot + path.sep)) {
+      return { ok: false, reason: 'invalid' };
+    }
+    // 必须用 openPath 直接打开目标目录。showItemInFolder 打开的是「父目录并选中该项」，
+    // 导入根若位于「下载」下，表现就是跳到「下载」而不是进入指定目录。
+    const error = await shell.openPath(realTarget);
+    if (error) {
+      console.warn('[LocalMusic] could not open folder', error);
+      return { ok: false, reason: 'missing' };
+    }
+  } catch (error) {
+    console.warn('[LocalMusic] could not resolve folder on disk', error?.message || error);
+    return { ok: false, reason: 'missing' };
+  }
+  return { ok: true };
 }));
 
 ipcMain.handle('updates-get-status', () => {

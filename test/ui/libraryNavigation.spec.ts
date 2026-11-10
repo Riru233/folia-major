@@ -478,7 +478,7 @@ test('[bravais] every way back flips the wall once: Back, browser back, the N1 f
     await expect(bravaisStage(page).locator('.bravais-tile[data-library-entry]').first()).toBeAttached();
 
     const stackNow = async () => (await historyState(page)).stack;
-    // 聚焦卡上的歌手（全部歌曲、专辑页都有这一首）。
+    // 聚焦卡上的歌手（全部媒体、专辑页都有这一首）。
     const openArtist = async () => {
         await waitForWall(page);
         await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -527,7 +527,7 @@ test('[bravais] every way back flips the wall once: Back, browser back, the N1 f
     await settle();
     expect(await shifts(page)).toEqual(['back', 'push', 'back', 'push', 'back']);
 
-    // 面包屑：列表面板开着，展开折叠的中间层，点第 1 层（全部歌曲）。面板记录被越过，落地后面板关着。
+    // 面包屑：列表面板开着，展开折叠的中间层，点第 1 层（全部媒体）。面板记录被越过，落地后面板关着。
     await openAlbum();
     await settle();
     await bravaisStage(page).locator('[data-bravais-seam-action="list"]').click();

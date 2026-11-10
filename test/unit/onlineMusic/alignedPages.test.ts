@@ -3,7 +3,7 @@ import type { ProviderPage } from '@/types/onlineMusic';
 import { ALIGNED_PAGE_SIZE, readAlignedPages } from '@/services/onlineMusic/alignedPages';
 
 // test/unit/onlineMusic/alignedPages.test.ts
-// 拆页读取（#918 歌手全部歌曲）：一次 { limit, offset } 拆成对齐的小页；按页码翻页与按 offset 翻页的平台都读得对，
+// 拆页读取（#918 歌手全部媒体）：一次 { limit, offset } 拆成对齐的小页；按页码翻页与按 offset 翻页的平台都读得对，
 // 集合资源先 150 再 1000 的两次读取首尾相接、不重复。
 
 const ids = (count: number) => Array.from({ length: count }, (_, index) => index);
