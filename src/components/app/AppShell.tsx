@@ -224,7 +224,7 @@ const AppShell: React.FC<AppShellProps> = ({
                             }}
                             transition={{ duration: 0.18, ease: 'easeOut' }}
                         className={`pl-3 pt-1 tracking-tight flex items-center gap-3 ${isDaylight?'[text-shadow:_0_0px_2px_#fff] [text-shadow:_0_0px_4px_#fff] [text-shadow:_0_0px_6px_#fff]' : '[text-shadow:_0_0px_2px_#000] [text-shadow:_0_0px_4px_#000] [text-shadow:_0_0px_6px_#000]'}`}>
-                          Folia
+                          Folia Shino Preview
                         </motion.div>
                         <TitlebarDragZone active={usesCustomWindowChrome} />
                         <div

@@ -468,7 +468,7 @@ export const settingsCommands: CommandPaletteCommand[] = [
         group: 'settings',
         title: 'Unlock remote control window',
         description: 'Turn off remote control click-through so the window can be used and moved again',
-        keywords: ['unlock remote control', 'remote click through', 'remote window click-through', '解锁远程控制', '解锁遥控窗口', '遥控窗口点击穿透', '取消点击穿透'],
+        keywords: ['unlock remote control', 'remote click through', 'remote window click-through', '解锁遥控器', '解锁遥控窗口', '遥控窗口点击穿透', '取消点击穿透'],
         execute: (_input, context) => {
             context.settings.unlockRemoteControl();
             return true;

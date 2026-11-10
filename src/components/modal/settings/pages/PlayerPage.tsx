@@ -45,6 +45,7 @@ const O = {
     autoHide: option(BAR, 'autoHidePlayerChrome', 'options.autoHidePlayerChrome'),
     autoHideCursor: option(BAR, 'autoHideCursorWithPlayerChrome', 'options.autoHideCursorWithPlayerChrome'),
     idleCursorHide: option(BAR, 'hideCursorWhenIdle', 'options.hideCursorWhenIdle'),
+    barStyle: option(BAR, 'playerBarStyle', 'options.playerBarStyle'),
     barOffset: option(BAR, 'playerBottomBarOffset', 'options.playerBottomBarOffset'),
     barReposition: option(BAR, 'playerBottomBarReposition', 'options.playerBottomBarReposition'),
     controlSlots: option(BAR, 'playerControlSlots', 'options.playerControlSlots'),
@@ -97,6 +98,7 @@ const PlayerPage: React.FC = () => {
         autoHide: state.autoHidePlayerChrome,
         autoHideCursor: state.autoHideCursorWithPlayerChrome,
         hideCursorWhenIdle: state.hideCursorWhenIdle,
+        barStyle: state.playerBarStyle,
         barOffset: state.playerBottomBarOffset,
         slotPrimary: state.playerControlSlotPrimary,
         slotSecondary: state.playerControlSlotSecondary,
@@ -109,6 +111,7 @@ const PlayerPage: React.FC = () => {
         setAutoHide: state.handleToggleAutoHidePlayerChrome,
         setAutoHideCursor: state.handleToggleAutoHideCursorWithPlayerChrome,
         setHideCursorWhenIdle: state.handleToggleHideCursorWhenIdle,
+        setBarStyle: state.handleSetPlayerBarStyle,
         setBarOffset: state.handleSetPlayerBottomBarOffset,
         setSlot: state.handleSetPlayerControlSlot,
         setHideProgressBar: state.handleToggleHidePlayerProgressBar,
@@ -238,6 +241,16 @@ const PlayerPage: React.FC = () => {
             </Group>
 
             <Group def={BAR}>
+                <Row option={O.barStyle} note={t('options.playerBarStyleDesc')}>
+                    <Segmented
+                        value={chrome.barStyle}
+                        options={[
+                            { value: 'floating', label: t('options.playerBarStyle_floating') },
+                            { value: 'docked', label: t('options.playerBarStyle_docked') },
+                        ]}
+                        onChange={next => chrome.setBarStyle(next as 'floating' | 'docked')}
+                    />
+                </Row>
                 <Row option={O.autoHide} note={t('options.autoHidePlayerChromeDesc')}>
                     <Toggle checked={chrome.autoHide} onChange={chrome.setAutoHide} />
                 </Row>
@@ -249,27 +262,30 @@ const PlayerPage: React.FC = () => {
                 <Row option={O.idleCursorHide} note={t('options.hideCursorWhenIdleDesc')}>
                     <Toggle checked={chrome.hideCursorWhenIdle} onChange={chrome.setHideCursorWhenIdle} />
                 </Row>
-                <Row option={O.barOffset} note={t('options.playerBottomBarOffsetDesc')}>
-                    <Button
-                        icon={RotateCcw}
-                        tip={t('options.playerBottomBarReset')}
-                        onClick={() => applyBarOffset(PLAYER_BOTTOM_BAR_BASE_OFFSET_PX)}
-                        disabled={chrome.barOffset === PLAYER_BOTTOM_BAR_BASE_OFFSET_PX}
+                {/* 高度与拖动定位只对浮动胶囊成立：停靠栏贴在窗口底边，没有可抬的基线也没有可拖的位置。 */}
+                <Reveal when={chrome.barStyle === 'floating'}>
+                    <Row option={O.barOffset} note={t('options.playerBottomBarOffsetDesc')}>
+                        <Button
+                            icon={RotateCcw}
+                            tip={t('options.playerBottomBarReset')}
+                            onClick={() => applyBarOffset(PLAYER_BOTTOM_BAR_BASE_OFFSET_PX)}
+                            disabled={chrome.barOffset === PLAYER_BOTTOM_BAR_BASE_OFFSET_PX}
+                        />
+                        <Slider
+                            value={chrome.barOffset}
+                            min={PLAYER_BOTTOM_BAR_BASE_OFFSET_PX}
+                            max={maxBarOffset}
+                            onChange={applyBarOffset}
+                            format={value => `${value}px`}
+                        />
+                    </Row>
+                    <Row
+                        option={O.barReposition}
+                        hint={canReposition ? undefined : t('options.playerBottomBarRepositionUnavailable')}
+                        onClick={requestPositioning}
+                        disabled={!canReposition}
                     />
-                    <Slider
-                        value={chrome.barOffset}
-                        min={PLAYER_BOTTOM_BAR_BASE_OFFSET_PX}
-                        max={maxBarOffset}
-                        onChange={applyBarOffset}
-                        format={value => `${value}px`}
-                    />
-                </Row>
-                <Row
-                    option={O.barReposition}
-                    hint={canReposition ? undefined : t('options.playerBottomBarRepositionUnavailable')}
-                    onClick={requestPositioning}
-                    disabled={!canReposition}
-                />
+                </Reveal>
                 <Row option={O.controlSlots} note={t('options.playerControlSlotsDesc')}>
                     <Select
                         name={t('options.playerControlSlotPrimary')}

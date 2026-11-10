@@ -25,6 +25,24 @@ const PLAYER_BOTTOM_BAR_OFFSET_STORAGE_KEY = 'player_bottom_bar_offset';
 const PLAYER_CONTROL_SLOT_PRIMARY_STORAGE_KEY = 'player_control_slot_primary';
 const PLAYER_CONTROL_SLOT_SECONDARY_STORAGE_KEY = 'player_control_slot_secondary';
 const PLAYER_BAR_PINNED_STORAGE_KEY = 'player_bar_pinned';
+const PLAYER_BAR_STYLE_STORAGE_KEY = 'player_bar_style';
+
+/**
+ * 底部播放条的两套外观：
+ * - `floating`：原来那条可拖动的液态玻璃胶囊（FloatingPlayerControls）；
+ * - `docked`：贴着窗口底边的一条完整播放栏（标题 / 封面 / 传输键 / 进度条）。
+ */
+export type PlayerBarStyle = 'floating' | 'docked';
+
+const PLAYER_BAR_STYLES: readonly PlayerBarStyle[] = ['floating', 'docked'];
+
+const readStoredPlayerBarStyle = (): PlayerBarStyle => {
+    if (typeof window === 'undefined') {
+        return 'floating';
+    }
+    const saved = localStorage.getItem(PLAYER_BAR_STYLE_STORAGE_KEY);
+    return PLAYER_BAR_STYLES.includes(saved as PlayerBarStyle) ? saved as PlayerBarStyle : 'floating';
+};
 
 /** Reads the persisted lower-bounded offset; the viewport-dependent upper bound is applied by consumers. */
 const readStoredPlayerBottomBarOffset = (): number => {
@@ -57,6 +75,8 @@ export type PlayerChromeSettingsState = {
     playerBottomBarOffset: number;
     /** 底部播放条被固定：固定后它不再随鼠标离开而收缩。 */
     playerBarPinned: boolean;
+    /** 底部播放条的外观：浮动胶囊还是贴底的停靠栏。 */
+    playerBarStyle: PlayerBarStyle;
     playerControlSlotPrimary: PlayerControlSlotActionId;
     playerControlSlotSecondary: PlayerControlSlotActionId;
     hidePlayerRightPanelButton: boolean;
@@ -78,6 +98,7 @@ export type PlayerChromeSettingsState = {
     handleToggleHidePlayerProgressBar: (enable: boolean) => void;
     handleSetPlayerBottomBarOffset: (offsetPx: number) => void;
     handleTogglePlayerBarPinned: (enable: boolean) => void;
+    handleSetPlayerBarStyle: (style: PlayerBarStyle) => void;
     handleSetPlayerControlSlot: (slot: 'primary' | 'secondary', actionId: PlayerControlSlotActionId) => void;
     handleToggleHidePlayerRightPanelButton: (enable: boolean) => void;
     handleToggleAlwaysShowPlayerBackButton: (enable: boolean) => void;
@@ -98,6 +119,7 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
     hidePlayerProgressBar: getStoredBoolean('hide_player_progress_bar', false),
     playerBottomBarOffset: readStoredPlayerBottomBarOffset(),
     playerBarPinned: getStoredBoolean(PLAYER_BAR_PINNED_STORAGE_KEY, false),
+    playerBarStyle: readStoredPlayerBarStyle(),
     playerControlSlotPrimary: readStoredPlayerControlSlot(
         PLAYER_CONTROL_SLOT_PRIMARY_STORAGE_KEY,
         DEFAULT_PLAYER_CONTROL_SLOT_PRIMARY,
@@ -175,6 +197,19 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
         setStatusMessage({
             type: 'info',
             text: i18n.t('notifications.' + (enable ? 'playerBarPinned' : 'playerBarUnpinned')),
+        });
+    },
+    handleSetPlayerBarStyle: (style) => {
+        if (!PLAYER_BAR_STYLES.includes(style) || style === get().playerBarStyle) {
+            return;
+        }
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(PLAYER_BAR_STYLE_STORAGE_KEY, style);
+        }
+        set({ playerBarStyle: style });
+        setStatusMessage({
+            type: 'info',
+            text: i18n.t('notifications.' + (style === 'docked' ? 'playerBarStyleDocked' : 'playerBarStyleFloating')),
         });
     },
     handleSetPlayerControlSlot: (slot, actionId) => {
@@ -273,6 +308,7 @@ export const selectPlayerChromeSettingsSnapshot = (state: PlayerChromeSettingsSt
     hidePlayerProgressBar: state.hidePlayerProgressBar,
     playerBottomBarOffset: state.playerBottomBarOffset,
     playerBarPinned: state.playerBarPinned,
+    playerBarStyle: state.playerBarStyle,
     playerControlSlotPrimary: state.playerControlSlotPrimary,
     playerControlSlotSecondary: state.playerControlSlotSecondary,
     hidePlayerRightPanelButton: state.hidePlayerRightPanelButton,
@@ -291,6 +327,7 @@ export const selectPlayerChromeSettingsSnapshot = (state: PlayerChromeSettingsSt
     handleToggleHidePlayerProgressBar: state.handleToggleHidePlayerProgressBar,
     handleSetPlayerBottomBarOffset: state.handleSetPlayerBottomBarOffset,
     handleTogglePlayerBarPinned: state.handleTogglePlayerBarPinned,
+    handleSetPlayerBarStyle: state.handleSetPlayerBarStyle,
     handleSetPlayerControlSlot: state.handleSetPlayerControlSlot,
     handleToggleHidePlayerRightPanelButton: state.handleToggleHidePlayerRightPanelButton,
     handleToggleAlwaysShowPlayerBackButton: state.handleToggleAlwaysShowPlayerBackButton,

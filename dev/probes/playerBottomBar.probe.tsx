@@ -138,7 +138,7 @@ const PlayerBottomBarProbe: React.FC = () => {
                 searchTitle="Probe search"
                 onOpenList={() => { }}
             />
-            <SwitcherPill account={PILL_ACCOUNT} onBackToPlayer={() => { }} />
+            <SwitcherPill account={PILL_ACCOUNT} />
         </div>
     );
 };

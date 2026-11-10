@@ -205,6 +205,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "Menu dọc",
+    "navLabel": "Mục thư viện",
+    "exploreAll": "Tất cả",
+    "needsSignIn": "Đăng nhập {{name}} để xem",
+    "loading": "Đang tải…",
+    "exploreUnavailable": "Nền tảng này không có trang khám phá",
+    "backToPlayer": "Quay lại trình phát"
+  },
   "libraryBravais": {
     "suiteName": "Không gian Bravais",
     "homeTitle": "Thư viện",
@@ -439,6 +448,8 @@ export default {
     "lyricSourceChanged": "Đã chuyển nguồn lời ưu tiên sang {{source}}",
     "progressBarHidden": "Đã ẩn thanh điều khiển dưới",
     "progressBarShown": "Đã hiện thanh điều khiển dưới",
+    "playerBarStyleFloating": "Đã chuyển trình phát dưới sang viên nang nổi",
+    "playerBarStyleDocked": "Đã chuyển trình phát dưới sang thanh neo đáy",
     "subtitleHidden": "Đã ẩn lớp phụ đề dưới",
     "subtitleShown": "Đã hiện lớp phụ đề dưới",
     "translationShown": "Đã hiện bản dịch phụ đề",
@@ -1186,7 +1197,7 @@ export default {
     "info": "Thông tin",
     "panelExpand": "Mở rộng",
     "panelCollapse": "Thu gọn",
-    "panelHint": "Nhấp vào tiêu đề để mở bảng bên",
+    "panelHint": "Mở hoặc đóng bảng bên",
     "play": "Phát",
     "pause": "Tạm dừng",
     "close": "Đóng",
@@ -1884,7 +1895,7 @@ export default {
     "qrSelfCheckItemClock": "Đồng hồ hệ thống",
     "closeLogin": "Đóng đăng nhập",
     "logout": "Đăng xuất",
-    "backToPlayer": "Về trình phát",
+    "backToPlayer": "Về áp phích lời nhạc",
     "backToHome": "Về trang chủ",
     "playAll": "Phát tất cả",
     "loadMore": "Tải thêm",
@@ -2686,6 +2697,10 @@ export default {
     "useNativeMacFullscreenButton": "Dùng nút toàn màn hình macOS gốc",
     "useNativeMacFullscreenButtonDesc": "Đặt nút điều khiển mở toàn màn hình macOS gốc thay vì phóng to cửa sổ. Mặc định tắt.",
     "hidePlayerProgressBar": "Ẩn thanh điều khiển dưới",
+    "playerBarStyle": "Kiểu trình phát dưới",
+    "playerBarStyleDesc": "Nổi là viên nang kính kéo được; neo đáy là thanh chạy hết chiều ngang đáy cửa sổ, gồm ảnh bìa, thông tin bài hát, nút phát và thanh tiến trình.",
+    "playerBarStyle_floating": "Nổi",
+    "playerBarStyle_docked": "Neo đáy",
     "playerBottomBarOffset": "Chiều cao điều khiển dưới",
     "playerBottomBarOffsetDesc": "Điều chỉnh thanh điều khiển dưới, thẻ bài hát, nút tác vụ và bảng bên trên mọi trang; phụ đề trình phát cũng di chuyển theo. Tối đa nửa màn hình.",
     "playerBottomBarReposition": "Chỉnh vị trí trên trang phát",
@@ -5089,6 +5104,7 @@ export default {
     "noTopSongsToQueue": "Không có bài hát nổi bật để thêm vào hàng đợi",
     "allSongs": "Tất cả bài hát",
     "allSongsCollectionName": "Tất cả bài hát của {{artistName}}",
+    "moreActions": "Thao tác khác",
   },
   "obs": {
     "connecting": "Đang kết nối Folia",
@@ -6671,7 +6687,7 @@ export default {
       },
       "signIn": {
         "homeButton": "Khi chưa có ai đăng nhập, trang chủ có một nút \"Đăng nhập\" ở chính giữa. Nút này sẽ mở cửa sổ đăng nhập và bạn có thể chọn nền tảng bên trong cửa sổ.",
-        "pill": "Viên thuốc nhỏ ở góc dưới bên phải luôn hiển thị. Nhấp vào ảnh đại diện hoặc biểu tượng nền tảng bên trái để mở cửa sổ đăng nhập cho nền tảng đang dùng; mũi tên bên phải để quay về trình phát.",
+        "pill": "Trên màn hình rộng nó nằm bên trái ô tìm kiếm, trên màn hình hẹp ở góc dưới bên phải, và luôn hiển thị. Nhấp để mở cửa sổ đăng nhập cho nền tảng đang dùng; đổi nền tảng và đăng xuất cũng trong cửa sổ đó.",
         "platforms": "Cột bên trái liệt kê tất cả các nền tảng. Nền tảng đã đăng nhập có ảnh đại diện ở phía bên phải; hàng bị mờ là không thể chọn, rê chuột vào sẽ hiển thị lý do.",
         "code": "Chọn một nền tảng và phía bên phải sẽ hiển thị cách đăng nhập. Phần lớn là quét mã QR bằng ứng dụng điện thoại; một số yêu cầu chọn phương thức trước, một số mở trình duyệt chỉ với một cú nhấp.",
         "steps": "Dãy biểu tượng nhỏ ở góc dưới bên phải biểu thị tiến độ đăng nhập: tạo mã QR, xác nhận trên điện thoại, đọc thông tin tài khoản.",

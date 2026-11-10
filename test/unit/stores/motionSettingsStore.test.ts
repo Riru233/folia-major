@@ -98,7 +98,7 @@ describe('motion settings store', () => {
     });
 
     // 纯 CSS 的动效读 `<html data-reduce-motion>`。这个属性由 store 自己同步，所以主窗口之外的根
-    // （远程控制窗口、OBS 源）只要 import 了 store 就能拿到，不依赖 App 挂载。
+    // （遥控器窗口、OBS 源）只要 import 了 store 就能拿到，不依赖 App 挂载。
     describe('the <html> attribute read by CSS-only animations', () => {
         let attributes: Map<string, string>;
 

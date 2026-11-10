@@ -244,9 +244,10 @@ const waitFor = async (check: () => boolean, frames = 60): Promise<boolean> => {
     }
     return check();
 };
-// GridMap 标题按钮：打开 / 关闭侧面板（批量面板或隐藏管理面板）。
-const titleButton = (): HTMLButtonElement | null => (
-    firstHostElement(gridMapFiber())?.querySelector<HTMLButtonElement>('button[class*="group/grid-title"]') ?? null
+// GridMap 页头上的面板开关圆钮：打开 / 关闭侧面板（批量面板或隐藏管理面板）。
+// 标题本身不再可点，开关收在返回按钮旁边那颗玻璃圆钮上（与集合页、歌手页同款）。
+const panelToggleButton = (): HTMLButtonElement | null => (
+    firstHostElement(gridMapFiber())?.querySelector<HTMLButtonElement>('button[data-testid="grid-panel-toggle"]') ?? null
 );
 const isPanelOpen = () => Boolean(batchPanelProps()) || Boolean(panelButton('home.hidePlaylists') || panelButton('home.finishHidingPlaylists'));
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -444,7 +445,7 @@ export const installHomeProbeApi = (bindings: HarnessBindings): (() => void) => 
             }
             if (isTuiHome()) return Boolean(tuiDirectoryProps());
             if (isPanelOpen()) return true;
-            const button = titleButton();
+            const button = panelToggleButton();
             if (!button || button.disabled) return false;
             button.click();
             return true;
@@ -457,7 +458,7 @@ export const installHomeProbeApi = (bindings: HarnessBindings): (() => void) => 
             }
             if (isTuiHome()) return Boolean(tuiDirectoryProps());
             if (!isPanelOpen()) return true;
-            const button = titleButton();
+            const button = panelToggleButton();
             if (!button) return false;
             button.click();
             return true;
@@ -550,7 +551,7 @@ export const installHomeProbeApi = (bindings: HarnessBindings): (() => void) => 
             }
             if (!gridMapFiber() || batchPanelProps()) return false;
             if (!isPanelOpen()) {
-                titleButton()?.click();
+                panelToggleButton()?.click();
                 if (!await waitFor(isPanelOpen)) return false;
             }
             const wantsManage = view !== 'browse';

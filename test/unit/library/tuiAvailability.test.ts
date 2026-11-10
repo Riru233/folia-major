@@ -26,8 +26,10 @@ describe('TUI development validation availability', () => {
 
         expect(tui.available).toBe(enabled);
         expect(Object.keys(tui.surfaces).sort()).toEqual(enabled ? ['account', 'artist', 'collection', 'home'] : []);
-        // bravais（B6 起）不受 TUI 的开关影响，始终在。
-        expect(registry.listLibrarySuites().map(suite => suite.id)).toEqual(enabled ? ['grid', 'bravais', 'tui'] : ['grid', 'bravais']);
+        // bravais（B6 起）与垂直样式都不受 TUI 的开关影响，始终在。
+        expect(registry.listLibrarySuites().map(suite => suite.id)).toEqual(enabled
+            ? ['grid', 'bravais', 'tui', 'vertical']
+            : ['grid', 'bravais', 'vertical']);
         expect(registry.hasLibrarySuite('tui')).toBe(enabled);
 
         for (const surface of ['home', 'collection', 'artist'] as const) {

@@ -1100,7 +1100,7 @@ test.describe('[grid-only] directory interactions', () => {
         await mountHome(mount, page);
         await showList(page, 'local');
         await showMap(page);
-        await page.locator('button[class*="group/grid-title"]').click();
+        await page.locator('button[data-testid="grid-panel-toggle"]').first().click();
         await expect.poll(async () => (await batchScope(page))?.itemIds).toEqual([]);
 
         await page.locator('button[role="checkbox"][title="Music/Beta"]').click();
@@ -1144,7 +1144,7 @@ test.describe('[grid-only] directory interactions', () => {
         await mountHome(mount, page);
         await showList(page, 'local');
         await showMap(page);
-        await page.locator('button[class*="group/grid-title"]').click();
+        await page.locator('button[data-testid="grid-panel-toggle"]').first().click();
         await expect.poll(async () => (await batchScope(page))?.itemIds).toEqual([]);
         await page.locator('button[role="checkbox"][title="Music/Beta"]').click();
         await page.locator('[data-ponder-page-scope="local-grid-map-page"] .theme-polaroid-card', { hasText: 'Extra' }).dispatchEvent('click');

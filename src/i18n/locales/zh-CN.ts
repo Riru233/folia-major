@@ -205,6 +205,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "垂直样式",
+    "navLabel": "书库分区",
+    "exploreAll": "全部",
+    "needsSignIn": "登录 {{name}} 后显示",
+    "loading": "加载中…",
+    "exploreUnavailable": "当前平台没有探索页",
+    "backToPlayer": "回到播放器"
+  },
   "libraryBravais": {
     "suiteName": "Bravais 墙面",
     "homeTitle": "书库",
@@ -525,6 +534,8 @@ export default {
     "playerBackButtonAlwaysShown": "播放页左上角返回按钮将始终显示",
     "playerBarPinned": "播放条将保持展开",
     "playerBarUnpinned": "播放条将在指针移开后收缩",
+    "playerBarStyleFloating": "底部播放器已切换为浮动胶囊",
+    "playerBarStyleDocked": "底部播放器已切换为停靠栏",
     "trackSwitchButtonsAlwaysShown": "进度条切歌箭头将始终显示",
     "trackSwitchButtonsAutoHidden": "进度条切歌箭头将悬停显示",
     "playerBackButtonAutoHidden": "播放页左上角返回按钮将悬停显示",
@@ -915,10 +926,10 @@ export default {
       "desktop-toggle-remote-control-hide-titlebar": { "title": "遥控窗口：隐藏顶部悬浮栏", "description": "切换遥控窗口顶部悬浮窗口控制栏的显示" },
       "desktop-toggle-remote-control-expand-cover": { "title": "遥控窗口：展开封面", "description": "切换遥控窗口闲置时是否把封面展开成大图" },
       "desktop-toggle-remote-control-text-shade": { "title": "遥控窗口：文字黑底", "description": "切换遥控窗口透明背景下闲置文字底下的半透明黑底" },
-      "desktop-unlock-remote-control": { "title": "解锁远程控制", "description": "关闭遥控窗口的点击穿透，恢复窗口的操作与拖动" },
+      "desktop-unlock-remote-control": { "title": "解锁遥控器", "description": "关闭遥控窗口的点击穿透，恢复窗口的操作与拖动" },
       "sleep-timer": { "title": "睡眠定时", "description": "指定时长后暂停播放，桌面端将关闭应用" },
       "navigate-home": { "title": "回到首页", "description": "返回首页视图" },
-      "navigate-player": { "title": "回到播放器", "description": "返回播放器视图" },
+      "navigate-player": { "title": "回到播放器", "description": "返回歌词画报视图" },
       "lattice-focus-current": { "title": "Lattice 定位正在播放的歌", "description": "在拼贴里把正在播放的歌的海报移到中央" },
       "locate-playing-song": { "title": "定位正在播放的歌", "description": "打开它所在的歌单或专辑，并把它的卡片移到中央" },
       "bravais-list": { "title": "打开歌曲列表", "description": "把资料库墙面上的缝加宽成这个集合的歌曲列表" },
@@ -1189,7 +1200,7 @@ export default {
     "info": "歌单信息",
     "panelExpand": "展开",
     "panelCollapse": "收起",
-    "panelHint": "点击标题展开左侧面板",
+    "panelHint": "展开或收起左侧面板",
     "play": "播放",
     "pause": "暂停",
     "close": "关闭",
@@ -1264,7 +1275,7 @@ export default {
     "restoreWindow": "还原窗口",
     "pinWindowControls": "固定窗口控制栏",
     "unpinWindowControls": "取消固定窗口控制栏",
-    "remoteControl": "远程控制",
+    "remoteControl": "遥控器",
     "seek": "定位",
     "clearActiveCommand": "清除当前命令",
     "playPreview": "播放预览",
@@ -1889,7 +1900,7 @@ export default {
     "qrSelfCheckItemClock": "系统时间",
     "closeLogin": "关闭登录窗口",
     "logout": "退出登录",
-    "backToPlayer": "返回播放器",
+    "backToPlayer": "返回歌词画报",
     "backToHome": "返回主页",
     "playAll": "播放全部",
     "loadMore": "加载更多",
@@ -2693,6 +2704,10 @@ export default {
     "useNativeMacFullscreenButton": "使用 macOS 原生全屏按钮",
     "useNativeMacFullscreenButtonDesc": "全屏按钮进入 macOS 原生全屏，而不是最大化窗口",
     "hidePlayerProgressBar": "隐藏底部控制条",
+    "playerBarStyle": "底部播放器样式",
+    "playerBarStyleDesc": "浮动是可拖动的玻璃胶囊；停靠是贴着窗口底边、通栏的一条播放栏：封面与歌曲信息、传输键、进度条。",
+    "playerBarStyle_floating": "浮动",
+    "playerBarStyle_docked": "停靠",
     "playerBottomBarOffset": "底部组件高度",
     "playerBottomBarOffsetDesc": "同时调整各页面的底部控制条、歌曲卡片、操作按钮和侧边面板；播放页字幕也会跟随。最高不超过半个屏幕。",
     "playerBottomBarReposition": "在播放页拖动调整",
@@ -2790,7 +2805,7 @@ export default {
     "hideRemoteControlTitlebarDesc": "窗口顶部的透明区域仍可拖动来移动窗口。关闭窗口请用托盘菜单中的“遥控窗口”，或命令面板中的“切换遥控窗口”。",
     "remoteControlClickThrough": "Remote Control 点击穿透",
     "remoteControlClickThroughHint": "窗口忽略鼠标，点击穿透到下方的桌面和窗口",
-    "remoteControlClickThroughDesc": "解锁：托盘菜单中的“解锁遥控窗口”，命令面板中的“解锁远程控制”，或关闭此开关。",
+    "remoteControlClickThroughDesc": "解锁：托盘菜单中的“解锁遥控窗口”，命令面板中的“解锁遥控器”，或关闭此开关。",
     "remoteControlExpandCover": "展开封面",
     "remoteControlExpandCoverHint": "闲置时把封面展开成大图",
     "remoteControlTextShade": "文字黑底",
@@ -4417,7 +4432,7 @@ export default {
       },
       "injectedShortcuts": {
         "title": "快捷键支持模拟输入",
-        "description": "按键映射、宏、远程控制等软件发出的按键，现在也能触发播放控制、命令面板和教程里的快捷键。"
+        "description": "按键映射、宏、遥控器等软件发出的按键，现在也能触发播放控制、命令面板和教程里的快捷键。"
       },
       "collectionNav": {
         "title": "来回跳转不再越返越长",
@@ -5125,6 +5140,7 @@ export default {
     "noTopSongsToQueue": "没有可加入队列的热门歌曲",
     "allSongs": "全部歌曲",
     "allSongsCollectionName": "{{artistName}} 的全部歌曲",
+    "moreActions": "更多操作",
   },
   "obs": {
     "connecting": "正在连接 Folia",
@@ -6707,7 +6723,7 @@ export default {
       },
       "signIn": {
         "homeButton": "没有人登录时，主页中间有一颗「登录」按钮。它打开登录窗口，平台在窗口里选。",
-        "pill": "右下角这一枚一直都在。点左边的头像或平台记号，打开同一个窗口，停在正在用的平台上；右边的箭头返回播放器。",
+        "pill": "宽屏时它在首页搜索栏的左边，窄屏时在右下角，一直都在。点它打开登录窗口，停在正在用的平台上；换平台、退出登录都在那个窗口里。",
         "platforms": "左边一列是全部平台。已经登录的那一行右端有头像；灰着的行不能选，悬停会写原因。",
         "code": "选中一个平台，右边就是它的登录方式。多数是一张二维码，用那个平台的手机应用扫；有的要先选方式，有的点一下按钮去浏览器里登录。",
         "steps": "右下角这一串小图标是登录走到哪一步：二维码、手机上确认、读到账号。",

@@ -205,6 +205,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "Menu vertikal",
+    "navLabel": "Bagian pustaka",
+    "exploreAll": "Semua",
+    "needsSignIn": "Masuk ke {{name}} untuk melihat ini",
+    "loading": "Memuat…",
+    "exploreUnavailable": "Platform ini tidak punya halaman jelajah",
+    "backToPlayer": "Kembali ke pemutar"
+  },
   "libraryBravais": {
     "suiteName": "Dinding Bravais",
     "homeTitle": "Pustaka",
@@ -525,6 +534,8 @@ export default {
     "playerBackButtonAlwaysShown": "Tombol kembali pemutar akan selalu terlihat",
     "playerBarPinned": "Bilah pemutar tetap terbuka",
     "playerBarUnpinned": "Bilah pemutar akan menutup lagi saat pointer leave",
+    "playerBarStyleFloating": "Pemutar bawah beralih ke kapsul mengambang",
+    "playerBarStyleDocked": "Pemutar bawah beralih ke bilah menempel",
     "trackSwitchButtonsAlwaysShown": "Panah pengganti trek akan selalu terlihat",
     "trackSwitchButtonsAutoHidden": "Panah pengganti trek akan muncul saat diarahkan",
     "playerBackButtonAutoHidden": "Tombol kembali pemutar akan muncul saat diarahkan",
@@ -1191,7 +1202,7 @@ export default {
     "info": "Info",
     "panelExpand": "Perluas",
     "panelCollapse": "Ciutkan",
-    "panelHint": "Klik judul untuk membuka panel samping",
+    "panelHint": "Buka atau tutup panel samping",
     "play": "Putar",
     "pause": "Jeda",
     "close": "Tutup",
@@ -1891,7 +1902,7 @@ export default {
     "qrSelfCheckItemClock": "Jam sistem",
     "closeLogin": "Tutup login",
     "logout": "Logout",
-    "backToPlayer": "Kembali ke Pemutar",
+    "backToPlayer": "Kembali ke poster lirik",
     "backToHome": "Kembali ke Beranda",
     "playAll": "Putar Semua",
     "loadMore": "Muat Lebih Banyak",
@@ -2695,6 +2706,10 @@ export default {
     "useNativeMacFullscreenButton": "Gunakan tombol layar penuh asli macOS",
     "useNativeMacFullscreenButtonDesc": "Tombol layar penuh masuk ke layar penuh asli macOS, bukan memaksimalkan jendela",
     "hidePlayerProgressBar": "Sembunyikan bilah kontrol bawah pemutar",
+    "playerBarStyle": "Gaya pemutar bawah",
+    "playerBarStyleDesc": "Mengambang adalah kapsul kaca yang bisa digeser; menempel adalah bilah selebar layar di dasar jendela dengan sampul, info lagu, tombol transport, dan bilah kemajuan.",
+    "playerBarStyle_floating": "Mengambang",
+    "playerBarStyle_docked": "Menempel",
     "playerBottomBarOffset": "Ketinggian kontrol bawah",
     "playerBottomBarOffsetDesc": "Menyesuaikan kontrol bawah, kartu lagu, tombol tindakan, dan panel samping di semua halaman; subtitle pemutar juga ikut bergerak. Dibatasi setengah layar.",
     "playerBottomBarReposition": "Atur posisi di halaman pemutar",
@@ -5127,6 +5142,7 @@ export default {
     "noTopSongsToQueue": "Tidak ada lagu teratas yang bisa diantrekan",
     "allSongs": "Semua lagu",
     "allSongsCollectionName": "Semua lagu {{artistName}}",
+    "moreActions": "Tindakan lain",
   },
   "obs": {
     "connecting": "Menghubungkan ke Folia",
@@ -6709,7 +6725,7 @@ export default {
       },
       "signIn": {
         "homeButton": "Selama belum ada yang masuk, beranda punya tombol “Login” di tengah. Ia membuka jendela masuk; platformnya dipilih di sana.",
-        "pill": "Pil di kanan bawah selalu ada. Klik gambar atau tanda platform di kirinya untuk membuka jendela yang sama pada platform yang sedang dipakai; panah di kanannya kembali ke pemutar.",
+        "pill": "Di layar lebar letaknya di kiri kolom pencarian, di layar sempit di kanan bawah, dan selalu ada. Klik untuk membuka jendela login pada platform yang sedang dipakai; ganti platform dan logout juga di jendela itu.",
         "platforms": "Kolom di kiri memuat semua platform. Yang sudah masuk punya gambar di ujung kanan barisnya; baris yang kelabu tidak bisa dipilih, dan menyorotnya menyebutkan alasannya.",
         "code": "Pilih satu platform dan sisi kanan menampilkan cara masuknya. Kebanyakan berupa kode QR untuk dipindai dengan aplikasi ponsel platform itu; ada yang meminta memilih cara dulu, ada yang membuka browser dengan sekali klik.",
         "steps": "Ikon-ikon kecil di kanan bawah menunjukkan sudah sampai mana proses masuk: kode, konfirmasi di ponsel, akun.",

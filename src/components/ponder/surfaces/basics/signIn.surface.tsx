@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, QrCode, Smartphone, User, X } from 'lucide-react';
+import { QrCode, Smartphone, User, X } from 'lucide-react';
 import PonderSurfaceStateLayer, { PonderSurfaceBase } from '../PonderSurfaceStateLayer';
 import {
     SIGN_IN_GEOMETRY as G,
@@ -46,16 +46,15 @@ const HomePage: React.FC<Paint> = ({ accent, line, outline }) => (
                 <span className="h-[22%] min-w-0 flex-1 rounded-full" style={{ backgroundColor: 'var(--st-on-accent)' }} />
             </span>
         </span>
-        {/* 右下角那一枚：正在用的平台的记号（登录后是头像），一道线，返回播放器的箭头。 */}
+        {/* 那一枚：只有正在用的平台的记号（登录后是头像）。返回歌词画报的箭头不在它上面，
+            在播放条右端，所以这里不画那道线和箭头。 */}
         <span
             data-ponder-sign-in-pill
             className="rounded-full"
             style={{ ...relativeRectStyle(G.pill), backgroundColor: 'var(--st-menu)', boxShadow: `inset 0 0 0 1px ${outline}` }}
         >
-            <span className="absolute inset-x-[7%] inset-y-[12%] flex items-center">
-                <span className="aspect-square h-full shrink-0 rounded-full" style={{ backgroundColor: accent }} />
-                <span className="mx-[6%] h-[52%] w-px shrink-0" style={{ backgroundColor: outline }} />
-                <ChevronRight className="h-[52%] w-auto min-w-0 flex-1 opacity-70" />
+            <span className="absolute inset-0 flex items-center justify-center">
+                <span className="aspect-square h-[76%] rounded-full" style={{ backgroundColor: accent }} />
             </span>
         </span>
     </>

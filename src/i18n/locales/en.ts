@@ -205,6 +205,15 @@ export default {
       }
     }
   },
+  "libraryVertical": {
+    "suiteName": "Vertical menu",
+    "navLabel": "Library sections",
+    "exploreAll": "All",
+    "needsSignIn": "Sign in to {{name}} to see this",
+    "loading": "Loading…",
+    "exploreUnavailable": "This platform has no explore page",
+    "backToPlayer": "Back to the player"
+  },
   "libraryBravais": {
     "suiteName": "Bravais wall",
     "homeTitle": "Library",
@@ -525,6 +534,8 @@ export default {
     "playerBackButtonAlwaysShown": "Player back button will remain visible",
     "playerBarPinned": "The player bar stays expanded",
     "playerBarUnpinned": "The player bar collapses again when the pointer leaves",
+    "playerBarStyleFloating": "Bottom player switched to the floating capsule",
+    "playerBarStyleDocked": "Bottom player switched to the docked bar",
     "trackSwitchButtonsAlwaysShown": "Track switch arrows will remain visible",
     "trackSwitchButtonsAutoHidden": "Track switch arrows will reveal on hover",
     "playerBackButtonAutoHidden": "Player back button will reveal on hover",
@@ -1191,7 +1202,7 @@ export default {
     "info": "Info",
     "panelExpand": "Expand",
     "panelCollapse": "Collapse",
-    "panelHint": "Click the title to open the side panel",
+    "panelHint": "Open or close the side panel",
     "play": "Play",
     "pause": "Pause",
     "close": "Close",
@@ -1889,7 +1900,7 @@ export default {
     "qrSelfCheckItemClock": "System clock",
     "closeLogin": "Close login",
     "logout": "Logout",
-    "backToPlayer": "Back to Player",
+    "backToPlayer": "Back to the lyrics poster",
     "backToHome": "Return to Home",
     "playAll": "Play All",
     "loadMore": "Load More",
@@ -2693,6 +2704,10 @@ export default {
     "useNativeMacFullscreenButton": "Use native macOS fullscreen button",
     "useNativeMacFullscreenButtonDesc": "The fullscreen button enters native macOS fullscreen instead of maximizing",
     "hidePlayerProgressBar": "Hide player bottom control bar",
+    "playerBarStyle": "Bottom player style",
+    "playerBarStyleDesc": "Floating is the draggable glass capsule; docked is a full-width bar across the bottom with cover, track info, transport and a progress bar.",
+    "playerBarStyle_floating": "Floating",
+    "playerBarStyle_docked": "Docked",
     "playerBottomBarOffset": "Bottom controls height",
     "playerBottomBarOffsetDesc": "Adjusts bottom controls, song cards, action buttons and side panels across every page; player subtitles follow too. Capped at half the screen.",
     "playerBottomBarReposition": "Reposition on player page",
@@ -5125,6 +5140,7 @@ export default {
     "noTopSongsToQueue": "No top songs available to queue",
     "allSongs": "All songs",
     "allSongsCollectionName": "All songs by {{artistName}}",
+    "moreActions": "More actions",
   },
   "obs": {
     "connecting": "Connecting to Folia",
@@ -6707,7 +6723,7 @@ export default {
       },
       "signIn": {
         "homeButton": "While nobody is signed in, the home page has a “Login” button in the middle. It opens the sign-in window; the platform is picked there.",
-        "pill": "The pill at the bottom right is always there. Click the picture or platform mark on its left to open the same window on the platform in use; the arrow on its right goes back to the player.",
+        "pill": "On a wide screen it sits left of the search bar, on a narrow one at the bottom right, and it is always there. Click it to open the sign-in window on the platform in use; switching platforms and logging out happen in that window.",
         "platforms": "The column on the left lists every platform. A signed-in one has its picture at the right end of the row; a greyed row cannot be chosen, and hovering says why.",
         "code": "Choose a platform and the right side shows how it signs in. Mostly that is a QR code to scan with the platform’s phone app; some ask for a method first, some open the browser at a click.",
         "steps": "The small icons at the bottom right show how far the sign-in has got: the code, the confirmation on the phone, the account.",

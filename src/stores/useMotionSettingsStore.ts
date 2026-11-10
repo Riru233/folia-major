@@ -144,7 +144,7 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     });
 }
 
-// 属性同步同样挂在模块级，而不是某个根组件的 effect 里：bootstrap 按 URL 挂的是主窗口、远程控制窗口
+// 属性同步同样挂在模块级，而不是某个根组件的 effect 里：bootstrap 按 URL 挂的是主窗口、遥控器窗口
 // 或 OBS 源之一，远程窗口的进度辉光也读这个属性，只在 App 里同步的话它永远拿不到。import 时先写一次，
 // 第一帧就是对的，不会先闪一下完整动效再降级。
 syncMotionSurfaceAttribute(useMotionSettingsStore.getState());

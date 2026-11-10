@@ -106,7 +106,7 @@ bravais 的口头说法大多来自它的设计稿（不在仓库里，常用的
 | Stage 模式 / 外部播放器控制 | `useStagePlaybackController`、`appStageHelpers`、`stagePlayerSnapshot` |
 | Now Playing / PlayerCap | `useNowPlayingSource`、`usePlayerCapSource`、`nowPlayingProvider`、`playerCapProvider` |
 | OBS 浏览器源 | `useObsBrowserSourcePublisher`、`obsBrowserSource` |
-| 远程控制 / 视频导出 | `useElectronVideoExportController`、`electronVideoExport` |
+| 遥控器 / 视频导出 | `useElectronVideoExportController`、`electronVideoExport` |
 
 ## 在线音乐
 

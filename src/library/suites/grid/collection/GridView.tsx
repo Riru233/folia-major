@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls, useIsPresent } from 'framer-motion';
 import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Loader2, Heart, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
-import GridPanelToggleIndicator from '../shared/GridPanelToggleIndicator';
+import GridPanelToggleButton from '../shared/GridPanelToggleButton';
+import { gridGlassCircleStyle } from '../shared/gridGlassChrome';
 import { useGlass } from '@/shinoinject/useGlass';
 import { useTranslation } from 'react-i18next';
 import { SongResult, type LocalSong, type StatusMessage, Theme, type UnifiedSong } from '../../../../types';
@@ -1646,31 +1647,43 @@ export const GridView: React.FC<GridViewProps> = ({
                 落点，否则正在退出的上一层网格会被当成落点。订阅关在子组件里，见 ActiveGridMarker。 */}
             <ActiveGridMarker />
 
-            {/* Back Button */}
-            <button
-                // 返回按钮表示看完了（onDone）：宿主清掉浏览会话、让每套 suite 忘掉布局记录（网格的 sessionStorage
-                // 记录经 entry 的 layout.forget），再返回。Escape 与浏览器后退保留（onBack）。P4.5 起不在这里清。
-                onClick={onDone}
-                data-glass
-                data-glass-jelly
-                data-glass-light
-                className="absolute left-6 top-5 w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95 z-[70]"
-                style={{
-                    backgroundColor: isDaylight
-                        ? "rgba(255,255,255,0.4)"
-                        : "rgba(0,0,0,0.4)",
-                    borderTop: isDaylight
-                        ? "1px solid rgba(255,255,255,0.32)"
-                        : "1px solid rgba(255,255,255,0.22)",
-                    borderBottom: isDaylight
-                        ? "1px solid rgba(255,255,255,0.32)"
-                        : "1px solid rgba(255,255,255,0.22)",
-                    outline: "1px solid rgba(40,40,40,0.2)",
-                    boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                }}
-            >
-                <ChevronLeft size={20} />
-            </button>
+            {/* Back Button + the cut-in panel's toggle: the same glass circle, side by side at the top left,
+                with the collection's name right after them. The toggle is the icon the title used to carry
+                (it was easy to miss inside the title); the title no longer toggles the panel itself. */}
+            <div className='fixed top-0 left-0 right-0 h-[130px] z-[69] bg-gradient-to-b from-[var(--bg-color)] to-transparent'>
+
+            </div>
+            <div className="absolute left-6 top-9 z-[70] flex items-center gap-3">
+                <button
+                    // 返回按钮表示看完了（onDone）：宿主清掉浏览会话、让每套 suite 忘掉布局记录（网格的 sessionStorage
+                    // 记录经 entry 的 layout.forget），再返回。Escape 与浏览器后退保留（onBack）。P4.5 起不在这里清。
+                    onClick={onDone}
+                    data-glass
+                    data-glass-jelly
+                    data-glass-light
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95"
+                    style={gridGlassCircleStyle(isDaylight)}
+                >
+                    <ChevronLeft size={20} />
+                </button>
+                {hasCutInPanel && (
+                    <GridPanelToggleButton
+                        isOpen={showCutInPanel}
+                        isDaylight={isDaylight}
+                        onToggle={() => setShowCutInPanel(!showCutInPanel)}
+                    />
+                )}
+                <div className={"flex flex-col"}>
+                    <h2 className="text-lg font-normal tracking-tight flex gap-1.5">
+                        {infoCollection?.name || collectionName || title}
+                    </h2>
+                    {(infoCollection?.description || subtitle) && (
+                        <p className="mt-0.5 max-w-[min(40rem,calc(100vw-8rem))] text-xs leading-relaxed opacity-50 line-clamp-2 whitespace-normal break-words">
+                            {infoCollection?.description || subtitle}
+                        </p>
+                    )}
+                </div>
+            </div>
 
             {(progressiveLoading.backgroundLoading || backgroundLoadError) && (
                 <button
@@ -1692,41 +1705,6 @@ export const GridView: React.FC<GridViewProps> = ({
                     {backgroundLoadError && <span className="font-semibold">{t('ui.retry')}</span>}
                 </button>
             )}
-
-            {/* Center Clickable Area */}
-            <div
-                onClick={() => {
-                    if (!hasCutInPanel) return;
-                    setShowCutInPanel(!showCutInPanel);
-                }}
-                data-glass
-                data-glass-jelly
-                data-glass-light
-                className={`group/grid-title absolute left-1/2 top-5 -translate-x-1/2 z-[70] text-center flex flex-col items-center select-none transition-all px-5 py-2 rounded-2xl backdrop-blur-md ${hasCutInPanel ? 'cursor-pointer hover:scale-[1.01] active:scale-98' : ''}`}
-                style={{
-                backgroundColor: isDaylight
-                    ? "rgba(255,255,255,0.4)"
-                    : "rgba(0,0,0,0.4)",
-                borderTop: isDaylight
-                    ? "1px solid rgba(255,255,255,0.32)"
-                    : "1px solid rgba(255,255,255,0.22)",
-                borderBottom: isDaylight
-                    ? "1px solid rgba(255,255,255,0.32)"
-                    : "1px solid rgba(255,255,255,0.22)",
-                outline: "1px solid rgba(40,40,40,0.2)",
-                boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                }}
-            >
-                <h2 className="text-lg font-bold tracking-tight flex items-center gap-1.5 justify-center">
-                    {infoCollection?.name || collectionName || title}
-                    {hasCutInPanel && <GridPanelToggleIndicator isOpen={showCutInPanel} />}
-                </h2>
-                {(infoCollection?.description || subtitle) && (
-                    <p className="mt-0.5 max-w-[min(40rem,calc(100vw-8rem))] text-xs leading-relaxed opacity-50 line-clamp-2 whitespace-normal break-words">
-                        {infoCollection?.description || subtitle}
-                    </p>
-                )}
-            </div>
 
             {/* Honeycomb Drag/Viewport Canvas Area */}
             <div
@@ -1855,7 +1833,7 @@ export const GridView: React.FC<GridViewProps> = ({
                                 <div
                                     {...{ [CARD_TITLE_ATTR]: '' }}
                                     className={fullBleedCover
-                                        ? 'text-sm font-bold tracking-tight leading-snug line-clamp-3 whitespace-normal break-words'
+                                        ? 'text-sm tracking-tight leading-snug line-clamp-3 whitespace-normal break-words'
                                         : 'text-s font-bold tracking-tight opacity-90 max-w-full line-clamp-4 whitespace-normal break-words'}
                                 >
                                     {standIn.title ?? collectionName ?? title}
