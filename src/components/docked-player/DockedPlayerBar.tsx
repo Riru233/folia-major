@@ -122,8 +122,8 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
     onTogglePlay,
     onToggleLoop,
     noTrackText = 'No Track',
-    primaryColor = 'var(--text-primary)',
-    secondaryColor = 'var(--text-secondary)',
+    primaryColor = '#fff',
+    secondaryColor = '#fffa',
     isDaylight,
     hideControlBar = false,
     controlsDisabled = false,
@@ -235,14 +235,14 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                 data-chrome-hidden={isPlayerView && isPlayerChromeHidden ? 'true' : 'false'}
             >
                 {/* 垂直 flex：上一行是信息 / 传输 / 槽位，下一行是进度条。 */}
-                <div className="flex flex-col gap-1 p-1 bg-gradient-to-t from-[var(--bg-color)]/60 to-transparent" style={surfaceStyle}>
+                <div className="flex flex-col gap-1 p-1 bg-gradient-to-t from-[#000]/60 to-transparent" style={surfaceStyle}>
                     {/* 水平 grid：左信息、中播放键、右传输与按钮。
                         播放键自己就是中间那一列（auto），左右两侧是等宽的 1fr——不论右边挂了多少颗按钮、
                         左边歌名多长，它永远落在整条栏的正中。上一曲贴在左列末尾、下一曲贴在右列开头，
                         所以传输键看上去仍是一簇，只是不再把播放键往一侧挤。 */}
                     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-[5px]">
                         {/* 左：封面 + 文字信息（左右排布，文字靠左），末尾挂上一曲 */}
-                        <div className="flex min-w-0 items-center gap-3 [text-shadow:_0_0px_4px_var(--bg-color),_0_0px_4px_var(--bg-color)]">
+                        <div className="flex min-w-0 items-center gap-3 [text-shadow:_0_0px_4px_#000,_0_0px_4px_#000]">
                             {/* 封面：不在播放页时它本身就是回歌词画报的入口（悬停浮一层淡膜 + 箭头提示）。 */}
                             {canReturnToPlayer ? (
                                 <button

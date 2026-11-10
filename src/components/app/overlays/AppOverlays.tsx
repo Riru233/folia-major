@@ -73,8 +73,8 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
                     onTogglePlay={floatingControls.onTogglePlay}
                     onToggleLoop={floatingControls.onToggleLoop}
                     noTrackText={floatingControls.noTrackText}
-                    primaryColor={floatingControls.primaryColor}
-                    secondaryColor={floatingControls.secondaryColor}
+                    // primaryColor={floatingControls.primaryColor}
+                    // secondaryColor={floatingControls.secondaryColor}
                     isDaylight={floatingControls.isDaylight}
                     hideControlBar={floatingControls.hideControlBar}
                     controlsDisabled={floatingControls.controlsDisabled}
