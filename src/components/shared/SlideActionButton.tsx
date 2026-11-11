@@ -277,7 +277,6 @@ export const SlideActionButton: React.FC<SlideActionButtonProps> = ({
         style={{
           touchAction: docked ? undefined : 'none',
           boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-          touchAction: "none",
           backgroundColor: isDaylight
             ? "rgba(255,255,255,0.4)"
             : "rgba(0,0,0,0.4)",

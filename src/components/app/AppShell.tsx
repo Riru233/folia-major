@@ -250,11 +250,11 @@ const AppShell: React.FC<AppShellProps> = ({
                           Folia
                         </motion.div>
                         <TitlebarDragZone active={usesCustomWindowChrome} />
+                        {/* 锁离窗口边缘的距离由 resolveWindowControlsExtent 算：右侧时是 right，
+                            窗口按钮靠左时整排镜像成 left，两处偏移都跟着 titlebarEdge 走。 */}
                         <div
-                            className={`pointer-events-auto absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} z-20 h-full flex items-center ${
-                                hasFullscreenTitlebarButton ? 'right-[224px]' : 'right-[180px]'
-                            }`}
-                            style={{ WebkitAppRegion: 'no-drag' }, [titlebarEdge]: clickThroughLockOffset } as React.CSSProperties}
+                            className={`pointer-events-auto absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} z-20 h-full flex items-center`}
+                            style={{ WebkitAppRegion: 'no-drag', [titlebarEdge]: clickThroughLockOffset } as React.CSSProperties}
                         >
                             <button
                                 type="button"
@@ -282,9 +282,7 @@ const AppShell: React.FC<AppShellProps> = ({
                             右缘离锁 6px：锁离右边 180px/224px、宽 28px，这组宽 86px（位置由 resolveWindowControlsExtent 算）。
                             不放锁右边：那样热区要伸到离右边 84px，压住下面窗口的最小化/最大化按钮。 */}
                         <div
-                            className={`pointer-events-none absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} ${
-                                window.electron?.platform === 'darwin'? 'right-[10px]':(hasFullscreenTitlebarButton ? 'right-[258px]' : 'right-[214px]')} z-20 h-full flex items-center
-                            }`}
+                            className={`pointer-events-none absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} z-20 h-full flex items-center`}
                             // 只在点击穿透时扣出不可拖的区域：平时这组按钮不出现，标题栏这一段照常能拖窗口。
                             style={{
                                 [titlebarEdge]: clickThroughMediaOffset,
