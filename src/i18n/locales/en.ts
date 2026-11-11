@@ -4243,14 +4243,26 @@ export default {
       }
     },
     "v0_7_28": {
-      "intro": "Welcome to 0.7.28, the Mimiambol Update—a major update. It adds the cinema hall scene, a new app icon, window controls on either side, and new options for several lyric styles.",
+      "intro": "Welcome to 0.7.28, the Mimiambol Update—a major update. It adds the cinema hall scene and Shino Lab, a docked bottom player bar, a refreshed library grid, a new app icon, window controls on either side, and new options for several lyric styles.",
       "scenes": {
         "title": "Scene: Cinema (Beta)",
         "description": "The player page can become a cinema hall, with your lyric style and background on its screen; drag to look around. Turn it on in the Scene row of the Appearance page. On desktop, Sound tracing makes the music sound like it is playing in the hall."
       },
+      "shinoLab": {
+        "title": "Shino Lab",
+        "description": "Video playback has moved into Settings → Shino Lab, next to the bilibili video background; both master switches start off. Turn on video playback and the video a track ships with shows on the player page; turn on the bilibili background and the background picker gains a Video option that matches the song's MV, takes a hand-typed BV id, offers a quality choice and a picture/sound offset. bilibili requests are blocked by CORS in the browser build, so this part is desktop only."
+      },
       "newLook": {
         "title": "New icon and loading animations",
         "description": "A new app icon: an F built from four blocks. The splash screen now shows sliding colour blocks; switching songs and loading lyrics show the same loading dots, and startup tells you while it checks your sign-in."
+      },
+      "gridRefresh": {
+        "title": "Refreshed grid page",
+        "description": "The library directory grid has a new header: the back and panel buttons share one row of glass circles, the title and subtitle sit beside them, and a gradient at the top keeps text readable over the cards. The side panel and those buttons are liquid glass."
+      },
+      "dockedBar": {
+        "title": "Docked bottom bar",
+        "description": "Besides the floating glass capsule, the player can dock to the bottom edge as a full-width bar with cover, song info, transport keys and the progress bar. The docked bar comes in two colours, Dreamcore and Monet."
       },
       "windowControls": {
         "title": "Window controls",

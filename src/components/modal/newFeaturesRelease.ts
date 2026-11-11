@@ -1,4 +1,4 @@
-import { AppWindow, Clapperboard, Palette, Shapes, Sparkles } from 'lucide-react';
+import { AppWindow, Clapperboard, FlaskConical, LayoutGrid, Palette, PanelBottom, Shapes, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // src/components/modal/newFeaturesRelease.ts
@@ -22,7 +22,10 @@ export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
     majorUpdate: { codename: 'Mimiambol' },
     features: [
         { id: 'scenes', icon: Clapperboard },
+        { id: 'shinoLab', icon: FlaskConical },
         { id: 'newLook', icon: Shapes },
+        { id: 'gridRefresh', icon: LayoutGrid },
+        { id: 'dockedBar', icon: PanelBottom },
         { id: 'windowControls', icon: AppWindow },
         { id: 'styleOptions', icon: Palette },
         { id: 'moreDetails', icon: Sparkles },

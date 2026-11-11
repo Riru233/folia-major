@@ -4245,14 +4245,26 @@ export default {
       }
     },
     "v0_7_28": {
-      "intro": "Selamat datang di 0.7.28, Mimiambol Update—sebuah pembaruan besar. Versi ini menghadirkan adegan bioskop, ikon aplikasi baru, tombol jendela di kiri atau kanan, dan opsi baru untuk beberapa gaya lirik.",
+      "intro": "Selamat datang di 0.7.28, Mimiambol Update—sebuah pembaruan besar. Versi ini menghadirkan adegan bioskop dan Lab Shino, bilah pemutar bawah yang menempel, grid pustaka dengan kepala halaman baru, ikon aplikasi baru, tombol jendela di kiri atau kanan, dan opsi baru untuk beberapa gaya lirik.",
       "scenes": {
         "title": "Adegan: Bioskop (Beta)",
         "description": "Halaman pemutar bisa menjadi bioskop, dengan gaya lirik dan latar Anda di layarnya; seret untuk melihat sekeliling. Aktifkan di baris Adegan pada halaman Tampilan. Di desktop, Pelacakan suara membuat musik terdengar seperti diputar di dalam bioskop."
       },
+      "shinoLab": {
+        "title": "Lab Shino",
+        "description": "Pemutaran video kini ada di Pengaturan → Lab Shino, berdampingan dengan latar video bilibili; kedua sakelar utamanya mati secara bawaan. Nyalakan pemutaran video untuk melihat video bawaan lagu di halaman pemutar; nyalakan latar video bilibili maka pilihan latar bertambah opsi Video yang mencocokkan MV lagu, menerima BV yang diketik, menawarkan pilihan kualitas, dan pengatur selisih gambar/suara. Permintaan bilibili diblokir CORS di versi web, jadi bagian ini hanya ada di desktop."
+      },
       "newLook": {
         "title": "Ikon dan animasi memuat baru",
         "description": "Ikon aplikasi baru: huruf F dari empat balok. Layar pembuka kini berisi balok warna yang bergeser; saat ganti lagu dan memuat lirik muncul titik memuat yang sama, dan saat mulai ada tanda bahwa status masuk sedang diperiksa."
+      },
+      "gridRefresh": {
+        "title": "Tampilan grid baru",
+        "description": "Grid direktori di pustaka memakai kepala halaman baru: tombol kembali dan tombol panel berbagi satu baris kancing kaca, judul dan subjudul di sampingnya, gradasi di atas membuat teks tetap terbaca di atas kartu. Panel samping dan tombolnya memakai kaca cair."
+      },
+      "dockedBar": {
+        "title": "Bilah bawah: gaya menempel",
+        "description": "Selain kapsul kaca mengambang, bilah pemutar bisa menempel di tepi bawah jendela sebagai bilah selebar layar berisi sampul, info lagu, tombol transport, dan bilah kemajuan. Gaya menempel punya dua pilihan warna, Dreamcore dan Monet."
       },
       "windowControls": {
         "title": "Tombol jendela",

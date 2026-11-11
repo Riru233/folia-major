@@ -4212,14 +4212,26 @@ export default {
       }
     },
     "v0_7_28": {
-      "intro": "Chào mừng bạn đến với 0.7.28, Mimiambol Update—một bản cập nhật lớn. Phiên bản này thêm cảnh rạp chiếu phim, biểu tượng ứng dụng mới, nút cửa sổ đặt được bên trái hoặc phải, và tùy chọn mới cho một số kiểu lời bài hát.",
+      "intro": "Chào mừng bạn đến với 0.7.28, Mimiambol Update—một bản cập nhật lớn. Bản này thêm cảnh rạp chiếu phim và Phòng thí nghiệm Shino, thanh phát nhạc neo đáy, lưới thư viện với phần đầu trang mới, biểu tượng ứng dụng mới, nút cửa sổ đặt được bên trái hoặc phải, và tùy chọn mới cho một số kiểu lời bài hát.",
       "scenes": {
         "title": "Cảnh: Rạp chiếu phim (Beta)",
         "description": "Trang phát nhạc có thể biến thành rạp chiếu phim, kiểu lời bài hát và nền của bạn hiện trên màn chiếu; kéo để nhìn xung quanh. Bật ở hàng Cảnh trong trang Giao diện. Trên bản desktop, Dò tia âm thanh khiến nhạc nghe như đang phát trong rạp."
       },
+      "shinoLab": {
+        "title": "Phòng thí nghiệm Shino",
+        "description": "Phát video đã chuyển vào Cài đặt → Phòng thí nghiệm Shino, nằm cạnh nền video bilibili; cả hai công tắc chính đều tắt sẵn. Bật phát video để xem video đi kèm bài hát ngay trên trang phát nhạc; bật nền video bilibili thì danh sách nền có thêm mục Video, tự tìm MV của bài, cho nhập BV, chọn chất lượng và chỉnh lệch hình/tiếng. Bản web bị chặn CORS khi gọi bilibili nên phần này chỉ có trên desktop."
+      },
       "newLook": {
         "title": "Biểu tượng và hiệu ứng tải mới",
         "description": "Biểu tượng ứng dụng mới: chữ F ghép từ bốn khối. Màn hình khởi động giờ là các khối màu trượt; khi chuyển bài và tải lời bài hát đều hiện cùng các chấm tải, và lúc khởi động có báo đang kiểm tra trạng thái đăng nhập."
+      },
+      "gridRefresh": {
+        "title": "Lưới thư viện khoác áo mới",
+        "description": "Lưới thư mục trong thư viện có phần đầu trang mới: nút quay lại và nút bảng xếp chung một hàng kính tròn, tiêu đề và phụ đề ở bên cạnh, lớp chuyển sắc phía trên giúp chữ vẫn đọc rõ trên thẻ. Bảng bên và các nút này đều dùng kính lỏng."
+      },
+      "dockedBar": {
+        "title": "Thanh phát nhạc: kiểu neo đáy",
+        "description": "Ngoài viên nang kính nổi, thanh phát nhạc còn neo được vào đáy cửa sổ thành dải chạy hết chiều ngang, gồm ảnh bìa, thông tin bài hát, nút phát và thanh tiến trình. Kiểu neo đáy có hai bảng màu: Dreamcore và Monet."
       },
       "windowControls": {
         "title": "Nút cửa sổ",
