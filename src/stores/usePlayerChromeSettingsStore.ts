@@ -18,7 +18,7 @@ import {
     type PlayerControlSlotActionId,
 } from '../types/playerControlSlots';
 import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX } from '../utils/playerBottomBarLayout';
-import { getStoredBoolean, setStoredBoolean } from './storagePrimitives';
+import { getStoredBoolean, getStoredString, setStoredBoolean, setStoredString } from './storagePrimitives';
 import { setStatusMessage } from './useStatusMessageStore';
 
 const PLAYER_BOTTOM_BAR_OFFSET_STORAGE_KEY = 'player_bottom_bar_offset';
@@ -26,6 +26,7 @@ const PLAYER_CONTROL_SLOT_PRIMARY_STORAGE_KEY = 'player_control_slot_primary';
 const PLAYER_CONTROL_SLOT_SECONDARY_STORAGE_KEY = 'player_control_slot_secondary';
 const PLAYER_BAR_PINNED_STORAGE_KEY = 'player_bar_pinned';
 const PLAYER_BAR_STYLE_STORAGE_KEY = 'player_bar_style';
+const DOCKED_BAR_APPEARANCE_STORAGE_KEY = 'docked_player_bar_appearance';
 
 /**
  * 底部播放条的两套外观：
@@ -36,12 +37,28 @@ export type PlayerBarStyle = 'floating' | 'docked';
 
 const PLAYER_BAR_STYLES: readonly PlayerBarStyle[] = ['floating', 'docked'];
 
+/**
+ * 停靠控制栏的两套配色（布局、图标、位置都一样，只有颜色不同）：
+ * - `dreamcore`：原来那套——底部一层深色渐变、蓝色玻璃播放键，浅色与深色沿用原来的颜色；
+ * - `monet`：底部同样是一层往上淡到透明的渐变，只是颜色换成莫奈的：日间底边暖白、往上淡紫，夜间底边黑、往上深靛紫。
+ */
+export type DockedBarAppearance = 'dreamcore' | 'monet';
+
+const DOCKED_BAR_APPEARANCES: readonly DockedBarAppearance[] = ['dreamcore', 'monet'];
+
 const readStoredPlayerBarStyle = (): PlayerBarStyle => {
     if (typeof window === 'undefined') {
         return 'floating';
     }
     const saved = localStorage.getItem(PLAYER_BAR_STYLE_STORAGE_KEY);
     return PLAYER_BAR_STYLES.includes(saved as PlayerBarStyle) ? saved as PlayerBarStyle : 'floating';
+};
+
+const readStoredDockedBarAppearance = (): DockedBarAppearance => {
+    const saved = getStoredString(DOCKED_BAR_APPEARANCE_STORAGE_KEY, 'dreamcore');
+    return DOCKED_BAR_APPEARANCES.includes(saved as DockedBarAppearance)
+        ? saved as DockedBarAppearance
+        : 'dreamcore';
 };
 
 /** Reads the persisted lower-bounded offset; the viewport-dependent upper bound is applied by consumers. */
@@ -77,6 +94,8 @@ export type PlayerChromeSettingsState = {
     playerBarPinned: boolean;
     /** 底部播放条的外观：浮动胶囊还是贴底的停靠栏。 */
     playerBarStyle: PlayerBarStyle;
+    /** 停靠栏的配色；浮动胶囊不受它影响。 */
+    dockedBarAppearance: DockedBarAppearance;
     playerControlSlotPrimary: PlayerControlSlotActionId;
     playerControlSlotSecondary: PlayerControlSlotActionId;
     hidePlayerRightPanelButton: boolean;
@@ -99,6 +118,7 @@ export type PlayerChromeSettingsState = {
     handleSetPlayerBottomBarOffset: (offsetPx: number) => void;
     handleTogglePlayerBarPinned: (enable: boolean) => void;
     handleSetPlayerBarStyle: (style: PlayerBarStyle) => void;
+    handleSetDockedBarAppearance: (appearance: DockedBarAppearance) => void;
     handleSetPlayerControlSlot: (slot: 'primary' | 'secondary', actionId: PlayerControlSlotActionId) => void;
     handleToggleHidePlayerRightPanelButton: (enable: boolean) => void;
     handleToggleAlwaysShowPlayerBackButton: (enable: boolean) => void;
@@ -120,6 +140,7 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
     playerBottomBarOffset: readStoredPlayerBottomBarOffset(),
     playerBarPinned: getStoredBoolean(PLAYER_BAR_PINNED_STORAGE_KEY, false),
     playerBarStyle: readStoredPlayerBarStyle(),
+    dockedBarAppearance: readStoredDockedBarAppearance(),
     playerControlSlotPrimary: readStoredPlayerControlSlot(
         PLAYER_CONTROL_SLOT_PRIMARY_STORAGE_KEY,
         DEFAULT_PLAYER_CONTROL_SLOT_PRIMARY,
@@ -210,6 +231,17 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
         setStatusMessage({
             type: 'info',
             text: i18n.t('notifications.' + (style === 'docked' ? 'playerBarStyleDocked' : 'playerBarStyleFloating')),
+        });
+    },
+    handleSetDockedBarAppearance: (appearance) => {
+        if (!DOCKED_BAR_APPEARANCES.includes(appearance) || appearance === get().dockedBarAppearance) {
+            return;
+        }
+        setStoredString(DOCKED_BAR_APPEARANCE_STORAGE_KEY, appearance);
+        set({ dockedBarAppearance: appearance });
+        setStatusMessage({
+            type: 'info',
+            text: i18n.t('notifications.' + (appearance === 'monet' ? 'dockedBarAppearanceMonet' : 'dockedBarAppearanceDreamcore')),
         });
     },
     handleSetPlayerControlSlot: (slot, actionId) => {
@@ -309,6 +341,7 @@ export const selectPlayerChromeSettingsSnapshot = (state: PlayerChromeSettingsSt
     playerBottomBarOffset: state.playerBottomBarOffset,
     playerBarPinned: state.playerBarPinned,
     playerBarStyle: state.playerBarStyle,
+    dockedBarAppearance: state.dockedBarAppearance,
     playerControlSlotPrimary: state.playerControlSlotPrimary,
     playerControlSlotSecondary: state.playerControlSlotSecondary,
     hidePlayerRightPanelButton: state.hidePlayerRightPanelButton,
@@ -328,6 +361,7 @@ export const selectPlayerChromeSettingsSnapshot = (state: PlayerChromeSettingsSt
     handleSetPlayerBottomBarOffset: state.handleSetPlayerBottomBarOffset,
     handleTogglePlayerBarPinned: state.handleTogglePlayerBarPinned,
     handleSetPlayerBarStyle: state.handleSetPlayerBarStyle,
+    handleSetDockedBarAppearance: state.handleSetDockedBarAppearance,
     handleSetPlayerControlSlot: state.handleSetPlayerControlSlot,
     handleToggleHidePlayerRightPanelButton: state.handleToggleHidePlayerRightPanelButton,
     handleToggleAlwaysShowPlayerBackButton: state.handleToggleAlwaysShowPlayerBackButton,

@@ -18,7 +18,7 @@ import { useStageSettingsStore } from '../../../../stores/useStageSettingsStore'
 import { useTypographySettingsStore } from '../../../../stores/useTypographySettingsStore';
 import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX, resolvePlayerBottomBarMaxOffset } from '../../../../utils/playerBottomBarLayout';
 import { Button, FoldedGroup, Group, PictureChoice, Reveal, Row, Segmented, Select, Slider, Toggle, Value, option, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
-import { EntryViewPicture } from './pictures';
+import { DockedBarPicture, EntryViewPicture } from './pictures';
 import { useSettingsPage } from './settingsPageContext';
 
 // src/components/modal/settings/pages/PlayerPage.tsx
@@ -44,6 +44,7 @@ const O = {
     autoHideCursor: option(BAR, 'autoHideCursorWithPlayerChrome', 'options.autoHideCursorWithPlayerChrome'),
     idleCursorHide: option(BAR, 'hideCursorWhenIdle', 'options.hideCursorWhenIdle'),
     barStyle: option(BAR, 'playerBarStyle', 'options.playerBarStyle'),
+    barAppearance: option(BAR, 'dockedBarAppearance', 'options.playerBarAppearance'),
     barOffset: option(BAR, 'playerBottomBarOffset', 'options.playerBottomBarOffset'),
     barReposition: option(BAR, 'playerBottomBarReposition', 'options.playerBottomBarReposition'),
     controlSlots: option(BAR, 'playerControlSlots', 'options.playerControlSlots'),
@@ -92,6 +93,7 @@ const PlayerPage: React.FC = () => {
         autoHideCursor: state.autoHideCursorWithPlayerChrome,
         hideCursorWhenIdle: state.hideCursorWhenIdle,
         barStyle: state.playerBarStyle,
+        barAppearance: state.dockedBarAppearance,
         barOffset: state.playerBottomBarOffset,
         slotPrimary: state.playerControlSlotPrimary,
         slotSecondary: state.playerControlSlotSecondary,
@@ -105,6 +107,7 @@ const PlayerPage: React.FC = () => {
         setAutoHideCursor: state.handleToggleAutoHideCursorWithPlayerChrome,
         setHideCursorWhenIdle: state.handleToggleHideCursorWhenIdle,
         setBarStyle: state.handleSetPlayerBarStyle,
+        setBarAppearance: state.handleSetDockedBarAppearance,
         setBarOffset: state.handleSetPlayerBottomBarOffset,
         setSlot: state.handleSetPlayerControlSlot,
         setHideProgressBar: state.handleToggleHidePlayerProgressBar,
@@ -211,6 +214,27 @@ const PlayerPage: React.FC = () => {
                         onChange={next => chrome.setBarStyle(next as 'floating' | 'docked')}
                     />
                 </Row>
+                {/* 配色只属于停靠栏：浮动胶囊有自己的玻璃外观。图标与布局两套一样，只有颜色不同。 */}
+                <Reveal when={chrome.barStyle === 'docked'}>
+                    <Row option={O.barAppearance} note={t('options.playerBarAppearanceDesc')}>
+                        <PictureChoice
+                            value={chrome.barAppearance}
+                            options={[
+                                {
+                                    value: 'dreamcore',
+                                    label: t('options.playerBarAppearance_dreamcore'),
+                                    picture: <DockedBarPicture appearance="dreamcore" />,
+                                },
+                                {
+                                    value: 'monet',
+                                    label: t('options.playerBarAppearance_monet'),
+                                    picture: <DockedBarPicture appearance="monet" />,
+                                },
+                            ]}
+                            onChange={next => chrome.setBarAppearance(next as 'dreamcore' | 'monet')}
+                        />
+                    </Row>
+                </Reveal>
                 <Row option={O.autoHide} note={t('options.autoHidePlayerChromeDesc')}>
                     <Toggle checked={chrome.autoHide} onChange={chrome.setAutoHide} />
                 </Row>

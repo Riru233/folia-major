@@ -39,6 +39,7 @@ export const APPEARANCE_DESTINATIONS = {
     'always_show_track_switch_buttons': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'auto_hide_cursor_with_player_chrome': { config: null, why: '鼠标指针，OBS 页面没有（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'auto_hide_player_chrome': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
+    'docked_player_bar_appearance': { config: null, why: '停靠控制栏的配色，OBS 页面没有这条播放条（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'enable_player_page_native_blur': { config: null, why: '主窗口的系统材质，OBS 页面不用（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'hide_cursor_when_idle': { config: null, why: '鼠标指针，OBS 页面没有（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },
     'hide_fullscreen_button': { config: null, why: '播放页控件，OBS 页面不显示（isPlayerChromeHidden）（用户 2026-11-08 定：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的）' },

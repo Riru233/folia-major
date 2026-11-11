@@ -3,6 +3,7 @@ import { ImagePlus } from 'lucide-react';
 import { computeHexCardFrame } from '../../../../utils/hexCardFalloff';
 import type { LiquidGlassPresetId } from '../../../../shinoinject/liquidglass';
 import type { ScratchpadHandleStyle } from '../../../../stores/useScratchpadSettingsStore';
+import type { DockedBarAppearance } from '../../../../stores/usePlayerChromeSettingsStore';
 import ScratchpadHandleRest from '../../../app/scratchpad/ScratchpadHandleRest';
 import { SAMPLE_COVERS } from '../kit';
 
@@ -47,6 +48,48 @@ export const HomeCardStylePicture: React.FC<{ style: 'image' | 'card' }> = ({ st
         })}
     </span>
 );
+
+/**
+ * 停靠控制栏的两套配色：同一套布局和图标，只有颜色不同。
+ * dreamcore 是深色渐变底配蓝色播放键；monet 是底边暖白、往上淡成紫的一层渐变。
+ */
+export const DockedBarPicture: React.FC<{ appearance: DockedBarAppearance }> = ({ appearance }) => {
+    const monet = appearance === 'monet';
+    const textLine = monet ? 'rgba(60,50,90,0.75)' : 'rgba(255,255,255,0.85)';
+    const faintLine = monet ? 'rgba(60,50,90,0.32)' : 'rgba(255,255,255,0.45)';
+    return (
+        <span className="flex h-full w-full items-end justify-center pb-2.5">
+            <span
+                className="flex h-8 w-[82px] items-center gap-1.5 rounded-[5px] px-1.5"
+                style={monet
+                    ? { background: 'linear-gradient(to top, rgba(252,246,236,0.98) 0%, rgba(243,232,238,0.65) 42%, rgba(232,228,246,0) 100%)' }
+                    : { background: 'linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0.04))' }}
+            >
+                <span
+                    className="h-4 w-4 shrink-0 rounded-[2px]"
+                    style={{ background: monet ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.18)' }}
+                />
+                <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                    <span className="h-[3px] w-3/4 rounded-full" style={{ background: textLine }} />
+                    <span className="h-[2px] w-1/2 rounded-full" style={{ background: faintLine }} />
+                </span>
+                <span
+                    className="h-3.5 w-3.5 shrink-0 rounded-full"
+                    style={{
+                        background: monet
+                            ? 'linear-gradient(to top, rgba(252,246,236,0.95), rgba(252,246,236,0))'
+                            : 'linear-gradient(to bottom,#9cafd7,#47cbfa)',
+                        boxShadow: monet ? 'inset 0 0 0 1px rgba(255,255,255,0.7)' : undefined,
+                    }}
+                />
+                <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: monet ? 'rgba(60,50,90,0.28)' : 'rgba(255,255,255,0.35)' }}
+                />
+            </span>
+        </span>
+    );
+};
 
 /** Twelve posters on a five by three wall; the second one is the large poster in focus. */
 const WALL_TILES = Array.from({ length: 12 }, (_, index) => SAMPLE_COVERS[(index * 3 + 1) % SAMPLE_COVERS.length]);
