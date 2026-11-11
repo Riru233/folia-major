@@ -463,6 +463,33 @@ describe('localMusicService', () => {
         ]);
     });
 
+    // 关掉「视频播放」实验后重扫，不能把已入库的视频记录当成「文件已不存在」删掉：
+    // 快照分类不看开关，差集才留得住这些记录。
+    it('keeps an imported video record when the video experiment is off and the folder is rescanned', async () => {
+        vi.stubGlobal('localStorage', {
+            getItem: (key: string) => (key === 'shino_lab_video_playback' ? 'false' : null),
+            setItem: () => {},
+        });
+        const handle = new FakeDirectoryHandle('Music', [
+            new FakeFileHandle('clip.mp4', { type: 'video/mp4' }),
+        ]);
+        vi.mocked(getDirHandles).mockResolvedValue({ Music: handle as unknown as FileSystemDirectoryHandle });
+        vi.mocked(getLocalSongs).mockResolvedValue([createSong({
+            id: 'video-1',
+            fileName: 'clip.mp4',
+            filePath: 'Music/clip.mp4',
+            folderName: 'Music',
+            mediaKind: 'video',
+        })]);
+
+        await resyncFolder('Music');
+
+        expect(deleteLocalSong).not.toHaveBeenCalled();
+        // 关着实验也不新建视频记录：没有一条被持久化的记录是视频。
+        const persisted = vi.mocked(saveLocalSongs).mock.calls.flatMap(call => call[0]);
+        expect(persisted.filter(song => song.mediaKind === 'video')).toEqual([]);
+    });
+
     it('routes a child-folder resync through the imported root handle', async () => {
         const persistedHandle = createLibraryHandle();
         vi.mocked(getDirHandles).mockResolvedValue({ Music: persistedHandle as unknown as FileSystemDirectoryHandle });

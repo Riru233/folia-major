@@ -32,7 +32,7 @@ import { readLyricFile } from '../utils/lyrics/lyricFileDecoding';
 import { isLocalFolderIgnored, normalizeLocalFolderPath, runLocalFolderMutation, setLocalFolderIgnored } from './localLibraryFolderIgnore';
 import { collectLocalFolderSongIds, normalizeLocalFolderPath as normalizeLocalFolderRecordPath } from '../utils/localFolderPaths';
 import { isImportableVideoFileName, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
-import { isLabVideoPlaybackEnabled } from '../shinoinject/lab/labVideoGate';
+import { isGatedVideoRecord, isLabVideoPlaybackEnabled, withoutGatedVideoSongs } from '../shinoinject/lab/labVideoGate';
 
 
 type EmbeddedMetadata = EmbeddedMetadataResult;
@@ -307,6 +307,20 @@ function isImportableMediaFileName(fileName: string): boolean {
         });
 }
 
+/**
+ * 快照按「媒体文件」记下的容器，与实验开关无关。
+ * 必须比 isImportableMediaFileName 宽：快照里漏掉视频文件，差集就会把已入库的视频记录当成
+ * 「文件已不存在」删掉，而关掉实验本身不该动库里的记录。新视频要不要建记录，由导入阶段的
+ * buildImportedSong 按门控决定。
+ */
+function isSnapshotMediaFileName(fileName: string): boolean {
+    return isImportableMediaFileName(fileName)
+        || isImportableVideoFileName(fileName, {
+            videoPlaybackEnabled: true,
+            canTranscodeFallback: canImportElectronFallbackAudio(),
+        });
+}
+
 function getFolderCoverPriority(fileName: string): number {
     return PREFERRED_FOLDER_COVER_FILES.indexOf(fileName.toLowerCase());
 }
@@ -373,7 +387,7 @@ function getSnapshotFileKind(fileName: string): LocalLibrarySnapshotFile['kind']
     if (getFolderCoverPriority(lowerName) !== -1) {
         return 'cover';
     }
-    if (isImportableMediaFileName(fileName)) {
+    if (isSnapshotMediaFileName(fileName)) {
         return 'audio';
     }
     return 'other';
@@ -712,7 +726,11 @@ async function collectImportDiffPlan(
 
     const changedEntries: FileEntryForImport[] = [];
     const reusedSongs: LocalSong[] = [];
-    const removedSongs = existingSongs.filter(song => !currentAudioPaths.has(song.filePath));
+    // 视频记录在实验关着时也不删：快照侧已把视频容器记作媒体文件（isSnapshotMediaFileName），
+    // 这里再兜一层，防止旧快照或将来分类改动让关开关变成一次隐形的删库。
+    const removedSongs = existingSongs.filter(song => (
+        !currentAudioPaths.has(song.filePath) && !isGatedVideoRecord(song)
+    ));
     const allRelevantFiles = Array.from(currentFiles.values()).sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
     for (const snapshotFile of allRelevantFiles) {
@@ -1937,6 +1955,14 @@ export async function clearFolderIgnore(folderName: string): Promise<void> {
 export function deleteFolderSongs(folderName: string): Promise<void> {
     return runLocalFolderMutation(() => deleteFolderContents(folderName));
 }
+
+/**
+ * 曲库列表、队列和会话恢复用的本地歌曲：受「视频播放」实验门控，关掉时不含视频记录。
+ * 记录本身不删——重新打开开关就立刻回来；维护路径（导入差集、重扫、删除、歌单修复）仍读完整表
+ * （getLocalSongs），并且快照分类不看开关（isSnapshotMediaFileName），否则关着开关重扫会把
+ * 视频记录当成「文件已不存在」删掉。
+ */
+export const getVisibleLocalSongs = async (): Promise<LocalSong[]> => withoutGatedVideoSongs(await getLocalSongs());
 
 async function deleteFolderContents(folderName: string): Promise<void> {
     folderName = normalizeLocalFolderPath(folderName);

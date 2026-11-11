@@ -1,5 +1,6 @@
 import { getLocalSong } from '../../../../services/db';
 import type { HifiTrackSource } from '../../../../services/hifi/hifiPlayback';
+import { isGatedVideoRecord } from '../../../../shinoinject/lab/labVideoGate';
 import { ensureLocalSongCoverAsset, getAudioFromLocalSong, getFileFromLocalSong } from '../../../../services/localMusicService';
 import { getNavidromeConfig, navidromeApi } from '../../../../services/navidromeService';
 import { loadOnlineSongAudioSource, type LoadOnlineAudioSourceOptions } from '../../../../services/onlinePlayback';
@@ -27,11 +28,18 @@ import {
 // URL that was there before.
 
 /**
+ * A local video while the video experiment is off reads as a file that cannot be opened.
+ * `isGatedVideoRecord` is that check: the library hides the record and the queue steps over it
+ * (playableSong), so this is the last line — a play still holding the record gets no source.
+ */
+
+/**
  * A local file: its audio behind a fresh blob URL, and its library record with the cover asset
  * made if it had none. null when the file cannot be read.
  * The caller owns `blobUrl`: it plays it, or hands it to `retireBlobUrl`.
  */
 export const loadLocalSongAudio = async (localSong: LocalSong) => {
+    if (isGatedVideoRecord(localSong)) return null;
     const blobUrl = await getAudioFromLocalSong(localSong);
     if (!blobUrl) return null;
     const preparedSong = await ensureLocalSongCoverAsset(localSong);
@@ -51,9 +59,10 @@ export const loadLocalSongAudio = async (localSong: LocalSong) => {
 /**
  * A local file for the HiFi route: the file itself, which mpv reads through the main process (it
  * cannot open a blob URL, so none is made), and its library record with the cover asset made if it
- * had none. null when the file cannot be read.
+ * had none. null when the file cannot be read, or when the video experiment is off and it is one.
  */
 export const loadLocalSongHifiSource = async (localSong: LocalSong) => {
+    if (isGatedVideoRecord(localSong)) return null;
     const file = await getFileFromLocalSong(localSong);
     if (!file) return null;
     const preparedSong = await ensureLocalSongCoverAsset(localSong);
@@ -70,8 +79,9 @@ export const loadLocalSongHifiSource = async (localSong: LocalSong) => {
 export const loadQueuedSongHifiSource = async (song: SongResult): Promise<HifiTrackSource | null> => {
     if (isLocalPlaybackSong(song)) {
         const localSong = await getLocalSong(song.localRef.songId);
-        const file = localSong ? await getFileFromLocalSong(localSong) : null;
-        return localSong && file ? { kind: 'local', localSong, file } : null;
+        if (!localSong || isGatedVideoRecord(localSong)) return null;
+        const file = await getFileFromLocalSong(localSong);
+        return file ? { kind: 'local', localSong, file } : null;
     }
     const carrier = isNavidromePlaybackSong(song) ? resolveNavidromePlaybackCarrier(song) : null;
     const config = carrier ? getNavidromeConfig() : null;

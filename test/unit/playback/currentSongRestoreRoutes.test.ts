@@ -85,6 +85,9 @@ vi.mock('@/services/coverCache', () => ({
     loadCachedOrFetchCover: async () => { env.reached('cover fetch'); return null; },
 }));
 vi.mock('@/services/localMusicService', () => ({
+    // The library list and the restore read records through this one. It notes the read the same way
+    // the library read below does: a sign-out scheduled "while the library is read" hangs off it.
+    getVisibleLocalSongs: async () => { env.reached('library'); return env.songs; },
     getAudioFromLocalSong: async (song: { id: string }) => {
         env.note(`wait local file ${song.id}`);
         return env.unreadable.has(song.id) ? null : `blob:${song.id}`;

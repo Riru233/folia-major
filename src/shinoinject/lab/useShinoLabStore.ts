@@ -4,7 +4,7 @@ import { DEFAULT_VISUALIZER_BACKGROUND_MODE } from '../../types/visualizerModes'
 import { getStoredBoolean, setStoredBoolean } from '../../stores/storagePrimitives';
 import { setStatusMessage } from '../../stores/useStatusMessageStore';
 import { useVisualizerSettingsStore } from '../../stores/useVisualizerSettingsStore';
-import { isLabVideoPlaybackEnabled, LAB_VIDEO_PLAYBACK_KEY } from './labVideoGate';
+import { isLabVideoPlaybackEnabled, LAB_VIDEO_PLAYBACK_KEY, notifyLabVideoGateChanged } from './labVideoGate';
 
 // src/shinoinject/lab/useShinoLabStore.ts
 // 「Shino 实验室」的两个实验：视频播放（曲目自带的画面、设置里那条视频层），以及把 bilibili 上
@@ -53,6 +53,8 @@ export const useShinoLabStore = create<ShinoLabState>((set, get) => ({
     handleToggleVideoPlayback: (enabled) => {
         setStoredBoolean(LAB_VIDEO_PLAYBACK_KEY, enabled);
         set({ videoPlaybackEnabled: enabled });
+        // 曲库列表按新状态重读：关掉后视频记录不再显示（记录还在），打开后立刻回到列表。
+        notifyLabVideoGateChanged();
         // 视频播放关掉后，bilibili 视频背景也失效（它以视频播放为前置）：停在「视频」上的界面会停在一个
         // 选不了也画不出的背景，退回默认背景。
         if (!enabled) {
