@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { LocalSongFolderSortDirection, LocalSongFolderSortField } from '../../../utils/localSongSorting';
 
 // src/library/core/directory/useLocalTrackSortStore.ts
-// 本地文件夹 / 全部歌曲的排序选择。原先是 GridView 的组件状态；换 renderer 也必须是同一个顺序，
+// 本地文件夹 / 全部媒体的排序选择。原先是 GridView 的组件状态；换 renderer 也必须是同一个顺序，
 // 所以提到 store。两个 localStorage 键与取值校验原样保留，已有的选择不会丢。
 
 const LOCAL_TRACK_SORT_FIELD_STORAGE_KEY = 'local_track_sort_field';

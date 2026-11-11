@@ -9,6 +9,7 @@ import * as graphics from './GraphicsPage';
 import * as home from './HomePage';
 import * as integration from './IntegrationPage';
 import * as interaction from './InteractionPage';
+import * as lab from '../../../../shinoinject/lab/LabPage';
 import * as lyrics from './LyricsPage';
 import * as mods from './ModsPage';
 import * as playback from './PlaybackPage';
@@ -34,6 +35,7 @@ const PAGE_MODULES: Record<SettingsSectionId, PageModule> = {
     storage,
     desktop,
     graphics,
+    lab,
     mods,
     developer,
 };

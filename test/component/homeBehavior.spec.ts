@@ -410,7 +410,7 @@ test.describe(`[${suite}] local tab`, () => {
         const folders = await items(page);
         expect(folders.map(item => item.id)).toEqual(HOME_LOCAL_FOLDER_IDS);
         expect(folders.every(item => item.type === 'folder' && !item.hideable)).toBe(true);
-        // 「全部歌曲」作为虚拟条目交给目录（P3.1 起滑条条目保留 isVirtual，删除守卫按它判断）。
+        // 「全部媒体」作为虚拟条目交给目录（P3.1 起滑条条目保留 isVirtual，删除守卫按它判断）。
         expect(folders.filter(item => item.isVirtual).map(item => item.id)).toEqual([HOME_ALL_SONGS_ID]);
         expect(folders[0].trackIds).toEqual(homeLocalSongIds(HOME_LOCAL_SONGS.map(song => song.index)));
         for (const folder of ['Extra', 'Music/Alpha', 'Music/Alpha/Live', 'Music/Beta']) {
@@ -552,7 +552,7 @@ test.describe(`[${suite}] directory filter`, () => {
         await showList(page, 'local');
         await showMap(page);
         expect(await mapIds(page)).toEqual(HOME_LOCAL_FOLDER_IDS);
-        // 虚拟的「全部歌曲」不是文件夹：地图上没有路径（不按路径匹配、不进目录树的路径规则）。
+        // 虚拟的「全部媒体」不是文件夹：地图上没有路径（不按路径匹配、不进目录树的路径规则）。
         const allSongs = (await mapItems(page)).find(item => item.id === HOME_ALL_SONGS_ID);
         expect(allSongs?.isVirtual).toBe(true);
         expect(allSongs?.path).toBeUndefined();
@@ -1100,7 +1100,7 @@ test.describe('[grid-only] directory interactions', () => {
         await mountHome(mount, page);
         await showList(page, 'local');
         await showMap(page);
-        await page.locator('button[class*="group/grid-title"]').click();
+        await page.locator('button[data-testid="grid-panel-toggle"]').first().click();
         await expect.poll(async () => (await batchScope(page))?.itemIds).toEqual([]);
 
         await page.locator('button[role="checkbox"][title="Music/Beta"]').click();
@@ -1144,7 +1144,7 @@ test.describe('[grid-only] directory interactions', () => {
         await mountHome(mount, page);
         await showList(page, 'local');
         await showMap(page);
-        await page.locator('button[class*="group/grid-title"]').click();
+        await page.locator('button[data-testid="grid-panel-toggle"]').first().click();
         await expect.poll(async () => (await batchScope(page))?.itemIds).toEqual([]);
         await page.locator('button[role="checkbox"][title="Music/Beta"]').click();
         await page.locator('[data-ponder-page-scope="local-grid-map-page"] .theme-polaroid-card', { hasText: 'Extra' }).dispatchEvent('click');

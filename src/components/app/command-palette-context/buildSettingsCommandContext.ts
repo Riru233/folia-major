@@ -16,8 +16,7 @@ import { useGridViewSettingsStore } from '../../../stores/useGridViewSettingsSto
 import { useLatticeSettingsStore } from '../../../stores/useLatticeSettingsStore';
 import { useMotionSettingsStore } from '../../../stores/useMotionSettingsStore';
 import { usePlaybackEntryViewStore } from '../../../stores/usePlaybackEntryViewStore';
-import { hasLibrarySuiteChoice } from '../../../library/registry';
-import { chooseLibrarySuite, getActiveLibrarySuiteId, listLibrarySuiteOptions } from '../../../library/app/librarySuiteChoice';
+import { chooseLibrarySuite, getActiveLibrarySuiteId, hasSelectableLibrarySuite, listLibrarySuiteOptions } from '../../../library/app/librarySuiteChoice';
 import { isBravaisLibraryActive } from '../../../library/app/bravaisLibraryActive';
 import { isGridLibraryActive } from '../../../library/app/gridLibraryActive';
 import { useLibraryWallLookStore } from '../../../stores/useLibraryWallLookStore';
@@ -93,7 +92,7 @@ export const buildSettingsCommandContext = (
         setPlaybackEntryView: entryView.setPlaybackEntryView,
         librarySuiteOptions: listLibrarySuiteOptions,
         activeLibrarySuite: getActiveLibrarySuiteId,
-        canChooseLibrarySuite: hasLibrarySuiteChoice,
+        canChooseLibrarySuite: hasSelectableLibrarySuite,
         chooseLibrarySuite,
         // bravais 的透光偏好：与设置分区同一个谓词；值与 setter 都现读 store（面板开着时也会变）。
         isLibraryWallLookAvailable: isBravaisLibraryActive,

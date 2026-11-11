@@ -12,7 +12,7 @@ import {
 
 // test/unit/library/core/localHomeModel.test.ts
 // 本地页签的模型（原 localGrid3DModel 与 LocalGrid3DView 里的 section / 卡片 / 动作）：注入的封面解析、
-// 虚拟「全部歌曲」、section 定义与 activeRow 映射、卡片带歌曲 id 与 isVirtual、批量 section、三个导入动作的状态。
+// 虚拟「全部媒体」、section 定义与 activeRow 映射、卡片带歌曲 id 与 isVirtual、批量 section、三个导入动作的状态。
 
 const t = ((key: string) => key) as unknown as TFunction;
 const song = (id: string, folderName: string, patch: Partial<LocalSong> = {}): LocalSong => ({

@@ -2,7 +2,8 @@ import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtT
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls } from 'framer-motion';
 import { Check, ChevronLeft, Disc, Eye, EyeOff, ListFilter, X } from 'lucide-react';
-import GridPanelToggleIndicator from '../shared/GridPanelToggleIndicator';
+import GridPanelToggleButton from '../shared/GridPanelToggleButton';
+import { gridGlassCircleStyle } from '../shared/gridGlassChrome';
 import { useTranslation } from 'react-i18next';
 import { Theme } from '../../../../types';
 import { useFoliaHexViewport } from '../shared/useFoliaHexViewport';
@@ -72,6 +73,8 @@ interface GridMapProps {
     onTogglePlaylistHidden?: (item: GridMapItem) => void;
     batchConfig?: GridMapBatchConfig;
     ponderPageScope?: 'grid-page' | 'local-grid-map-page';
+    /** 本地文件夹卡片的右键菜单（删歌单 / 打开所在位置）；只有本地首页装配。 */
+    onFolderContextMenu?: (event: React.MouseEvent, folderPath: string) => void;
 }
 
 const NO_HIDDEN_IDS: ReadonlySet<string> = new Set();
@@ -95,6 +98,7 @@ const MapCard = React.memo<{
     isBatchMode: boolean;
     isBatchSelected: boolean;
     onTogglePlaylistHidden?: () => void;
+    onContextMenu?: (event: React.MouseEvent) => void;
     cardWidth: number;
     cardHeight: number;
 }>(
@@ -107,12 +111,13 @@ const MapCard = React.memo<{
         isBatchMode,
         isBatchSelected,
         onTogglePlaylistHidden,
+        onContextMenu,
         cardWidth,
         cardHeight,
     }) => {
         const { t } = useTranslation();
         const isPlaylistSelectionDisabled = isPlaylistEditMode && isHideableDirectoryItem(item);
-        // 文件夹卡（含虚拟的「全部歌曲」）的标题、描述行数、「本目录 N 首」都按 folderLabel 判断，见 gridMapCardText。
+        // 文件夹卡（含虚拟的「全部媒体」）的标题、描述行数、「本目录 N 首」都按 folderLabel 判断，见 gridMapCardText。
         const folderLabel = resolveGridMapFolderLabel(item);
         const displayName = resolveGridMapCardTitle(item);
 
@@ -129,6 +134,12 @@ const MapCard = React.memo<{
                 onClick={(e) => {
                     e.stopPropagation();
                     if (!isPlaylistSelectionDisabled) onSelect();
+                }}
+                onContextMenu={(event) => {
+                    if (!onContextMenu) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onContextMenu(event);
                 }}
             >
                 {/* Square Polaroid Photo Area */}
@@ -234,6 +245,8 @@ const MapCard = React.memo<{
             prev.item.summary === next.item.summary &&
             prev.item.trackCount === next.item.trackCount &&
             prev.item.type === next.item.type &&
+            prev.item.path === next.item.path &&
+            prev.item.isVirtual === next.item.isVirtual &&
             prev.isDaylight === next.isDaylight &&
             prev.isPlaylistEditMode === next.isPlaylistEditMode &&
             prev.isHidden === next.isHidden &&
@@ -242,7 +255,8 @@ const MapCard = React.memo<{
             prev.onTogglePlaylistHidden === next.onTogglePlaylistHidden &&
             prev.cardWidth === next.cardWidth &&
             prev.cardHeight === next.cardHeight &&
-            prev.onSelect === next.onSelect
+            prev.onSelect === next.onSelect &&
+            prev.onContextMenu === next.onContextMenu
         );
     }
 );
@@ -264,10 +278,13 @@ export const GridMap: React.FC<GridMapProps> = ({
     onTogglePlaylistHidden,
     batchConfig,
     ponderPageScope = 'grid-page',
+    onFolderContextMenu,
 }) => {
     const { t } = useTranslation();
     const lowerBackButton = useWindowButtonsAtTopLeft();
     const bottomBarPanelBottomPx = useSidePanelBottomPx();
+    // 地图底色（页头渐变与根节点共用一套值，换色只改这里）。
+    const mapBackgroundColor = isDaylight ? 'rgba(250, 249, 246, 0.95)' : 'rgba(9, 9, 11, 0.95)';
     const containerRef = useRef<HTMLDivElement>(null);
     const dragControls = useDragControls();
     const [focusedIndex, setFocusedIndex] = useState(0);
@@ -655,6 +672,7 @@ export const GridMap: React.FC<GridMapProps> = ({
 
     const cardWrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+    // 批量选择 / 隐藏编辑时不给卡片挂右键菜单：那时弹「删除整张歌单」会误删到批选之外的范围。
     const memoizedCards = useMemo(() => {
         return renderedIndexes.map((idx) => {
             const item = displayItems[idx];
@@ -697,6 +715,10 @@ export const GridMap: React.FC<GridMapProps> = ({
                             : undefined}
                         cardWidth={layoutConfig.cardWidth}
                         cardHeight={layoutConfig.cardHeight}
+                        onContextMenu={onFolderContextMenu && !(batchConfig && showCutInPanel) && !isPlaylistEditMode
+                            && item.type === 'folder' && item.path && !item.isVirtual
+                            ? (event) => onFolderContextMenu(event, String(item.path))
+                            : undefined}
                         onSelect={() => {
                             // A drag may still emit a click on the card; suppress it before any batch toggle.
                             if (suppressSelectionRef.current) return;
@@ -723,6 +745,7 @@ export const GridMap: React.FC<GridMapProps> = ({
         selectedBatchItemIds,
         toggleBatchItemSelected,
         onTogglePlaylistHidden,
+        onFolderContextMenu,
         layoutConfig.cardWidth,
         layoutConfig.cardHeight,
         layoutConfig.maxDistance,
@@ -987,70 +1010,52 @@ export const GridMap: React.FC<GridMapProps> = ({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] overflow-hidden select-none"
             style={{
-                backgroundColor: isDaylight ? 'rgba(250, 249, 246, 0.95)' : 'rgba(9, 9, 11, 0.95)',
+                backgroundColor: mapBackgroundColor,
                 color: 'var(--text-primary)',
                 backdropFilter: 'blur(24px)'
             }}
         >
-            {/* Top Floating Glass Header */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-5 z-[70] bg-gradient-to-b from-black/10 to-transparent">
+            {/* 页头底下压一层底色渐变（与集合页、歌手页同一个值）：标题、副标题落在卡片上也读得清。 */}
+            <div
+                className="pointer-events-none absolute inset-x-0 top-0 z-[69] h-[130px]"
+                style={{
+                    background: `linear-gradient(to bottom, ${mapBackgroundColor}, transparent)`,
+                }}
+            />
+
+            {/* 页头：返回、面板开关两颗玻璃圆钮，右边紧跟标题与副标题（排布照集合页 GridView / 歌手页）。
+                标题本身不再可点：开关只在面板钮上，标题不会误触切换。 */}
+            <div className="absolute left-6 top-9 z-[70] flex items-center gap-3">
                 <button
                     data-glass data-glass-light data-glass-jelly
                     onClick={onBack}
-                    className={`relative ${lowerBackButton ? 'top-7' : ''} w-12 h-12 rounded-full flex items-center justify-center transition-all pointer-events-auto shadow-lg hover:scale-105 active:scale-95`}
-                    style={{
-                        backgroundColor: isDaylight
-                            ? "rgba(255,255,255,0.4)"
-                            : "rgba(0,0,0,0.4)",
-                        borderTop: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        borderBottom: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        outline: "1px solid rgba(40,40,40,0.2)",
-                        boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                    }}
+                    className={`relative ${lowerBackButton ? 'top-7' : ''} w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95`}
+                    style={{ ...gridGlassCircleStyle(isDaylight), color: 'var(--text-primary)' }}
                 >
                     <ChevronLeft size={20} />
                 </button>
-
-                <button
-                data-glass data-glass-light data-glass-jelly
-                    type="button"
-                    disabled={!hasCutInPanel}
-                    onClick={() => {
-                        if (showCutInPanel) {
-                            closeCutInPanel();
-                        } else {
-                            openCutInPanel();
-                        }
-                    }}
-                    className="group/grid-title text-center flex flex-col items-center select-none pointer-events-auto cursor-pointer hover:scale-[1.01] active:scale-98 transition-all px-5 py-2 rounded-2xl backdrop-blur-md disabled:cursor-default disabled:hover:scale-100"
-                    
-                    style={{
-                        backgroundColor: isDaylight
-                            ? "rgba(255,255,255,0.4)"
-                            : "rgba(0,0,0,0.4)",
-                        borderTop: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        borderBottom: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                        outline: "1px solid rgba(40,40,40,0.2)",
-                        boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                        color: 'var(--text-primary)',
-                    }}
-                >
-                    <h2 className="flex items-center justify-center gap-1.5 text-lg font-bold tracking-tight">
-                        {title}
-                        {hasCutInPanel && <GridPanelToggleIndicator isOpen={showCutInPanel} />}
-                    </h2>
-                    {subtitle && <p className="text-xs opacity-50 mt-0.5">{subtitle}</p>}
-                </button>
-
-                <div className="w-10 h-10" />
+                {hasCutInPanel && (
+                    <GridPanelToggleButton
+                        isOpen={showCutInPanel}
+                        isDaylight={isDaylight}
+                        onToggle={() => {
+                            setShowSidePanel(false);
+                            if (showCutInPanel) {
+                                closeCutInPanel();
+                            } else {
+                                openCutInPanel();
+                            }
+                        }}
+                    />
+                )}
+                <div className="pointer-events-none flex h-12 min-w-0 flex-col justify-center">
+                    <h2 className="text-lg font-normal tracking-tight">{title}</h2>
+                    {subtitle && (
+                        <p className="mt-0.5 max-w-[min(40rem,calc(100vw-8rem))] truncate text-xs leading-relaxed opacity-50">
+                            {subtitle}
+                        </p>
+                    )}
+                </div>
             </div>
 
             {/* Honeycomb Drag/Viewport Canvas Area */}
@@ -1118,11 +1123,12 @@ export const GridMap: React.FC<GridMapProps> = ({
             <AnimatePresence>
                 {showCutInPanel && hasCutInPanel && (
                     <motion.div
+                        data-glass data-glass-light
                         initial={{ opacity: 0, x: -60, scale: 0.95 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -60, scale: 0.95 }}
                         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                        className="absolute left-6 top-24 w-80 rounded-3xl z-[80] flex flex-col p-6 shadow-2xl border backdrop-blur-2xl pointer-events-auto theme-glass-panel"
+                        className="absolute left-6 top-24 w-80 rounded-3xl z-[80] flex flex-col p-6 shadow-2xl border pointer-events-auto theme-glass-panel"
                         style={{ bottom: bottomBarPanelBottomPx }}
                     >
                         {batchConfig ? (

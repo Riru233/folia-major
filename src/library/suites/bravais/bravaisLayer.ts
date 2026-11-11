@@ -54,7 +54,7 @@ export type BravaisItem = {
     /** B9 首页：点了直接播放、不进新层（私人 FM）：stage 不记起点。 */
     direct?: boolean;
     /**
-     * 首页的特殊集合（我喜欢的音乐、私人 FM、全部歌曲…，判定在 core 的 resolveLibraryHomeSpecial）：左上角的类型标签
+     * 首页的特殊集合（我喜欢的音乐、私人 FM、全部媒体…，判定在 core 的 resolveLibraryHomeSpecial）：左上角的类型标签
      * 换成强调色底 + 小图标（BravaisTile）。普通卡片没有。
      */
     special?: LibraryHomeSpecialKind;
@@ -83,7 +83,7 @@ export type BravaisSeamModel = {
     /** 播放 / 加入当前范围；没声明或不可用时不给。 */
     onPlayScope?: () => void;
     onEnqueueScope?: () => void;
-    /** 歌手页：打开这位歌手的「全部歌曲」（#918，倾斜信息条上的按钮）；没声明或不可用时不给。 */
+    /** 歌手页：打开这位歌手的「全部媒体」（#918，倾斜信息条上的按钮）；没声明或不可用时不给。 */
     onOpenAllSongs?: () => void;
     /**
      * 这面墙的「当前页过滤」输入位（设计稿 §7.6）：首页各页签、集合、歌手页、目录面板都有；suite 没声明过滤时不给。
@@ -96,7 +96,7 @@ export type BravaisSeamModel = {
     home?: BravaisHomeSeam;
     /** B8 歌手页：头像、别名、简介与统计（ArtistGridView 的信息）。 */
     artist?: BravaisSeamArtist;
-    /** 歌手的「全部歌曲」那一层：画成歌手海报的变体（见 bravaisSeamModels 的 BravaisSeamArtistSongs）。 */
+    /** 歌手的「全部媒体」那一层：画成歌手海报的变体（见 bravaisSeamModels 的 BravaisSeamArtistSongs）。 */
     artistSongs?: BravaisSeamArtistSongs;
     /** 专辑页：封面、歌手、年份与元信息（左边钉住的专辑海报，见 bravaisAlbumModel）。只有专辑类型的集合有。 */
     album?: BravaisSeamAlbum;

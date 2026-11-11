@@ -1,6 +1,7 @@
 import type { SongResult } from '../../../types';
 import { omni } from '../../../services/onlineMusic/omni';
 import { isSongUnavailable } from '../../../services/onlineMusic/songAvailability';
+import { isLabVideoPlaybackEnabled } from '../../../shinoinject/lab/labVideoGate';
 import { isLocalPlaybackSong, isNavidromePlaybackSong } from '../../../utils/appPlaybackGuards';
 // src/components/app/playback/playableSong.ts
 // The two "can this track be played" checks. They are two functions because they do not give the
@@ -9,10 +10,21 @@ import { isLocalPlaybackSong, isNavidromePlaybackSong } from '../../../utils/app
 // utils/playbackNeighbors.ts with the index rules.
 
 /**
+ * A local video while the video experiment is off: the library hides its record, and a queue built
+ * before the switch was turned off still holds it. The queue's copy of a song has no `mediaKind`;
+ * `isVideo` is what buildLocalQueue keeps for exactly this reason.
+ */
+const isGatedLocalVideo = (song: SongResult): boolean => (
+    isLocalPlaybackSong(song) && song.isVideo === true && !isLabVideoPlaybackEnabled()
+);
+
+/**
  * The queue's check, for stepping past tracks that cannot play: local and Navidrome tracks always
- * pass; any other track passes when it is not marked unavailable and its provider can play it.
+ * pass, except a local video with the video experiment off; any other track passes when it is not
+ * marked unavailable and its provider can play it.
  */
 export const isQueueSongPlayable = (song: SongResult): boolean => {
+    if (isGatedLocalVideo(song)) return false;
     if (isLocalPlaybackSong(song) || isNavidromePlaybackSong(song)) {
         return true;
     }
@@ -21,9 +33,10 @@ export const isQueueSongPlayable = (song: SongResult): boolean => {
 
 /**
  * The session restore's check, for what is kept of the stored last song and queue: a track whose
- * stored source is not an online one always passes; an online track passes when its provider can
- * play it, marked unavailable or not.
+ * stored source is not an online one always passes, except a local video with the video experiment
+ * off; an online track passes when its provider can play it, marked unavailable or not.
  */
 export const isRestoredSongPlayable = (song: SongResult): boolean => (
-    song.sourceRef?.kind !== 'online' || omni.canPlaySong(song) || omni.canPlayExternally(song)
+    !isGatedLocalVideo(song)
+    && (song.sourceRef?.kind !== 'online' || omni.canPlaySong(song) || omni.canPlayExternally(song))
 );

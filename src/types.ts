@@ -1543,6 +1543,12 @@ export interface LocalSong {
   localTranslationLyricsContent?: string;
   localTranslationLyricsOrigin?: LocalLyricsOrigin;
 
+  /**
+   * 这条记录来自一个视频文件（MV）而不是纯音频：播放时它自己的画面被强制当作歌词背景，
+   * 声音仍旧走进原来的播放链。缺省（undefined）就是音频。
+   */
+  mediaKind?: 'audio' | 'video';
+
   // Embedded Lyrics (from file tags: ID3 USLT, Vorbis LYRICS, etc.)
   hasEmbeddedLyrics?: boolean;
   embeddedLyricsContent?: string;

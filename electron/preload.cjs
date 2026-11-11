@@ -88,6 +88,18 @@ contextBridge.exposeInMainWorld('electron', {
     },
     platform: process.platform,
     isLinuxX11: process.platform === 'linux' && !process.env.WAYLAND_DISPLAY,
+    // 实验性「视频」背景：bilibili 的账号与只读接口（electron/bilibili.cjs）。登录在它自己的窗口里
+    // 完成，密码不经过这个页面。
+    bilibili: {
+        getStatus: () => ipcRenderer.invoke('bilibili-auth-status'),
+        openLogin: () => ipcRenderer.invoke('bilibili-auth-login'),
+        signOut: () => ipcRenderer.invoke('bilibili-auth-logout'),
+        request: (request) => ipcRenderer.invoke('bilibili-request', request),
+    },
+    // 本地曲库的目录卡片只存相对路径（A/B）：第一次调用会请用户在磁盘上指出导入根，之后按根名记住，
+    // 用系统文件管理器打开目标目录本身（不是父目录）。网页版没有这个 API，见 services/localFolderSystemOpen.ts。
+    openLocalFolderInSystem: (rootName, relativePath, rebind) =>
+        ipcRenderer.invoke('local-folder-reveal', rootName, relativePath, rebind === true),
     getSettings: () => ipcRenderer.invoke('get-settings'),
     saveSettings: (key, value) => ipcRenderer.invoke('save-settings', key, value),
     onWallpaperModeChanged: (callback) => {

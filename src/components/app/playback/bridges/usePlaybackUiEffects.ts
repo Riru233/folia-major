@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type React from 'react';
 import type { StatusMessage } from '../../../../types';
 import { runStatusMessageTime, setStatusMessage as setStatusMsg } from '../../../../stores/useStatusMessageStore';
+import { LAB_VIDEO_GATE_CHANGED_EVENT } from '../../../../shinoinject/lab/labVideoGate';
 
 // App-level UI side effects that do not own playback business logic.
 type UsePlaybackUiEffectsOptions = {
@@ -33,6 +34,17 @@ export const usePlaybackUiEffects = ({
         window.addEventListener(localMusicUpdatedEvent, handleLocalMusicUpdated);
         return () => window.removeEventListener(localMusicUpdatedEvent, handleLocalMusicUpdated);
     }, [loadLocalPlaylists, loadLocalSongs, localMusicUpdatedEvent]);
+
+    // The video experiment's switch moved: the list is read again, so its videos leave or come back at
+    // once. Only the list — the local-music event would start a rescan of the folders on disk.
+    useEffect(() => {
+        const handleVideoGateChanged = () => {
+            void loadLocalSongs();
+        };
+
+        window.addEventListener(LAB_VIDEO_GATE_CHANGED_EVENT, handleVideoGateChanged);
+        return () => window.removeEventListener(LAB_VIDEO_GATE_CHANGED_EVENT, handleVideoGateChanged);
+    }, [loadLocalSongs]);
 
     useEffect(() => {
         return () => {

@@ -5,6 +5,7 @@ import { Settings2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { capsuleGlassClass, capsuleGlassStyle } from './capsuleGlass';
 import { PLAYER_CONTROL_SLOT_OPTIONS, type PlayerControlSlotActionId } from './playerControlSlotActions';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/floating-player/PlayerControlSlotPicker.tsx
 // 在槽位正上方原地换按钮的小浮层：右键（触屏长按）槽位打开，选一个就换上，底部一行通往设置页。
@@ -82,16 +83,27 @@ const PlayerControlSlotPicker: React.FC<PlayerControlSlotPickerProps> = ({
     if (typeof document === 'undefined') {
         return null;
     }
-
+    useGlass()
     return createPortal(
         <motion.div
+            data-glass data-glass-jelly data-glass-light
             ref={panelRef}
             role="dialog"
             aria-label={t(side === 'primary' ? 'options.playerControlSlotPrimary' : 'options.playerControlSlotSecondary')}
             data-testid="player-control-slot-picker"
             className={`fixed z-[140] rounded-3xl p-2 ${capsuleGlassClass(isDaylight)}`}
             // 和进度条胶囊同一层玻璃，边沿是播放页面板那条 1px 线。
-            style={{ left, bottom, width, ...capsuleGlassStyle(isDaylight) }}
+            style={{ left, bottom, width, ...capsuleGlassStyle(isDaylight),
+                borderTop: isDaylight
+                ? "1px solid rgba(255,255,255,0.32)"
+                : "1px solid rgba(255,255,255,0.22)",
+                borderBottom: isDaylight
+                ? "1px solid rgba(255,255,255,0.32)"
+                : "1px solid rgba(255,255,255,0.22)",
+                outline: "1px solid rgba(40,40,40,0.2)",
+                boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+                transformOrigin: "bottom right",
+             }}
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}

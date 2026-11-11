@@ -340,7 +340,7 @@ function BravaisTile({
         '--bravais-pop-x': ((rect.width + BRAVAIS_METRICS.gap * 2) / Math.max(rect.width, 1)).toFixed(4),
         '--bravais-pop-y': ((rect.height + BRAVAIS_METRICS.gap * 2) / Math.max(rect.height, 1)).toFixed(4),
     } as React.CSSProperties;
-
+    
     return (
         <div
             className={`bravais-tile${isExpanded ? ' is-expanded' : ''}${keyboardFocused ? ' is-focused' : ''}`}

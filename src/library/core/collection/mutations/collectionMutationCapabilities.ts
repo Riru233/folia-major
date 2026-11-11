@@ -221,7 +221,7 @@ export const resolveCollectionMutationCapabilities = ({
         addToPlaylist: gated(branches.canAddNavidromeToPlaylist && Boolean(port.navidrome?.addToPlaylist), pending),
         createPlaylist: gated(branches.canAddNavidromeToPlaylist && Boolean(port.navidrome?.createPlaylist), pending),
         editEntity: gated(branches.isLocalEntityCollection && Boolean(port.local?.editEntity), false),
-        // 本地文件夹（含「全部歌曲」）、专辑、歌单；歌手不在内。只打开对话框，与编辑实体一样不随来源动作禁用。
+        // 本地文件夹（含「全部媒体」）、专辑、歌单；歌手不在内。只打开对话框，与编辑实体一样不随来源动作禁用。
         setCover: gated(supportsLocalCollectionCover(local) && Boolean(port.local?.editCover), false),
         organizeSongInfo: gated(branches.isLocalFolderCollection && Boolean(port.local?.organizeFolder), false),
         matchSong: gated(Boolean(port.local?.matchSong), false),

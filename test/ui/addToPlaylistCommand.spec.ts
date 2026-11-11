@@ -62,7 +62,12 @@ test('a shortcut opens the picker with the panel closed', async ({ page }) => {
 test('the panel star still reaches the same dialog', async ({ page }) => {
     await openLocalLibrary(page);
     // 面板只长在播放页上，所以先过去；切页会重放它自己的恢复流程，所以歌曲在那之后再放。
-    await page.getByRole('button', { name: 'Back to Player' }).first().click();
+    // 返回歌词画报的箭头在播放条上，首页上胶囊收着，先把指针移上去让它展开。
+    const viewport = page.viewportSize()!;
+    await page.mouse.move(viewport.width / 2, viewport.height - 46);
+    const backToPlayer = page.getByRole('button', { name: 'Back to the lyrics poster' }).first();
+    await expect(backToPlayer).toBeVisible();
+    await backToPlayer.click();
     await page.waitForTimeout(1200);
     await seedLocalSong(page);
     await page.waitForTimeout(400);

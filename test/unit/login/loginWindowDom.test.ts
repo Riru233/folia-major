@@ -92,7 +92,7 @@ describe('the sign-in window, drawn', () => {
     });
 
     it('the switcher says which platform it shows, and the picture flies only to that one', () => {
-        const pill = (active: string): React.ReactElement => React.createElement(SwitcherPill, { account: accountShowing([signedIn('a'), signedIn('b')], active), onBackToPlayer: () => { } });
+        const pill = (active: string): React.ReactElement => React.createElement(SwitcherPill, { account: accountShowing([signedIn('a'), signedIn('b')], active) });
         expect(loginDonePill('a')).toBeNull();
         draw(pill('a'));
         expect(loginDonePill('a')).toBe(place.querySelector('[data-login-pill]'));
@@ -139,7 +139,7 @@ describe('the sign-in window, drawn', () => {
     });
 
     it('the switcher holds its picture back only while the picture of the platform it shows is on its way', () => {
-        draw(React.createElement(SwitcherPill, { account: accountShowing([signedIn('a'), signedIn('b')], 'a'), onBackToPlayer: () => { } }));
+        draw(React.createElement(SwitcherPill, { account: accountShowing([signedIn('a'), signedIn('b')], 'a') }));
         const picture = place.querySelector<HTMLElement>('[data-login-pill]')!;
         expect(picture.style.opacity).toBe('');
         act(() => useLoginWindowStore.setState({ landing: 'b' }));

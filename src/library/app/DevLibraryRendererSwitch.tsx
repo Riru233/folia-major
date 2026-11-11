@@ -5,6 +5,8 @@ import { useActiveLibrarySuiteId } from './librarySuiteChoice';
 import { switchLibrarySuite } from './switchLibrarySuite';
 import { useGlass } from '@/shinoinject/useGlass';
 import { resolveReducedMotion, useMotionSettingsStore } from '../../stores/useMotionSettingsStore';
+import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
+import { DOCKED_PLAYER_BAR_HEIGHT_PX } from '../../components/docked-player/DockedPlayerBar';
 import { useIsBottomLayoutCompact } from '../../stores/useBottomDockStore';
 
 // src/library/app/DevLibraryRendererSwitch.tsx
@@ -31,25 +33,33 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
     const activeSuite = useActiveLibrarySuiteId();
     useGlass();
     const reduceMotion = useMotionSettingsStore(state => resolveReducedMotion(state, 'uiMicroMotion'));
+    // 底部播放器是停靠栏时它通栏压在最底下，这条浮层就得整体抬到栏上面去，否则两者叠在一起。
+    const isDockedPlayerBar = usePlayerChromeSettingsStore(state => state.playerBarStyle) === 'docked';
+    const dockedClearance = DOCKED_PLAYER_BAR_HEIGHT_PX + 8;
     // 紧凑档（窗口窄于 960，progress-bar v3）底部只留进度条胶囊，这条挪到左上角（标题栏和墙的返回按钮下面）。
     const isCompact = useIsBottomLayoutCompact();
 
+    // 固定尺寸且不使用 flex/grid：position: fixed + width: max-content 让宽度只由内容决定，
+    // 与视口宽度无关；whitespace-nowrap 保证窗口再窄也不折行（宁可溢出也不收缩），
+    // h-[32px] 锁死高度。内部改成 inline-block 的常规行内排版，用 align-middle 垂直居中、
+    // mr-1 代替原来的 gap-1，于是布局完全不依赖 flex/grid，玻璃层读到的 offsetWidth/Height 也稳定。
     return (
         <div
             data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed ${isCompact ? 'top-[76px] left-2' : PLACEMENT_CLASS[placement]} z-[120] flex items-center gap-1 rounded-full border-current/30 px-2 py-1 text-[11px]`}
-            
+            className={`fixed h-[32px] w-max whitespace-nowrap ${isCompact ? 'bottom-[48px] left-2' : PLACEMENT_CLASS[placement]} z-[120] rounded-full border-current/30 px-2 py-1 text-[11px] leading-[22px]`}
                     style={{
                         backgroundColor: "rgba(40, 40, 40, 0.42)",
                         borderTop:  "1px solid rgba(255,255,255,0.22)",
                         borderBottom: "1px solid rgba(255,255,255,0.22)",
                         outline: "1px solid rgba(40,40,40,0.2)",
                         color: '#fffa',
+                        // 内联值盖掉上面那套 bottom-* 位置类：停靠样式下统一贴着停靠栏的上沿。
+                        ...(isDockedPlayerBar ? { bottom: dockedClearance } : null),
                     }}
         >
-            <span className="px-1 opacity-50">{`Dev · ${t('libraryTui.rendererSwitch')}`}</span>
+            <span className="mr-1 inline-block px-1 align-middle opacity-50">{`Dev · ${t('libraryTui.rendererSwitch')}`}</span>
             {listLibrarySuites().map(suite => (
                 <button
                     key={suite.id}
@@ -58,7 +68,7 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
                     data-suite={suite.id}
                     aria-pressed={activeSuite === suite.id}
                     onClick={() => switchLibrarySuite(sessionKey, suite.id)}
-                    className={`rounded-full px-2 py-0.5 ${reduceMotion ? 'transition-none' : 'transition-[background-color,opacity] duration-150'} ${activeSuite === suite.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
+                    className={`mr-1 inline-block rounded-full px-2 py-0.5 align-middle leading-none last:mr-0 ${reduceMotion ? 'transition-none' : 'transition-[background-color,opacity] duration-150'} ${activeSuite === suite.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
                 >
                     {t(suite.labelKey)}
                 </button>

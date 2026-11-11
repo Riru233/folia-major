@@ -64,8 +64,8 @@ describe('settingsLastSection', () => {
         });
 
         it('returns null for an id that no longer exists', () => {
-            // 'lab' is a category an older build could have stored; it has since been dissolved.
-            for (const id of ['someRemovedSection', 'lab']) {
+            // A category an older build could have stored and this one no longer draws.
+            for (const id of ['someRemovedSection', 'hifi']) {
                 const storage = createStorage({ [SETTINGS_LAST_SECTION_STORAGE_KEY]: id });
                 expect(readLastSettingsSection(DESKTOP, storage)).toBeNull();
             }

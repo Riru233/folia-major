@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SongResult } from '@/types';
 
 // test/unit/playback/playableSong.test.ts
@@ -88,5 +88,41 @@ describe('where the two checks differ', () => {
         expect(isRestoredSongPlayable(stageSong)).toBe(true);
         expect(isQueueSongPlayable(songWithoutSource)).toBe(false);
         expect(isRestoredSongPlayable(songWithoutSource)).toBe(true);
+    });
+});
+
+// The video experiment's switch hides local videos from the library; a queue built before it was
+// turned off still holds them, so both checks have to step over them there as well.
+describe('local videos and the video experiment', () => {
+    const stubGate = (enabled: boolean) => {
+        vi.stubGlobal('window', {});
+        vi.stubGlobal('localStorage', {
+            getItem: () => (enabled ? 'true' : 'false'),
+            setItem: () => {},
+        });
+    };
+    const videoSong = { ...localSong, isVideo: true } as unknown as SongResult;
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('steps over a local video in the queue and leaves it out of the restore while the switch is off', () => {
+        stubGate(false);
+        expect(isQueueSongPlayable(videoSong)).toBe(false);
+        expect(isRestoredSongPlayable(videoSong)).toBe(false);
+        // An audio record is untouched by that switch.
+        expect(isQueueSongPlayable(localSong)).toBe(true);
+        expect(isRestoredSongPlayable(localSong)).toBe(true);
+    });
+
+    it('plays a local video as before while the switch is on', () => {
+        stubGate(true);
+        expect(isQueueSongPlayable(videoSong)).toBe(true);
+        expect(isRestoredSongPlayable(videoSong)).toBe(true);
+    });
+
+    it('leaves an online video alone: the switch only governs local records', () => {
+        stubGate(false);
+        const onlineVideo = { ...onlineSong, isVideo: true } as SongResult;
+        expect(isQueueSongPlayable(onlineVideo)).toBe(true);
     });
 });

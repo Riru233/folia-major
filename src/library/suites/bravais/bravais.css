@@ -8,6 +8,8 @@
     --bravais-seam-paper: color-mix(in srgb, var(--bg-color, #070707) 90%, var(--text-primary, #f7f4ee));
     --bravais-seam-ink-soft: color-mix(in srgb, var(--text-primary, #f7f4ee) 55%, transparent);
     --bravais-chrome-shadow: rgb(0 0 0 / 55%);
+    /* 海报的圆角：内容层自己用，光泽那层照抄，两边永远同一个角。 */
+    --bravais-tile-radius: 30px;
     /* 信息条只有投影，不描边（原来还有一圈 1px 的淡色细框，用户 2026-11-05 要求去掉）。 */
     --bravais-seam-shadow: 0 24px 64px rgb(0 0 0 / 42%);
 }
@@ -21,15 +23,67 @@
 
 .bravais-tile {
     position: absolute;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #fffa 20%, transparent 50%);
     top: 0;
     left: 0;
 }
+
+/* 光泽：外框上覆一层反光——一道从左上方斜着下来的光带（112°，与画框的 30px 圆角一起读作玻璃 / 漆面），
+   外加顶边一小段亮边。静态就有一点材质感，悬停、键盘焦点、正在播放的那张再亮一档。画在外框的 ::before 上
+   （z-index 2，压在海报上面、不吃指针）：海报自己会缩放、翻牌、被 filter 处理，光泽挂在里面会跟着抖；
+   外框的 ::after 已经被 has-poster-wall 的调色板占用。空画框（wall）、窗（window）、文字标签（heading）都不是画，跳过。 */
+.bravais-tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    border-radius: var(--bravais-tile-radius, 30px);
+    opacity: 0.7;
+    background:
+        linear-gradient(112deg, transparent 6%, rgb(255 255 255 / 6%) 24%, rgb(255 255 255 / 13%) 33%, rgb(255 255 255 / 6%) 43%, transparent 64%),
+        linear-gradient(to bottom, rgb(255 255 255 / 9%) 0%, transparent 11%);
+    transition: opacity 420ms ease, transform 300ms ease-out;
+}
+
+.bravais-tile[data-bravais-kind='wall']::before,
+.bravais-tile[data-bravais-kind='window']::before,
+.bravais-tile[data-bravais-kind='heading']::before,
+/* 全透明档的内容磁贴不画封面（只留标题），透出的是后面的 visualizer，别拿一层白光盖上去。 */
+.bravais-tile[data-bravais-see-through]::before { content: none; }
+
+/* 悬停 / 键盘焦点 / 正在播放：反光更实一点。 */
+.bravais-tile:hover::before,
+.bravais-tile.is-focused::before,
+.bravais-tile[data-bravais-current]::before { opacity: 0.85; }
+
+/* 悬停与键盘焦点时海报四边各外扩一个 GAP（见上一条 .bravais-tile:hover > .bravais-tile-face），光泽跟着一起放大，
+   否则磁贴边上会留一圈没有光。聚焦卡不放大，光泽也不动。 */
+.bravais-tile:not(.is-expanded):hover::before,
+.bravais-tile.is-focused:not(.is-expanded)::before {
+    transform: scale(var(--bravais-pop-x, 1), var(--bravais-pop-y, 1));
+}
+
+/* 贴着调色板的墙上，海报往里收了 --bravais-poster-wall-inset，光泽跟着收，圆角不变（与内容层同一份），不溢到缝里。 */
+.bravais-root.has-poster-wall .bravais-tile::before { inset: var(--bravais-poster-wall-inset); }
+
+/* 熄灯：没被点亮的那几张只留一点反光；悬停、焦点、正在播放的保持原样。 */
+.bravais-root.is-lights-out .bravais-tile:not(:hover):not(.is-focused):not([data-bravais-current])::before {
+    opacity: 0.2;
+}
+
+:root[data-reduce-motion~='lattice'] .bravais-tile::before { transition: none; }
 
 .bravais-tile:hover { z-index: 3; }
 .bravais-tile.is-focused { z-index: 4; }
 .bravais-tile.is-expanded { z-index: 20; }
 
 .bravais-tile-face {
+    border-top: #fffa 1px solid;
+    border-bottom: #fffa 1px solid;
+    outline: #444a 1px solid;
+    border-radius: var(--bravais-tile-radius, 30px);
     inset: 0;
     transform-origin: 50% 50%;
     transition: box-shadow 600ms ease, filter 600ms ease, transform 300ms ease-out;
@@ -589,7 +643,7 @@
 }
 
 .bravais-block-plate > path {
-    fill: var(--bg-color, #070707);
+    fill: transparent;
 }
 
 /* 窗：没有内容、不可聚焦、不可点；内容层透明，只垫一层很淡的光晕。 */

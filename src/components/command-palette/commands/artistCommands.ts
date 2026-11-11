@@ -51,7 +51,7 @@ export const artistCommands: CommandPaletteCommand[] = [
         'edit-entity',
         SquarePen,
     ),
-    // #918：不在任何专辑里的单曲只在「全部歌曲」那一层看得到；只给在线歌手，热门歌曲之外还有歌时才出现。
+    // #918：不在任何专辑里的单曲只在「全部媒体」那一层看得到；只给在线歌手，热门歌曲之外还有歌时才出现。
     createArtistSurfaceCommand(
         'artist-open-all-songs',
         'Open all songs',

@@ -208,8 +208,8 @@ export type BravaisLayerEntries = {
 
 /** B8 歌手页在缝里的信息块（设计稿 §10.4「缝承载 ArtistGridView 的信息」）：都是已翻译的展示文字。 */
 /**
- * 歌手的「全部歌曲」那一层（#918，在线集合 artist_songs）：完整等级照样画成歌手页那种倾斜海报，做一点变体——
- * 大字是歌手名、旁边的小词是「全部歌曲」，热门三首换成一个超大的歌曲数（BravaisSeamPoster）。
+ * 歌手的「全部媒体」那一层（#918，在线集合 artist_songs）：完整等级照样画成歌手页那种倾斜海报，做一点变体——
+ * 大字是歌手名、旁边的小词是「全部媒体」，热门三首换成一个超大的歌曲数（BravaisSeamPoster）。
  */
 export type BravaisSeamArtistSongs = {
     /** 歌手名（海报大字）。 */

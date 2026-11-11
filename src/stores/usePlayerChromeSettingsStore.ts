@@ -4,7 +4,7 @@
 //
 // Split out of useSettingsUiStore.
 //
-// @note 这里除 player_header_blur 以外的设置（播放页控件、标题栏、鼠标指针、透明背景、系统材质）是用户明确决定
+// @note 这里除 player_header_blur 以外的设置（播放页控件、底部播放条的样式与固定、标题栏、鼠标指针、透明背景、系统材质）是用户明确决定
 // 「不进外观配置导入导出」的（2026-11-08）：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的，
 // OBS 页面隐藏了这些控件。不要按 settings-feature-integration「视觉设置必须进
 // buildCurrentConfig / compressConfig / decompressConfig / validKeys / handleImportConfig」的规则把它们补进短码或 JSON。
@@ -18,7 +18,7 @@ import {
     type PlayerControlSlotActionId,
 } from '../types/playerControlSlots';
 import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX } from '../utils/playerBottomBarLayout';
-import { getStoredBoolean, setStoredBoolean, getStoredString, setStoredString } from './storagePrimitives';
+import { getStoredBoolean, getStoredString, setStoredBoolean, setStoredString, getStoredString, setStoredString } from './storagePrimitives';
 import { setStatusMessage } from './useStatusMessageStore';
 
 const PLAYER_BOTTOM_BAR_OFFSET_STORAGE_KEY = 'player_bottom_bar_offset';
@@ -31,6 +31,41 @@ const readTitlebarSide = (): 'left' | 'right' => {
     const fallback = 'right';
     const value = getStoredString('window_titlebar_side', fallback);
     return value === 'left' || value === 'right' ? value : fallback;
+};
+const PLAYER_BAR_STYLE_STORAGE_KEY = 'player_bar_style';
+const DOCKED_BAR_APPEARANCE_STORAGE_KEY = 'docked_player_bar_appearance';
+
+/**
+ * 底部播放条的两套外观：
+ * - `floating`：原来那条可拖动的液态玻璃胶囊（FloatingPlayerControls）；
+ * - `docked`：贴着窗口底边的一条完整播放栏（标题 / 封面 / 传输键 / 进度条）。
+ */
+export type PlayerBarStyle = 'floating' | 'docked';
+
+const PLAYER_BAR_STYLES: readonly PlayerBarStyle[] = ['floating', 'docked'];
+
+/**
+ * 停靠控制栏的两套配色（布局、图标、位置都一样，只有颜色不同）：
+ * - `dreamcore`：原来那套——底部一层深色渐变、蓝色玻璃播放键，浅色与深色沿用原来的颜色；
+ * - `monet`：底部同样是一层往上淡到透明的渐变，只是颜色换成莫奈的：日间底边暖白、往上淡紫，夜间底边黑、往上深靛紫。
+ */
+export type DockedBarAppearance = 'dreamcore' | 'monet';
+
+const DOCKED_BAR_APPEARANCES: readonly DockedBarAppearance[] = ['dreamcore', 'monet'];
+
+const readStoredPlayerBarStyle = (): PlayerBarStyle => {
+    if (typeof window === 'undefined') {
+        return 'floating';
+    }
+    const saved = localStorage.getItem(PLAYER_BAR_STYLE_STORAGE_KEY);
+    return PLAYER_BAR_STYLES.includes(saved as PlayerBarStyle) ? saved as PlayerBarStyle : 'floating';
+};
+
+const readStoredDockedBarAppearance = (): DockedBarAppearance => {
+    const saved = getStoredString(DOCKED_BAR_APPEARANCE_STORAGE_KEY, 'dreamcore');
+    return DOCKED_BAR_APPEARANCES.includes(saved as DockedBarAppearance)
+        ? saved as DockedBarAppearance
+        : 'dreamcore';
 };
 
 /** Reads the persisted lower-bounded offset; the viewport-dependent upper bound is applied by consumers. */
@@ -64,6 +99,10 @@ export type PlayerChromeSettingsState = {
     playerBottomBarOffset: number;
     /** 底部播放条被固定：固定后它不再随鼠标离开而收缩。 */
     playerBarPinned: boolean;
+    /** 底部播放条的外观：浮动胶囊还是贴底的停靠栏。 */
+    playerBarStyle: PlayerBarStyle;
+    /** 停靠栏的配色；浮动胶囊不受它影响。 */
+    dockedBarAppearance: DockedBarAppearance;
     playerControlSlotPrimary: PlayerControlSlotActionId;
     playerControlSlotSecondary: PlayerControlSlotActionId;
     hidePlayerRightPanelButton: boolean;
@@ -88,6 +127,8 @@ export type PlayerChromeSettingsState = {
     handleToggleHidePlayerProgressBar: (enable: boolean) => void;
     handleSetPlayerBottomBarOffset: (offsetPx: number) => void;
     handleTogglePlayerBarPinned: (enable: boolean) => void;
+    handleSetPlayerBarStyle: (style: PlayerBarStyle) => void;
+    handleSetDockedBarAppearance: (appearance: DockedBarAppearance) => void;
     handleSetPlayerControlSlot: (slot: 'primary' | 'secondary', actionId: PlayerControlSlotActionId) => void;
     handleToggleHidePlayerRightPanelButton: (enable: boolean) => void;
     handleToggleAlwaysShowPlayerBackButton: (enable: boolean) => void;
@@ -109,6 +150,8 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
     hidePlayerProgressBar: getStoredBoolean('hide_player_progress_bar', false),
     playerBottomBarOffset: readStoredPlayerBottomBarOffset(),
     playerBarPinned: getStoredBoolean(PLAYER_BAR_PINNED_STORAGE_KEY, false),
+    playerBarStyle: readStoredPlayerBarStyle(),
+    dockedBarAppearance: readStoredDockedBarAppearance(),
     playerControlSlotPrimary: readStoredPlayerControlSlot(
         PLAYER_CONTROL_SLOT_PRIMARY_STORAGE_KEY,
         DEFAULT_PLAYER_CONTROL_SLOT_PRIMARY,
@@ -192,6 +235,30 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
         setStatusMessage({
             type: 'info',
             text: i18n.t('notifications.' + (enable ? 'playerBarPinned' : 'playerBarUnpinned')),
+        });
+    },
+    handleSetPlayerBarStyle: (style) => {
+        if (!PLAYER_BAR_STYLES.includes(style) || style === get().playerBarStyle) {
+            return;
+        }
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(PLAYER_BAR_STYLE_STORAGE_KEY, style);
+        }
+        set({ playerBarStyle: style });
+        setStatusMessage({
+            type: 'info',
+            text: i18n.t('notifications.' + (style === 'docked' ? 'playerBarStyleDocked' : 'playerBarStyleFloating')),
+        });
+    },
+    handleSetDockedBarAppearance: (appearance) => {
+        if (!DOCKED_BAR_APPEARANCES.includes(appearance) || appearance === get().dockedBarAppearance) {
+            return;
+        }
+        setStoredString(DOCKED_BAR_APPEARANCE_STORAGE_KEY, appearance);
+        set({ dockedBarAppearance: appearance });
+        setStatusMessage({
+            type: 'info',
+            text: i18n.t('notifications.' + (appearance === 'monet' ? 'dockedBarAppearanceMonet' : 'dockedBarAppearanceDreamcore')),
         });
     },
     handleSetPlayerControlSlot: (slot, actionId) => {
@@ -303,6 +370,8 @@ export const selectPlayerChromeSettingsSnapshot = (state: PlayerChromeSettingsSt
     hidePlayerProgressBar: state.hidePlayerProgressBar,
     playerBottomBarOffset: state.playerBottomBarOffset,
     playerBarPinned: state.playerBarPinned,
+    playerBarStyle: state.playerBarStyle,
+    dockedBarAppearance: state.dockedBarAppearance,
     playerControlSlotPrimary: state.playerControlSlotPrimary,
     playerControlSlotSecondary: state.playerControlSlotSecondary,
     hidePlayerRightPanelButton: state.hidePlayerRightPanelButton,
@@ -325,6 +394,8 @@ export const selectPlayerChromeSettingsSnapshot = (state: PlayerChromeSettingsSt
     handleToggleHidePlayerProgressBar: state.handleToggleHidePlayerProgressBar,
     handleSetPlayerBottomBarOffset: state.handleSetPlayerBottomBarOffset,
     handleTogglePlayerBarPinned: state.handleTogglePlayerBarPinned,
+    handleSetPlayerBarStyle: state.handleSetPlayerBarStyle,
+    handleSetDockedBarAppearance: state.handleSetDockedBarAppearance,
     handleSetPlayerControlSlot: state.handleSetPlayerControlSlot,
     handleToggleHidePlayerRightPanelButton: state.handleToggleHidePlayerRightPanelButton,
     handleToggleAlwaysShowPlayerBackButton: state.handleToggleAlwaysShowPlayerBackButton,

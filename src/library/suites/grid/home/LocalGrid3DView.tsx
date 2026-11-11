@@ -12,6 +12,7 @@ import type { LibraryHomeActionsController, LibraryHomeListState, LibraryLocalDi
 import type { LibraryDeclaredActions } from '../../../core/suite/suite.contract';
 import type { LocalHomeRow, LocalHomeSectionKey } from '../../../core/home/localHomeModel';
 import { resolveLocalHomeActions } from '../../../core/home/localHomeModel';
+import { useLocalFolderContextMenu } from './useLocalFolderContextMenu';
 import { useLibraryHomeLocal, useLocalDirectoryTrees, useLocalHomeBatchConfig } from '../../../core/home/useLibraryHomeLocal';
 import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions';
 import { useLibraryHomeListRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
@@ -181,6 +182,9 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
         importPlaylistFile: async file => (await homeActions.importPlaylistFile(file)).ok,
     });
     useGlass();
+    // 本地目录卡片的右键菜单（删歌单 / 打开所在位置 / 下钻子歌单）。只装配在本地首页，
+    // 在线 provider 的文件夹类卡片不会拿到这个回调。
+    const { onFolderContextMenu, menu } = useLocalFolderContextMenu(localSongs, isDaylight);
     if (isEmptyLibrary) {
         const scanning = Boolean(actionState.scan?.active);
         return (
@@ -250,7 +254,9 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
                 batchConfig={localBatchConfig}
                 ponderControls="local-grid-controls"
                 gridMapPonderScope="local-grid-map-page"
+                onFolderContextMenu={onFolderContextMenu}
             />
+            {menu}
         </>
     );
 };

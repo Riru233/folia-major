@@ -84,4 +84,32 @@ describe('player chrome settings store', () => {
 
         expect(usePlayerChromeSettingsStore.getState().hideCursorWhenIdle).toBe(true);
     });
+
+    it('gives the docked bar Dreamcore when nothing is stored', async () => {
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
+    });
+
+    it('restores and persists the docked bar palette, and ignores a value it does not know', async () => {
+        values.set('docked_player_bar_appearance', 'monet');
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('monet');
+
+        usePlayerChromeSettingsStore.getState().handleSetDockedBarAppearance('dreamcore');
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
+        expect(localStorage.getItem('docked_player_bar_appearance')).toBe('dreamcore');
+
+        usePlayerChromeSettingsStore.getState().handleSetDockedBarAppearance('guache' as never);
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
+        expect(localStorage.getItem('docked_player_bar_appearance')).toBe('dreamcore');
+    });
+
+    it('falls back to Dreamcore when the stored palette is not one it knows', async () => {
+        values.set('docked_player_bar_appearance', 'guache');
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
+    });
 });

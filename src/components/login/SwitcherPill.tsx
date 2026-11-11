@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { useMotionValueEvent } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { providerDisplayName } from "../../i18n/providerName";
@@ -30,9 +29,10 @@ import {
 import { useGlass } from "@/shinoinject/useGlass";
 
 // src/components/login/SwitcherPill.tsx
-// 主页右下角的切换器：正在用的账号的头像，角上是平台的记号（没有人登录时只有记号；登录失效时记号上
-// 一个黄点），旁边是返回播放器的按钮。点头像打开登录窗口，开在正在用的平台上；换平台、退出登录都在
-// 那个窗口里。换了平台或者登录之后，平台的名字在头像旁边展开，停 1.8 秒再收回去。
+// 首页的切换器：正在用的账号的头像，角上是平台的记号（没有人登录时只有记号；登录失效时记号上
+// 一个黄点）。点头像打开登录窗口，开在正在用的平台上；换平台、退出登录都在那个窗口里。换了平台或者
+// 登录之后，平台的名字在头像旁边展开，停 1.8 秒再收回去。返回歌词画报的箭头不在这里，它在播放条上
+// （FloatingPlayerControls）。
 
 /** 名字展开着的时间。 */
 const LABEL_STAYS_MS = 1800;
@@ -40,12 +40,36 @@ const LABEL_STAYS_MS = 1800;
 type SwitcherPillProps = {
   /** 平台和它们的账号来自账户 controller。 */
   account: LibraryAccountController;
-  onBackToPlayer: () => void;
+  /**
+   * 画在哪：
+   * - `floating`（默认）右下角的浮层，跟着播放器底部条一起抬升；
+   * - `header` 首页页头里搜索栏的左边，换成和搜索栏等高的玻璃圆钮，不参与底部抬升。
+   */
+  variant?: "floating" | "header";
+  /** 额外的表面样式：页头用它，让这颗钮跟着页头一起淡出（给元素本身，别给容器加 opacity）。 */
+  surfaceStyle?: React.CSSProperties;
 };
+
+/** header 模式下圆钮的直径：与搜索栏等高（input 的 text-sm 行高 20 + 上下 padding 16 + 两条边 2）。 */
+const HEADER_BUTTON_PX = 38;
+
+/** header 模式下这颗钮的玻璃表面，和页头其他按钮同一套。 */
+const headerButtonSurface = (isDaylight: boolean): React.CSSProperties => ({
+  backgroundColor: isDaylight ? "rgba(215,215,215,0.42)" : "rgba(40, 40, 40, 0.42)",
+  borderTop: isDaylight
+    ? "1px solid rgba(255,255,255,0.32)"
+    : "1px solid rgba(255,255,255,0.22)",
+  borderBottom: isDaylight
+    ? "1px solid rgba(255,255,255,0.32)"
+    : "1px solid rgba(255,255,255,0.22)",
+  outline: "1px solid rgba(40,40,40,0.2)",
+  boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+});
 
 const SwitcherPill: React.FC<SwitcherPillProps> = ({
   account,
-  onBackToPlayer,
+  variant = "floating",
+  surfaceStyle,
 }) => {
   const { t } = useTranslation();
   const { providers, activeProviderId } = useLibraryAccountProviders(account);
@@ -63,6 +87,7 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
    * 独立合成层，文字栅格化随之改变 —— app.screenshot 的 local-library 基线能直接照出来。
    */
   const syncBottomOffset = useCallback((globalOffsetPx: number) => {
+    if (variant !== "floating") return;
     const root = rootRef.current;
     if (!root) return;
     if (globalOffsetPx === PLAYER_BOTTOM_BAR_BASE_OFFSET_PX) {
@@ -70,19 +95,20 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
       return;
     }
     root.style.bottom = `${resolvePlayerBottomComponentBottomPx(globalOffsetPx, baseBottomPxRef.current)}px`;
-  }, []);
+  }, [variant]);
 
   useMotionValueEvent(playerBottomBarLiveOffset, "change", syncBottomOffset);
 
   /** 先撤掉内联值量回 CSS 里的原始底距（断点会改它），再按当前抬升量重写。 */
   const measureAndSync = useCallback(() => {
+    if (variant !== "floating") return;
     const root = rootRef.current;
     if (!root) return;
     root.style.removeProperty("bottom");
     const measured = Number.parseFloat(getComputedStyle(root).bottom);
     baseBottomPxRef.current = Number.isFinite(measured) ? measured : 16;
     syncBottomOffset(playerBottomBarLiveOffset.get());
-  }, [syncBottomOffset]);
+  }, [syncBottomOffset, variant]);
 
   /**
    * 用 callback ref 而不是挂载时的 layout effect：providers 还没到位时下面会 return null，
@@ -137,11 +163,87 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
 
   if (!provider) return null;
   useGlass();
+
+  const isHeader = variant === "header";
+  // 页头里的圆钮直径是 HEADER_BUTTON_PX，头像 / 记号留一圈玻璃边；浮层里它们铺满 40 的按钮。
+  const faceSize = isHeader ? HEADER_BUTTON_PX - 8 : 40;
+  const providerLabel = providerDisplayName(t, provider);
+
+  const switchButton = (
+    <Tooltip text={t("home.switchOnlineProvider")} className="inline-flex">
+      <button
+        type="button"
+        onClick={(event) =>
+          openLoginWindow(
+            provider.providerId,
+            event.currentTarget.querySelector("[data-login-pill]"),
+          )
+        }
+        aria-label={t("home.switchOnlineProvider")}
+        data-glass={isHeader ? "" : undefined}
+        data-glass-jelly={isHeader ? "" : undefined}
+        data-glass-light={isHeader ? "" : undefined}
+        className={
+          isHeader
+            ? "flex items-center justify-center rounded-full transition-transform hover:scale-105 active:scale-95"
+            : "st-t-fast flex h-10 min-w-10 items-center rounded-full transition-colors hover:bg-[var(--st-fill)]"
+        }
+        style={
+          isHeader
+            ? {
+                width: HEADER_BUTTON_PX,
+                height: HEADER_BUTTON_PX,
+                ...headerButtonSurface(isDaylight),
+                ...surfaceStyle,
+              }
+            : undefined
+        }
+      >
+        {/* 登录窗口从这里出来，登录成功后头像飞回这里（done/LoginDone.tsx 按这个属性找它，属性的值是这里画的平台）。 */}
+        <span
+          data-login-pill={provider.providerId}
+          className="inline-flex"
+          style={
+            landing && status === "signed-in" ? { opacity: 0 } : undefined
+          }
+        >
+          {status === "signed-in" && provider.user ? (
+            <AccountPicture
+              user={provider.user}
+              size={faceSize}
+              providerId={provider.providerId}
+            />
+          ) : (
+            <PlatformMark
+              providerId={provider.providerId}
+              label={providerLabel}
+              size={faceSize}
+              ranOut={status === "ran-out"}
+            />
+          )}
+        </span>
+        {/* 浮层里名字在按钮内展开；页头里改成从圆钮左边滑出的独立小条，免得把搜索栏挤走。 */}
+        {!isHeader && (
+          <span
+            className={`st-t-move overflow-hidden whitespace-nowrap text-xs font-semibold transition-[max-width,opacity,padding] ${showLabel || status === 'checking' ? "max-w-[180px] pl-2.5 pr-3 opacity-100" : "max-w-0 opacity-0"}`}
+          >
+            {status === 'checking' ? t('login.rowChecking') : providerLabel}
+          </span>
+        )}
+      </button>
+    </Tooltip>
+  );
+
   return (
     <div
       ref={setRootNode}
       data-testid="online-provider-switcher"
-      className="pointer-events-auto absolute bottom-4 right-4 z-[100] md:bottom-6 md:right-6"
+      data-switcher-variant={variant}
+      className={
+        isHeader
+          ? "pointer-events-auto relative z-[100] flex items-center"
+          : "pointer-events-auto absolute bottom-4 right-4 z-[100] md:bottom-6 md:right-6"
+      }
       style={
         {
           ...settingsTokens(isDaylight, theme),
@@ -151,85 +253,32 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
         } as React.CSSProperties
       }
     >
-      <div
-        data-glass
-        data-glass-jelly
-        data-glass-light
-        className="flex items-center rounded-[26px] bg-[var(--st-menu)] p-0.5 text-[color:var(--st-t1)] shadow-lg md:p-1.5"
-        style={{
-          backgroundColor: isDaylight
-            ? "rgba(215,215,215,0.42)"
-            : "rgba(40, 40, 40, 0.42)",
-          borderTop: isDaylight
-            ? "1px solid rgba(255,255,255,0.32)"
-            : "1px solid rgba(255,255,255,0.22)",
-          borderBottom: isDaylight
-            ? "1px solid rgba(255,255,255,0.32)"
-            : "1px solid rgba(255,255,255,0.22)",
-          outline: "1px solid rgba(40,40,40,0.2)",
-          boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-        }}
-      >
-        <Tooltip text={t("home.switchOnlineProvider")} className="inline-flex">
-          <button
-            type="button"
-            onClick={(event) =>
-              openLoginWindow(
-                provider.providerId,
-                event.currentTarget.querySelector("[data-login-pill]"),
-              )
-            }
-            aria-label={t("home.switchOnlineProvider")}
-            className="st-t-fast flex h-10 min-w-10 items-center rounded-full transition-colors hover:bg-[var(--st-fill)]"
-          >
-            {/* 登录窗口从这里出来，登录成功后头像飞回这里（done/LoginDone.tsx 按这个属性找它，属性的值是这里画的平台）。 */}
-            <span
-              data-login-pill={provider.providerId}
-              className="inline-flex"
-              style={
-                landing && status === "signed-in" ? { opacity: 0 } : undefined
-              }
-            >
-              {status === "signed-in" && provider.user ? (
-                <AccountPicture
-                  user={provider.user}
-                  size={40}
-                  providerId={provider.providerId}
-                />
-              ) : (
-                <PlatformMark
-                  providerId={provider.providerId}
-                  label={providerDisplayName(t, provider)}
-                  size={40}
-                  ranOut={status === "ran-out"}
-                />
-              )}
-            </span>
-            <span
-              className={`st-t-move overflow-hidden whitespace-nowrap text-xs font-semibold transition-[max-width,opacity,padding] ${showLabel || status === 'checking' ? "max-w-[180px] pl-2.5 pr-3 opacity-100" : "max-w-0 opacity-0"}`}
-            >
-              {status === 'checking' ? t('login.rowChecking') : providerDisplayName(t, provider)}
-            </span>
-          </button>
-        </Tooltip>
+      {/* {isHeader && (
         <span
-          className="mx-1.5 hidden h-6 w-px bg-[var(--st-line2)] md:block"
           aria-hidden="true"
-        />
-        <Tooltip
-          text={t("home.backToPlayer")}
-          className="hidden md:inline-flex"
+          className={`pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg transition-opacity duration-300 ${showLabel ? "opacity-100" : "opacity-0"}`}
+          style={{
+            backgroundColor: isDaylight
+              ? "rgba(215,215,215,0.72)"
+              : "rgba(40,40,40,0.72)",
+            color: "var(--st-t1)",
+            ...surfaceStyle,
+          }}
         >
-          <button
-            type="button"
-            onClick={onBackToPlayer}
-            aria-label={t("home.backToPlayer")}
-            className="st-t-fast flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-[var(--st-fill)]"
-          >
-            <ChevronRight size={21} />
-          </button>
-        </Tooltip>
-      </div>
+          {providerLabel}
+        </span>
+      )} */}
+      {isHeader ? switchButton : (
+        <div
+          data-glass
+          data-glass-jelly
+          data-glass-light
+          className="flex items-center rounded-full bg-[var(--st-menu)] p-0.5 text-[color:var(--st-t1)] shadow-lg md:p-1.5"
+          style={headerButtonSurface(isDaylight)}
+        >
+          {switchButton}
+        </div>
+      )}
     </div>
   );
 };

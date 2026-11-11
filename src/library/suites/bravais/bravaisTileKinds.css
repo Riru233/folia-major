@@ -14,11 +14,10 @@
    - 悬停抬起、键盘焦点：页边收回卡片下面（偏移归零），抬起时不伸进邻居、聚焦环外不露出两截页边；列表联动、批量选中的
      环（bravaisCollection.css / bravaisHome.css）换掉整串阴影，页边同样不画。正在播放的描边画在海报里面，页边照常。
    - 设置「集合叠页边」关掉时（根节点没有 has-stack-edges）不画，集合就是普通海报。 */
-.bravais-tile-face.is-stack {
+/* .bravais-tile-face.is-stack {
     --bravais-stack-page-near: color-mix(in srgb, var(--bg-color, #070707) 66%, var(--lattice-poster-ink));
     --bravais-stack-page-far: color-mix(in srgb, var(--bg-color, #070707) 80%, var(--lattice-poster-ink));
     --bravais-stack-page-line: color-mix(in srgb, var(--bg-color, #070707) 72%, #000);
-    /* 叠色（默认渐变的右下端那一色；自定义叠色用自定义色）与熄灯（82% 黑，日光白；全透明档改为整体压到 0.28）。 */
     --bravais-stack-tint: 0%;
     --bravais-stack-tint-color: color-mix(in srgb, var(--bg-color, #070707) 84%, var(--text-secondary, #6a48ff));
     --bravais-stack-dim: 0%;
@@ -27,9 +26,8 @@
     --bravais-stack-near: color-mix(in srgb, color-mix(in srgb, color-mix(in srgb, var(--bravais-stack-page-near), var(--bravais-stack-tint-color) var(--bravais-stack-tint)), var(--bravais-stack-dim-color) var(--bravais-stack-dim)) var(--bravais-stack-alpha), transparent);
     --bravais-stack-far: color-mix(in srgb, color-mix(in srgb, color-mix(in srgb, var(--bravais-stack-page-far), var(--bravais-stack-tint-color) var(--bravais-stack-tint)), var(--bravais-stack-dim-color) var(--bravais-stack-dim)) var(--bravais-stack-alpha), transparent);
     --bravais-stack-line: color-mix(in srgb, color-mix(in srgb, color-mix(in srgb, var(--bravais-stack-page-line), var(--bravais-stack-tint-color) var(--bravais-stack-tint)), var(--bravais-stack-dim-color) var(--bravais-stack-dim)) var(--bravais-stack-alpha), transparent);
-    /* 页边的收放与熄灯 / 叠色同节奏（海报原来的 600ms 阴影过渡在抬起时会让页边伸进邻居一会儿）。 */
     transition: box-shadow 300ms ease, filter 600ms ease, transform 300ms ease-out;
-}
+} */
 
 /* 日光：页是比底色深一点的灰，发丝线换成更深的一道。 */
 .bravais-root.is-daylight .bravais-tile-face.is-stack {

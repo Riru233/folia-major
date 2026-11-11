@@ -21,6 +21,11 @@ export const IPC_CHANNELS = {
     'automix-models-present': { level: 'any', why: '只读模型文件在不在' },
     'background-throttling-get': { level: 'first-party', why: '只回主窗口，别处回受限值（内联校验）' },
     'bodian-api-request': { level: 'first-party', why: '现状：有来源校验' },
+    // 实验性「视频」背景（electron/bilibili.cjs）：登录在 bilibili 自己的窗口里完成，接口只读。
+    'bilibili-auth-status': { level: 'first-party', why: '回 bilibili 账号名与头像，属于个人数据（isTrustedMainWindowContents）' },
+    'bilibili-auth-login': { level: 'first-party', why: '开登录窗口并写 bilibili 会话（isTrustedMainWindowContents）' },
+    'bilibili-auth-logout': { level: 'first-party', why: '清 bilibili 会话（isTrustedMainWindowContents）' },
+    'bilibili-request': { level: 'first-party', why: '带登录态代理 api.bilibili.com，只放行该主机（isTrustedMainWindowContents）' },
     'choose-cache-directory': { level: 'first-party', why: '改缓存目录（firstParty）' },
     'clear-audio-cache': { level: 'first-party', why: '清空音频缓存（firstParty）' },
     'clear-cover-cache': { level: 'first-party', why: '清空封面缓存（firstParty）' },
@@ -59,6 +64,8 @@ export const IPC_CHANNELS = {
     'legacy-models-check': { level: 'first-party', why: '查旧模型目录，会删设置项（firstParty）' },
     'legacy-models-open': { level: 'first-party', why: '在系统里打开文件夹（firstParty）' },
     'legacy-models-resolve': { level: 'first-party', why: '删旧模型文件（firstParty）' },
+    // 本地歌单右键「打开文件夹所在位置」：弹系统目录选择框并打开系统文件管理器，只在第一方窗口可用。
+    'local-folder-reveal': { level: 'first-party', why: '弹目录选择框并在系统文件管理器定位本地目录（firstParty，路径限制在用户选定的导入根内）' },
     'lyric-api-get-status': { level: 'first-party', why: '现状：有来源校验' },
     'lyric-api-publish': { level: 'first-party', why: '现状：有来源校验' },
     'lyric-api-set-enabled': { level: 'first-party', why: '现状：有来源校验' },

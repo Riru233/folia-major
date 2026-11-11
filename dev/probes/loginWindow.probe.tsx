@@ -353,7 +353,7 @@ function LoginWindowProbe(props: ProbeProps) {
                     onDoneEnd={() => { setDone(false); setSaid('the animation ended'); }}
                 />
                 {/* Where the picture lands after a played sign-in. active=<id>: the platform in use is another one until the account is read. */}
-                {played && <SwitcherPill account={pillAccount} onBackToPlayer={() => { }} />}
+                {played && <SwitcherPill account={pillAccount} />}
             </div>
         </SettingsKitThemeContext.Provider>
     );

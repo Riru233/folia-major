@@ -210,8 +210,8 @@ test('grid to TUI and back preserves the playing queue and current song identiti
     await playing.dispose();
 });
 
-// P3.4：首页也是一个 surface。首页上的 DEV 浮层把首页换成 TUI 的目录列表；从那里打开「全部歌曲」进的是 TUI 的
-// 集合视图（suite 是 TUI），返回落回 TUI 首页、焦点还在「全部歌曲」那一行，键盘接着能用。
+// P3.4：首页也是一个 surface。首页上的 DEV 浮层把首页换成 TUI 的目录列表；从那里打开「全部媒体」进的是 TUI 的
+// 集合视图（suite 是 TUI），返回落回 TUI 首页、焦点还在「全部媒体」那一行，键盘接着能用。
 test('on the home the DEV switch brings up the TUI home; All Songs opens the TUI collection and Back keeps the focus', async ({ page }) => {
     await openLocalHome(page);
     const home = page.locator('[data-library-home="tui"]');
@@ -225,7 +225,7 @@ test('on the home the DEV switch brings up the TUI home; All Songs opens the TUI
     await expect(rows.first()).toContainText('All Songs');
     expect(await rows.count()).toBeGreaterThan(1);
 
-    // 先把焦点移开再点回「全部歌曲」，确认回来时落的是记住的那一行，而不是默认的第一行碰巧对上。
+    // 先把焦点移开再点回「全部媒体」，确认回来时落的是记住的那一行，而不是默认的第一行碰巧对上。
     await rows.nth(1).click();
     await expect(rows.nth(1)).toHaveAttribute('aria-selected', 'true');
     await rows.first().click();

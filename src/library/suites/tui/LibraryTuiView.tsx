@@ -72,7 +72,7 @@ const LibraryTuiView: React.FC<LibraryCollectionSurfaceProps> = ({
     const mutationSnapshot = useCollectionMutationSnapshot(mutations);
     const committedQuery = useCommittedQuery(query);
 
-    // 与网格同一条规则：只有本地文件夹（含「全部歌曲」）按本地排序。
+    // 与网格同一条规则：只有本地文件夹（含「全部媒体」）按本地排序。
     const supportsLocalTrackSorting = collection.source === 'local' && collection.type === 'folder';
     const sortField = useLocalTrackSortStore(state => state.field);
     const sortDirection = useLocalTrackSortStore(state => state.direction);

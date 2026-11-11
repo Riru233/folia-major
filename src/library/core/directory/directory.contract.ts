@@ -23,7 +23,7 @@ export interface LibraryDirectoryItem {
     /** 这个条目包含的歌曲 id（目前只有本地条目有），批量范围按它去重保序。 */
     trackIds?: string[];
     coverUrl?: string;
-    /** 不对应真实来源对象的条目：本地「全部歌曲」「我喜欢」、未知专辑 / 歌手、Navidrome 随机 / 收藏歌单。 */
+    /** 不对应真实来源对象的条目：本地「全部媒体」「我喜欢」、未知专辑 / 歌手、Navidrome 随机 / 收藏歌单。 */
     isVirtual?: boolean;
     /** 显式声明能否隐藏；不给时按类型推断（见 core/directory/directoryVisibility 的 isHideableDirectoryItem）。 */
     hideable?: boolean;
@@ -94,7 +94,7 @@ export interface LibraryDirectoryBatchController {
     play(context: LibraryDirectoryBatchContext): Promise<LibraryMutationResult>;
     enqueue(context: LibraryDirectoryBatchContext): Promise<LibraryMutationResult>;
     createPlaylist(name: string, context: LibraryDirectoryBatchContext): Promise<LibraryMutationResult>;
-    /** 文件夹删除的路径规则见实现（「全部歌曲」不按文件夹删；整个文件夹都选中才删文件夹）。 */
+    /** 文件夹删除的路径规则见实现（「全部媒体」不按文件夹删；整个文件夹都选中才删文件夹）。 */
     remove(context: LibraryDirectoryBatchContext, options?: LibraryDirectoryBatchRunOptions): Promise<LibraryMutationResult>;
     clearIgnore(folderPath: string, options?: LibraryDirectoryBatchRunOptions): Promise<LibraryMutationResult>;
     rescanRoot(rootPath: string, options?: LibraryDirectoryBatchRunOptions): Promise<LibraryMutationResult>;

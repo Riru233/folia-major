@@ -4,7 +4,7 @@ import { Map as MapIcon } from 'lucide-react';
 import GridMap, { type GridMapBatchConfig } from '../directory/GridMap';
 import { Theme } from '../../../../types';
 import { Grid3DSlider, Grid3DSliderItem } from './Grid3DSlider';
-import { GridViewTabs, gridChromeClassesFor } from './GridViewTabs';
+import { gridChromeClassesFor } from './GridViewTabs';
 import { filterDirectoryByVisibility, resolveSourceDirectoryIndex, resolveVisibleDirectoryIndex } from '../../../core/directory/directoryVisibility';
 import type { LibraryHiddenScope } from '../../../core/directory/directory.contract';
 import type { LibraryDeclaredActions } from '../../../core/suite/suite.contract';
@@ -52,8 +52,11 @@ interface DesktopGrid3DSurfaceProps {
     /** 网格 suite 声明的首页动作（交给 GridMap 的目录 surface 取交集）。 */
     declaredHomeActions?: LibraryDeclaredActions;
     batchConfig?: GridMapBatchConfig;
-    ponderControls?: 'local-grid-controls';
     gridMapPonderScope?: 'local-grid-map-page';
+    /** 本地首页的控件探针 id，原样交给 Grid3DSlider（本地首页一直传着它，之前在这一层丢了）。 */
+    ponderControls?: 'local-grid-controls';
+    /** 本地文件夹卡片的右键菜单；滑块与地图两种视图共用同一个回调。 */
+    onFolderContextMenu?: (event: React.MouseEvent, folderPath: string) => void;
 }
 
 export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
@@ -76,8 +79,9 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
     directoryKey = DEFAULT_DIRECTORY_SESSION_ID,
     declaredHomeActions,
     batchConfig,
-    ponderControls,
     gridMapPonderScope,
+    ponderControls,
+    onFolderContextMenu,
 }) => {
     // GridMap 就是网格里「打开着的目录」（core 的目录会话 store 记着打开的是哪个，见 useLibraryDirectorySessionStore）：
     // 打开地图 = openDirectory，关掉地图 = closeDirectory（退场动画结束之后：地图还在淡出，筛选结果不能先跳回全部；
@@ -132,7 +136,6 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
         closingDirectoryKeyRef.current = null;
         if (closedKey) useLibraryDirectorySessionStore.getState().closeDirectory(closedKey);
     }, []);
-    const chrome = gridChromeClassesFor(isDaylight);
     const { hiddenIds: hiddenPlaylistIds, toggleHidden: togglePlaylistHidden } = useHiddenCollections(playlistVisibilityScope);
     const { focusedIndex, onFocusedIndexChange } = useHomeCardPosition(
         focusMemoryScope, items, legacyFocusedIndex, onLegacyFocusedIndexChange, isLoading,
@@ -167,45 +170,7 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                 types) sits right under the header's view capsule, the library actions on the right
                 under the search box. The row itself lets clicks through to the grid; only the
                 controls take them. */}
-            <div className="pointer-events-none absolute inset-x-0 top-2 z-10">
-                <div className="mx-auto grid w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:px-8">
-                    <div />
-                    <div className="flex justify-center">
-                        {(!isLoading || tabs.length > 0) && (
-                            <GridViewTabs
-                                tabs={tabs}
-                                isDaylight={isDaylight}
-                                onOpenMap={isLoading ? undefined : openGridMap}
-                                mapLabel={mapButtonLabel}
-                                mapIcon={<MapIcon size={13} />}
-                                ponderId={ponderControls}
-                            />
-                        )}
-                    </div>
 
-                    <div className="flex min-w-0 justify-end">
-                        {actions.length > 0 && (
-                            <div data-ponder={ponderControls} className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
-                                {actions.map(action => (
-                                    <button
-                                        data-glass
-                                        key={action.id}
-                                        onClick={action.onClick}
-                                        disabled={action.disabled}
-                                        title={action.title}
-                    className={`flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isDaylight ? "border-y border-black/[0.08] bg-[#fff4]" : "border-y border-white/[0.12] bg-[#0004]"} outline outline-1 outline-[rgba(40,40,40,0.2)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]  ${
-                      action.active ? chrome.strongText : chrome.softText
-                    }`}
-                                    >
-                                        {action.icon}
-                                        <span className="whitespace-nowrap">{action.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
 
             <Grid3DSlider
                 key={focusMemoryScope}
@@ -218,6 +183,12 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                 emptyMessage={emptyMessage}
                 isDaylight={isDaylight}
                 hasFloatingPlayer={hasFloatingPlayer}
+                tabs={tabs}
+                mapButtonLabel={mapButtonLabel}
+                openGridMap={openGridMap}
+                actions={actions}
+                ponderControls={ponderControls}
+                onFolderContextMenu={onFolderContextMenu}
             />
 
             <AnimatePresence onExitComplete={handleGridMapExitComplete}>
@@ -226,8 +197,8 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                         directoryKey={directoryKey}
                         declaredHomeActions={declaredHomeActions}
                         title={title}
-                        // 文件夹卡的描述是它的名称（路径）——虚拟的「全部歌曲」也一样，标题下一行照旧是
-                        // 「All Songs / 全部歌曲」。path 只给真实文件夹（契约：虚拟条目没有路径）；GridMap 的卡片
+                        // 文件夹卡的描述是它的名称（路径）——虚拟的「全部媒体」也一样，标题下一行照旧是
+                        // 「All Songs / 全部媒体」。path 只给真实文件夹（契约：虚拟条目没有路径）；GridMap 的卡片
                         // 按 resolveGridMapFolderLabel 把虚拟文件夹的名称放在路径的位置（含「本目录 N 首」）。
                         // 规则在 core/directory/directoryItems，TUI 的目录列表用同一条。
                         items={items.map(item => ({
@@ -255,6 +226,7 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                         onTogglePlaylistHidden={togglePlaylistHidden}
                         batchConfig={batchConfig}
                         ponderPageScope={gridMapPonderScope}
+                        onFolderContextMenu={onFolderContextMenu}
                     />
                 )}
             </AnimatePresence>

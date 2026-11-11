@@ -29,7 +29,7 @@ import { useBravaisSessionFocus } from './useBravaisSessionFocus';
 // - 歌曲磁贴 → 聚焦卡（播放 / 入队，专辑与其他歌手的链接推入下一层）；专辑磁贴单击进入专辑（被点的专辑是起点磁贴）。
 // - 过滤只筛专辑名（core 约定），热门歌曲不参与；过滤生效时退化为有限拼贴，热门歌曲的 rank 离缝最近。
 // - 「加入热门歌曲」的条数提示显示在缝底（不走 toast）；本地歌手的实体编辑在缝的「⋯ 更多」，用宿主对话框。
-// - #918「全部歌曲」：在线歌手热门歌曲之外还有歌时，倾斜信息条（BravaisSeamPoster）的按钮排里多一个「全部歌曲」，
+// - #918「全部媒体」：在线歌手热门歌曲之外还有歌时，倾斜信息条（BravaisSeamPoster）的按钮排里多一个「全部媒体」，
 //   由宿主压进那一层在线集合（type 'artist_songs'，由集合页渲染）。
 // 缝与墙的投影在 useBravaisArtistSeam，聚焦卡上的链接在 useBravaisArtistLinks。
 

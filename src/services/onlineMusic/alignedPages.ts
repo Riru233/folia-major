@@ -1,7 +1,7 @@
 import type { ProviderPage } from '../../types/onlineMusic';
 
 // src/services/onlineMusic/alignedPages.ts
-// 把一次 { limit, offset } 的读取拆成固定大小、按大小对齐的小页逐页读（omni 读歌手全部歌曲时用）。
+// 把一次 { limit, offset } 的读取拆成固定大小、按大小对齐的小页逐页读（omni 读歌手全部媒体时用）。
 
 /**
  * 每一小页的大小。集合资源先读 { limit: 150, offset: 0 } 再按 { limit: 1000, offset: 150 } 往后补，两者都是它的倍数，
@@ -11,7 +11,7 @@ import type { ProviderPage } from '../../types/onlineMusic';
 export const ALIGNED_PAGE_SIZE = 50;
 
 /**
- * 歌手「全部歌曲」最多读多少首（与歌手页专辑分页的 offset 上限同一个数）：古典作曲家、「群星」这类歌手动辄几万首，
+ * 歌手「全部媒体」最多读多少首（与歌手页专辑分页的 offset 上限同一个数）：古典作曲家、「群星」这类歌手动辄几万首，
  * 一路补到底要几百个串行请求、整份列表还要装进内存。到这里就当读完了，总数也按它截。
  */
 export const ARTIST_SONGS_CAP = 10000;

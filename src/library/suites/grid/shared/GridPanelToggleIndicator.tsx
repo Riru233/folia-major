@@ -9,7 +9,8 @@ import { useOneTimeHint } from '../../../../hooks/useOneTimeHint';
 // 调用方必须在外层可点击的标题元素上加 `group/grid-title`，文案展开靠这个命名 group 触发。
 // Tailwind 不能生成动态类名，所以 group 名固定。
 
-const PANEL_TOGGLE_HINT_STORAGE_KEY = 'folia:gridPanelToggleHintSeen';
+/** 一次性自我提示的存储键：文字版提示（标题上）与玻璃圆钮版（返回按钮旁）共用，看过一次就不再抖。 */
+export const PANEL_TOGGLE_HINT_STORAGE_KEY = 'folia:gridPanelToggleHintSeen';
 
 interface GridPanelToggleIndicatorProps {
     isOpen: boolean;

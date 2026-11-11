@@ -6,7 +6,7 @@ import { cleanLocalLibraryName, splitLocalLibraryArtistNames } from './localLibr
 // Resolves canonical local-song metadata while keeping imported and online snapshots internal.
 
 export const stripLocalAudioExtension = (fileName: string): string => (
-  fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/iu, '').trim()
+  fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac|mp4|mkv)$/iu, '').trim()
 );
 
 export const buildImportedMetadataSnapshot = ({

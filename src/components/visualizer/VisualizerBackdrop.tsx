@@ -91,8 +91,10 @@ export const VisualizerBackdropLayers: React.FC<VisualizerBackdropLayersProps> =
             />
 
             {/* The built-in video layer follows the same rule as stage layers and stays out of the OBS
-                sources, which cannot open the main window's local file handle. */}
-            {!sharedProps?.isPreviewMode && !staticMode && isMainAppSurface && <VideoLayer paused={paused} />}
+                sources, which cannot open the main window's local file handle.
+                静态模式照样挂着它：那一条只关掉设置里的装饰视频，视频曲目（MV）自己的画面是这首歌的一部分，
+                由 VideoLayer 自己按 staticMode 决定放不放（见那边的 active）。 */}
+            {!sharedProps?.isPreviewMode && isMainAppSurface && <VideoLayer paused={paused} staticMode={staticMode} />}
         </>
     );
 };

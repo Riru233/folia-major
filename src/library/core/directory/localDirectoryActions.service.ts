@@ -14,7 +14,7 @@ import type { LibraryMutationFailureReason, LibraryMutationResult } from '../col
 // 本地目录（首页本地曲库的文件夹 / 专辑 / 歌手）的批量动作层。规则原样搬自 LocalGrid3DView 的批量配置：
 // - 播放 / 入队 / 新建歌单：把范围的歌曲 id 按宿主此刻的曲库解析成歌（顺序 = 范围的顺序，找不到的跳过）；
 // - 删除：只有「整个文件夹都被选中」的真实文件夹才按文件夹删（删最上层的那个路径），其余按歌 id 删；
-//   「全部歌曲」这类虚拟条目不对应文件夹，从不按文件夹删；然后刷新曲库；
+//   「全部媒体」这类虚拟条目不对应文件夹，从不按文件夹删；然后刷新曲库；
 // - 恢复忽略目录、重扫根、移除根：调对应服务后刷新曲库。
 // 副作用都经宿主装配的 LibraryDirectoryBatchPort；同一时间只允许一个动作（进行中再提交返回 busy），
 // 进行中的动作在快照里，面板与命令面板据此禁用。
@@ -37,7 +37,7 @@ export const resolveDirectoryBatchSongs = (
 
 /**
  * 删除选中范围时要按文件夹删的路径（最上层的那些）。一个真实文件夹只有在它和它所有子目录里的歌都在范围里时
- * 才算「整个选中」——只选了本层（子目录没选）不能把子目录一并删掉。虚拟条目（「全部歌曲」）不算文件夹。
+ * 才算「整个选中」——只选了本层（子目录没选）不能把子目录一并删掉。虚拟条目（「全部媒体」）不算文件夹。
  */
 export const resolveFolderRemovalPaths = (
     context: LibraryDirectoryBatchContext,
@@ -45,7 +45,7 @@ export const resolveFolderRemovalPaths = (
 ): string[] => {
     const selectedIds = new Set(context.trackIds);
     // A direct-only selection must not ignore descendants that the user excluded.
-    // 虚拟条目（「全部歌曲」）不对应任何文件夹，不按文件夹删；它的歌照常按 id 删。
+    // 虚拟条目（「全部媒体」）不对应任何文件夹，不按文件夹删；它的歌照常按 id 删。
     const folderPaths = context.items
         .filter(item => !item.isVirtual)
         .map(item => item.path || item.name)

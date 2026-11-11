@@ -64,6 +64,9 @@ export const usePlayerPanelModel = ({
     const visualizerMode = useVisualizerSettingsStore(state => state.visualizerMode);
     const transparentPlayerBackground = usePlayerChromeSettingsStore(state => state.transparentPlayerBackground);
     const showOpenPanelCloseButton = usePlayerChromeSettingsStore(state => state.showOpenPanelCloseButton);
+    const playerBarStyle = usePlayerChromeSettingsStore(state => state.playerBarStyle);
+    const isPlayerView = useAppViewStore(state => state.view === 'player');
+    const hidePlayerProgressBar = usePlayerChromeSettingsStore(state => state.hidePlayerProgressBar);
     const currentSong = usePlaybackStore(state => state.currentSong);
     // Only the FM tab's play button reads it, so the shown state, not the raw one.
     const playerState = usePlaybackStore(selectDisplayPlayerState);
@@ -123,7 +126,11 @@ export const usePlayerPanelModel = ({
         isMuted,
         showOpenPanelCloseButton,
         isPanelGuideHotspotActive,
-        hideToggleButton: isPlayerChromeHidden || shouldHidePlayerRightPanelButton,
+        // 停靠样式在歌词画报上把侧边面板的开关挪进了底部栏的右端，那颗浮动齿轮就该退场；
+        // 别的页面停靠栏上并没有那颗开关（齿轮仍在），而「隐藏进度条」会把整条栏收走，也要留着齿轮。
+        hideToggleButton: isPlayerChromeHidden
+            || shouldHidePlayerRightPanelButton
+            || (playerBarStyle === 'docked' && isPlayerView && !hidePlayerProgressBar),
         activePlaybackContext,
         audioQuality,
         useCoverColorBg,
@@ -152,6 +159,9 @@ export const usePlayerPanelModel = ({
         isPanelGuideHotspotActive,
         isPlayerChromeHidden,
         shouldHidePlayerRightPanelButton,
+        playerBarStyle,
+        isPlayerView,
+        hidePlayerProgressBar,
         activePlaybackContext,
         audioQuality,
         useCoverColorBg,

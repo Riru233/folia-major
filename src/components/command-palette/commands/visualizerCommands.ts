@@ -6,6 +6,8 @@ import { createBackgroundCommand, createToggleCommand, createVisualizerCommand }
 import { lyricSegmentationCommand } from './lyricSegmentationCommand';
 import { VISUALIZER_REGISTRY } from '../../visualizer/registry';
 import { VISUALIZER_BACKGROUND_REGISTRY } from '../../visualizer/backgrounds/registry';
+import { isBackgroundModeAvailable } from '../../visualizer/backgrounds/availability';
+import { useShinoLabStore } from '../../../shinoinject/lab/useShinoLabStore';
 import { isMachiCameraBarOpen, toggleMachiCameraBar } from '../../visualizer/machi/cameraBar';
 
 // src/components/command-palette/commands/visualizerCommands.ts
@@ -191,7 +193,11 @@ export const visualizerCommands: CommandPaletteCommand[] = [
         },
     },
     // Monet has no plain switch command (the two above pick a layout); Latent's variants follow its own.
-    ...VISUALIZER_BACKGROUND_REGISTRY.flatMap(({ mode, command }) => [
+    // 实验性的「视频」背景只在 Shino 实验室里视频播放与 bilibili MV 两项都开着的时候才有切换命令。
+    ...VISUALIZER_BACKGROUND_REGISTRY.filter(({ mode }) => isBackgroundModeAvailable(mode, {
+        bilibiliMvEnabled: useShinoLabStore.getState().bilibiliMvEnabled,
+        videoPlaybackEnabled: useShinoLabStore.getState().videoPlaybackEnabled,
+    })).flatMap(({ mode, command }) => [
         ...(command ? [createBackgroundCommand(mode, command.title, command.description, command.keywords)] : []),
         ...(mode === 'latent' ? LATENT_VARIANT_COMMANDS : []),
     ]),

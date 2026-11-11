@@ -8,9 +8,8 @@ import {
     HEX_CARD_MIN_SCALE_BOUNDS,
     HEX_CARD_MIN_SCALE_DEFAULT,
 } from '../../../../utils/hexCardFalloff';
-import { chooseLibrarySuite, listLibrarySuiteOptions, useActiveLibrarySuiteId } from '../../../../library/app/librarySuiteChoice';
+import { chooseLibrarySuite, hasSelectableLibrarySuite, listLibrarySuiteOptions, useActiveLibrarySuiteId } from '../../../../library/app/librarySuiteChoice';
 import { isGridLibraryActive, useIsGridLibraryActive } from '../../../../library/app/gridLibraryActive';
-import { hasLibrarySuiteChoice } from '../../../../library/registry';
 import { omni } from '../../../../services/onlineMusic/omni';
 import { useGridViewSettingsStore } from '../../../../stores/useGridViewSettingsStore';
 import { useHomeLayoutSettingsStore } from '../../../../stores/useHomeLayoutSettingsStore';
@@ -31,7 +30,7 @@ import { GridCardsPreview, HomeCardStylePicture, ScratchpadHandleStylePicture } 
 // what it looks like while the pointer is away (small and faint; it opens into the full tab on hover).
 
 // The choice of suite is not part of the config export.
-const SUITE: SettingsGroupDef = { id: 'librarySuite', titleKey: 'options.librarySuite', available: hasLibrarySuiteChoice };
+const SUITE: SettingsGroupDef = { id: 'librarySuite', titleKey: 'options.librarySuite', available: hasSelectableLibrarySuite };
 const HOME: SettingsGroupDef = { id: 'homeScreen', titleKey: 'options.settingsHeadingHome' };
 const GRID: SettingsGroupDef = { id: 'gridViewCardSettings', titleKey: 'options.gridViewCardSettings', available: isGridLibraryActive };
 const GRID_ONLY = { available: isGridLibraryActive };
@@ -105,7 +104,7 @@ const HomePage: React.FC = () => {
 
     return (
         <>
-            {hasLibrarySuiteChoice() && (
+            {hasSelectableLibrarySuite() && (
                 <Group def={SUITE} bare>
                     <Row option={O.suite} note={t('options.librarySuiteDesc')}>
                         <Segmented

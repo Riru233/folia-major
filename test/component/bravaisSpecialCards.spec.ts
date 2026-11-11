@@ -6,7 +6,7 @@ import { buildServiceStubModule, LOCAL_MUSIC_SERVICE_ROUTE } from '../../dev/pro
 import '../../dev/probes/homeBehavior/probeApi';
 
 // test/component/bravaisSpecialCards.spec.ts
-// bravais 首页的特殊集合（我喜欢的音乐、云盘、私人 FM、每日推荐、全部歌曲、本地「我喜欢」、Navidrome 随机 / 收藏）：
+// bravais 首页的特殊集合（我喜欢的音乐、云盘、私人 FM、每日推荐、全部媒体、本地「我喜欢」、Navidrome 随机 / 收藏）：
 // - 墙上那张卡左上角的类型标签换一身（is-special + data-bravais-special：强调色底、带小图标），普通卡片不变；
 // - 缝里中段底部的直达入口（fb11：竖排文字，显示种类的短名，并排成列；贴在账户入口 / 工具格上方）：只在那张集合此刻真有时出现（在线看当前页签的卡；provider 没有、未登录都不出现），
 //   点它与点墙上那张卡同一条打开路径——墙上（屏内）找得到那张卡就以它为起点磁贴，找不到（别的 section）就以缝为中心，
@@ -250,7 +250,7 @@ test.describe('[bravais-only] special collections', () => {
         const shortcutsBox = (await shortcutsGroup(page).boundingBox())!;
         expect(shortcutsBox.y).toBeGreaterThanOrEqual(sectionsBox.y + sectionsBox.height);
 
-        // 切到「专辑」：全部歌曲不在墙上，入口照样在。
+        // 切到「专辑」：全部媒体不在墙上，入口照样在。
         await section(page, 'Albums').click();
         await settled(page);
         await expect(page.locator(`.bravais-tile[data-library-card="card:folder:${HOME_ALL_SONGS_ID}"]`)).toHaveCount(0);

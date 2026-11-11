@@ -7,11 +7,13 @@ import { applyVisualizerTuning } from './tuningRegistry';
 import { DEFAULT_VISUALIZER_BACKGROUND_MODE } from './backgrounds/registry';
 import VisualizerHarmonyOverlay from './VisualizerHarmonyOverlay';
 import VisualizerBackdrop from './VisualizerBackdrop';
+import VisualizerBackKey from './VisualizerBackKey';
 import VisualizerStyleTransition, { useStyleSwitch } from './styleTransition/VisualizerStyleTransition';
 import softFocus from './styleTransition/softFocus';
 import { alongProgress } from './styleTransition/layerTransition';
 import { holdTurns } from './preview/pictureTurns';
 import { useReducedMotionFor } from '../../hooks/useReducedMotionFor';
+import { useHideLyricsDuringVideo } from '../../shinoinject/lab/useVideoPlaybackActive';
 
 interface VisualizerRendererProps extends VisualizerSharedProps {
     mode: VisualizerMode;
@@ -42,6 +44,8 @@ const VisualizerRenderer: React.FC<VisualizerRendererProps> = ({ mode, animateSt
     // A switch cuts where the host does not animate, in static mode, and where the user reduces
     // interface motion (the app's own setting, not the system's).
     const reducedMotion = useReducedMotionFor('uiMicroMotion');
+    // 实验室的「视频播放时隐藏歌词样式」：画面在放的时候不画歌词那层，只留画面和字幕。
+    const hideLyrics = useHideLyricsDuringVideo();
     const transition = animateStyleSwitch && !resolvedProps.staticMode && !reducedMotion ? softFocus : null;
     // A blend's song hand-off, for the style that draws one (VisualizerSongHandoff). The background takes
     // the incoming song (its cover, seed and theme) when the blend starts, and changes with the transition
@@ -83,7 +87,15 @@ const VisualizerRenderer: React.FC<VisualizerRendererProps> = ({ mode, animateSt
               */}
             <React.Suspense fallback={null}>
                 <VisualizerBackdrop entry={entry} props={backdropProps} transition={backgroundTransition} waits={styleSwitch.waits}>
-                    <VisualizerStyleTransition styleSwitch={styleSwitch} transition={transition} renderStyle={renderStyle} />
+                    {hideLyrics
+                        ? (props.onBack
+                            ? <VisualizerBackKey
+                                onBack={props.onBack}
+                                isDaylight={resolvedProps.isDaylight ?? false}
+                                alwaysShow={props.alwaysShowBackButton}
+                            />
+                            : null)
+                        : <VisualizerStyleTransition styleSwitch={styleSwitch} transition={transition} renderStyle={renderStyle} />}
                 </VisualizerBackdrop>
             </React.Suspense>
             <VisualizerHarmonyOverlay
