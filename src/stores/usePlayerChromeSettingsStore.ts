@@ -18,7 +18,7 @@ import {
     type PlayerControlSlotActionId,
 } from '../types/playerControlSlots';
 import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX } from '../utils/playerBottomBarLayout';
-import { getStoredBoolean, getStoredString, setStoredBoolean, setStoredString, getStoredString, setStoredString } from './storagePrimitives';
+import { getStoredBoolean, getStoredString, setStoredBoolean, setStoredString } from './storagePrimitives';
 import { setStatusMessage } from './useStatusMessageStore';
 
 const PLAYER_BOTTOM_BAR_OFFSET_STORAGE_KEY = 'player_bottom_bar_offset';
