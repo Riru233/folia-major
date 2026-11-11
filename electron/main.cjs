@@ -2690,13 +2690,13 @@ let wallpaperModeRelaunchTimer = null;
 let wallpaperModeRelaunchGeneration = 0;
 const x11WallpaperWindows = new WeakSet();
 // Must match CLICK_THROUGH_UNLOCK_HOTSPOT in src/utils/clickThroughUnlockHotspot.ts (the renderer
-// runs the same hit test on mousemove). The width covers the unlock button both at right-[180px]
-// and at right-[224px] (titlebar showing the fullscreen button), plus the media buttons that come
+// runs the same hit test on mousemove). The width covers the unlock button both at right-[210px]
+// and at right-[254px] (titlebar showing the fullscreen button), plus the media buttons that come
 // up to its left while click-through is on.
 const MAIN_WINDOW_CLICK_THROUGH_UNLOCK_HOTSPOT = {
   width: 172,
   height: 40,
-  rightInset: 176,
+  rightInset: 206,
   topInset: 4,
 };
 const MAIN_WINDOW_CLICK_THROUGH_UNLOCK_HOVER_INTERVAL_MS = 150;

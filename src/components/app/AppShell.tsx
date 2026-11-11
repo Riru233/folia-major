@@ -14,10 +14,9 @@ import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettin
 import { useNativeTrafficLights } from '../../hooks/useNativeTrafficLights';
 import {
     CLICK_THROUGH_MEDIA_CONTROLS_GAP,
-    CLICK_THROUGH_UNLOCK_BUTTON_GAP,
     CLICK_THROUGH_UNLOCK_BUTTON_WIDTH,
     NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH,
-    resolveWindowControlsExtent,
+    resolveUnlockButtonInset,
 } from '../../utils/clickThroughUnlockHotspot';
 import type { FoliumLayoutRect } from '../../mods/folium/contract';
 
@@ -102,13 +101,14 @@ const AppShell: React.FC<AppShellProps> = ({
     const leftControls = titlebarSide === 'left';
     // 窗口带 mac 系统红绿灯时自绘按钮只剩遥控/全屏，锁和切歌按钮跟着靠过去；靠左时整组让开红绿灯。
     const nativeTrafficLights = useNativeTrafficLights();
-    const windowControlsExtent = resolveWindowControlsExtent({
+    // 锁和切歌按钮的偏移：窗口按钮序列 + 固定的 4px 间隙 + 再往里让的 30px。
+    // 30px 是这次有意往窗口内侧挪的距离，主进程的悬停热区按同一套数字算，两边必须一致。
+    const clickThroughLockOffset = resolveUnlockButtonInset({
         hasFullscreenButton: hasFullscreenTitlebarButton,
         nativeTrafficLights,
         side: titlebarSide,
     });
     const titlebarEdge = leftControls ? 'left' : 'right';
-    const clickThroughLockOffset = windowControlsExtent + CLICK_THROUGH_UNLOCK_BUTTON_GAP;
     const clickThroughMediaOffset = clickThroughLockOffset + CLICK_THROUGH_UNLOCK_BUTTON_WIDTH + CLICK_THROUGH_MEDIA_CONTROLS_GAP;
     const windowControlsOffset = nativeTrafficLights && leftControls ? NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH : 0;
 
@@ -193,12 +193,12 @@ const AppShell: React.FC<AppShellProps> = ({
     // 开了顶栏模糊时用更实的一层：0.18 的白在深色画面上只会混成深灰，浅色主题的深色按钮照样看不清，
     // 得把底色抬到接近浅色主题的底；深色主题同理压暗。透明窗口原有的 0.18 样式不变。
     const titlebarBackdropClassName = showsPlayerHeaderBlur
-        ? `absolute inset-0 backdrop-blur-md border-b ${
+        ? `absolute inset-0 border-b ${
             isDaylight
                 ? 'bg-white/65 border-black/5 shadow-[0_8px_28px_rgba(0,0,0,0.06)]'
                 : 'bg-black/40 border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.20)]'
         }`
-        : `absolute inset-0 backdrop-blur-sm ${
+        : `absolute inset-0 ${
             isDaylight
                 ? isPlayerView
                     ? 'bg-white/[0.18] border-b border-white/25 shadow-[0_8px_28px_rgba(0,0,0,0.06)]'
@@ -246,11 +246,15 @@ const AppShell: React.FC<AppShellProps> = ({
                                 opacity: isTitlebarBackdropVisible ? 1 : 0,
                             }}
                             transition={{ duration: 0.18, ease: 'easeOut' }}
-                        className={`pl-3 pt-1 tracking-tight flex items-center gap-3 ${isDaylight?'[text-shadow:_0_0px_2px_#fff] [text-shadow:_0_0px_4px_#fff] [text-shadow:_0_0px_6px_#fff]' : '[text-shadow:_0_0px_2px_#000] [text-shadow:_0_0px_4px_#000] [text-shadow:_0_0px_6px_#000]'}`}>
+                        className={`pt-1 tracking-tight flex items-center gap-3 ${nativeTrafficLights ? '' : 'pl-3'} ${isDaylight?'[text-shadow:_0_0px_2px_#fff] [text-shadow:_0_0px_4px_#fff] [text-shadow:_0_0px_6px_#fff]' : '[text-shadow:_0_0px_2px_#000] [text-shadow:_0_0px_4px_#000] [text-shadow:_0_0px_6px_#000]'}`}
+                        // mac 窗口用系统红绿灯时左上角被红黄绿三个圆点占住，标题整体让开这段宽度，
+                        // 和自绘按钮靠左时让出的距离用同一个常量，两边不会各写一套。
+                        style={nativeTrafficLights ? { paddingLeft: NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH } : undefined}
+                        >
                           Folia Shino Preview
                         </motion.div>
                         <TitlebarDragZone active={usesCustomWindowChrome} />
-                        {/* 锁离窗口边缘的距离由 resolveWindowControlsExtent 算：右侧时是 right，
+                        {/* 锁离窗口边缘的距离由 resolveUnlockButtonInset 算：右侧时是 right，
                             窗口按钮靠左时整排镜像成 left，两处偏移都跟着 titlebarEdge 走。 */}
                         <div
                             className={`pointer-events-auto absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} z-20 h-full flex items-center`}
@@ -279,7 +283,7 @@ const AppShell: React.FC<AppShellProps> = ({
                             </button>
                         </div>
                         {/* 点击穿透时窗口按钮都藏了，切歌按钮放在锁的左边，跟锁一起出现（#471）。
-                            右缘离锁 6px：锁离右边 180px/224px、宽 28px，这组宽 86px（位置由 resolveWindowControlsExtent 算）。
+                            右缘离锁 6px：锁离右边 210px/254px、宽 28px，这组宽 86px（位置由 resolveUnlockButtonInset 算）。
                             不放锁右边：那样热区要伸到离右边 84px，压住下面窗口的最小化/最大化按钮。 */}
                         <div
                             className={`pointer-events-none absolute ${window.electron?.platform === 'darwin' ? 'top-1' : 'top-0'} z-20 h-full flex items-center`}
