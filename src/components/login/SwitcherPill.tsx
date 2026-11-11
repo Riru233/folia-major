@@ -206,9 +206,9 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
               )}
             </span>
             <span
-              className={`st-t-move overflow-hidden whitespace-nowrap text-xs font-semibold transition-[max-width,opacity,padding] ${showLabel ? "max-w-[180px] pl-2.5 pr-3 opacity-100" : "max-w-0 opacity-0"}`}
+              className={`st-t-move overflow-hidden whitespace-nowrap text-xs font-semibold transition-[max-width,opacity,padding] ${showLabel || status === 'checking' ? "max-w-[180px] pl-2.5 pr-3 opacity-100" : "max-w-0 opacity-0"}`}
             >
-              {providerDisplayName(t, provider)}
+              {status === 'checking' ? t('login.rowChecking') : providerDisplayName(t, provider)}
             </span>
           </button>
         </Tooltip>
