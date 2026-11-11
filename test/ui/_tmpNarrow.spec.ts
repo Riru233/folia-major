@@ -3,7 +3,7 @@ import { APP_VERSION, GUIDE_VERSION_STORAGE_KEY, waitForAppMounted } from '../he
 
 const SONGS = [
     { id: 1, name: 'Current Song With A Fairly Long Title For Testing', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Album' }, durationMs: 180_000 },
-    { id: 2, name: 'Next', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Album' }, durationMs: 180_000 },
+    { id: 2, name: 'Next Song Also Long Enough To Stress The Row', artists: [{ id: 10, name: 'Alpha' }], album: { id: 20, name: 'Album' }, durationMs: 180_000 },
 ];
 
 const openPlayerWithSong = async (page: Page) => {
@@ -34,17 +34,18 @@ const openPlayerWithSong = async (page: Page) => {
   await expect(page.locator('[data-ponder="player-bar"]')).toBeVisible();
 };
 
-for (const width of [900, 720, 520]) {
-  test(`narrow ${width}`, async ({ page }) => {
+for (const width of [900, 760, 640, 520]) {
+  test(`expanded ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 820 });
     await openPlayerWithSong(page);
-    await page.waitForTimeout(1000);
     const bar = page.locator('[data-ponder="player-bar"]').first();
-    console.log(width, 'style', await bar.getAttribute('data-player-bar-style'));
-    console.log(width, 'box', JSON.stringify(await bar.boundingBox()));
+    const box = (await bar.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(900);
+    console.log(width, 'expanded box', JSON.stringify(await bar.boundingBox()));
     console.log(width, 'overflow', JSON.stringify(await page.evaluate(() => ({
       sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth,
     }))));
-    await page.screenshot({ path: `test-results/narrow-${width}.png` });
+    await page.screenshot({ path: `test-results/expanded-${width}.png` });
   });
 }
