@@ -272,6 +272,7 @@ export const STORAGE_KEYS = [
     'web:shino_lab_bilibili_auto_match',
     'web:shino_lab_bilibili_bv_overrides',
     'web:shino_lab_bilibili_mv',
+    'web:shino_lab_bilibili_mv_tuning',
     'web:shino_lab_bilibili_quality',
     'web:shino_lab_hide_lyrics_on_video',
     'web:shino_lab_video_playback',

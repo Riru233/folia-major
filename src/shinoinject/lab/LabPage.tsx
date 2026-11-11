@@ -1,14 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Info, LogIn, LogOut, RotateCcw, X } from 'lucide-react';
+import { Crosshair, Info, LogIn, LogOut, RotateCcw, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { selectDisplaySong, usePlaybackStore } from '../../stores/usePlaybackStore';
-import { useBilibiliMvStore } from './useBilibiliMvStore';
+import { useBilibiliMvStore, selectMvOffsetSec } from './useBilibiliMvStore';
 import { useShinoLabStore, type BilibiliMvQuality } from './useShinoLabStore';
 import { setStatusMessage } from '../../stores/useStatusMessageStore';
 import { ensureVideoLayerFileRestored, useVideoLayerSettingsStore, VIDEO_LAYER_OPACITY_BOUNDS } from '../../stores/useVideoLayerSettingsStore';
 import { buildSearchKeyword, songKeyOf } from './bilibili/mvMatch';
 import { Button, Group, Reveal, Row, Segmented, Slider, TextField, Toggle, Value, option, type SettingsGroupDef, type SettingsOptionDef } from '../../components/modal/settings/kit';
+import OffsetStepper from '../../components/shared/OffsetStepper';
+import { useOffsetTuningStore } from './videoBackground/useOffsetTuningStore';
+import { closeSettings } from '../../stores/useSettingsModalStore';
 import { useSettingsPage } from '../../components/modal/settings/pages/settingsPageContext';
 
 // src/shinoinject/lab/LabPage.tsx
@@ -81,11 +84,12 @@ const LabPage: React.FC = () => {
     const mv = useBilibiliMvStore(useShallow(state => ({
         auth: state.auth,
         resolution: state.resolution,
-        overrides: state.overrides,
+        tunings: state.tunings,
         refreshAuth: state.refreshAuth,
         signIn: state.signIn,
         signOut: state.signOut,
         setManualBv: state.setManualBv,
+        setOffsetSec: state.setOffsetSec,
         resolveForSong: state.resolveForSong,
     })));
 
@@ -113,7 +117,12 @@ const LabPage: React.FC = () => {
     };
 
     const songKey = song ? songKeyOf(song) : null;
-    const manualBv = songKey ? mv.overrides[songKey] ?? '' : '';
+    const manualBv = songKey ? mv.tunings[songKey]?.pinnedBvid ?? '' : '';
+    const offsetSec = selectMvOffsetSec(
+        { tunings: mv.tunings },
+        songKey,
+        mv.resolution && mv.resolution.songKey === songKey ? mv.resolution.stream?.bvid : null,
+    );
     const [bvDraft, setBvDraft] = useState(manualBv);
     useEffect(() => {
         setBvDraft(manualBv);
@@ -140,6 +149,7 @@ const LabPage: React.FC = () => {
             return t('options.shinoLabBilibiliReady', {
                 title: mv.resolution.stream.title,
                 quality: quality > 0 ? `${quality}P` : t('options.shinoLabBilibiliQualityUnknown'),
+                bvid: mv.resolution.stream.bvid,
             });
         }
         if (mv.resolution.state === 'missing') return mv.resolution.message ?? t('options.shinoLabBilibiliNoMatch');
@@ -273,6 +283,35 @@ const LabPage: React.FC = () => {
                             placeholder={t('options.shinoLabBilibiliBvPlaceholder')}
                             disabled={!song}
                         />
+                    </Row>
+                    <Row
+                        label={t('options.shinoLabBilibiliOffset')}
+                        hint={t('options.shinoLabBilibiliOffsetDesc')}
+                        note={t('options.shinoLabBilibiliOffsetNote')}
+                        disabled={!song}
+                    >
+                        <Button
+                            icon={RotateCcw}
+                            tip={t('options.shinoLabBilibiliOffsetReset')}
+                            disabled={!song || offsetSec === 0}
+                            onClick={() => mv.setOffsetSec(song, 0)}
+                        />
+                        <OffsetStepper
+                            value={offsetSec}
+                            onChange={next => mv.setOffsetSec(song, next)}
+                            disabled={!song}
+                            label={t('options.shinoLabBilibiliOffset')}
+                        />
+                        <Value>{t('options.shinoLabBilibiliOffsetUnit')}</Value>
+                        <Button
+                            icon={Crosshair}
+                            onClick={() => {
+                                useOffsetTuningStore.getState().begin(song);
+                                closeSettings();
+                            }}
+                        >
+                            {t('options.shinoLabBilibiliOffsetInPicture')}
+                        </Button>
                     </Row>
                     <Row sub label={t('options.shinoLabBilibiliKeyword')} disabled={!song}>
                         <Value>{song ? buildSearchKeyword(song) : '—'}</Value>

@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { LogIn, LogOut, RotateCcw } from 'lucide-react';
+import { Crosshair, LogIn, LogOut, RotateCcw } from 'lucide-react';
 import { selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
-import { useBilibiliMvStore } from '../useBilibiliMvStore';
+import { useBilibiliMvStore, selectMvOffsetSec } from '../useBilibiliMvStore';
 import { useShinoLabStore, type BilibiliMvQuality } from '../useShinoLabStore';
 import { buildSearchKeyword, songKeyOf } from '../bilibili/mvMatch';
 import i18n from '../../../i18n/config';
 import { Button, Group, Row, Segmented, TextField, Toggle, Value, type SettingsGroupDef } from '../../../components/modal/settings/kit';
+import OffsetStepper from '../../../components/shared/OffsetStepper';
+import { useOffsetTuningStore } from './useOffsetTuningStore';
+import { closeSettings } from '../../../stores/useSettingsModalStore';
 import type { VisualizerBackgroundSettingsProps } from '../../../components/visualizer/backgrounds/definition';
 
 // src/shinoinject/lab/videoBackground/VideoBackgroundSettingsCard.tsx
-// 控制面板里「视频」背景的那几行：bilibili 账号、自动匹配、画质，以及这首歌的 BV 号。
+// 控制面板里「视频」背景的那几行：bilibili 账号、自动匹配、画质、这首歌的 BV 号与音画偏移。
 //
-// 面板是唯一能改 BV 的地方：自动匹配挑错的时候（同名曲、翻唱、另一个版本），在这里粘一条正确
-// 的 bilibili 链接就够了，下一次换回这首歌也不用再改。改完立刻重新解析，不用刷新。
+// 面板是唯一能改 BV、能对音画的地方：自动匹配挑错的时候（同名曲、翻唱、另一个版本），在这里
+// 粘一条正确的 bilibili 链接就够了；MV 的片头比歌曲长（或短）的时候，在这里按秒把画面前后挪
+// 一点（外层按钮 ±1s、内层 ±10ms，也可以直接填数字）。两件事都和这首歌一起记进匹配缓存，
+// 下一次换回这首歌不用再改、再对。
 
 const VIDEO_GROUP: SettingsGroupDef = { id: 'bg-video', titleKey: 'options.videoBackgroundSettings' };
 
@@ -30,11 +35,12 @@ const VideoBackgroundSettingsCard: React.FC<VisualizerBackgroundSettingsProps> =
     const mv = useBilibiliMvStore(useShallow(state => ({
         auth: state.auth,
         resolution: state.resolution,
-        overrides: state.overrides,
+        tunings: state.tunings,
         refreshAuth: state.refreshAuth,
         signIn: state.signIn,
         signOut: state.signOut,
         setManualBv: state.setManualBv,
+        setOffsetSec: state.setOffsetSec,
         resolveForSong: state.resolveForSong,
     })));
     const song = usePlaybackStore(selectDisplaySong);
@@ -44,7 +50,12 @@ const VideoBackgroundSettingsCard: React.FC<VisualizerBackgroundSettingsProps> =
     }, [mv.refreshAuth]);
 
     const songKey = song ? songKeyOf(song) : null;
-    const manualBv = songKey ? mv.overrides[songKey] ?? '' : '';
+    const manualBv = songKey ? mv.tunings[songKey]?.pinnedBvid ?? '' : '';
+    const offsetSec = selectMvOffsetSec(
+        { tunings: mv.tunings },
+        songKey,
+        mv.resolution && mv.resolution.songKey === songKey ? mv.resolution.stream?.bvid : null,
+    );
     const [bvDraft, setBvDraft] = useState(manualBv);
     useEffect(() => {
         setBvDraft(manualBv);
@@ -59,6 +70,7 @@ const VideoBackgroundSettingsCard: React.FC<VisualizerBackgroundSettingsProps> =
             return i18n.t('options.shinoLabBilibiliReady', {
                 title: mv.resolution.stream.title,
                 quality: quality > 0 ? `${quality}P` : t('options.shinoLabBilibiliQualityUnknown'),
+                bvid: mv.resolution.stream.bvid,
             });
         }
         if (mv.resolution.state === 'missing') return mv.resolution.message ?? t('options.shinoLabBilibiliNoMatch');
@@ -103,6 +115,38 @@ const VideoBackgroundSettingsCard: React.FC<VisualizerBackgroundSettingsProps> =
                     placeholder={t('options.shinoLabBilibiliBvPlaceholder')}
                     disabled={!song}
                 />
+            </Row>
+            {/* 音画偏移：画面比声音晚就是正数，单位秒，可以大调也可以填小数细调。改完立刻生效，
+                也随这首歌的 BV 一起记进匹配缓存。 */}
+            <Row
+                label={t('options.shinoLabBilibiliOffset')}
+                hint={t('options.shinoLabBilibiliOffsetDesc')}
+                note={t('options.shinoLabBilibiliOffsetNote')}
+                disabled={!song}
+            >
+                <Button
+                    icon={RotateCcw}
+                    tip={t('options.shinoLabBilibiliOffsetReset')}
+                    disabled={!song || offsetSec === 0}
+                    onClick={() => mv.setOffsetSec(song, 0)}
+                />
+                <OffsetStepper
+                    value={offsetSec}
+                    onChange={next => mv.setOffsetSec(song, next)}
+                    disabled={!song}
+                    label={t('options.shinoLabBilibiliOffset')}
+                />
+                <Value>{t('options.shinoLabBilibiliOffsetUnit')}</Value>
+                {/* 数到毫秒也未必对得准：把调节搬到画面上，边看口型边按，这里只是入口。 */}
+                <Button
+                    icon={Crosshair}
+                    onClick={() => {
+                        useOffsetTuningStore.getState().begin(song);
+                        closeSettings();
+                    }}
+                >
+                    {t('options.shinoLabBilibiliOffsetInPicture')}
+                </Button>
             </Row>
             <Row label={t('options.shinoLabBilibiliStatus')} hint={status} />
         </Group>

@@ -5,7 +5,8 @@ import { resolveDockedBarColors } from '../../../src/components/docked-player/do
 
 // test/unit/components/dockedBarTheme.test.ts
 // 停靠控制栏两套配色的约定：Dreamcore 就是改名之前那套颜色（浅色与深色只在封面底和进度条底上不同），
-// 莫奈浅色深色各一套；两套的播放键都保留液态玻璃，区别只在底下的竖向渐变。
+// 莫奈只从应用主题变量里取色（--bg-color / --text-primary / --text-accent / --text-on-accent），
+// 因此白天黑夜由主题自己切换，不再各写一套。两套的播放键都保留液态玻璃。
 
 describe('docked bar colours', () => {
     it('leaves Dreamcore as it was in both modes', () => {
@@ -35,54 +36,45 @@ describe('docked bar colours', () => {
         expect(dark.panelToggleActiveColor).toBe('rgba(255,255,255,0.14)');
     });
 
-    it('gives Monet a palette for each mode and ignores the theme colours it is handed', () => {
+    it('paints Monet from the app theme variables instead of its own colours', () => {
         const light = resolveDockedBarColors('monet', true, '#123456', '#abcdef');
         const dark = resolveDockedBarColors('monet', false, '#123456', '#abcdef');
-        expect(light.surfaceClassName).toBe('');
-        expect(light.surfaceStyle.backgroundImage).not.toBe(dark.surfaceStyle.backgroundImage);
-        expect(light.textPrimary).not.toBe(dark.textPrimary);
-        expect(light.progressFill).not.toBe(dark.progressFill);
+        // 前景 / 背景 / 强调 / 强调上的文字，全部来自主题变量：白天黑夜由主题自己换。
+        expect(light.surfaceStyle.backgroundImage).toContain('var(--bg-color)');
+        expect(light.textPrimary).toBe('var(--text-primary)');
+        expect(light.iconFill).toBe('var(--text-primary)');
+        expect(light.playButtonStyle.background).toBe('var(--text-accent)');
+        expect(light.playButtonStyle.color).toBe('var(--text-on-accent)');
+        expect(light.progressFill).toBe('var(--text-accent)');
+        // 面板传入的两个主题色不参与：莫奈读的是 CSS 变量，不是这里的 hex。
         expect(light.textPrimary).not.toBe('#123456');
         expect(dark.textPrimary).not.toBe('#123456');
+        // 不按日夜各写一套：同一套变量，两档结果自然相同。
+        expect(light).toEqual(dark);
     });
 
     it('lays the Monet bar out like Dreamcore: colour at the bottom, clear at the top', () => {
-        for (const isDaylight of [true, false]) {
-            const colors = resolveDockedBarColors('monet', isDaylight, '#fff', '#fff');
-            const background = String(colors.surfaceStyle.backgroundImage);
-            expect(background.startsWith('linear-gradient(to top,')).toBe(true);
-            expect(background.endsWith(',0) 100%)')).toBe(true);
-            // 整条栏不再铺满：没有底色块、模糊或投影，和 Dreamcore 一样只有那层渐变。
-            expect(colors.surfaceStyle.backgroundColor).toBeUndefined();
-            expect(colors.surfaceStyle.backdropFilter).toBeUndefined();
-            expect(colors.surfaceStyle.boxShadow).toBeUndefined();
-        }
-        // 底边那一笔：日间暖白、夜间黑，和播放键用的是同一笔颜色。
-        expect(String(resolveDockedBarColors('monet', true, '#fff', '#fff').surfaceStyle.backgroundImage))
-            .toContain('rgba(252,246,236,0.94) 0%');
-        expect(String(resolveDockedBarColors('monet', false, '#fff', '#fff').surfaceStyle.backgroundImage))
-            .toContain('rgba(0,0,0,0.92) 0%');
+        const colors = resolveDockedBarColors('monet', true, '#fff', '#fff');
+        const background = String(colors.surfaceStyle.backgroundImage);
+        expect(background.startsWith('linear-gradient(to top,')).toBe(true);
+        expect(background.endsWith('transparent 100%)')).toBe(true);
+        // 整条栏不再铺满：没有底色块、模糊或投影，和 Dreamcore 一样只有那层渐变。
+        expect(colors.surfaceStyle.backgroundColor).toBeUndefined();
+        expect(colors.surfaceStyle.backdropFilter).toBeUndefined();
+        expect(colors.surfaceStyle.boxShadow).toBeUndefined();
     });
 
-    it('keeps the glass play button and lays a bar-colour-to-transparent gradient under it', () => {
+    it('keeps the glass play button, drawn with the accent and the colour that reads on it', () => {
         const light = resolveDockedBarColors('monet', true, '#fff', '#fff');
-        const dark = resolveDockedBarColors('monet', false, '#fff', '#fff');
-        // 从下往上：底部日间暖白、夜间黑色，顶上透明。
-        expect(String(light.playButtonStyle.background))
-            .toBe('linear-gradient(to top, rgba(252,246,236,0.92), rgba(252,246,236,0))');
-        expect(String(dark.playButtonStyle.background))
-            .toBe('linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0))');
-        // 液态玻璃还在：播放键上的文字色是莫奈自己的，不是纯白。
-        expect(light.playButtonStyle.color).toBe('#3a3155');
-        expect(dark.playButtonStyle.color).toBe('#f4eee7');
-        // 边框、阴影、outline 与 Dreamcore 一致。
         const dreamcore = resolveDockedBarColors('dreamcore', true, '#fff', '#fffa');
-        for (const colors of [light, dark]) {
-            expect(colors.playButtonStyle.borderTop).toBe(dreamcore.playButtonStyle.borderTop);
-            expect(colors.playButtonStyle.borderBottom).toBe(dreamcore.playButtonStyle.borderBottom);
-            expect(colors.playButtonStyle.outline).toBe(dreamcore.playButtonStyle.outline);
-            expect(colors.playButtonStyle.boxShadow).toBeUndefined();
-        }
+        // 底色是强调色，上面的图标读 --text-on-accent（强调色可能很浅，白字会看不见）。
+        expect(String(light.playButtonStyle.background)).toBe('var(--text-accent)');
+        expect(light.playButtonStyle.color).toBe('var(--text-on-accent)');
+        // 边框、阴影、outline 与 Dreamcore 一致。
+        expect(light.playButtonStyle.borderTop).toBe(dreamcore.playButtonStyle.borderTop);
+        expect(light.playButtonStyle.borderBottom).toBe(dreamcore.playButtonStyle.borderBottom);
+        expect(light.playButtonStyle.outline).toBe(dreamcore.playButtonStyle.outline);
+        expect(light.playButtonStyle.boxShadow).toBeUndefined();
     });
 
     it('leaves the play button on the liquid glass path', () => {

@@ -59,6 +59,23 @@ export interface BilibiliMvStream {
 
 export type BilibiliMvState = 'idle' | 'resolving' | 'ready' | 'missing' | 'error';
 
+/**
+ * 一首歌的 MV 调校，跟「这首歌」一起存进匹配缓存：钉住的是哪条 BV，画面相对歌曲时钟偏了多少
+ * 秒，以及这条偏移是对哪条 BV 调出来的。
+ *
+ * 偏移是视频自己的属性（不同的投稿、不同的片头长度），所以它记着自己那条 BV：换了视频就不再
+ * 套用上一支的偏移，换回来又自动恢复。钉住哪条 BV 与偏移记着哪条 BV 是两件事——清掉手写 BV
+ * 回到自动匹配时，画面没变，偏移也该留着。
+ */
+export interface BilibiliMvTuning {
+    /** 用户钉住的 BV；空字符串表示「跟着自动匹配走」。 */
+    pinnedBvid: string;
+    /** 这条偏移是对哪条 BV 调出来的；空字符串表示还没解析出画面。 */
+    offsetBvid: string;
+    /** 秒，可带小数（毫秒精度）。正数 = 画面比声音晚，负数 = 画面比声音早。不设上下限。 */
+    offsetSec: number;
+}
+
 export interface BilibiliMvResolution {
     state: BilibiliMvState;
     /** 这首歌的 key（`title|||artist` 的归一化形式）。 */

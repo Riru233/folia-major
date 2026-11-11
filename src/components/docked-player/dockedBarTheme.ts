@@ -94,7 +94,7 @@ const monetColors = (isDaylight: boolean): DockedBarColors => ({
                 // 播放键仍是液态玻璃（标记和 useGlass 都在），底色是一条竖向渐变：
                 // 底部暖白、往上淡到全透明；边框、阴影、outline 与 Dreamcore 一致。
                 background: 'var(--text-accent)',
-                color: '#fff',
+                color: 'var(--text-on-accent)',
                 borderTop: '#fffa 1px solid',
                 borderBottom: '#fffa 1px solid',
                 outline: '#666 1px solid',

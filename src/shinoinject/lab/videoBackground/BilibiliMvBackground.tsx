@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { PlayerState } from '../../../types';
 import { currentTime } from '../../../stores/motionSignals';
 import { selectDisplayPlayerState, selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
-import { useBilibiliMvStore } from '../useBilibiliMvStore';
+import { useBilibiliMvStore, selectMvOffsetSec } from '../useBilibiliMvStore';
 import { useShinoLabStore } from '../useShinoLabStore';
 import { songKeyOf } from '../bilibili/mvMatch';
+import { mvTargetTime } from '../bilibili/avSync';
 import LatentBackground from '../../../components/visualizer/backgrounds/latent/LatentBackground';
 import type { VisualizerBackgroundRenderProps } from '../../../components/visualizer/backgrounds/definition';
 
@@ -14,6 +15,9 @@ import type { VisualizerBackgroundRenderProps } from '../../../components/visual
 // 画面跟着播放时钟走，但不像装饰视频层那样需要每帧算：播放/暂停跟着播放器状态，时钟跳动
 // （跳转、换歌）时重新对位，平时每两秒纠一次缓慢漂移。MV 比歌短的时候循环，比歌长的时候停在
 // 最后一帧——两种情况都不该出现一块黑屏。
+//
+// 音画偏移（面板里按毫秒调，存在匹配缓存里）只改「MV 该停在第几秒」：正数让画面落后于声音，
+// 负数让画面提前。改完当场强制对一次，不必等那两秒的漂移检查。
 //
 // 拿不到画面（没匹配到、BV 失效、CDN 拒绝、解码不了）时什么都不画：底下那层主题背景还在，
 // 比画一块黑色好。
@@ -28,6 +32,8 @@ const BilibiliMvBackground: React.FC<VisualizerBackgroundRenderProps> = ({
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const pausedRef = useRef(paused);
     pausedRef.current = paused;
+    /** 主 effect 装好的对位函数：面板里改偏移时立刻重新对一次，不等下一次漂移检查。 */
+    const alignRef = useRef<(force?: boolean) => void>(() => { });
 
     const enabled = useShinoLabStore(state => state.bilibiliMvEnabled);
     const autoMatch = useShinoLabStore(state => state.bilibiliAutoMatch);
@@ -38,6 +44,14 @@ const BilibiliMvBackground: React.FC<VisualizerBackgroundRenderProps> = ({
     const song = usePlaybackStore(selectDisplaySong);
     const songDuration = usePlaybackStore(state => state.duration);
     const songKey = song ? songKeyOf(song) : null;
+    // 音画偏移（秒，可带小数）：正数让画面比声音晚。它是这首歌 + 这条 BV 的调校，存在匹配缓存里。
+    const offsetSec = useBilibiliMvStore(state => selectMvOffsetSec(
+        state,
+        songKey,
+        state.resolution && state.resolution.songKey === songKey ? state.resolution.stream?.bvid : null,
+    ));
+    const offsetRef = useRef(offsetSec);
+    offsetRef.current = offsetSec;
     const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
     // 换歌、改画质、手动改 BV 都从这里重新解析一次；同一首歌在缓存期内不会重复请求。
@@ -62,12 +76,18 @@ const BilibiliMvBackground: React.FC<VisualizerBackgroundRenderProps> = ({
         const video = videoRef.current;
         if (!active || !video) return;
 
-        const align = () => {
+        // force：用户刚在面板里改过偏移，几十毫秒的差别也要按上去，不能等漂移检查的那 0.4 秒阈值。
+        const align = (force = false) => {
             if (!Number.isFinite(video.duration) || video.duration <= 0 || video.seeking) return;
-            const clock = currentTime.get();
-            const target = loop ? clock % video.duration : Math.min(clock, Math.max(0, video.duration - 0.05));
-            if (Math.abs(video.currentTime - target) > DRIFT_TOLERANCE_SEC) video.currentTime = target;
+            const target = mvTargetTime(currentTime.get(), {
+                durationSec: video.duration,
+                loop,
+                offsetSec: offsetRef.current,
+            });
+            if (target === null) return;
+            if (force || Math.abs(video.currentTime - target) > DRIFT_TOLERANCE_SEC) video.currentTime = target;
         };
+        alignRef.current = align;
         const followState = () => {
             const playing = selectDisplayPlayerState(usePlaybackStore.getState()) === PlayerState.PLAYING;
             if (playing && !pausedRef.current) void video.play().catch(() => {});
@@ -115,6 +135,12 @@ const BilibiliMvBackground: React.FC<VisualizerBackgroundRenderProps> = ({
             void video.play().catch(() => {});
         }
     }, [active, paused]);
+
+    // 面板里调了偏移：立刻按新值对一次（force），画面不会等下一次漂移检查才跟上。
+    useEffect(() => {
+        if (!active) return;
+        alignRef.current(true);
+    }, [offsetSec, active]);
 
     // 没有画面可放时退回默认的隐现背景，而不是留一块黑：歌词还要在这上面看得清。
     if (!active || !source) {
