@@ -3535,6 +3535,8 @@ export default {
     "karaokeFontStyleMono": "等宽",
     "karaokeFontWeight": "字重",
     "karaokeItalic": "斜体",
+    "karaokeTraditional": "繁体字形",
+    "karaokeTraditionalHint": "中文歌词转成繁体再显示（简转繁）。日文、韩文、英文照样原样显示。",
     "karaokeProgressStyle": "预备进度样式",
     "karaokeProgressStyleHint": "还没唱到的字怎么变成唱过的样子：从左往右扫过去、按时间淡入，或者一个字块一个字块地跳。",
     "karaokeProgressSweep": "扫过",

@@ -3535,6 +3535,8 @@ export default {
     "karaokeFontStyleMono": "Mono",
     "karaokeFontWeight": "Ketebalan",
     "karaokeItalic": "Miring",
+    "karaokeTraditional": "Aksara tradisional",
+    "karaokeTraditionalHint": "Lirik berbahasa Tionghoa diubah ke aksara tradisional sebelum ditampilkan. Bahasa Jepang, Korea, dan Inggris dibiarkan apa adanya.",
     "karaokeProgressStyle": "Gaya progres awal",
     "karaokeProgressStyleHint": "Bagaimana kata yang belum dinyanyikan berubah jadi tampilan sudah dinyanyikan: disapu dari kiri ke kanan, memudar mengikuti waktu, atau berubah per potongan.",
     "karaokeProgressSweep": "Sapu",

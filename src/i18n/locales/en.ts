@@ -3533,6 +3533,8 @@ export default {
     "karaokeFontStyleMono": "Mono",
     "karaokeFontWeight": "Weight",
     "karaokeItalic": "Italic",
+    "karaokeTraditional": "Traditional characters",
+    "karaokeTraditionalHint": "Chinese lyrics are converted to Traditional before they are drawn. Japanese, Korean and English stay as they are.",
     "karaokeProgressStyle": "Lead-in progress",
     "karaokeProgressStyleHint": "How the words not sung yet turn into the sung look: swept left to right, faded in by time, or flipped chunk by chunk.",
     "karaokeProgressSweep": "Sweep",

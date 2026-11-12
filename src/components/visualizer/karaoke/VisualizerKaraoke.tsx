@@ -14,6 +14,7 @@ import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
 import { buildKaraokeChunks, chunkFillProgress, type KaraokeChunk } from './karaokeSegments';
 import { resolveKaraokeScrollOffset, resolveKaraokeWrapScrollOffset } from './karaokeScroll';
 import { karaokeCreditsOpacity, resolveKaraokeCredits } from './karaokeCredits';
+import { toTraditionalLyrics } from './karaokeHanzi';
 import { useKaraokeInfoOverrideStore } from '../../../stores/useKaraokeInfoOverrideStore';
 import { useKaraokeInfoAutoDetect } from './useKaraokeInfoAutoDetect';
 import { selectDisplayPlayerState, selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
@@ -109,8 +110,11 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
 
     // 两行都按同样的字块切分渲染：行高、折行位置必须与「正在唱」的那一行完全一致，
     // 否则一句开唱时整块歌词会因行高变化上下跳一下（就是之前那个「第二句抖动」）。
-    const firstChunks = useMemo(() => buildKaraokeChunks(pageFirstLine), [pageFirstLine]);
-    const secondChunks = useMemo(() => buildKaraokeChunks(pageSecondLine), [pageSecondLine]);
+    // 开了「繁体字形」就把整句先转成繁体再切块：简繁要按词挑字，逐块转会转错。
+    const traditionalScript = karaokeTuning.traditionalScript === true;
+    const lineTransform = traditionalScript ? toTraditionalLyrics : undefined;
+    const firstChunks = useMemo(() => buildKaraokeChunks(pageFirstLine, lineTransform), [pageFirstLine, traditionalScript]);
+    const secondChunks = useMemo(() => buildKaraokeChunks(pageSecondLine, lineTransform), [pageSecondLine, traditionalScript]);
     const chunks = activeLine && activeLine === pageSecondLine ? secondChunks : firstChunks;
     const rtl = useMemo(() => isRtlText(activeLine?.fullText ?? ''), [activeLine]);
     const progressStyle = karaokeTuning.progressStyle;
@@ -130,6 +134,22 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         }),
         [lines, songTitle, infoOverride],
     );
+    // 歌曲信息那块也一起转：「作词：」「作曲：」这两行的标签本就是中文，转了简体、不转标题区，
+    // 同一块画面里会一边简体一边繁体。识别（resolveKaraokeCredits）仍看原句，
+    // 「作词：」这类本地规则认得的是简体写法，先转再认会漏。
+    const creditsText = useMemo(() => {
+        if (!credits) {
+            return null;
+        }
+        if (!traditionalScript) {
+            return { title: credits.title, rows: credits.rows };
+        }
+        return {
+            title: credits.title ? toTraditionalLyrics(credits.title) : credits.title,
+            rows: credits.rows.map(toTraditionalLyrics),
+        };
+    }, [credits, traditionalScript]);
+
     // 播放时替用户问一次模型：本地一条信息行都没认出来、这首歌也还没有答案时才会真的发请求。
     // 认出什么就按歌存起来，下次播放直接用，不会重复花额度。
     useKaraokeInfoAutoDetect({
@@ -519,14 +539,14 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         >
             {/* 开头那段信息：歌名居中（歌词强调色），作词、作曲靠左（未激活歌词的颜色）。
                 不透明度在 paintFill 里按播放时间写，不参与逐帧 React 渲染。 */}
-            {showText && credits && (
+            {showText && creditsText && (
                 <div
                     ref={creditsRef}
                     className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center px-10"
                     // 先藏起来：挂载后 paintCredits 会按当前时间写一次，避免中途跳进来时闪一下。
                     style={{ opacity: 0, willChange: 'opacity' }}
                 >
-                    {credits.title && (
+                    {creditsText.title && (
                         <h1
                             style={{
                                 ...strokeStyle(karaokeTuning.activeFill, karaokeTuning.activeStroke, karaokeTuning.strokeWidth),
@@ -540,12 +560,12 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                                 textAlign: 'center',
                             }}
                         >
-                            {credits.title}
+                            {creditsText.title}
                         </h1>
                     )}
-                    {credits.rows.length > 0 && (
+                    {creditsText.rows.length > 0 && (
                         <div className="mt-5 flex flex-col items-start gap-1.5">
-                            {credits.rows.map((row, index) => (
+                            {creditsText.rows.map((row, index) => (
                                 <h2
                                     key={`${index}-${row}`}
                                     style={{
@@ -584,6 +604,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                 >
                     {/* 译文就一行浮在歌词上方：用主题的次要色和字幕字体，不带卡拉OK 的描边和配色。 */}
                     {activeLine?.translation && !hideTranslationSubtitle && (
+                        // 译文和歌词在同一块画面里，字形得跟着走：开了繁体就一起转（非中文的译文原样）。
                         <div
                             key={`t-${activeLine.startTime}`}
                             className="mx-auto mb-3 max-w-4xl text-center"
@@ -596,7 +617,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                                 opacity: 0.92,
                             }}
                         >
-                            {activeLine.translation}
+                            {traditionalScript ? toTraditionalLyrics(activeLine.translation) : activeLine.translation}
                         </div>
                     )}
                     <motion.div

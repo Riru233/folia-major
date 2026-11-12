@@ -106,18 +106,39 @@ const timeAtOffset = (offset: number, line: Line, ranges: readonly WordRange[]):
 /**
  * 一句歌词切成带时间的显示块。每块从自己的开始时刻填到下一块开始，整句平滑地扫过去；
  * 最后一块填到句尾。时间戳缺失、为负或者反了都夹成「立刻填满」，不会出现负的进度。
+ *
+ * `transform` 是显示前的整句改写（现在只有「繁体字形」用它做简转繁）。它必须作用在**整句**上：
+ * 简繁要按词挑字，一个字一个字地转会把「头发」转成「頭發」。切块在转换后的文本上做，
+ * 时间仍按原句算——转完字数一般不变，变了就按比例把块的位置映射回原句。
  */
-export const buildKaraokeChunks = (line: Line | null | undefined): KaraokeChunk[] => {
+export const buildKaraokeChunks = (
+    line: Line | null | undefined,
+    transform?: (text: string) => string,
+): KaraokeChunk[] => {
     if (!line) {
         return [];
     }
-    const text = line.fullText ?? '';
-    if (!text) {
+    const original = line.fullText ?? '';
+    if (!original) {
         return [];
     }
-    const pieces = splitKaraokeChunks(text);
-    const ranges = resolveWordRanges(text, line.words);
-    const marks = pieces.map(piece => timeAtOffset(piece.offset, line, ranges));
+    const display = transform ? transform(original) : original;
+    if (!display) {
+        return [];
+    }
+    // 简繁转换偶尔会改字数（「厘米」→「公分」这种换词不会出现在 tw 里，但异体字归并会）：
+    // 按长度比例把块的位置换算回原句，时间轴才不会整体偏掉。
+    const displayLength = Array.from(display).length;
+    const originalLength = Array.from(original).length;
+    const toOriginalOffset = (offset: number) => (
+        display === original || displayLength === originalLength
+            ? offset
+            : Math.min(originalLength - 1, Math.round((offset * originalLength) / displayLength))
+    );
+    const pieces = splitKaraokeChunks(display);
+    // 逐字时间对的是原句文本，所以这里拿原句去匹配。
+    const ranges = resolveWordRanges(original, line.words);
+    const marks = pieces.map(piece => timeAtOffset(toOriginalOffset(piece.offset), line, ranges));
     // 时间必须往前走：均摊或对齐出的小抖动会让后面的块先亮。
     for (let index = 1; index < marks.length; index++) {
         if (marks[index] < marks[index - 1]) {

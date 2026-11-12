@@ -332,6 +332,9 @@ exports[`mod tuning keys > are pinned, so a renamed or dropped key is a visible 
       "step": 0.5,
       "type": "number",
     },
+    "traditionalScript": {
+      "type": "boolean",
+    },
   },
   "lumiere": {
     "audioResponse": {

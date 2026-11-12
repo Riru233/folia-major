@@ -57,6 +57,9 @@ export const normalizeKaraokeTuning = (value: Partial<KaraokeTuning> | null | un
         fontStyle: oneOf(stored.fontStyle, FONT_STYLES, DEFAULT_KARAOKE_TUNING.fontStyle),
         fontWeight: fontWeight(stored.fontWeight, DEFAULT_KARAOKE_TUNING.fontWeight),
         italic: typeof stored.italic === 'boolean' ? stored.italic : DEFAULT_KARAOKE_TUNING.italic,
+        traditionalScript: typeof stored.traditionalScript === 'boolean'
+            ? stored.traditionalScript
+            : DEFAULT_KARAOKE_TUNING.traditionalScript,
         progressStyle: oneOf(stored.progressStyle, PROGRESS_STYLES, DEFAULT_KARAOKE_TUNING.progressStyle),
         pageAnimation: typeof stored.pageAnimation === 'boolean' ? stored.pageAnimation : DEFAULT_KARAOKE_TUNING.pageAnimation,
         overflowMode: oneOf(stored.overflowMode, OVERFLOW_MODES, DEFAULT_KARAOKE_TUNING.overflowMode),
@@ -73,6 +76,7 @@ export default defineVisualizerTuning<KaraokeTuning>({
         fontStyle: modChoice(FONT_STYLES),
         fontWeight: modNumber(100, 900, 100),
         italic: MOD_SWITCH,
+        traditionalScript: MOD_SWITCH,
         progressStyle: modChoice(PROGRESS_STYLES),
         pageAnimation: MOD_SWITCH,
         overflowMode: modChoice(OVERFLOW_MODES),

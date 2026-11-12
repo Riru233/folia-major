@@ -29,7 +29,7 @@ import {
 } from './types';
 
 // src/components/visualizer/karaoke/KaraokeSettingsPanel.tsx
-// 卡拉OK 的参数面板：颜色（四色 + 描边宽度）、文字（字号 / 字体 / 字重 / 斜体）、
+// 卡拉OK 的参数面板：颜色（四色 + 描边宽度）、文字（字号 / 字体 / 字重 / 斜体 / 繁体字形）、
 // 进度（预备进度样式 / 超长歌词 / 切页动画），以及这首歌开头的「歌曲信息」。
 // 滑块沿用设置窗口的草稿 / 松手提交语义，颜色用 kit 的取色钮。
 
@@ -259,6 +259,12 @@ const KaraokeSettingsPanel: React.FC<VisualizerSettingsPanelProps<KaraokeTuning>
                     label={t('options.karaokeItalic')}
                     checked={karaokeTuning.italic}
                     onChange={italic => onTuningChange?.({ italic })}
+                />
+                <ToggleRow
+                    label={t('options.karaokeTraditional')}
+                    note={t('options.karaokeTraditionalHint')}
+                    checked={karaokeTuning.traditionalScript}
+                    onChange={traditionalScript => onTuningChange?.({ traditionalScript })}
                 />
             </Group>
 

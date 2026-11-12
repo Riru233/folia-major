@@ -30,6 +30,8 @@ export interface KaraokeTuning {
     fontWeight: number;
     /** 斜体。 */
     italic: boolean;
+    /** 中文歌词按繁体显示（简转繁）。日文假名、韩文、英文那一行原样不动。 */
+    traditionalScript: boolean;
     /** 未唱的字变成已唱的样子用哪种方式。 */
     progressStyle: KaraokeProgressStyle;
     /** 翻页（换到下一组两句）时要不要那条淡入上浮的动画；关掉就是硬切。 */
@@ -48,6 +50,7 @@ export const DEFAULT_KARAOKE_TUNING: KaraokeTuning = {
     fontStyle: 'theme',
     fontWeight: 800,
     italic: false,
+    traditionalScript: false,
     progressStyle: 'sweep',
     pageAnimation: true,
     overflowMode: 'scroll',

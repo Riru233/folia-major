@@ -3527,6 +3527,8 @@ export default {
     "karaokeFontStyleMono": "Đơn cách",
     "karaokeFontWeight": "Độ đậm",
     "karaokeItalic": "In nghiêng",
+    "karaokeTraditional": "Chữ phồn thể",
+    "karaokeTraditionalHint": "Lời tiếng Trung được chuyển sang chữ phồn thể trước khi hiển thị. Tiếng Nhật, Hàn, Anh giữ nguyên.",
     "karaokeProgressStyle": "Kiểu tiến trình chuẩn bị",
     "karaokeProgressStyleHint": "Cách những chữ chưa hát chuyển thành dạng đã hát: quét từ trái sang phải, mờ dần theo thời gian, hoặc đổi theo từng mảng chữ.",
     "karaokeProgressSweep": "Quét",
