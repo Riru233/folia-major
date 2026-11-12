@@ -3534,7 +3534,7 @@ export default {
     "karaokeFontWeight": "Weight",
     "karaokeItalic": "Italic",
     "karaokeTraditional": "Traditional characters",
-    "karaokeTraditionalHint": "Chinese lyrics are converted to Traditional before they are drawn. Japanese, Korean and English stay as they are.",
+    "karaokeTraditionalHint": "Chinese lyrics are converted to Traditional before they are drawn, and 你 is written as 妳 the way Traditional does. Japanese, Korean and English stay as they are.",
     "karaokeLeadIn": "Count-in overlap",
     "karaokeLeadInHint": "Three count-in dots (red, green, blue) sit above the first lyric. Over this much time before the title ends they vanish right to left — blue, then green, then red — without a transition. The title, the song info and the lyrics share the screen meanwhile. Kept per song: a value set here belongs to this song, every other song follows the global one. Set 0 to turn them off.",
     "karaokeLeadInReset": "Cross time for this song",

@@ -46,7 +46,14 @@ describe('toTraditionalLyrics', () => {
         expect(toTraditionalLyrics('Love 后来, oh!')).toBe('Love 後來, oh!');
     });
 
-    it('returns a Japanese line untouched', () => {
+    it('writes 你 as 妳 in Traditional', () => {
+        // OpenCC 只管字形，代词得自己补：繁体里一律写「妳」。
+        expect(toTraditionalLyrics('你')).toBe('妳');
+        expect(toTraditionalLyrics('我爱你')).toBe('我愛妳');
+        expect(toTraditionalLyrics('你们的后来')).toBe('妳們的後來');
+    });
+
+    it('leaves a Japanese line untouched', () => {
         expect(toTraditionalLyrics('君の髪が揺れる')).toBe('君の髪が揺れる');
     });
 

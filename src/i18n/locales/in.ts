@@ -3536,7 +3536,7 @@ export default {
     "karaokeFontWeight": "Ketebalan",
     "karaokeItalic": "Miring",
     "karaokeTraditional": "Aksara tradisional",
-    "karaokeTraditionalHint": "Lirik berbahasa Tionghoa diubah ke aksara tradisional sebelum ditampilkan. Bahasa Jepang, Korea, dan Inggris dibiarkan apa adanya.",
+    "karaokeTraditionalHint": "Lirik berbahasa Tionghoa diubah ke aksara tradisional sebelum ditampilkan, dan 你 ditulis sebagai 妳 sesuai kebiasaan aksara tradisional. Bahasa Jepang, Korea, dan Inggris dibiarkan apa adanya.",
     "karaokeLeadIn": "Waktu jeda hitung mundur",
     "karaokeLeadInHint": "Tiga titik hitung mundur (merah, hijau, biru) berada di atas lirik pertama. Selama waktu ini sebelum judul berakhir, titik hilang dari kanan ke kiri — biru, lalu hijau, lalu merah — tanpa transisi. Judul, info lagu, dan lirik tampil bersamaan. Disimpan per lagu: nilai di sini hanya untuk lagu ini, lagu lain mengikuti nilai global. Isi 0 untuk mematikan titik.",
     "karaokeLeadInReset": "Waktu tumpang tindih lagu ini",

@@ -3528,7 +3528,7 @@ export default {
     "karaokeFontWeight": "Độ đậm",
     "karaokeItalic": "In nghiêng",
     "karaokeTraditional": "Chữ phồn thể",
-    "karaokeTraditionalHint": "Lời tiếng Trung được chuyển sang chữ phồn thể trước khi hiển thị. Tiếng Nhật, Hàn, Anh giữ nguyên.",
+    "karaokeTraditionalHint": "Lời tiếng Trung được chuyển sang chữ phồn thể trước khi hiển thị, và 你 được viết thành 妳 theo cách viết phồn thể. Tiếng Nhật, Hàn, Anh giữ nguyên.",
     "karaokeLeadIn": "Thời gian đếm ngược",
     "karaokeLeadInHint": "Ba chấm đếm ngược (đỏ, lục, lam) nằm trên lời đầu tiên. Trong khoảng thời gian này trước khi tựa kết thúc, các chấm biến mất từ phải sang trái — lam, rồi lục, rồi đỏ — biến mất ngay, không chuyển tiếp. Tựa, thông tin bài hát và lời cùng hiển thị. Lưu riêng cho từng bài: giá trị đặt ở đây chỉ thuộc bài này, các bài khác theo giá trị chung. Đặt 0 để tắt các chấm.",
     "karaokeLeadInReset": "Thời gian chồng lấn của bài này",

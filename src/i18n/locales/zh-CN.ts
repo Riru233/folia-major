@@ -3536,7 +3536,7 @@ export default {
     "karaokeFontWeight": "字重",
     "karaokeItalic": "斜体",
     "karaokeTraditional": "繁体字形",
-    "karaokeTraditionalHint": "中文歌词转成繁体再显示（简转繁）。日文、韩文、英文照样原样显示。",
+    "karaokeTraditionalHint": "中文歌词转成繁体再显示（简转繁），并按繁体习惯把「你」写成「妳」。日文、韩文、英文照样原样显示。",
     "karaokeLeadIn": "预备点交叉时间",
     "karaokeLeadInHint": "开头红、绿、蓝三个预备点排在歌名下面、第一句歌词上方：在标题结束前这段时间里从右往左逐个消失（先蓝、再绿、最后红），直接消失不淡出。这期间标题、歌曲信息和歌词同屏。按歌单独记：这首歌改过的值只属于它，没改过的歌跟全局值走。设为 0 关掉预备点。",
     "karaokeLeadInReset": "这首歌的交叉时间",
