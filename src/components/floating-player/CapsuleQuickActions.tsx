@@ -116,7 +116,11 @@ const CapsuleQuickActions: React.FC<CapsuleQuickActionsProps> = ({
             <motion.div
                 // 玻璃层和动画层必须是同一个元素：淡入淡出写在这一层，元素自身的 opacity 不参与
                 // 取样根判定（同 CommandPalette 的面板），所以第一帧就能取到背景、玻璃立刻可见。
-                data-glass data-glass-light data-glass-jelly
+                // 紧凑档（inline）这一行已经长在展开的胶囊里，胶囊自己有玻璃：这里既不挂玻璃也不画底色，
+                // 只是贴在胶囊内壁上的一排图标，宽度回到桌面档时再把背景和玻璃一起挂回来。
+                data-glass={inline ? undefined : ''}
+                data-glass-light={inline ? undefined : ''}
+                data-glass-jelly={inline ? undefined : ''}
                 role="group"
                 aria-label={t('player.capsuleQuickActions')}
                 initial={{ opacity: 0 }}
@@ -126,7 +130,7 @@ const CapsuleQuickActions: React.FC<CapsuleQuickActionsProps> = ({
                 className={inline
                     ? 'flex w-full items-center gap-0.5'
                     : `flex items-center gap-0.5 rounded-full p-1`}
-                style={{
+                style={inline ? undefined : {
                   backgroundColor: isDaylight
                     ? "rgba(215,215,215,0.42)"
                     : "rgba(40, 40, 40, 0.42)",
