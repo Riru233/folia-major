@@ -39,11 +39,7 @@ describe('settingsNavModel', () => {
         expect(ids).not.toContain('desktop');
         expect(ids).not.toContain('mods');
         expect(ids).not.toContain('ai');
-<<<<<<< HEAD
-        expect(ids).toHaveLength(ALL_SECTIONS.length - 3);
-=======
         expect(ids).toHaveLength(ALL_SECTIONS.length - desktopOnlyCount);
->>>>>>> pr
         expect(groups.every(group => group.items.length > 0)).toBe(true);
     });
 
