@@ -12,6 +12,7 @@ const params = new URLSearchParams(window.location.search);
 const SPEED = Number(params.get('speed') ?? '1');
 const START = Number(params.get('start') ?? '0');
 const SECONDS_PER_LINE = Number(params.get('dur') ?? '5');
+const MODE_TUNING = params.has('tuning') ? JSON.parse(params.get('tuning')!) : {};
 
 const SHORT = 'hold on';
 const LONG_EN = 'we were young under the neon rain and the river keeps calling me home again';
@@ -91,7 +92,7 @@ const KaraokeJitterProbe: React.FC = () => {
                 paused: false,
                 seed: 'probe',
                 coverUrl: null,
-                visualizerTunings: {},
+                visualizerTunings: { karaoke: MODE_TUNING },
             } as never)}
         </div>
     );

@@ -77,7 +77,21 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
     } = props;
 
     const { activeLine, recentCompletedLine, nextLines } = useVisualizerRuntime({ currentTime, currentLineIndex, lines });
-    const chunks = useMemo(() => buildKaraokeChunks(activeLine), [activeLine]);
+
+    // 两句一页：第 1、2 句同屏（第一行靠左、第二行靠右），第 2 句唱完才翻页，换成第 3、4 句。
+    // 句与句之间的空档 currentLineIndex 会退回 -1：这时按刚唱完的那句算页，页面才不会闪掉。
+    const anchorIndex = currentLineIndex >= 0
+        ? currentLineIndex
+        : (recentCompletedLine ? lines.indexOf(recentCompletedLine) : -1);
+    const pageStart = anchorIndex >= 0 ? anchorIndex - (anchorIndex % 2) : -1;
+    const pageFirstLine = pageStart >= 0 ? lines[pageStart] ?? null : null;
+    const pageSecondLine = pageStart >= 0 ? lines[pageStart + 1] ?? null : null;
+
+    // 两行都按同样的字块切分渲染：行高、折行位置必须与「正在唱」的那一行完全一致，
+    // 否则一句开唱时整块歌词会因行高变化上下跳一下（就是之前那个「第二句抖动」）。
+    const firstChunks = useMemo(() => buildKaraokeChunks(pageFirstLine), [pageFirstLine]);
+    const secondChunks = useMemo(() => buildKaraokeChunks(pageSecondLine), [pageSecondLine]);
+    const chunks = activeLine && activeLine === pageSecondLine ? secondChunks : firstChunks;
     const rtl = useMemo(() => isRtlText(activeLine?.fullText ?? ''), [activeLine]);
     const progressStyle = karaokeTuning.progressStyle;
 
@@ -124,13 +138,19 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         lastTransformRef.current = '';
         const frameRect = clip ? clip.getBoundingClientRect() : null;
         const metrics = { left: [] as number[], width: [] as number[], top: [] as number[], height: [] as number[] };
+        // 换句时数组里可能还留着上一句（更长）的尾部槽位：那些是 null，算总宽时不能拿它们当末块，
+        // 否则一行唱完换到短句时总宽会算成 0，跟唱直接不滚。
+        let total = 0;
         measureRefs.current.forEach(node => {
             if (!node) {
                 metrics.left.push(0); metrics.width.push(0); metrics.top.push(0); metrics.height.push(0);
                 return;
             }
-            metrics.left.push(node.offsetLeft);
-            metrics.width.push(node.offsetWidth);
+            const left = node.offsetLeft;
+            const width = node.offsetWidth;
+            metrics.left.push(left);
+            metrics.width.push(width);
+            total = Math.max(total, left + width);
             if (frameRect) {
                 const rect = node.getBoundingClientRect();
                 metrics.top.push(rect.top - frameRect.top);
@@ -141,9 +161,6 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
             }
         });
         chunkMetricsRef.current = metrics;
-        const total = metrics.left.length > 0
-            ? metrics.left[metrics.left.length - 1] + metrics.width[metrics.width.length - 1]
-            : 0;
         const visible = clip ? clip.clientWidth : 0;
         visibleWidthRef.current = visible;
         scrollRangeRef.current = Math.max(0, total - visible);
@@ -265,6 +282,13 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
             node.style.clipPath = '';
             node.style.opacity = '';
         });
+        // 已经唱完的那一行不再走逐帧绘制，它最后写下的 clip-path 会留在节点上，看上去就是「差一点没唱完」。
+        // 这里连它一起清：填充层整句都露出来。
+        clipRef.current?.querySelectorAll('[data-karaoke-fill]').forEach(node => {
+            const span = node as HTMLElement;
+            span.style.clipPath = '';
+            span.style.opacity = '';
+        });
     }, []);
 
     const lineKey = activeLine ? `${activeLine.startTime}:${activeLine.fullText}` : 'empty';
@@ -275,6 +299,20 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         measureScroll();
         paintFill(currentTime.get());
     }, [lineKey, progressStyle, clearPainted, paintFill, currentTime, chunks, measureScroll]);
+
+    // 主题字体是后加载的：换上来以后英文的字宽会变，折行位置和行高跟着变，量过的溢出就不作数了。
+    // 只在第一次字体就绪时补量一次，之后再变（加字体、改系统字体）走 resize 之外的路径也不至于抖。
+    useEffect(() => {
+        let cancelled = false;
+        document.fonts?.ready.then(() => {
+            if (cancelled) {
+                return;
+            }
+            measureScroll();
+            paintFill(currentTime.get());
+        }).catch(() => {});
+        return () => { cancelled = true; };
+    }, [measureScroll, paintFill, currentTime]);
 
     // 宽度变了（窗口缩放、竖排转横排）溢出量也跟着变。
     useEffect(() => {
@@ -292,13 +330,14 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
     const fontWeight = karaokeTuning.fontWeight || resolveThemeFontWeight(theme, 800);
     const lineFontSize = `calc(${BASE_FONT_SIZE} * ${lyricsFontScale * karaokeTuning.fontScale})`;
 
-    const renderChunks = (layer: 'idle' | 'filled') => chunks.map((chunk, index) => (
+    const renderChunks = (rowChunks: KaraokeChunk[], layer: 'idle' | 'filled', interactive: boolean) => rowChunks.map((chunk, index) => (
         <span
-            key={`${layer}-${index}`}
+            key={index}
+            // 填充层的每一块都带这个标记：换句时要把同一页上所有还没重画的裁切一起清掉。
+            data-karaoke-fill={layer === 'filled' ? '' : undefined}
             ref={layer === 'filled'
-                ? (node) => { filledRefs.current[index] = node; }
-                : (node) => { measureRefs.current[index] = node; }}
-            style={{ whiteSpace: 'pre' }}
+                ? (interactive ? (node) => { filledRefs.current[index] = node; } : undefined)
+                : (interactive ? (node) => { measureRefs.current[index] = node; } : undefined)}
         >
             {chunk.text}
         </span>
@@ -309,16 +348,8 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
     const resolvedSubtitleTheme = subtitleTheme ?? theme;
     const subtitleFontSizes = useMemo(() => resolveSubtitleFontSizes(lyricsFontScale), [lyricsFontScale]);
 
-    // 两句一页：第 1、2 句同屏（第一行靠左、第二行靠右），第 2 句唱完才翻页，换成第 3、4 句。
-    // 句与句之间的空档 currentLineIndex 会退回 -1：这时按刚唱完的那句算页，页面才不会闪掉。
-    const anchorIndex = currentLineIndex >= 0
-        ? currentLineIndex
-        : (recentCompletedLine ? lines.indexOf(recentCompletedLine) : -1);
-    const pageStart = anchorIndex >= 0 ? anchorIndex - (anchorIndex % 2) : -1;
-    const pageFirstLine = pageStart >= 0 ? lines[pageStart] ?? null : null;
-    const pageSecondLine = pageStart >= 0 ? lines[pageStart + 1] ?? null : null;
-
-    const renderRow = (line: Line | null, side: 'start' | 'end') => {
+    // 两句一页的划分在上面（pageStart / pageFirstLine / pageSecondLine），这里只管把两行画出来。
+    const renderRow = (line: Line | null, side: 'start' | 'end', rowChunks: KaraokeChunk[]) => {
         if (!line) {
             return null;
         }
@@ -347,51 +378,34 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                 key={`${side}-${line.startTime}`}
                 className="flex w-full flex-col"
             >
-                {isSinging ? (
-                    <div
-                        ref={scrollTargetRef}
-                        className={`relative block w-full ${wrapMode ? 'whitespace-normal' : 'whitespace-nowrap'}`}
-                        style={{ ...rowStyle, willChange: 'transform' }}
-                    >
-                        {/* 底下这一遍是量尺寸的那一层：它撑出宽度、决定在哪里折行，上面的填充层照它的框贴上去。 */}
-                        <div style={strokeStyle(karaokeTuning.idleFill, karaokeTuning.idleStroke, karaokeTuning.strokeWidth)}>
-                            {renderChunks('idle')}
-                        </div>
-                        <div
-                            aria-hidden="true"
-                            className="absolute inset-0"
-                            style={strokeStyle(karaokeTuning.activeFill, karaokeTuning.activeStroke, karaokeTuning.strokeWidth)}
-                        >
-                            {renderChunks('filled')}
-                        </div>
+                {/* 三种状态共用同一套结构（下层量尺寸、上层填充），所以换行位置、行高在「未唱／正在唱／已唱」
+                    之间完全一样。以前未唱和已唱是纯文本、正在唱是逐字 span 且带 white-space: pre，
+                    一开唱折行消失、行高一塌，底部对齐的整块歌词就会上下跳一下。 */}
+                <div
+                    ref={isSinging ? (node: HTMLDivElement | null) => { if (node) scrollTargetRef.current = node; } : undefined}
+                    className={`relative block w-full ${wrapMode ? 'whitespace-normal' : 'whitespace-nowrap'}`}
+                    style={{
+                        ...rowStyle,
+                        willChange: 'transform',
+                        // 刚轮过去的那一行可能还留着跟唱时的 translateX，这里显式清掉。
+                        transform: isSinging ? undefined : 'none',
+                    }}
+                >
+                    <div style={strokeStyle(karaokeTuning.idleFill, karaokeTuning.idleStroke, karaokeTuning.strokeWidth)}>
+                        {renderChunks(rowChunks, 'idle', isSinging)}
                     </div>
-                ) : isSung ? (
-                    // 已经唱完（同页的上一句）：停在那套「唱过」的颜色上，整句都是满的。
                     <div
-                        className={`block w-full ${wrapMode ? 'whitespace-normal' : 'whitespace-nowrap'}`}
+                        aria-hidden="true"
+                        className="absolute inset-0"
                         style={{
-                            ...rowStyle,
-                            // 刚轮过去的那一行可能还留着跟唱时的 translateX，这里显式清掉。
-                            transform: 'none',
                             ...strokeStyle(karaokeTuning.activeFill, karaokeTuning.activeStroke, karaokeTuning.strokeWidth),
+                            // 还没轮到的那句：填充层留着但不可见，只为占住同样的框。
+                            visibility: !isSinging && !isSung ? 'hidden' : 'visible',
                         }}
                     >
-                        {line.fullText}
+                        {renderChunks(rowChunks, 'filled', isSinging)}
                     </div>
-                ) : (
-                    // 同一页里还没轮到的那句：同样的字号、同样的颜色，只是不扫。
-                    <div
-                        className={`block w-full ${wrapMode ? 'whitespace-normal' : 'whitespace-nowrap'}`}
-                        style={{
-                            ...rowStyle,
-                            transform: 'none',
-                            ...strokeStyle(karaokeTuning.idleFill, karaokeTuning.idleStroke, karaokeTuning.strokeWidth),
-                        }}
-                    >
-                        {line.fullText}
-                    </div>
-                )}
-
+                </div>
             </div>
         );
     };
@@ -441,8 +455,8 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                         style={wrapMode ? { maxHeight: '42vh', justifyContent: 'flex-start' } : undefined}
                     >
                         <div ref={wrapTargetRef} className="flex w-full flex-col gap-2" style={{ willChange: 'transform' }}>
-                            {renderRow(pageFirstLine, 'start')}
-                            {renderRow(pageSecondLine, 'end')}
+                            {renderRow(pageFirstLine, 'start', firstChunks)}
+                            {renderRow(pageSecondLine, 'end', secondChunks)}
                         </div>
                     </motion.div>
                 </div>
