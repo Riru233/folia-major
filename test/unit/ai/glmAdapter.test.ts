@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getAiAdapter, AI_PROVIDER_PRESETS, inferAiProviderFromUrl, modelAlwaysThinks, resolveAiConnection } from '../../../shared/ai/providerRegistry.mjs';
-import { segmentLyricLines } from '../../../shared/lyricSegmentationService.mjs';
+import { segmentLyricLines } from '../../../shared/lyricAiService.mjs';
 import { answered, exhaustedReply, firstBody, rejectedWith, requestsFor, simulate, type AiTask } from './adapterHarness';
 
 // test/unit/ai/glmAdapter.test.ts

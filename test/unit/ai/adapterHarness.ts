@@ -3,6 +3,12 @@ import { walkAttempts } from '../../../shared/ai/attemptRunner.mjs';
 import { buildCompatibleBody } from '../../../shared/ai/compatibleBody.mjs';
 import { getAiAdapter, type AiAdapter, type AiAttempt } from '../../../shared/ai/providerRegistry.mjs';
 import {
+    KARAOKE_CREDITS_GEMINI_SCHEMA,
+    KARAOKE_CREDITS_JSON_SCHEMA,
+    KARAOKE_CREDITS_MAX_OUTPUT_TOKENS,
+    KARAOKE_CREDITS_SCHEMA_NAME,
+} from '../../../shared/karaokeCreditsPrompt.mjs';
+import {
     SEGMENTATION_GEMINI_SCHEMA,
     SEGMENTATION_JSON_SCHEMA,
     SEGMENTATION_MAX_OUTPUT_TOKENS,
@@ -20,13 +26,14 @@ import {
 //   const { bodies } = await simulate('glm', 'segmentation', 'glm-5.2', (_body, index) => (
 //       index === 0 ? rejectedWith(400, { error: { code: '1210', message: 'Invalid API parameter' } }) : answered('{}')));
 
-export type AiTask = 'segmentation' | 'theme' | 'test';
+export type AiTask = 'segmentation' | 'theme' | 'test' | 'credits';
 
 /** The answer budgets the real callers pass: main.cjs's two handlers and the connection test. */
 export const ANSWER_TOKENS: Record<AiTask, number> = {
     segmentation: SEGMENTATION_MAX_OUTPUT_TOKENS,
     theme: 8192,
     test: 512,
+    credits: KARAOKE_CREDITS_MAX_OUTPUT_TOKENS,
 };
 
 // main.cjs's theme schema cannot be imported (main.cjs starts the app); this stands in for it. Like
@@ -57,6 +64,13 @@ export const ASKS: Record<AiTask, { systemPrompt?: string; sourcePrompt: string;
         geminiSchema: THEME_GEMINI_SCHEMA,
     },
     test: { sourcePrompt: 'hello' },
+    credits: {
+        systemPrompt: 'credits system prompt',
+        sourcePrompt: '1. Song - Artist',
+        schema: KARAOKE_CREDITS_JSON_SCHEMA,
+        schemaName: KARAOKE_CREDITS_SCHEMA_NAME,
+        geminiSchema: KARAOKE_CREDITS_GEMINI_SCHEMA,
+    },
 };
 
 /** The user's temperature when none is set (DEFAULT_OPENAI_TEMPERATURE). */

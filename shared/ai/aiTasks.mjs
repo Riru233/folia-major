@@ -1,16 +1,17 @@
 // shared/ai/aiTasks.mjs
-// The three AI asks and their output-token budgets: room for the answer, plus room for reasoning
+// The AI asks and their output-token budgets: room for the answer, plus room for reasoning
 // whenever an attempt does not expect reasoning to be switched off.
 
-/** @typedef {'segmentation' | 'theme' | 'test'} AiTask */
+/** @typedef {'segmentation' | 'theme' | 'test' | 'credits'} AiTask */
 
 /** @type {readonly AiTask[]} */
-export const AI_TASKS = Object.freeze(['segmentation', 'theme', 'test']);
+export const AI_TASKS = Object.freeze(['segmentation', 'theme', 'test', 'credits']);
 
 // Reasoning room on top of the answer when thinking cannot be switched off, or only turned down.
 // Segmentation 8192 + 24576 = 32768, the same as the old ladder's x4 last rung; theme 8192 + 16384
 // is about OpenAI's suggested 25k starting point for reasoning models; test 512 + 3584 = 4096.
-export const REASONING_ALLOWANCE = Object.freeze({ segmentation: 24576, theme: 16384, test: 3584 });
+// credits answers a few lines of JSON, so it takes the same small allowance as the test ask.
+export const REASONING_ALLOWANCE = Object.freeze({ segmentation: 24576, theme: 16384, test: 3584, credits: 3584 });
 
 /**
  * Output-token cap for one attempt, or undefined for "send no cap". An attempt says through

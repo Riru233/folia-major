@@ -2,7 +2,7 @@ import {
     SegmentationRequestError,
     readSegmentationLines,
     segmentLyricLines,
-} from '../shared/lyricSegmentationService.mjs';
+} from '../shared/lyricAiService.mjs';
 
 // worker/segment-lyrics.ts
 // Cloudflare Worker adapter for lyric word segmentation. Identical in behaviour to the Vercel

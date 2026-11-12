@@ -149,6 +149,15 @@ const {
   buildSegmentationSystemPrompt,
   parseSegmentationResponse,
 } = require('../shared/lyricSegmentationPrompt.cjs');
+const {
+  KARAOKE_CREDITS_GEMINI_SCHEMA,
+  KARAOKE_CREDITS_JSON_SCHEMA,
+  KARAOKE_CREDITS_MAX_OUTPUT_TOKENS,
+  KARAOKE_CREDITS_SCHEMA_NAME,
+  buildKaraokeCreditsSourcePrompt,
+  buildKaraokeCreditsSystemPrompt,
+  parseKaraokeCreditsResponse,
+} = require('../shared/karaokeCreditsPrompt.cjs');
 const useLinuxGraphicsDebugMode = process.env.ELECTRON_LINUX_PACKAGED_GRAPHICS === 'true';
 const isAppImageRuntime =
   process.platform === 'linux' &&
@@ -8515,6 +8524,48 @@ ipcMain.handle('segment-lyrics', firstParty('segment-lyrics', async (event, line
     console.error('[segment-lyrics] failed:', message);
     if (rawResponse) {
       console.error('[segment-lyrics] raw model response:', String(rawResponse).slice(0, 4000));
+    }
+    throw new Error(message);
+  }
+}));
+
+// 读歌词文件开头的「歌曲信息」：把前十几行交给用户配置的模型，让它指出哪几行是歌名/作词/作曲
+// 而不是歌词。提示词和 schema 与 web 那两个端点共用 shared/karaokeCreditsPrompt.cjs。
+ipcMain.handle('detect-karaoke-credits', firstParty('detect-karaoke-credits', async (event, lines) => {
+  let rawResponse = null;
+  try {
+    const sourceLines = Array.isArray(lines) ? lines.map((line) => String(line == null ? '' : line)) : [];
+    if (sourceLines.length === 0) {
+      throw new Error('No lyric lines to read');
+    }
+    if (sourceLines.length > 12) {
+      throw new Error('Too many lines');
+    }
+
+    const useSystemProxy = store.get('USE_SYSTEM_PROXY_FOR_AI') || false;
+    const customFetch = (url, options) => fetchWithOptionalSystemProxy(url, options, useSystemProxy);
+    console.log(`[detect-credits] reading ${sourceLines.length} lines`
+      + ` via ${store.get('AI_PROVIDER') || 'gemini'}${useSystemProxy ? ' (system proxy)' : ''}`);
+
+    rawResponse = await runAiJsonCompletion({
+      store: aiCredentials.settingsView,
+      // 判断哪几行是署名不需要推理：和分词一样把思考关掉，否则预算全花在想上。
+      task: 'credits',
+      systemPrompt: buildKaraokeCreditsSystemPrompt(),
+      sourcePrompt: buildKaraokeCreditsSourcePrompt(sourceLines),
+      schema: KARAOKE_CREDITS_JSON_SCHEMA,
+      schemaName: KARAOKE_CREDITS_SCHEMA_NAME,
+      geminiSchema: KARAOKE_CREDITS_GEMINI_SCHEMA,
+      customFetch,
+      answerTokens: KARAOKE_CREDITS_MAX_OUTPUT_TOKENS,
+    });
+
+    return parseKaraokeCreditsResponse(rawResponse, sourceLines);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error('[detect-credits] failed:', message);
+    if (rawResponse) {
+      console.error('[detect-credits] raw model response:', String(rawResponse).slice(0, 4000));
     }
     throw new Error(message);
   }

@@ -2,10 +2,10 @@ import {
     SegmentationRequestError,
     readSegmentationLines,
     segmentLyricLines,
-} from '../shared/lyricSegmentationService.mjs';
+} from '../shared/lyricAiService.mjs';
 
 // 当前文件：Vercel 歌词分词函数的 TypeScript 源文件。
-// 与主题生成不同，这里只有一个端点：provider 在 shared/lyricSegmentationService.mjs 内部按
+// 与主题生成不同，这里只有一个端点：provider 在 shared/lyricAiService.mjs 内部按
 // 部署配置的 env 分支，客户端不需要知道服务端接的是哪家模型。
 export const config = {
     runtime: 'edge',

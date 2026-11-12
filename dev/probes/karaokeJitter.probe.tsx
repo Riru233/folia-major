@@ -13,13 +13,17 @@ const SPEED = Number(params.get('speed') ?? '1');
 const START = Number(params.get('start') ?? '0');
 const SECONDS_PER_LINE = Number(params.get('dur') ?? '5');
 const MODE_TUNING = params.has('tuning') ? JSON.parse(params.get('tuning')!) : {};
+/** credits=1 时在开头插一行「歌名 - 歌手」加作词、作曲，用来核对标题区与它的淡出。 */
+const WITH_CREDITS = params.has('credits');
 
 const SHORT = 'hold on';
 const LONG_EN = 'we were young under the neon rain and the river keeps calling me home again';
 const LONG_EN2 = 'midnight river carry me back to the harbour where the lanterns never go out';
 
+const CREDITS = ['Neon River - Probe', '作词：某某某', '作曲：某某某'];
+
 const buildLines = (): Line[] => {
-    const texts = [SHORT, LONG_EN, LONG_EN2, SHORT, LONG_EN, LONG_EN2];
+    const texts = WITH_CREDITS ? [...CREDITS, SHORT, LONG_EN, LONG_EN2, SHORT, LONG_EN, LONG_EN2] : [SHORT, LONG_EN, LONG_EN2, SHORT, LONG_EN, LONG_EN2];
     return texts.map((text, index) => {
         const start = index * SECONDS_PER_LINE;
         const tokens = text.split(' ');
@@ -35,7 +39,7 @@ const buildLines = (): Line[] => {
             startTime: start,
             endTime: start + SECONDS_PER_LINE - 0.1,
             fullText: text,
-            translation: `译文 ${index}`,
+            translation: WITH_CREDITS && index < CREDITS.length ? undefined : `译文 ${index}`,
             isChorus: false,
         };
     });

@@ -4,11 +4,16 @@ import { runAttempts } from './ai/attemptRunner.mjs';
 import { MAX_ERROR_BODY_CHARS, buildCompatibleBody, exhaustedByReasoning, withErrorHint } from './ai/compatibleBody.mjs';
 import { getAiAdapter, resolveAiConnection } from './ai/providerRegistry.mjs';
 
-// shared/lyricSegmentationService.mjs
-// Server-side lyric word segmentation, shared by the Vercel edge handler and the Cloudflare
-// Worker. Those two runtimes differ only in where the environment comes from, so they are thin
-// adapters over this and the prompt module rather than a third and fourth copy of the plumbing —
-// which is what the theme feature ended up with.
+// shared/lyricAiService.mjs
+// Server-side lyric asks, shared by the Vercel edge handler and the Cloudflare Worker. Those two
+// runtimes differ only in where the environment comes from, so they are thin adapters over this
+// and the prompt modules rather than a third and fourth copy of the plumbing — which is what the
+// theme feature ended up with.
+//
+// Two asks live here now: word segmentation of the lyric lines, and the reading of the leading
+// "song info" rows of a lyric file (karaoke style). The request plumbing — provider choice,
+// reasoning suppression ladder, timeout, error text — is the same for both, so it is one runner
+// taking a task profile (prompts + schema + budget) instead of two copies drifting apart.
 //
 // The provider is chosen by whichever key the deployment configured, because unlike the desktop
 // build there is no user-facing setting here: the web deployment owns the credentials.
@@ -22,6 +27,16 @@ import {
   buildSegmentationSystemPrompt,
   parseSegmentationResponse,
 } from './lyricSegmentationPrompt.mjs';
+import {
+  KARAOKE_CREDITS_GEMINI_GENERATION_CONFIG,
+  KARAOKE_CREDITS_JSON_SCHEMA,
+  KARAOKE_CREDITS_MAX_LINES,
+  KARAOKE_CREDITS_MAX_OUTPUT_TOKENS,
+  KARAOKE_CREDITS_SCHEMA_NAME,
+  buildKaraokeCreditsSourcePrompt,
+  buildKaraokeCreditsSystemPrompt,
+  parseKaraokeCreditsResponse,
+} from './karaokeCreditsPrompt.mjs';
 
 const DEFAULT_OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
 const DEFAULT_OPENAI_TEMPERATURE = 0.7;
@@ -184,40 +199,54 @@ const sendOpenAICompatible = async (apiUrl, apiKey, adapter, body, fetchImpl) =>
 };
 
 /**
- * Walks the provider adapter's segmentation attempts instead of assuming what the deployment
- * configured. The base URL and model are env, so they can name anything: the provider is inferred
- * from the URL's host (only OpenAI-compatible ones here; anything else is the custom adapter, whose
- * attempts are the generic REASONING_SUPPRESSION_ATTEMPTS ladder), and the working shape is
- * discovered and then remembered by the shared runner. See the ladder's definition for the
- * measurements behind it.
+ * One ask, as the runner needs it: which task name the adapters switch on, the two prompts, the
+ * response schema, and how much room the answer itself needs.
+ *
+ * @typedef {{
+ *   task: 'segmentation' | 'credits',
+ *   systemPrompt: string,
+ *   sourcePrompt: string,
+ *   schema: object,
+ *   schemaName: string,
+ *   geminiGenerationConfig: object,
+ *   maxOutputTokens: number,
+ * }} LyricAiTaskProfile
  */
-const runOpenAICompatible = async (lines, env, fetchImpl) => {
+
+/**
+ * Walks the provider adapter's attempts instead of assuming what the deployment configured. The
+ * base URL and model are env, so they can name anything: the provider is inferred from the URL's
+ * host (only OpenAI-compatible ones here; anything else is the custom adapter, whose attempts are
+ * the generic REASONING_SUPPRESSION_ATTEMPTS ladder), and the working shape is discovered and then
+ * remembered by the shared runner. See the ladder's definition for the measurements behind it.
+ *
+ * @param {LyricAiTaskProfile} profile
+ */
+const runOpenAICompatible = async (profile, env, fetchImpl) => {
   const connection = resolveAiConnection({ ...env, AI_PROVIDER: 'openai' }, { protocols: ['openai'] });
   const adapter = getAiAdapter(connection.adapterId);
   const apiUrl = normalizeOpenAIChatCompletionsUrl(connection.apiUrl);
   const { model } = connection;
   const temperature = resolveTemperature(env.OPENAI_API_TEMPERATURE);
-  const systemPrompt = buildSegmentationSystemPrompt();
-  const sourcePrompt = buildSegmentationSourcePrompt(lines);
 
   return runAttempts({
     adapter,
-    task: 'segmentation',
+    task: profile.task,
     url: apiUrl,
     model,
-    attempts: adapter.attempts('segmentation', model),
+    attempts: adapter.attempts(profile.task, model),
     describeEmpty: (result) => describeEmpty(result.choice, result.usage, model, result.exhausted),
     fail: (message) => new SegmentationRequestError(message, 502),
     send: async (attempt) => {
       const body = buildCompatibleBody(adapter, {
-        task: 'segmentation',
+        task: profile.task,
         model,
         attempt,
-        systemPrompt,
-        sourcePrompt,
-        schema: SEGMENTATION_JSON_SCHEMA,
-        schemaName: SEGMENTATION_SCHEMA_NAME,
-        budget: budgetFor('segmentation', SEGMENTATION_MAX_OUTPUT_TOKENS, attempt),
+        systemPrompt: profile.systemPrompt,
+        sourcePrompt: profile.sourcePrompt,
+        schema: profile.schema,
+        schemaName: profile.schemaName,
+        budget: budgetFor(profile.task, profile.maxOutputTokens, attempt),
         temperature,
       });
       const result = await sendOpenAICompatible(apiUrl, env.OPENAI_API_KEY, adapter, body, fetchImpl);
@@ -226,7 +255,8 @@ const runOpenAICompatible = async (lines, env, fetchImpl) => {
   });
 };
 
-const runGemini = async (lines, env, fetchImpl) => {
+/** @param {LyricAiTaskProfile} profile */
+const runGemini = async (profile, env, fetchImpl) => {
   let response;
   try {
     response = await fetchImpl(GEMINI_ENDPOINT, {
@@ -236,9 +266,9 @@ const runGemini = async (lines, env, fetchImpl) => {
         'x-goog-api-key': env.GEMINI_API_KEY,
       },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: buildSegmentationSystemPrompt() }] },
-        contents: [{ parts: [{ text: buildSegmentationSourcePrompt(lines) }] }],
-        generationConfig: SEGMENTATION_GEMINI_GENERATION_CONFIG,
+        systemInstruction: { parts: [{ text: profile.systemPrompt }] },
+        contents: [{ parts: [{ text: profile.sourcePrompt }] }],
+        generationConfig: profile.geminiGenerationConfig,
       }),
       signal: timeoutSignal(DEFAULT_AI_TIMEOUT_MS),
     });
@@ -268,6 +298,49 @@ const runGemini = async (lines, env, fetchImpl) => {
   return jsonText;
 };
 
+/**
+ * Sends one ask with whichever provider the deployment configured and returns the raw JSON text.
+ * Parsing is the caller's: each ask validates against its own contract.
+ *
+ * @param {LyricAiTaskProfile} profile
+ */
+const runAiTask = async (profile, env, fetchImpl = fetch) => {
+  const preferOpenAI = env.AI_PROVIDER === 'openai' || (!env.GEMINI_API_KEY && env.OPENAI_API_KEY);
+
+  if (preferOpenAI && !env.OPENAI_API_KEY) {
+    throw new SegmentationRequestError('OPENAI_API_KEY is not configured', 500);
+  }
+  if (!preferOpenAI && !env.GEMINI_API_KEY) {
+    throw new SegmentationRequestError('GEMINI_API_KEY is not configured', 500);
+  }
+
+  return preferOpenAI
+    ? runOpenAICompatible(profile, env, fetchImpl)
+    : runGemini(profile, env, fetchImpl);
+};
+
+/** @param {string[]} lines */
+const segmentationProfile = (lines) => ({
+  task: 'segmentation',
+  systemPrompt: buildSegmentationSystemPrompt(),
+  sourcePrompt: buildSegmentationSourcePrompt(lines),
+  schema: SEGMENTATION_JSON_SCHEMA,
+  schemaName: SEGMENTATION_SCHEMA_NAME,
+  geminiGenerationConfig: SEGMENTATION_GEMINI_GENERATION_CONFIG,
+  maxOutputTokens: SEGMENTATION_MAX_OUTPUT_TOKENS,
+});
+
+/** @param {string[]} lines */
+const creditsProfile = (lines) => ({
+  task: 'credits',
+  systemPrompt: buildKaraokeCreditsSystemPrompt(),
+  sourcePrompt: buildKaraokeCreditsSourcePrompt(lines),
+  schema: KARAOKE_CREDITS_JSON_SCHEMA,
+  schemaName: KARAOKE_CREDITS_SCHEMA_NAME,
+  geminiGenerationConfig: KARAOKE_CREDITS_GEMINI_GENERATION_CONFIG,
+  maxOutputTokens: KARAOKE_CREDITS_MAX_OUTPUT_TOKENS,
+});
+
 /** Guards the request body before any credential or network work happens. */
 export const readSegmentationLines = (body) => {
   const lines = body && body.lines;
@@ -285,18 +358,7 @@ export const readSegmentationLines = (body) => {
  * per input line, already validated to reproduce the input exactly.
  */
 export const segmentLyricLines = async (lines, env, fetchImpl = fetch) => {
-  const preferOpenAI = env.AI_PROVIDER === 'openai' || (!env.GEMINI_API_KEY && env.OPENAI_API_KEY);
-
-  if (preferOpenAI && !env.OPENAI_API_KEY) {
-    throw new SegmentationRequestError('OPENAI_API_KEY is not configured', 500);
-  }
-  if (!preferOpenAI && !env.GEMINI_API_KEY) {
-    throw new SegmentationRequestError('GEMINI_API_KEY is not configured', 500);
-  }
-
-  const raw = preferOpenAI
-    ? await runOpenAICompatible(lines, env, fetchImpl)
-    : await runGemini(lines, env, fetchImpl);
+  const raw = await runAiTask(segmentationProfile(lines), env, fetchImpl);
 
   try {
     const { boundaries, rejections } = parseSegmentationResponse(raw, lines);
@@ -308,6 +370,34 @@ export const segmentLyricLines = async (lines, env, fetchImpl = fetch) => {
     // The response is the only evidence of why a run was rejected, and it is gone once this
     // throws. Server logs are the one place a deployment can see it.
     console.error('[segment-lyrics] rejected model response:', String(raw).slice(0, 4000));
+    throw new SegmentationRequestError(error instanceof Error ? error.message : String(error), 502);
+  }
+};
+
+/** Guards the request body of the credits ask: a handful of leading lines, no more. */
+export const readCreditLines = (body) => {
+  const lines = body && body.lines;
+  if (!Array.isArray(lines) || lines.length === 0) {
+    throw new SegmentationRequestError('Missing lines', 400);
+  }
+  if (lines.length > KARAOKE_CREDITS_MAX_LINES) {
+    throw new SegmentationRequestError('Too many lines', 400);
+  }
+  return lines.map((line) => String(line ?? ''));
+};
+
+/**
+ * Reads the leading song-info rows of a lyric file with whichever provider the deployment
+ * configured. Returns the 0-based indexes of those rows plus whatever title / lyricist / composer
+ * the model could name; empty strings stand for "not found".
+ */
+export const detectKaraokeCredits = async (lines, env, fetchImpl = fetch) => {
+  const raw = await runAiTask(creditsProfile(lines), env, fetchImpl);
+
+  try {
+    return parseKaraokeCreditsResponse(raw, lines);
+  } catch (error) {
+    console.error('[detect-credits] rejected model response:', String(raw).slice(0, 4000));
     throw new SegmentationRequestError(error instanceof Error ? error.message : String(error), 502);
   }
 };

@@ -670,13 +670,13 @@ async function runGeminiThemeCompletion({ store, systemPrompt, sourcePrompt, res
   }));
 }
 
-const JSON_TASKS = new Set(['segmentation', 'theme']);
+const JSON_TASKS = new Set(['segmentation', 'theme', 'credits']);
 
 /**
  * Runs one prompt through whichever provider the user configured and returns the raw JSON text.
  * Parsing is left to the caller so each feature can validate against its own contract.
  *
- * `task` ('segmentation' or 'theme') picks the adapter's request shapes; `answerTokens` is what the
+ * `task` ('segmentation', 'theme' or 'credits') picks the adapter's request shapes; `answerTokens` is what the
  * answer itself needs, and attempts that cannot switch reasoning off get room for it on top
  * (shared/ai/aiTasks.mjs). `schema` is JSON Schema, `geminiSchema` the same in Gemini's dialect.
  */

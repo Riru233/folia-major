@@ -13,6 +13,10 @@ import VisualizerShell from '../VisualizerShell';
 import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
 import { buildKaraokeChunks, chunkFillProgress, type KaraokeChunk } from './karaokeSegments';
 import { resolveKaraokeScrollOffset, resolveKaraokeWrapScrollOffset } from './karaokeScroll';
+import { karaokeCreditsOpacity, resolveKaraokeCredits } from './karaokeCredits';
+import { useKaraokeInfoOverrideStore } from '../../../stores/useKaraokeInfoOverrideStore';
+import { selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
+import { getPlaybackSongKey } from '../../../utils/appPlaybackGuards';
 import { DEFAULT_KARAOKE_TUNING, type KaraokeTuning } from './types';
 
 // src/components/visualizer/karaoke/VisualizerKaraoke.tsx
@@ -70,6 +74,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         currentTime,
         currentLineIndex,
         lines,
+        songTitle,
         theme,
         subtitleTheme,
         showText = true,
@@ -86,6 +91,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         subtitleOverlayBackground,
         subtitleUpcomingLyricsBlur,
         subtitleOverlayLayout,
+        isPreviewMode = false,
         ...sharedProps
     } = props;
 
@@ -107,6 +113,26 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
     const chunks = activeLine && activeLine === pageSecondLine ? secondChunks : firstChunks;
     const rtl = useMemo(() => isRtlText(activeLine?.fullText ?? ''), [activeLine]);
     const progressStyle = karaokeTuning.progressStyle;
+
+    // 开头的「歌名 / 作词 / 作曲」不是歌词：提出来单独显示，唱到作曲那句末尾再淡出。
+    // 这首歌如果手动指定过「开头哪几行是信息」，以那份为准（自动识别漏掉/认错的就落在这里）。
+    // 预览用的是示例歌词，和播放键对不上，所以预览里一律走自动识别。
+    const displaySong = usePlaybackStore(selectDisplaySong);
+    const songKey = !isPreviewMode && displaySong ? getPlaybackSongKey(displaySong) : null;
+    const infoOverride = useKaraokeInfoOverrideStore(state => (songKey ? state.bySong[songKey] : undefined));
+    const credits = useMemo(
+        () => resolveKaraokeCredits(lines, {
+            title: infoOverride?.title || songTitle || null,
+            hiddenIndexes: infoOverride ? infoOverride.hiddenIndexes : null,
+            rows: infoOverride?.rows ?? null,
+        }),
+        [lines, songTitle, infoOverride],
+    );
+    // 被提走的那几行不再参与两句一页（它们只是署名，不该被唱）。
+    const hiddenLines = useMemo(
+        () => new Set(credits ? credits.hiddenIndexes.map(index => lines[index]) : []),
+        [credits, lines],
+    );
 
     const filledRefs = useRef<(HTMLSpanElement | null)[]>([]);
     /** 上一次写给每一块的进度；换句或换样式时清空，让所有块重画一遍。 */
@@ -138,6 +164,10 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
      *  跟唱只准往前推进：字块交界处算回来的几个像素会让整行退一下再前进，跟着节拍看就是抖。 */
     const lastXOffsetRef = useRef<number | null>(null);
     const lastYOffsetRef = useRef<number | null>(null);
+    /** 标题区整块，以及上一次写进去的不透明度（同值不重复写，免得每帧都碰一次 DOM）。
+     *  连节点一起记：换歌之后是新节点，值就算一样也得重新写一遍。 */
+    const creditsRef = useRef<HTMLDivElement | null>(null);
+    const lastCreditsWriteRef = useRef<{ node: HTMLDivElement | null; opacity: number }>({ node: null, opacity: -1 });
     const activeLineRef = useRef(activeLine);
     activeLineRef.current = activeLine;
 
@@ -284,6 +314,23 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         writeTransform(target, offset > 0 ? `translateX(-${offset}px)` : '');
     }, [rtl, karaokeTuning.overflowMode, writeTransform]);
 
+    /** 标题区只在开头露脸：唱到作曲末尾开始淡出，第一句歌词出来时正好淡完。 */
+    const paintCredits = useCallback((time: number) => {
+        const node = creditsRef.current;
+        if (!node || !credits) {
+            return;
+        }
+        const opacity = karaokeCreditsOpacity(credits, time);
+        const last = lastCreditsWriteRef.current;
+        if (last.node === node && Math.abs(opacity - last.opacity) < EPSILON) {
+            return;
+        }
+        lastCreditsWriteRef.current = { node, opacity };
+        node.style.opacity = opacity.toFixed(3);
+        // 淡到 0 之后整块撤掉：它盖在画面正中，留着会白占一层合成。
+        node.style.visibility = opacity <= 0 ? 'hidden' : 'visible';
+    }, [credits]);
+
     const paintFill = useCallback((time: number) => {
         const current = chunksRef.current;
         for (let index = 0; index < current.length; index++) {
@@ -308,7 +355,8 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
             }
         }
         applyScroll(time);
-    }, [progressStyle, rtl, applyScroll]);
+        paintCredits(time);
+    }, [progressStyle, rtl, applyScroll, paintCredits]);
 
     useMotionValueEvent(currentTime, 'change', paintFill);
 
@@ -390,7 +438,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
 
     // 两句一页的划分在上面（pageStart / pageFirstLine / pageSecondLine），这里只管把两行画出来。
     const renderRow = (line: Line | null, side: 'start' | 'end', rowChunks: KaraokeChunk[]) => {
-        if (!line) {
+        if (!line || hiddenLines.has(line)) {
             return null;
         }
         const isSinging = line === activeLine;
@@ -458,6 +506,62 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
             sharedProps={{ ...sharedProps, isDaylight }}
             className="visualizer-karaoke"
         >
+            {/* 开头那段信息：歌名居中（歌词强调色），作词、作曲靠左（未激活歌词的颜色）。
+                不透明度在 paintFill 里按播放时间写，不参与逐帧 React 渲染。 */}
+            {showText && credits && (
+                <div
+                    ref={creditsRef}
+                    className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center px-10"
+                    // 先藏起来：挂载后 paintCredits 会按当前时间写一次，避免中途跳进来时闪一下。
+                    style={{ opacity: 0, willChange: 'opacity' }}
+                >
+                    {credits.title && (
+                        <h1
+                            style={{
+                                ...strokeStyle(karaokeTuning.activeFill, karaokeTuning.activeStroke, karaokeTuning.strokeWidth),
+                                margin: 0,
+                                fontFamily,
+                                fontWeight,
+                                fontStyle: karaokeTuning.italic ? 'italic' : 'normal',
+                                fontSize: `calc(${lineFontSize} * 1.3)`,
+                                lineHeight: 1.2,
+                                letterSpacing: '0.02em',
+                                textAlign: 'center',
+                            }}
+                        >
+                            {credits.title}
+                        </h1>
+                    )}
+                    {credits.rows.length > 0 && (
+                        <div className="mt-5 flex flex-col items-start gap-1.5">
+                            {credits.rows.map((row, index) => (
+                                <h2
+                                    key={`${index}-${row}`}
+                                    style={{
+                                        ...strokeStyle(
+                                            karaokeTuning.idleFill,
+                                            karaokeTuning.idleStroke,
+                                            // 描边宽度是给歌词正文字号配的：标题区字号小一半，照搬会糊成一坨。
+                                            Math.max(0.5, karaokeTuning.strokeWidth * 0.6),
+                                        ),
+                                        margin: 0,
+                                        fontFamily,
+                                        fontWeight,
+                                        fontStyle: karaokeTuning.italic ? 'italic' : 'normal',
+                                        fontSize: `calc(${lineFontSize} * 0.46)`,
+                                        lineHeight: 1.35,
+                                        letterSpacing: '0.04em',
+                                        textAlign: 'left',
+                                    }}
+                                >
+                                    {row}
+                                </h2>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* 句与句之间的空档 activeLine 会是 null：这时页面照样留着，否则整块歌词会卸载再挂载，
                 看起来就是每句交界处上下抖一下。 */}
             {showText && (pageFirstLine || pageSecondLine) && (

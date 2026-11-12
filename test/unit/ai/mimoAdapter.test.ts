@@ -4,7 +4,7 @@ import { REASONING_ALLOWANCE } from '../../../shared/ai/aiTasks.mjs';
 import { resetLearnedAttempts } from '../../../shared/ai/attemptRunner.mjs';
 import { exhaustedByReasoning } from '../../../shared/ai/compatibleBody.mjs';
 import { AI_PROVIDER_PRESETS, getAiAdapter, inferAiProviderFromUrl, resolveAiConnection, retiredModelHint } from '../../../shared/ai/providerRegistry.mjs';
-import { segmentLyricLines } from '../../../shared/lyricSegmentationService.mjs';
+import { segmentLyricLines } from '../../../shared/lyricAiService.mjs';
 import { resetOpenAICompatibleCapabilities } from '../../../shared/openAICompatibleRequest.mjs';
 import { ANSWER_TOKENS, firstBody, requestsFor, type AiTask } from './adapterHarness';
 

@@ -4,7 +4,7 @@ import {
     resetOpenAICompatibleCapabilities,
     sendOpenAICompatibleRequest,
 } from '../../../shared/openAICompatibleRequest.mjs';
-import { segmentLyricLines } from '../../../shared/lyricSegmentationService.mjs';
+import { segmentLyricLines } from '../../../shared/lyricAiService.mjs';
 import { handleGenerateOpenAITheme } from '../../../worker/generate-theme_openai';
 
 // Compatibility negotiation is transport-only; feature-specific reasoning policy stays at callers.

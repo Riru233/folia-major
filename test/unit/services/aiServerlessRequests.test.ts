@@ -4,7 +4,14 @@ import vercelGenerateOpenAITheme from '../../../api-ts/generate-theme_openai';
 import builtGenerateGeminiTheme from '../../../api/generate-theme.js';
 import builtGenerateOpenAITheme from '../../../api/generate-theme_openai.js';
 import { resetLearnedAttempts } from '../../../shared/ai/attemptRunner.mjs';
-import { segmentLyricLines } from '../../../shared/lyricSegmentationService.mjs';
+import { detectKaraokeCredits, readCreditLines, segmentLyricLines } from '../../../shared/lyricAiService.mjs';
+import {
+    KARAOKE_CREDITS_GEMINI_GENERATION_CONFIG,
+    KARAOKE_CREDITS_JSON_SCHEMA,
+    KARAOKE_CREDITS_SCHEMA_NAME,
+    buildKaraokeCreditsSourcePrompt,
+    buildKaraokeCreditsSystemPrompt,
+} from '../../../shared/karaokeCreditsPrompt.mjs';
 import {
     SEGMENTATION_GEMINI_GENERATION_CONFIG,
     SEGMENTATION_JSON_SCHEMA,
@@ -294,5 +301,53 @@ describe('a lyric segmentation from the service both /api/segment-lyrics routes 
             },
         }]);
         expect(boundaries).toEqual([['la ', 'la']]);
+    });
+});
+
+describe('a song credits read from the same service', () => {
+    const LINES = ['Neon River - Probe', 'Lyrics by Ann Lee', 'Music by Bo Chen'];
+    const ANSWER = {
+        hiddenLines: [1, 2, 3],
+        title: 'Neon River',
+        lyricist: 'Ann Lee',
+        composer: 'Bo Chen',
+    };
+
+    it('asks the OpenAI-compatible service for the JSON shape the prompt describes', async () => {
+        const { requests, fetchImpl } = recordOpenAi(JSON.stringify(ANSWER));
+
+        const credits = await detectKaraokeCredits(LINES, { OPENAI_API_KEY: KEY }, fetchImpl);
+
+        expect(requests).toHaveLength(1);
+        expect(requests[0].body.messages).toEqual([
+            { role: 'system', content: buildKaraokeCreditsSystemPrompt() },
+            { role: 'user', content: buildKaraokeCreditsSourcePrompt(LINES) },
+        ]);
+        expect(requests[0].body.response_format).toEqual({
+            type: 'json_schema',
+            json_schema: { name: KARAOKE_CREDITS_SCHEMA_NAME, strict: true, schema: KARAOKE_CREDITS_JSON_SCHEMA },
+        });
+        // 行号是 1 起算的，回来时已经换成 0 起算的下标。
+        expect(credits.hiddenIndexes).toEqual([0, 1, 2]);
+        expect(credits).toMatchObject({ title: 'Neon River', lyricist: 'Ann Lee', composer: 'Bo Chen' });
+    });
+
+    it('to Gemini when the deployment has its key', async () => {
+        const requests: Recorded[] = [];
+        const fetchImpl = (async (url: string, init: any) => {
+            requests.push({ url, method: init.method, headers: init.headers, body: JSON.parse(init.body) });
+            return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify(ANSWER) }] } }] });
+        }) as unknown as typeof fetch;
+
+        const credits = await detectKaraokeCredits(LINES, { GEMINI_API_KEY: KEY }, fetchImpl);
+
+        expect(requests[0].body.generationConfig).toEqual(KARAOKE_CREDITS_GEMINI_GENERATION_CONFIG);
+        expect(credits.hiddenIndexes).toEqual([0, 1, 2]);
+    });
+
+    it('refuses a lyric sample longer than the prompt is sized for', () => {
+        const tooMany = Array.from({ length: 20 }, (_, index) => `line ${index}`);
+
+        expect(() => readCreditLines({ lines: tooMany })).toThrow('Too many lines');
     });
 });

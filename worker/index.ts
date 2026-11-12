@@ -3,6 +3,7 @@ import { handleGenerateTheme } from "./generate-theme.ts";
 import { handleGenerateOpenAITheme } from "./generate-theme_openai.ts";
 import { handleLyricProxy } from "./lyric-proxy.ts";
 import { handleSegmentLyrics } from "./segment-lyrics.ts";
+import { handleDetectCredits } from "./detect-credits.ts";
 import { QQ_API_PREFIX, type QqServerlessEnv, handleQq } from "./qq.ts";
 
 // qq-music-api uses Buffer during requests; Workers do not expose it without nodejs_compat.
@@ -48,6 +49,10 @@ export default {
 
     if (url.pathname === "/api/segment-lyrics") {
       return handleSegmentLyrics(request, env);
+    }
+
+    if (url.pathname === "/api/detect-credits") {
+      return handleDetectCredits(request, env);
     }
 
     // QQ 路由必须自己兜住异常：这个 worker 同时负责静态资源与既有三条 API，
