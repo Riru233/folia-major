@@ -19,6 +19,7 @@ import {
     DEFAULT_TILT_TUNING,
 } from '@/types';
 import { DEFAULT_HANABI_TUNING } from '@/components/visualizer/hanabi/types';
+import { DEFAULT_KARAOKE_TUNING } from '@/components/visualizer/karaoke/types';
 import { DEFAULT_MACHI_TUNING } from '@/components/visualizer/machi/types';
 import { DEFAULT_NEBBIA_TUNING } from '@/components/visualizer/nebbia/types';
 
@@ -160,6 +161,12 @@ const CURRENT: Record<string, unknown> = {
     },
     machi_tuning: { ...DEFAULT_MACHI_TUNING, scene: 'konbini', timeOfDay: 'night', weather: 'snow', camera: 'custom', views: { ...DEFAULT_MACHI_TUNING.views, station: { azimuth: -20, elevation: 6, zoom: 1.6, panX: 1.5, panZ: -0.5 } }, motion: true, dof: 1.4, focus: 'lyrics', quality: { renderScale: 0.75, antialias: 'ssaa', shadows: 'low', reflections: 'off', glow: false, adaptive: false } },
     nebbia_tuning: { ...DEFAULT_NEBBIA_TUNING, appear: ['write'], fade: ['fingers'], layouts: ['ribbon', 'orbit'], jitter: 1.2, mist: 0.5, refog: 6, spot: 1.2, rainHit: 2, render: { scale: 0.75, antialias: 'global' } },
+    karaoke_tuning: {
+        ...DEFAULT_KARAOKE_TUNING,
+        activeFill: '#ff4d8d', activeStroke: '#101010', idleFill: '#fdfdfd', idleStroke: '#222222',
+        strokeWidth: 5.5, fontScale: 1.4, fontStyle: 'mono', fontWeight: 600, italic: !DEFAULT_KARAOKE_TUNING.italic,
+        progressStyle: 'fade',
+    },
     monet_background_tuning: {
         ...DEFAULT_MONET_BACKGROUND_TUNING,
         backgroundSource: 'uploaded-global', backgroundLayout: 'half-pane-gradient', backgroundBlurPx: 24, backgroundOverlayOpacity: 0.3,
@@ -191,6 +198,7 @@ const DEFAULTS: Record<string, unknown> = {
     tilt_tuning: DEFAULT_TILT_TUNING, diorama_tuning: DEFAULT_DIORAMA_TUNING, monet_tuning: DEFAULT_MONET_TUNING,
     pendolo_tuning: DEFAULT_PENDOLO_TUNING, sonnet_tuning: DEFAULT_SONNET_TUNING, tempera_tuning: DEFAULT_TEMPERA_TUNING,
     lumiere_tuning: DEFAULT_LUMIERE_TUNING, hanabi_tuning: DEFAULT_HANABI_TUNING, machi_tuning: DEFAULT_MACHI_TUNING, nebbia_tuning: DEFAULT_NEBBIA_TUNING,
+    karaoke_tuning: DEFAULT_KARAOKE_TUNING,
     monet_background_tuning: DEFAULT_MONET_BACKGROUND_TUNING, nomand_background_tuning: DEFAULT_NOMAND_BACKGROUND_TUNING, latent_background_tuning: DEFAULT_LATENT_BACKGROUND_TUNING,
     sora_background_tuning: DEFAULT_SORA_BACKGROUND_TUNING,
 };

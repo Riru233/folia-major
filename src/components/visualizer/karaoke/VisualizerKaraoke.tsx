@@ -1,0 +1,455 @@
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { motion, useMotionValueEvent } from 'framer-motion';
+import {
+    BUILTIN_FONT_STACKS,
+    resolveThemeFontStack,
+    resolveThemeFontWeight,
+    resolveThemeTranslationFontStack,
+} from '../../../utils/fontStacks';
+import type { VisualizerSharedProps } from '../definition';
+import type { Line } from '../../../types';
+import { useVisualizerRuntime } from '../runtime';
+import VisualizerShell from '../VisualizerShell';
+import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
+import { buildKaraokeChunks, chunkFillProgress, type KaraokeChunk } from './karaokeSegments';
+import { resolveKaraokeScrollOffset, resolveKaraokeWrapScrollOffset } from './karaokeScroll';
+import { DEFAULT_KARAOKE_TUNING, type KaraokeTuning } from './types';
+
+// src/components/visualizer/karaoke/VisualizerKaraoke.tsx
+// 卡拉OK：当前这一句画两遍。底下一遍是「还没唱」的样子（白字黑边），上面一遍是「唱过」的样子
+// （白边蓝字），上面那一遍按每个字块的进度让出来——于是已经唱到的地方是蓝字白边，没唱到的还是白字黑边。
+// 让出来的方式由「预备进度样式」决定：扫过（clip-path 从左往右裁）、淡入（不透明度渐变）、整块跳变。
+//
+// 每帧只写 DOM 的 clip-path / opacity，不进 React state：一句话十来块，最多十来次样式写入，
+// 而且没变化的块直接跳过（见 EPSILON）。
+
+type VisualizerKaraokeProps = VisualizerSharedProps & {
+    /** 参数由 entry 用 tuning.ts 的 read() 取好传进来。 */
+    karaokeTuning?: KaraokeTuning;
+};
+
+/** 字块的基准大小；全局歌词字号与样式自己的字号倍率都乘在上面。 */
+const BASE_FONT_SIZE = 'clamp(1.75rem, 4.4vw, 3.3rem)';
+
+/** 单块进度的变化小于这个值就不写样式：肉眼看不出来，省掉大量无意义的字符串拼装。 */
+const EPSILON = 0.004;
+
+/**
+ * 歌词页离画面底边的固定距离：不跟播放条、停靠栏或任何底部元素联动，永远钉在这儿。
+ * 底下那一条留给浮动的译文（共享字幕层画在自己的基线上），两行歌词都在它上面。
+ */
+const LYRICS_BOTTOM_PX = 48;
+
+/** 首字符落在这些区段就按从右往左扫（阿拉伯文、希伯来文等）。 */
+const RTL_TEXT = /[\u0590-\u05ff\u0600-\u06ff\u0700-\u074f\u0780-\u07bf\ufb1d-\ufdff\ufe70-\ufeff]/;
+
+const isRtlText = (text: string) => RTL_TEXT.test(text);
+
+const strokeStyle = (fill: string, stroke: string, width: number): React.CSSProperties => (
+    width > 0
+        // paintOrder: 'stroke' 让描边画在字面下面，笔画不会把字心吃掉。
+        ? { color: fill, WebkitTextStrokeWidth: `${width}px`, WebkitTextStrokeColor: stroke, paintOrder: 'stroke' }
+        : { color: fill }
+);
+
+const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
+    const {
+        currentTime,
+        currentLineIndex,
+        lines,
+        theme,
+        subtitleTheme,
+        showText = true,
+        lyricsFontScale = 1,
+        subtitleFontScale = 1,
+        hideTranslationSubtitle = false,
+        isDaylight = false,
+        audioPower,
+        audioBands,
+        staticMode = false,
+        karaokeTuning = DEFAULT_KARAOKE_TUNING,
+        isPlayerChromeHidden = false,
+        subtitleOverlayOpacity,
+        subtitleOverlayBackground,
+        subtitleUpcomingLyricsBlur,
+        subtitleOverlayLayout,
+        ...sharedProps
+    } = props;
+
+    const { activeLine, recentCompletedLine, nextLines } = useVisualizerRuntime({ currentTime, currentLineIndex, lines });
+    const chunks = useMemo(() => buildKaraokeChunks(activeLine), [activeLine]);
+    const rtl = useMemo(() => isRtlText(activeLine?.fullText ?? ''), [activeLine]);
+    const progressStyle = karaokeTuning.progressStyle;
+
+    const filledRefs = useRef<(HTMLSpanElement | null)[]>([]);
+    /** 上一次写给每一块的进度；换句或换样式时清空，让所有块重画一遍。 */
+    const paintedProgress = useRef<number[]>([]);
+    const chunksRef = useRef<KaraokeChunk[]>(chunks);
+    chunksRef.current = chunks;
+
+    /** 裁切这一页的框（宽度就是可用宽度）与正在唱的那一行（它比框宽多少就滚多少）。 */
+    const clipRef = useRef<HTMLDivElement | null>(null);
+    /** 横向跟唱推的是「正在唱的那一行」。 */
+    const scrollTargetRef = useRef<HTMLDivElement | null>(null);
+    /** 折行模式的竖直跟唱推的是整页（两行一起动）。 */
+    const wrapTargetRef = useRef<HTMLDivElement | null>(null);
+    /** 量尺寸那一层的字块，用来算「唱到哪儿了」在画面上的横坐标。 */
+    const measureRefs = useRef<(HTMLSpanElement | null)[]>([]);
+    /** 每个字块相对行首的左边距 / 宽度，以及相对裁切框顶部的上下位置，换句时量一次。 */
+    const chunkMetricsRef = useRef<{ left: number[]; width: number[]; top: number[]; height: number[] }>({
+        left: [], width: [], top: [], height: [],
+    });
+    /** 这一句横向还能滚多远；0 表示放得下，不用滚。 */
+    const scrollRangeRef = useRef(0);
+    const visibleWidthRef = useRef(0);
+    /** 折行模式下的竖直滚动量：内容高、可视高。 */
+    const wrapRangeRef = useRef(0);
+    const wrapVisibleHeightRef = useRef(0);
+    /** 上一次写进 DOM 的位移。同一个值不重复写，切页/停顿的时候才不会抖。 */
+    const lastTransformRef = useRef('');
+    const activeLineRef = useRef(activeLine);
+    activeLineRef.current = activeLine;
+
+    /** 量一次字块位置和溢出量。换句、字体加载、改窗口大小都要重量。 */
+    const measureScroll = useCallback(() => {
+        const clip = clipRef.current;
+        const target = scrollTargetRef.current;
+        // 量的时候先把上一轮写的位移清掉，不然量到的是被推过之后的位置。
+        if (target) {
+            target.style.transform = '';
+        }
+        if (wrapTargetRef.current) {
+            wrapTargetRef.current.style.transform = '';
+        }
+        lastTransformRef.current = '';
+        const frameRect = clip ? clip.getBoundingClientRect() : null;
+        const metrics = { left: [] as number[], width: [] as number[], top: [] as number[], height: [] as number[] };
+        measureRefs.current.forEach(node => {
+            if (!node) {
+                metrics.left.push(0); metrics.width.push(0); metrics.top.push(0); metrics.height.push(0);
+                return;
+            }
+            metrics.left.push(node.offsetLeft);
+            metrics.width.push(node.offsetWidth);
+            if (frameRect) {
+                const rect = node.getBoundingClientRect();
+                metrics.top.push(rect.top - frameRect.top);
+                metrics.height.push(rect.height);
+            } else {
+                metrics.top.push(0);
+                metrics.height.push(node.offsetHeight);
+            }
+        });
+        chunkMetricsRef.current = metrics;
+        const total = metrics.left.length > 0
+            ? metrics.left[metrics.left.length - 1] + metrics.width[metrics.width.length - 1]
+            : 0;
+        const visible = clip ? clip.clientWidth : 0;
+        visibleWidthRef.current = visible;
+        scrollRangeRef.current = Math.max(0, total - visible);
+        wrapVisibleHeightRef.current = clip ? clip.clientHeight : 0;
+        wrapRangeRef.current = clip ? Math.max(0, clip.scrollHeight - clip.clientHeight) : 0;
+    }, []);
+
+    /**
+     * 跟唱滚动，两种溢出处理：
+     * - 滚动（scroll）：不折行，唱到的字还没顶到右边界时整行不动，顶到了才往左推。
+     * - 换行（wrap）：折行显示，内容比框高时按正在唱的那一行竖直往上推。
+     * 放得下就一点都不动。
+     */
+    /** 位移一律取整再写：亚像素的 translate 会让文字重新栅格化，看起来就是上下/左右抖动。 */
+    const writeTransform = useCallback((node: HTMLDivElement | null, value: string) => {
+        if (!node) {
+            return;
+        }
+        const key = `${node === scrollTargetRef.current ? 'x' : 'y'}:${value}`;
+        if (lastTransformRef.current === key) {
+            return;
+        }
+        lastTransformRef.current = key;
+        node.style.transform = value;
+    }, []);
+
+    const applyScroll = useCallback((time: number) => {
+        const target = scrollTargetRef.current;
+        const wrapTarget = wrapTargetRef.current;
+        if (!target || !wrapTarget) {
+            return;
+        }
+        const line = activeLineRef.current;
+        const chunks = chunksRef.current;
+        if (!line || chunks.length === 0) {
+            writeTransform(target, '');
+            writeTransform(wrapTarget, '');
+            return;
+        }
+        const metrics = chunkMetricsRef.current;
+        // 正在唱（或下一个要唱）的那块，按块内进度插值，得到「唱到哪儿」的位置。
+        let frontier = chunks.length - 1;
+        for (let index = 0; index < chunks.length; index++) {
+            if (time < chunks[index].endTime) {
+                frontier = index;
+                break;
+            }
+        }
+        const progress = chunkFillProgress(chunks[frontier], time);
+
+        if (karaokeTuning.overflowMode === 'wrap') {
+            // 折行模式不横向推，改成整页竖直滚动。
+            writeTransform(target, '');
+            const range = wrapRangeRef.current;
+            if (range <= 0) {
+                writeTransform(wrapTarget, '');
+                return;
+            }
+            const top = metrics.top[frontier] ?? 0;
+            const height = metrics.height[frontier] ?? 0;
+            const offset = Math.round(resolveKaraokeWrapScrollOffset(
+                wrapVisibleHeightRef.current + range,
+                wrapVisibleHeightRef.current,
+                top + height * progress,
+            ));
+            writeTransform(wrapTarget, `translateY(-${offset}px)`);
+            return;
+        }
+        // 换回滚动模式时把竖直位移清掉。
+        writeTransform(wrapTarget, '');
+
+        const range = scrollRangeRef.current;
+        if (range <= 0) {
+            writeTransform(target, '');
+            return;
+        }
+        const left = metrics.left[frontier] ?? 0;
+        const width = metrics.width[frontier] ?? 0;
+        const cursor = left + width * progress;
+        const offset = Math.round(resolveKaraokeScrollOffset(visibleWidthRef.current + range, visibleWidthRef.current, cursor, rtl));
+        writeTransform(target, offset > 0 ? `translateX(-${offset}px)` : '');
+    }, [rtl, karaokeTuning.overflowMode, writeTransform]);
+
+    const paintFill = useCallback((time: number) => {
+        const current = chunksRef.current;
+        for (let index = 0; index < current.length; index++) {
+            const node = filledRefs.current[index];
+            if (!node) {
+                continue;
+            }
+            const progress = chunkFillProgress(current[index], time);
+            if (Math.abs((paintedProgress.current[index] ?? -1) - progress) < EPSILON) {
+                continue;
+            }
+            paintedProgress.current[index] = progress;
+            if (progressStyle === 'sweep') {
+                const hidden = (1 - progress) * 100;
+                node.style.opacity = '';
+                // RTL 的行从右边开始唱，裁切也跟着从右边放。
+                node.style.clipPath = rtl ? `inset(0 0 0 ${hidden}%)` : `inset(0 ${hidden}% 0 0)`;
+            } else {
+                node.style.clipPath = '';
+                // 淡入跟着时间一路变亮；整块跳变只在这一块轮到时翻成 1。
+                node.style.opacity = progressStyle === 'fade' ? progress.toFixed(3) : (progress > 0 ? '1' : '0');
+            }
+        }
+        applyScroll(time);
+    }, [progressStyle, rtl, applyScroll]);
+
+    useMotionValueEvent(currentTime, 'change', paintFill);
+
+    /** 把上一轮写在字块上的样式清干净：换句、换进度样式都会让它们不再成立。 */
+    const clearPainted = useCallback(() => {
+        paintedProgress.current = [];
+        filledRefs.current.forEach(node => {
+            if (!node) {
+                return;
+            }
+            node.style.clipPath = '';
+            node.style.opacity = '';
+        });
+    }, []);
+
+    const lineKey = activeLine ? `${activeLine.startTime}:${activeLine.fullText}` : 'empty';
+
+    // 换句之后 DOM 是新的（换进度样式时旧样式还留在节点上）：清一遍，量一次溢出，再按当前时间画到该在的位置。
+    useEffect(() => {
+        clearPainted();
+        measureScroll();
+        paintFill(currentTime.get());
+    }, [lineKey, progressStyle, clearPainted, paintFill, currentTime, chunks, measureScroll]);
+
+    // 宽度变了（窗口缩放、竖排转横排）溢出量也跟着变。
+    useEffect(() => {
+        const onResize = () => {
+            measureScroll();
+            paintFill(currentTime.get());
+        };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [measureScroll, paintFill, currentTime]);
+
+    const fontFamily = karaokeTuning.fontStyle === 'theme'
+        ? resolveThemeFontStack(theme)
+        : BUILTIN_FONT_STACKS[karaokeTuning.fontStyle];
+    const fontWeight = karaokeTuning.fontWeight || resolveThemeFontWeight(theme, 800);
+    const lineFontSize = `calc(${BASE_FONT_SIZE} * ${lyricsFontScale * karaokeTuning.fontScale})`;
+
+    const renderChunks = (layer: 'idle' | 'filled') => chunks.map((chunk, index) => (
+        <span
+            key={`${layer}-${index}`}
+            ref={layer === 'filled'
+                ? (node) => { filledRefs.current[index] = node; }
+                : (node) => { measureRefs.current[index] = node; }}
+            style={{ whiteSpace: 'pre' }}
+        >
+            {chunk.text}
+        </span>
+    ));
+
+    const pageAnimation = karaokeTuning.pageAnimation !== false;
+    const wrapMode = karaokeTuning.overflowMode === 'wrap';
+    const resolvedSubtitleTheme = subtitleTheme ?? theme;
+    const subtitleFontSizes = useMemo(() => resolveSubtitleFontSizes(lyricsFontScale), [lyricsFontScale]);
+
+    // 两句一页：第 1、2 句同屏（第一行靠左、第二行靠右），第 2 句唱完才翻页，换成第 3、4 句。
+    // 句与句之间的空档 currentLineIndex 会退回 -1：这时按刚唱完的那句算页，页面才不会闪掉。
+    const anchorIndex = currentLineIndex >= 0
+        ? currentLineIndex
+        : (recentCompletedLine ? lines.indexOf(recentCompletedLine) : -1);
+    const pageStart = anchorIndex >= 0 ? anchorIndex - (anchorIndex % 2) : -1;
+    const pageFirstLine = pageStart >= 0 ? lines[pageStart] ?? null : null;
+    const pageSecondLine = pageStart >= 0 ? lines[pageStart + 1] ?? null : null;
+
+    const renderRow = (line: Line | null, side: 'start' | 'end') => {
+        if (!line) {
+            return null;
+        }
+        const isSinging = line === activeLine;
+        // 同一页里已经唱完的那句不再退回「还没唱」的灰样，维持唱完的蓝白（进度就算满）。
+        // 空档里 anchorIndex 指的就是刚唱完的那句，所以是 >=。
+        const isSung = !isSinging && anchorIndex >= lines.indexOf(line);
+        const rowRtl = isRtlText(line.fullText);
+        // 第一行贴左、第二行贴右；RTL 的行把里外两侧对调，免得文字和它靠的那条边打架。
+        const textAlign = side === 'start'
+            ? (rowRtl ? 'right' : 'left')
+            : (rowRtl ? 'left' : 'right');
+        const rowStyle: React.CSSProperties = {
+            fontFamily,
+            fontWeight,
+            fontStyle: karaokeTuning.italic ? 'italic' : 'normal',
+            fontSize: lineFontSize,
+            lineHeight: 1.25,
+            letterSpacing: '0.01em',
+            direction: rowRtl ? 'rtl' : 'ltr',
+            textAlign,
+        };
+
+        return (
+            <div
+                key={`${side}-${line.startTime}`}
+                className="flex w-full flex-col"
+            >
+                {isSinging ? (
+                    <div
+                        ref={scrollTargetRef}
+                        className={`relative block w-full ${wrapMode ? 'whitespace-normal' : 'whitespace-nowrap'}`}
+                        style={{ ...rowStyle, willChange: 'transform' }}
+                    >
+                        {/* 底下这一遍是量尺寸的那一层：它撑出宽度、决定在哪里折行，上面的填充层照它的框贴上去。 */}
+                        <div style={strokeStyle(karaokeTuning.idleFill, karaokeTuning.idleStroke, karaokeTuning.strokeWidth)}>
+                            {renderChunks('idle')}
+                        </div>
+                        <div
+                            aria-hidden="true"
+                            className="absolute inset-0"
+                            style={strokeStyle(karaokeTuning.activeFill, karaokeTuning.activeStroke, karaokeTuning.strokeWidth)}
+                        >
+                            {renderChunks('filled')}
+                        </div>
+                    </div>
+                ) : isSung ? (
+                    // 已经唱完（同页的上一句）：停在那套「唱过」的颜色上，整句都是满的。
+                    <div
+                        className={`block w-full ${wrapMode ? 'whitespace-normal' : 'whitespace-nowrap'}`}
+                        style={{
+                            ...rowStyle,
+                            // 刚轮过去的那一行可能还留着跟唱时的 translateX，这里显式清掉。
+                            transform: 'none',
+                            ...strokeStyle(karaokeTuning.activeFill, karaokeTuning.activeStroke, karaokeTuning.strokeWidth),
+                        }}
+                    >
+                        {line.fullText}
+                    </div>
+                ) : (
+                    // 同一页里还没轮到的那句：同样的字号、同样的颜色，只是不扫。
+                    <div
+                        className={`block w-full ${wrapMode ? 'whitespace-normal' : 'whitespace-nowrap'}`}
+                        style={{
+                            ...rowStyle,
+                            transform: 'none',
+                            ...strokeStyle(karaokeTuning.idleFill, karaokeTuning.idleStroke, karaokeTuning.strokeWidth),
+                        }}
+                    >
+                        {line.fullText}
+                    </div>
+                )}
+
+            </div>
+        );
+    };
+
+    return (
+        <VisualizerShell
+            theme={theme}
+            audioPower={audioPower}
+            audioBands={audioBands}
+            sharedProps={{ ...sharedProps, isDaylight }}
+            className="visualizer-karaoke"
+        >
+            {/* 句与句之间的空档 activeLine 会是 null：这时页面照样留着，否则整块歌词会卸载再挂载，
+                看起来就是每句交界处上下抖一下。 */}
+            {showText && (pageFirstLine || pageSecondLine) && (
+                // 歌词沉在底部，两句一页：第一句靠左、第二句靠右；同一页里只有正在唱的那句会扫，
+                // 另一句压暗当预告。第二句唱完才翻页（页的划分见上面的 pageStart）。
+                <div
+                    style={{ bottom: LYRICS_BOTTOM_PX }}
+                    className="absolute inset-x-0 z-0 flex flex-col justify-end px-10 pointer-events-none"
+                >
+                    {/* 译文就一行浮在歌词上方：用主题的次要色和字幕字体，不带卡拉OK 的描边和配色。 */}
+                    {activeLine?.translation && !hideTranslationSubtitle && (
+                        <div
+                            key={`t-${activeLine.startTime}`}
+                            className="mx-auto mb-3 max-w-4xl text-center"
+                            style={{
+                                color: resolvedSubtitleTheme.secondaryColor,
+                                fontFamily: resolveThemeTranslationFontStack(resolvedSubtitleTheme),
+                                fontWeight: resolveThemeFontWeight(resolvedSubtitleTheme, 500),
+                                fontSize: subtitleFontSizes.translationFontSize,
+                                textShadow: '0 2px 12px rgba(0,0,0,0.5)',
+                                opacity: 0.92,
+                            }}
+                        >
+                            {activeLine.translation}
+                        </div>
+                    )}
+                    <motion.div
+                        key={pageStart}
+                        ref={clipRef}
+                        // 关掉「切页动画」就是硬切：不给 initial，过渡时长也归零。
+                        initial={pageAnimation && !staticMode ? { opacity: 0, y: 10 } : false}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={pageAnimation ? { duration: 0.28, ease: 'easeOut' } : { duration: 0 }}
+                        className="flex w-full flex-col gap-2 overflow-hidden"
+                        style={wrapMode ? { maxHeight: '42vh', justifyContent: 'flex-start' } : undefined}
+                    >
+                        <div ref={wrapTargetRef} className="flex w-full flex-col gap-2" style={{ willChange: 'transform' }}>
+                            {renderRow(pageFirstLine, 'start')}
+                            {renderRow(pageSecondLine, 'end')}
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+        </VisualizerShell>
+    );
+};
+
+export default VisualizerKaraoke;

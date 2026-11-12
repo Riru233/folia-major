@@ -25,6 +25,7 @@ describe('visualizer registry', () => {
             'machi',
             'nebbia',
             'classic',
+            'karaoke',
             'cadenza',
             'partita',
             'fume',

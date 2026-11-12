@@ -284,6 +284,55 @@ exports[`mod tuning keys > are pinned, so a renamed or dropped key is a visible 
       "type": "boolean",
     },
   },
+  "karaoke": {
+    "fontScale": {
+      "max": 2,
+      "min": 0.5,
+      "type": "number",
+    },
+    "fontStyle": {
+      "options": [
+        "theme",
+        "sans",
+        "serif",
+        "mono",
+      ],
+      "type": "choice",
+    },
+    "fontWeight": {
+      "max": 900,
+      "min": 100,
+      "step": 100,
+      "type": "number",
+    },
+    "italic": {
+      "type": "boolean",
+    },
+    "overflowMode": {
+      "options": [
+        "scroll",
+        "wrap",
+      ],
+      "type": "choice",
+    },
+    "pageAnimation": {
+      "type": "boolean",
+    },
+    "progressStyle": {
+      "options": [
+        "sweep",
+        "fade",
+        "jump",
+      ],
+      "type": "choice",
+    },
+    "strokeWidth": {
+      "max": 10,
+      "min": 0,
+      "step": 0.5,
+      "type": "number",
+    },
+  },
   "lumiere": {
     "audioResponse": {
       "max": 2,

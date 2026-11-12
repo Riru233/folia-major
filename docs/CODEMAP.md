@@ -35,11 +35,11 @@
 | --- | --- |
 | 1024+ | `src/types.ts` |
 | 256+ | `src/types/onlineMusic.ts` |
+| 128+ | `src/components/modal/settings/kit/index.ts` |
 | 128+ | `src/stores/usePlaybackStore.ts` |
 | 128+ | `src/types/ponder.ts` |
 | 128+ | `src/utils/appPlaybackGuards.ts` |
 | 64+ | `src/components/command-palette/types.ts` |
-| 64+ | `src/components/modal/settings/kit/index.ts` |
 | 64+ | `src/components/visualizer/definition.ts` |
 | 64+ | `src/i18n/config.ts` |
 | 64+ | `src/library/core/collection/collection.contract.ts` |
@@ -79,7 +79,9 @@
 | 32+ | `src/services/onlineMusic/failure/onlineFailureCase.ts` |
 | 32+ | `src/services/onlineMusic/providerRegistry.ts` |
 | 32+ | `src/services/onlineMusic/songMetadata.ts` |
+| 32+ | `src/shinoinject/useGlass.tsx` |
 | 32+ | `src/stores/motionSignals.ts` |
+| 32+ | `src/stores/storagePrimitives.ts` |
 | 32+ | `src/stores/useCollectionNavigationStore.ts` |
 | 32+ | `src/stores/usePlayerChromeSettingsStore.ts` |
 | 32+ | `src/stores/useSettingsModalStore.ts` |
@@ -111,6 +113,7 @@
 - `dev/probes/collectionGrid.probe.tsx`
 - `dev/probes/collectionMorph.probe.tsx`
 - `dev/probes/coverSizeAudit.probe.tsx`
+- `dev/probes/dockedPlayerBar.probe.tsx`
 - `dev/probes/exploreSurface.probe.tsx`
 - `dev/probes/fmTab.probe.tsx`
 - `dev/probes/foliumSelectField.probe.tsx`
@@ -263,7 +266,9 @@
 - `src/components/visualizer/backgrounds/monet/entry.tsx`
 - `src/components/visualizer/backgrounds/nomand/entry.tsx`
 - `src/components/visualizer/backgrounds/sora/entry.tsx`
+- `src/components/visualizer/backgrounds/transparent/entry.tsx`
 - `src/components/visualizer/backgrounds/url/entry.tsx`
+- `src/shinoinject/lab/videoBackground/entry.tsx`
 
 ### `src/components/visualizer/registry.tsx`
 
@@ -274,6 +279,7 @@
 - `src/components/visualizer/diorama/entry.tsx`
 - `src/components/visualizer/fume/entry.tsx`
 - `src/components/visualizer/hanabi/entry.tsx`
+- `src/components/visualizer/karaoke/entry.tsx`
 - `src/components/visualizer/lumiere/entry.tsx`
 - `src/components/visualizer/machi/entry.tsx`
 - `src/components/visualizer/monet/entry.tsx`
@@ -299,6 +305,7 @@
 - `src/components/visualizer/diorama/tuning.ts`
 - `src/components/visualizer/fume/tuning.ts`
 - `src/components/visualizer/hanabi/tuning.ts`
+- `src/components/visualizer/karaoke/tuning.ts`
 - `src/components/visualizer/lumiere/tuning.ts`
 - `src/components/visualizer/machi/tuning.ts`
 - `src/components/visualizer/monet/tuning.ts`
@@ -314,6 +321,7 @@
 - `src/library/suites/bravais/entry.ts`
 - `src/library/suites/grid/entry.ts`
 - `src/library/suites/tui/entry.ts`
+- `src/library/suites/vertical/entry.ts`
 
 ### `test/unit/visualizer/tuningBundleTransport.test.ts`
 
@@ -324,6 +332,7 @@
 - `src/components/visualizer/diorama/tuning.ts`
 - `src/components/visualizer/fume/tuning.ts`
 - `src/components/visualizer/hanabi/tuning.ts`
+- `src/components/visualizer/karaoke/tuning.ts`
 - `src/components/visualizer/lumiere/tuning.ts`
 - `src/components/visualizer/machi/tuning.ts`
 - `src/components/visualizer/monet/tuning.ts`

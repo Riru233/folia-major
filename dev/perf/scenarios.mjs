@@ -28,6 +28,7 @@ const BACKGROUND_HOST_STYLE = 'tilt';
 /** [id, the name the app shows, how it draws] */
 const STYLES = [
     ['classic', 'Luminous', 'DOM'],
+    ['karaoke', '卡拉OK', 'DOM'],
     ['sonnet', '商籁', 'Pixi'],
     ['tempera', 'Tempera', 'Pixi'],
     ['lumiere', '绘光', 'Pixi'],
