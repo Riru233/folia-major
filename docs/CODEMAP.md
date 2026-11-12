@@ -108,6 +108,7 @@
 - `dev/probes/artistEntrance.probe.tsx`
 - `dev/probes/audioEffectGrid.probe.tsx`
 - `dev/probes/automixTransitionSwitches.probe.tsx`
+- `dev/probes/bilibiliBv.probe.tsx`
 - `dev/probes/bravaisKinds.probe.tsx`
 - `dev/probes/bravaisPerf.probe.tsx`
 - `dev/probes/collectionGrid.probe.tsx`

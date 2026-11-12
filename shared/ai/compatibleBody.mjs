@@ -47,6 +47,59 @@ export const temperatureFor = (adapter, model, attempt, value) => {
 };
 
 /**
+ * The rung that makes the model answer through a function call instead of free text: the answer is
+ * the call's arguments, so the shape is enforced by the protocol rather than asked for in the prompt.
+ * `knobs` lists the two fields an endpoint may refuse; a 400/422 that names either one moves the
+ * runner down to the plain JSON rung, so an endpoint without tool support still works.
+ */
+export const TOOL_ATTEMPT = Object.freeze({
+    label: 'tool',
+    reasoningOff: true,
+    params: Object.freeze({}),
+    knobs: Object.freeze(['tools', 'tool_choice']),
+    tool: true,
+});
+
+/** The adapter's attempts with the forced-function rung in front. */
+export const attemptsWithTool = (attempts) => Object.freeze([TOOL_ATTEMPT, ...attempts]);
+
+/** The `tools` / `tool_choice` fields of a forced call to `tool` (its schema is the arguments). */
+const toolCallFields = (tool) => ({
+    tools: [{
+        type: 'function',
+        function: {
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.schema,
+        },
+    }],
+    tool_choice: { type: 'function', function: { name: tool.name } },
+});
+
+/**
+ * The JSON an OpenAI-protocol reply carries, whether the model was forced to call a function or
+ * answered in `content`. A forced call puts the answer in `tool_calls[0].function.arguments`
+ * (older endpoints use the singular `function_call`); `content` is then null or empty.
+ */
+export const readToolArguments = (message) => {
+    if (!message || typeof message !== 'object') {
+        return null;
+    }
+    const calls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
+    for (const call of calls) {
+        const args = call && call.function && call.function.arguments;
+        if (typeof args === 'string' && args.trim()) {
+            return args;
+        }
+    }
+    const legacy = message.function_call;
+    if (legacy && typeof legacy.arguments === 'string' && legacy.arguments.trim()) {
+        return legacy.arguments;
+    }
+    return null;
+};
+
+/**
  * Chat-completions body for one attempt of an OpenAI-protocol adapter.
  *
  * The 'test' task is the bare "hello": one user message, no temperature, no JSON mode. The other
@@ -54,14 +107,20 @@ export const temperatureFor = (adapter, model, attempt, value) => {
  * format (plain JSON mode unless the adapter gives a schema-backed one). The token cap goes in the
  * adapter's `tokenField`; `stream` adds `stream: true` and the adapter's `streamExtras`.
  *
+ * With `tool` (a `{ name, description, schema }`) and an attempt carrying `tool: true`, the body
+ * asks for a forced function call instead and sends no response format: the shape comes from the
+ * call's schema. Streaming is turned off there, because tool arguments arrive as deltas the
+ * streaming reader does not stitch.
+ *
  * @param {{ tokenField: string, temperature: null | { min: number, max: number },
  *   sendsTemperature?: Function, streamExtras?: Record<string, unknown>,
  *   responseFormat?: (model: string, schema?: object, schemaName?: string) => object | undefined }} adapter
- * @param {{ task: string, model: string, attempt: { params: Record<string, unknown>, sendTemperature?: boolean },
+ * @param {{ task: string, model: string, attempt: { params: Record<string, unknown>, reasoningOff?: boolean, sendTemperature?: boolean, tool?: boolean },
  *   systemPrompt?: string, sourcePrompt: string, schema?: object, schemaName?: string,
+ *   tool?: { name: string, description?: string, schema: object },
  *   budget?: number, temperature?: number, stream?: boolean }} request
  */
-export const buildCompatibleBody = (adapter, { task, model, attempt, systemPrompt, sourcePrompt, schema, schemaName, budget, temperature, stream }) => {
+export const buildCompatibleBody = (adapter, { task, model, attempt, systemPrompt, sourcePrompt, schema, schemaName, tool, budget, temperature, stream }) => {
     const bare = task === 'test';
     const messages = bare
         ? [{ role: 'user', content: sourcePrompt }]
@@ -73,10 +132,13 @@ export const buildCompatibleBody = (adapter, { task, model, attempt, systemPromp
     // big its answer should be passes a ceiling; truncation then fails as a JSON parse error with
     // the raw response logged, which is diagnosable, unlike a hang.
     const limit = budget ? { [adapter.tokenField]: budget } : {};
+    // A forced call carries the answer in its arguments, so the JSON-mode fields would only
+    // contradict it. Streaming is off for the same reason (see above).
+    const forcedCall = Boolean(tool && attempt.tool);
     // The bare flag plus only what the adapter asks for, to keep the surface other providers must
     // accept minimal.
-    const streaming = stream === true ? { stream: true, ...(adapter.streamExtras ?? {}) } : {};
-    const format = bare
+    const streaming = !forcedCall && stream === true ? { stream: true, ...(adapter.streamExtras ?? {}) } : {};
+    const format = bare || forcedCall
         ? {}
         : { response_format: adapter.responseFormat?.(model, schema, schemaName) ?? { type: 'json_object' } };
 
@@ -88,6 +150,7 @@ export const buildCompatibleBody = (adapter, { task, model, attempt, systemPromp
         ...attempt.params,
         ...streaming,
         ...format,
+        ...(forcedCall ? toolCallFields(tool) : {}),
     };
 };
 

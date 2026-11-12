@@ -52,6 +52,28 @@ const recordOpenAi = (content: string) => {
     return { requests, fetchImpl: fetchImpl as unknown as typeof fetch };
 };
 
+/** A fake fetch that answers a forced function call, the way a tool-capable endpoint does. */
+const recordOpenAiToolCall = (answer: unknown, name = KARAOKE_CREDITS_SCHEMA_NAME) => {
+    const requests: Recorded[] = [];
+    const fetchImpl = async (url: string, init: any) => {
+        requests.push({ url, method: init.method, headers: init.headers, body: JSON.parse(init.body) });
+        return Response.json({
+            choices: [{
+                finish_reason: 'stop',
+                message: {
+                    content: '',
+                    tool_calls: [{
+                        id: 'call_1',
+                        type: 'function',
+                        function: { name, arguments: JSON.stringify(answer) },
+                    }],
+                },
+            }],
+        });
+    };
+    return { requests, fetchImpl: fetchImpl as unknown as typeof fetch };
+};
+
 // One row per deployment setting: the address and model it leads to, and the rest of the body each
 // ask sends there (the adapter the host picks, shared/ai/; messages and response_format are checked
 // apart). `schema`: the ask is constrained by its JSON schema rather than plain JSON mode.
@@ -313,8 +335,8 @@ describe('a song credits read from the same service', () => {
         composer: 'Bo Chen',
     };
 
-    it('asks the OpenAI-compatible service for the JSON shape the prompt describes', async () => {
-        const { requests, fetchImpl } = recordOpenAi(JSON.stringify(ANSWER));
+    it('forces a function call whose arguments are the JSON shape, instead of asking for JSON in the prompt', async () => {
+        const { requests, fetchImpl } = recordOpenAiToolCall(ANSWER);
 
         const credits = await detectKaraokeCredits(LINES, { OPENAI_API_KEY: KEY }, fetchImpl);
 
@@ -323,13 +345,58 @@ describe('a song credits read from the same service', () => {
             { role: 'system', content: buildKaraokeCreditsSystemPrompt() },
             { role: 'user', content: buildKaraokeCreditsSourcePrompt(LINES) },
         ]);
-        expect(requests[0].body.response_format).toEqual({
-            type: 'json_schema',
-            json_schema: { name: KARAOKE_CREDITS_SCHEMA_NAME, strict: true, schema: KARAOKE_CREDITS_JSON_SCHEMA },
+        // 结构由协议钉住：函数就是答案的形状，模型只能按这个 schema 调用。
+        expect(requests[0].body.tools).toEqual([{
+            type: 'function',
+            function: {
+                name: KARAOKE_CREDITS_SCHEMA_NAME,
+                description: 'Return the answer as the arguments of this function.',
+                parameters: KARAOKE_CREDITS_JSON_SCHEMA,
+            },
+        }]);
+        expect(requests[0].body.tool_choice).toEqual({
+            type: 'function',
+            function: { name: KARAOKE_CREDITS_SCHEMA_NAME },
         });
+        // 有了强制调用就不再发 response_format（两者会互相矛盾）。
+        expect(requests[0].body.response_format).toBeUndefined();
         // 行号是 1 起算的，回来时已经换成 0 起算的下标。
         expect(credits.hiddenIndexes).toEqual([0, 1, 2]);
         expect(credits).toMatchObject({ title: 'Neon River', lyricist: 'Ann Lee', composer: 'Bo Chen' });
+    });
+
+    it('falls back to plain JSON mode when the endpoint refuses tools', async () => {
+        const requests: Recorded[] = [];
+        const fetchImpl = (async (url: string, init: any) => {
+            const body = JSON.parse(init.body);
+            requests.push({ url, method: init.method, headers: init.headers, body });
+            if (body.tools) {
+                return Response.json(
+                    { error: { message: 'Unsupported parameter: tools', param: 'tools' } },
+                    { status: 400 },
+                );
+            }
+            return Response.json({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(ANSWER) } }] });
+        }) as unknown as typeof fetch;
+
+        const credits = await detectKaraokeCredits(LINES, { OPENAI_API_KEY: KEY }, fetchImpl);
+
+        expect(requests).toHaveLength(2);
+        expect(requests[1].body.tools).toBeUndefined();
+        expect(requests[1].body.response_format).toEqual({
+            type: 'json_schema',
+            json_schema: { name: KARAOKE_CREDITS_SCHEMA_NAME, strict: true, schema: KARAOKE_CREDITS_JSON_SCHEMA },
+        });
+        expect(credits.hiddenIndexes).toEqual([0, 1, 2]);
+    });
+
+    it('reads an answer the model wrapped in a Markdown fence', async () => {
+        // 端点无视了结构化请求、照样把 JSON 包进 ```json 里：这是用户实际遇到的那种回答。
+        const { fetchImpl } = recordOpenAi(`\`\`\`json\n${JSON.stringify(ANSWER)}\n\`\`\``);
+
+        const credits = await detectKaraokeCredits(LINES, { OPENAI_API_KEY: KEY }, fetchImpl);
+
+        expect(credits).toMatchObject({ hiddenIndexes: [0, 1, 2], title: 'Neon River' });
     });
 
     it('to Gemini when the deployment has its key', async () => {

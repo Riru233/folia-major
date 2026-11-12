@@ -8,7 +8,11 @@ import {
     KARAOKE_INFO_CANDIDATE_LIMIT,
     useKaraokeInfoOverrideStore,
 } from '../../../stores/useKaraokeInfoOverrideStore';
-import { isKaraokeCreditsAiAvailable, detectKaraokeCreditsWithAi } from '../../../services/karaokeCreditsAi';
+import {
+    isKaraokeCreditsAiAvailable,
+    isKaraokeCreditsBridgeStale,
+    detectKaraokeCreditsWithAi,
+} from '../../../services/karaokeCreditsAi';
 import { resolveKaraokeCredits } from './karaokeCredits';
 import {
     KARAOKE_FONT_SCALE_MAX,
@@ -130,7 +134,9 @@ const KaraokeInfoRows: React.FC<{ t: VisualizerSettingsPanelProps['t'] }> = ({ t
                 source: 'ai',
             });
         } catch (error) {
-            setFailure(error instanceof Error ? error.message : String(error));
+            setFailure(isKaraokeCreditsBridgeStale(error)
+                ? t('options.karaokeInfoAiRestart')
+                : (error instanceof Error ? error.message : String(error)));
         } finally {
             setBusy(false);
         }

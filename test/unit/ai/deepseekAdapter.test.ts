@@ -13,7 +13,8 @@ const require = createRequire(import.meta.url);
 const client = require('../../../electron/aiTextClient.cjs');
 const { listAiModels } = require('../../../electron/ai/modelDiscovery.cjs');
 
-const TASKS: AiTask[] = ['segmentation', 'theme', 'test'];
+// The asks this adapter's ladders are pinned for; 'credits' reuses the test-sized budget.
+const TASKS = ['segmentation', 'theme', 'test'] as const;
 const BOTH = { thinking: { type: 'disabled' }, reasoning_effort: 'none' };
 
 describe('thinking', () => {

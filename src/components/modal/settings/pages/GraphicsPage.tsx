@@ -19,13 +19,17 @@ import {
   LIQUID_GLASS_BLOCKED_BY_GPU_PREFERENCE,
   type LiquidGlassPresetId,
 } from "../../../../shinoinject/liquidglass";
+import type { LyricAntialias } from "../../../../types";
 import { VISUALIZER_FRAME_RATE_OPTIONS } from "../../../../utils/frameRateLimiter";
+import { formatLyricRenderScale, LYRIC_RENDER_SCALES } from "../../../../utils/lyricRenderQuality";
+import { LYRIC_ANTIALIAS_LABEL_KEYS } from "../../../visualizer/renderQuality/LyricRenderQualityRows";
 import {
   Group,
   Link,
   Reveal,
   Row,
   Segmented,
+  Select,
   Slider,
   Toggle,
   option,
@@ -104,6 +108,17 @@ const O = {
     PERFORMANCE,
     "visualizerFrameRateValue",
     "options.visualizerFrameRateValue",
+  ),
+  // 全局挡位：canvas / WebGL 画的歌词样式默认跟随它，样式自己也能覆盖。
+  lyricRenderScale: option(
+    PERFORMANCE,
+    "lyricRenderScale",
+    "options.lyricRenderScale",
+  ),
+  lyricAntialias: option(
+    PERFORMANCE,
+    "lyricAntialias",
+    "options.lyricAntialias",
   ),
   backgroundThrottling: option(
     PERFORMANCE,
@@ -370,6 +385,31 @@ const GraphicsPage: React.FC = () => {
               />
             </Row>
           </Reveal>
+          <Row option={O.lyricRenderScale} note={t("options.lyricRenderScaleDesc")}>
+            <Select<string>
+              value={String(visualizer.renderQuality.scale)}
+              options={LYRIC_RENDER_SCALES.map((scale) => ({
+                value: String(scale),
+                label: formatLyricRenderScale(scale),
+              }))}
+              onChange={(value) => {
+                const scale = LYRIC_RENDER_SCALES.find(
+                  (candidate) => String(candidate) === value,
+                );
+                if (scale) visualizer.setRenderQuality({ scale });
+              }}
+            />
+          </Row>
+          <Row option={O.lyricAntialias} note={t("options.lyricAntialiasDesc")}>
+            <Segmented<LyricAntialias>
+              value={visualizer.renderQuality.antialias}
+              options={(["auto", "on", "off"] as const).map((mode) => ({
+                value: mode,
+                label: t(LYRIC_ANTIALIAS_LABEL_KEYS[mode]),
+              }))}
+              onChange={(antialias) => visualizer.setRenderQuality({ antialias })}
+            />
+          </Row>
           {isElectron && (
             <Row
               option={O.backgroundThrottling}

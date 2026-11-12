@@ -8407,7 +8407,7 @@ ipcMain.handle('generate-theme', firstParty('generate-theme', async (event, lyri
 
       let jsonStr = content.trim();
       if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```(json)?\n/, '').replace(/\n```$/, '');
+        jsonStr = jsonStr.replace(/^```[A-Za-z0-9_-]*[ \t]*\n?/, '').replace(/\n?```\s*$/, '');
       }
       dualTheme = sanitizeGeneratedDualTheme(JSON.parse(jsonStr));
 

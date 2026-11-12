@@ -5,6 +5,8 @@
 // 本地那套规则（components/visualizer/karaoke/karaokeCredits.ts）只认「作词：」「作曲：」这类写法；
 // 歌词源把署名合成一行、换成英文、或者干脆不写的时候只能靠模型读一遍。
 
+import { readJsonText } from './modelJson.mjs';
+
 /** 一次最多给模型看几行。前奏里塞二十行署名的歌轮不到歌词，多给只是浪费 token。 */
 export const KARAOKE_CREDITS_MAX_LINES = 10;
 
@@ -69,7 +71,7 @@ const SYSTEM_PROMPT = `你在整理一份歌词文件的开头。用户会给你
    - 英文要认 "Lyrics by"、"Words by"、"Written by"、"Music by"、"Composed by"、"Music & Lyrics:" 等写法。
    - 如果开头只有「歌名 - 歌手」这样一行、没有单独写词曲，就把歌手同时填进 lyricist 和 composer。
    - 纯音乐（只有曲名，没有要唱的歌词）时 lyricist 和 composer 都返回空字符串。
-只按给定的 JSON 结构回答，不要解释。`;
+只按给定的 JSON 结构回答，不要解释，也不要加 Markdown 代码围栏。`;
 
 export const buildKaraokeCreditsSystemPrompt = () => SYSTEM_PROMPT;
 
@@ -87,7 +89,9 @@ const readText = (value) => (typeof value === 'string' ? value.trim() : '');
  * 返回的 hiddenIndexes 是 0 起算的下标，已排序去重。
  */
 export const parseKaraokeCreditsResponse = (raw, lines) => {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    // 模型有时把答案包进 ```json 围栏（兼容端点会无视 response_format），所以解析交给
+    // shared/modelJson.mjs：它拆围栏，也接得住前后多写的一句解释。
+    const parsed = typeof raw === 'string' ? readJsonText(raw) : raw;
     if (!parsed || typeof parsed !== 'object') {
         throw new Error('Model did not return a credits object');
     }
