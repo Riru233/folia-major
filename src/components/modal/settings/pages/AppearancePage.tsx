@@ -43,7 +43,7 @@ type DaylightChoice = 'light' | 'dark' | 'system';
 
 const AppearancePage: React.FC = () => {
     const { t } = useTranslation();
-    const { themeControls, onOpenVisPlayground, onOpenThemePark } = useSettingsPage();
+    const { themeControls, onOpenVisPlayground, onOpenThemePark, onOpenSceneWindow } = useSettingsPage();
     const { isDaylight, followSystemTheme, setDaylightPreference, setFollowSystemTheme } = useThemeSettingsStore(useShallow(state => ({
         isDaylight: state.isDaylight,
         followSystemTheme: state.followSystemTheme,
