@@ -25,6 +25,8 @@ const REPOSITORY_URL = 'https://github.com/chthollyphile/folia-major';
 const REPOSITORY_NAME = 'chthollyphile/folia-major';
 const SHINO_REPOSITORY_URL = 'https://github.com/Riru233/folia-major';
 const SHINO_REPOSITORY_NAME = 'Riru233/folia-major';
+const SONOLUS_GITHUB_URL = 'https://github.com/Sonolus';
+const SONOLUS_WEBSITE_URL = 'https://sonolus.com/';
 const BUILD_KIND = getBuildKind();
 const VERSION_INFO = (__DOCKER_STACK_VERSION__
     ? `${__APP_VERSION_LABEL__} v${__APP_VERSION__} · Stack ${__DOCKER_STACK_VERSION__} · ${__COMMIT_HASH__}`
@@ -179,6 +181,21 @@ const HelpPage: React.FC<HelpPageProps> = ({ onOpenReleaseNotes, onOpenAiHelp, o
                     </Button>
                     <Button variant="quiet" onClick={() => openOutsideLink(REPOSITORY_URL)}>
                         feat: {REPOSITORY_NAME}
+                        <ExternalLink size={12} />
+                    </Button>
+                </Row>
+                <Row
+                    label={(
+                        // The settings window counts the clicks and shows the cat at the seventh.
+                        <button type="button" onClick={onProjectLabelClick} className="cursor-default">{t('help.sonolus')}</button>
+                    )}
+                >
+                    <Button variant="quiet" onClick={() => openOutsideLink(SONOLUS_GITHUB_URL)}>
+                        Github
+                        <ExternalLink size={12} />
+                    </Button>
+                    <Button variant="quiet" onClick={() => openOutsideLink(SONOLUS_WEBSITE_URL)}>
+                        {t('help.sonolusWebsite')}
                         <ExternalLink size={12} />
                     </Button>
                 </Row>

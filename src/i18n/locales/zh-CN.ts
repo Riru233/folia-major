@@ -2119,6 +2119,8 @@ export default {
     "servicePackLabel": "{{codename}} Update SP{{servicePack}} · 重大更新",
     "ponder": "思索帮助页",
     "ponderDescription": "了解 Folia 的基本操作与运行逻辑",
+    "sonolus": "Sonolus，音游自制谱社区",
+    "sonolusWebsite": "官网",
     "version": "版本"
   },
   "qishui": { "recentPlayed": "汽水最近播放", "recommended": "为你推荐" },

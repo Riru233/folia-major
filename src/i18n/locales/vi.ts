@@ -2115,6 +2115,8 @@ export default {
     "servicePackLabel": "Cập nhật {{codename}} SP{{servicePack}} · Bản cập nhật lớn",
     "ponder": "Trợ giúp Khám phá",
     "ponderDescription": "Tìm hiểu thao tác cơ bản và cơ chế vận hành của Folia",
+    "sonolus": "Sonolus, cộng đồng bản nhạc tự làm cho game nhịp điệu",
+    "sonolusWebsite": "Trang web",
     "version": "phiên bản"
   },
   "qishui": { "recentPlayed": "Gần đây đã phát trên Qishui", "recommended": "Được đề xuất cho bạn" },

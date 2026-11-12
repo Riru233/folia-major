@@ -2119,6 +2119,8 @@ export default {
     "servicePackLabel": "{{codename}} Update SP{{servicePack}} · Pembaruan besar",
     "ponder": "Ponder Bantuan",
     "ponderDescription": "Pelajari kontrol dasar dan cara kerja Folia",
+    "sonolus": "Sonolus, komunitas chart gim ritme buatan sendiri",
+    "sonolusWebsite": "Situs web",
     "version": "Versi"
   },
   "qishui": { "recentPlayed": "Terakhir diputar di Qishui", "recommended": "Rekomendasi untuk Anda" },

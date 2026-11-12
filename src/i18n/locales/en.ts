@@ -2117,6 +2117,8 @@ export default {
     "servicePackLabel": "{{codename}} Update SP{{servicePack}} · Major update",
     "ponder": "Ponder Help",
     "ponderDescription": "Learn Folia's basic controls and operating model",
+    "sonolus": "Sonolus, a community for custom rhythm-game charts",
+    "sonolusWebsite": "Website",
     "version": "Version"
   },
   "qishui": { "recentPlayed": "Recently played on Qishui", "recommended": "Recommended for you" },
