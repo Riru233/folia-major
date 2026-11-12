@@ -1,7 +1,14 @@
 import { sendOpenAICompatibleRequest } from './openAICompatibleRequest.mjs';
-import { budgetFor } from './ai/aiTasks.mjs';
+import { budgetFor, usesToolBoundary } from './ai/aiTasks.mjs';
 import { runAttempts } from './ai/attemptRunner.mjs';
-import { MAX_ERROR_BODY_CHARS, buildCompatibleBody, exhaustedByReasoning, withErrorHint } from './ai/compatibleBody.mjs';
+import {
+  MAX_ERROR_BODY_CHARS,
+  attemptsWithTool,
+  buildCompatibleBody,
+  exhaustedByReasoning,
+  readToolArguments,
+  withErrorHint,
+} from './ai/compatibleBody.mjs';
 import { getAiAdapter, resolveAiConnection } from './ai/providerRegistry.mjs';
 
 // shared/lyricAiService.mjs
@@ -128,7 +135,11 @@ const extractContentText = (message) => {
   if (typeof message.refusal === 'string' && message.refusal.trim()) {
     throw new SegmentationRequestError(`Model refused request: ${message.refusal}`, 502);
   }
-  if (typeof message.content === 'string') return message.content;
+  // 强制函数调用时答案在 arguments 里（见 buildCompatibleBody 的 tool），content 是空串，
+  // 所以先看有没有函数调用。
+  const toolArguments = readToolArguments(message);
+  if (toolArguments) return toolArguments;
+  if (typeof message.content === 'string' && message.content.trim()) return message.content;
   if (Array.isArray(message.content)) {
     const text = message.content
       .filter((part) => part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string')
@@ -136,7 +147,7 @@ const extractContentText = (message) => {
       .join('');
     return text || null;
   }
-  return null;
+  return typeof message.content === 'string' ? message.content : null;
 };
 
 // `exhausted` is the runner's verdict (exhaustedByReasoning with the adapter, so a provider's own
@@ -228,13 +239,18 @@ const runOpenAICompatible = async (profile, env, fetchImpl) => {
   const apiUrl = normalizeOpenAIChatCompletionsUrl(connection.apiUrl);
   const { model } = connection;
   const temperature = resolveTemperature(env.OPENAI_API_TEMPERATURE);
+  // 回答是固定几个字段的任务，前面多一级「强制函数调用」：结构由协议钉住，而不是靠提示词求。
+  // 端点不认 tools 时会被 400/422 按名字打回，runner 自动退到 adapter 原来的那几级。
+  const tool = usesToolBoundary(profile.task) && profile.schema && profile.schemaName
+    ? { name: profile.schemaName, description: 'Return the answer as the arguments of this function.', schema: profile.schema }
+    : undefined;
 
   return runAttempts({
     adapter,
     task: profile.task,
     url: apiUrl,
     model,
-    attempts: adapter.attempts(profile.task, model),
+    attempts: tool ? attemptsWithTool(adapter.attempts(profile.task, model)) : adapter.attempts(profile.task, model),
     describeEmpty: (result) => describeEmpty(result.choice, result.usage, model, result.exhausted),
     fail: (message) => new SegmentationRequestError(message, 502),
     send: async (attempt) => {
@@ -246,6 +262,7 @@ const runOpenAICompatible = async (profile, env, fetchImpl) => {
         sourcePrompt: profile.sourcePrompt,
         schema: profile.schema,
         schemaName: profile.schemaName,
+        tool,
         budget: budgetFor(profile.task, profile.maxOutputTokens, attempt),
         temperature,
       });

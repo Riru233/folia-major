@@ -190,6 +190,29 @@ function describeEmptyCompletion(choice, usage, model, exhausted) {
     + `${finishReason ? ` (finish_reason: ${finishReason})` : ''}.`;
 }
 
+/**
+ * The answer of a forced function call: `tool_calls[0].function.arguments`, or the singular
+ * `function_call` older endpoints use. Mirrors readToolArguments in shared/ai/compatibleBody.mjs —
+ * this file is CommonJS and that one is ESM, so it cannot be imported synchronously.
+ */
+function readToolArguments(message) {
+  if (!message || typeof message !== 'object') {
+    return null;
+  }
+  const calls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
+  for (const call of calls) {
+    const args = call && call.function && call.function.arguments;
+    if (typeof args === 'string' && args.trim()) {
+      return args;
+    }
+  }
+  const legacy = message.function_call;
+  if (legacy && typeof legacy.arguments === 'string' && legacy.arguments.trim()) {
+    return legacy.arguments;
+  }
+  return null;
+}
+
 function extractResponseContentText(message) {
   if (!message) {
     return null;
@@ -199,7 +222,14 @@ function extractResponseContentText(message) {
     throw new Error(`Model refused request: ${message.refusal}`);
   }
 
-  if (typeof message.content === 'string') {
+  // 强制函数调用时答案在 arguments 里，content 是空串，所以先看有没有函数调用。
+  const toolArguments = readToolArguments(message);
+  if (toolArguments) {
+    return toolArguments;
+  }
+
+  // `content: ''` 常常和 tool_calls 一起回来，所以只有非空才算答案，空串继续往下找 arguments。
+  if (typeof message.content === 'string' && message.content.trim()) {
     return message.content;
   }
 
@@ -212,7 +242,7 @@ function extractResponseContentText(message) {
     return text || null;
   }
 
-  return null;
+  return typeof message.content === 'string' ? message.content : null;
 }
 
 /**
@@ -458,18 +488,25 @@ async function sendOpenAICompatible({ apiUrl, apiKey, adapter, body, customFetch
 async function runOpenAICompatibleCompletion({ ai, adapter, connection, apiKey, task, systemPrompt, sourcePrompt, schema, schemaName, answerTokens, temperature, stream, customFetch, timeoutMs }) {
   const apiUrl = normalizeOpenAIChatCompletionsUrl(connection.apiUrl);
   const { model } = connection;
+  // A task whose answer is a fixed JSON object gets one extra rung in front: the shape is enforced
+  // by a forced function call instead of asked for in the prompt. An endpoint that refuses `tools`
+  // moves on to the adapter's usual rungs, so this costs one rejected request at worst.
+  const tool = ai.usesToolBoundary(task) && schema && schemaName
+    ? { name: schemaName, description: 'Return the answer as the arguments of this function.', schema }
+    : undefined;
+  const attempts = tool ? ai.attemptsWithTool(adapter.attempts(task, model)) : adapter.attempts(task, model);
 
   return ai.runAttempts({
     adapter,
     task,
     url: apiUrl,
     model,
-    attempts: adapter.attempts(task, model),
+    attempts,
     log: (line) => console.log(line),
     describeEmpty: (result) => describeEmptyCompletion(result.choice, result.usage, model, result.exhausted),
     send: async (attempt) => {
       const body = ai.buildCompatibleBody(adapter, {
-        task, model, attempt, systemPrompt, sourcePrompt, schema, schemaName,
+        task, model, attempt, systemPrompt, sourcePrompt, schema, schemaName, tool,
         budget: ai.budgetFor(task, answerTokens, attempt), temperature, stream,
       });
       if (body.temperature !== undefined && body.temperature !== temperature) {

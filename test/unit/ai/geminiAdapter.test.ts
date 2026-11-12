@@ -24,11 +24,13 @@ const CAP = {
 };
 
 type Shape = [thinkingConfig: Record<string, unknown> | undefined, cap: number];
+/** The asks whose caps are pinned here; 'credits' answers as little as the test ask, unmeasured. */
+type PinnedTask = Exclude<AiTask, 'credits'>;
 
 describe('requests per model family', () => {
-    const quiet = (thinking: Record<string, unknown>, off: boolean) => (task: AiTask): Shape[] => [[thinking, CAP[task][off ? 'off' : 'on']]];
+    const quiet = (thinking: Record<string, unknown>, off: boolean) => (task: PinnedTask): Shape[] => [[thinking, CAP[task][off ? 'off' : 'on']]];
 
-    const rows: [string, AiTask, Shape[]][] = [
+    const rows: [string, PinnedTask, Shape[]][] = [
         // The default model: a zero budget for segmentation and the test, low for the theme.
         [DEFAULT_GEMINI_MODEL, 'segmentation', quiet(OFF, true)('segmentation')],
         [DEFAULT_GEMINI_MODEL, 'test', quiet(OFF, true)('test')],

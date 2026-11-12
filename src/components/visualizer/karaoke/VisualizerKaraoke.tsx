@@ -7,7 +7,7 @@ import {
     resolveThemeTranslationFontStack,
 } from '../../../utils/fontStacks';
 import type { VisualizerSharedProps } from '../definition';
-import type { Line } from '../../../types';
+import { PlayerState, type Line } from '../../../types';
 import { useVisualizerRuntime } from '../runtime';
 import VisualizerShell from '../VisualizerShell';
 import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
@@ -15,7 +15,8 @@ import { buildKaraokeChunks, chunkFillProgress, type KaraokeChunk } from './kara
 import { resolveKaraokeScrollOffset, resolveKaraokeWrapScrollOffset } from './karaokeScroll';
 import { karaokeCreditsOpacity, resolveKaraokeCredits } from './karaokeCredits';
 import { useKaraokeInfoOverrideStore } from '../../../stores/useKaraokeInfoOverrideStore';
-import { selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
+import { useKaraokeInfoAutoDetect } from './useKaraokeInfoAutoDetect';
+import { selectDisplayPlayerState, selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
 import { getPlaybackSongKey } from '../../../utils/appPlaybackGuards';
 import { DEFAULT_KARAOKE_TUNING, type KaraokeTuning } from './types';
 
@@ -118,6 +119,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
     // 这首歌如果手动指定过「开头哪几行是信息」，以那份为准（自动识别漏掉/认错的就落在这里）。
     // 预览用的是示例歌词，和播放键对不上，所以预览里一律走自动识别。
     const displaySong = usePlaybackStore(selectDisplaySong);
+    const displayPlayerState = usePlaybackStore(selectDisplayPlayerState);
     const songKey = !isPreviewMode && displaySong ? getPlaybackSongKey(displaySong) : null;
     const infoOverride = useKaraokeInfoOverrideStore(state => (songKey ? state.bySong[songKey] : undefined));
     const credits = useMemo(
@@ -128,6 +130,15 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         }),
         [lines, songTitle, infoOverride],
     );
+    // 播放时替用户问一次模型：本地一条信息行都没认出来、这首歌也还没有答案时才会真的发请求。
+    // 认出什么就按歌存起来，下次播放直接用，不会重复花额度。
+    useKaraokeInfoAutoDetect({
+        songKey,
+        lines,
+        active: !isPreviewMode && displayPlayerState === PlayerState.PLAYING,
+        needsDetection: !infoOverride && credits === null,
+    });
+
     // 被提走的那几行不再参与两句一页（它们只是署名，不该被唱）。
     const hiddenLines = useMemo(
         () => new Set(credits ? credits.hiddenIndexes.map(index => lines[index]) : []),

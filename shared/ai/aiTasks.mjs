@@ -14,6 +14,20 @@ export const AI_TASKS = Object.freeze(['segmentation', 'theme', 'test', 'credits
 export const REASONING_ALLOWANCE = Object.freeze({ segmentation: 24576, theme: 16384, test: 3584, credits: 3584 });
 
 /**
+ * Tasks whose answer is a small fixed JSON object and is better enforced by the protocol than asked
+ * for in the prompt: the first attempt forces a function call whose schema is the answer shape, and
+ * an endpoint that refuses `tools` falls back to plain JSON mode. Credits first, because a fenced or
+ * annotated answer there is pure noise ("```json { ... }```" is not valid JSON); the other tasks
+ * still depend on the prompt and the parser.
+ *
+ * @type {readonly AiTask[]}
+ */
+export const TOOL_BOUND_TASKS = Object.freeze(['credits']);
+
+/** @param {AiTask} task */
+export const usesToolBoundary = (task) => TOOL_BOUND_TASKS.includes(task);
+
+/**
  * Output-token cap for one attempt, or undefined for "send no cap". An attempt says through
  * `reasoningOff` whether the model is expected to think.
  *

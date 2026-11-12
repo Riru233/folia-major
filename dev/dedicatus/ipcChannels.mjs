@@ -37,6 +37,7 @@ export const IPC_CHANNELS = {
     'debug-renderer-memory': { level: 'first-party', why: '写内存日志（宿主注入的来源校验，不可信来源静默忽略）' },
     'debug-runtime-lines': { level: 'first-party', why: '写运行日志（宿主注入的来源校验，不可信来源静默忽略）' },
     'debug-set-state': { level: 'first-party', why: '改调试开关（宿主注入的来源校验）' },
+    'detect-karaoke-credits': { level: 'first-party', why: '用用户的 AI 额度认歌曲信息（firstParty）' },
     'discord-presence-get-status': { level: 'first-party', why: '现状：有来源校验' },
     'discord-presence-publish-snapshot': { level: 'first-party', why: '现状：有来源校验' },
     'fnmusic-api-request': { level: 'first-party', why: '现状：有来源校验' },

@@ -35,6 +35,19 @@ export const isKaraokeCreditsAiAvailable = (): boolean => (
     typeof window !== 'undefined' && (Boolean(getBridge()) || typeof fetch === 'function')
 );
 
+/**
+ * 桥有了、主进程里却没有这个处理函数：说明应用还在跑旧的 main.cjs（改完只刷新了页面，没重启应用）。
+ * Electron 的原话是 "No handler registered for 'detect-karaoke-credits'"，直接摆给用户看没意义，
+ * 所以认出来并换成「重启应用」的提示。
+ */
+const STALE_DESKTOP_BRIDGE = 'STALE_DESKTOP_CREDITS_BRIDGE';
+
+export const isKaraokeCreditsBridgeStale = (error: unknown): boolean => {
+    const message = error instanceof Error ? error.message : String(error ?? '');
+    return message === STALE_DESKTOP_BRIDGE
+        || /No handler registered for 'detect-karaoke-credits'/i.test(message);
+};
+
 const readTextField = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
 /** 两个运行时都会把索引规整好，这里再兜一次：越界的东西绝不能拿去隐藏歌词。 */
@@ -70,6 +83,11 @@ export const detectKaraokeCreditsWithAi = async (lines: string[]): Promise<Detec
     const bridge = getBridge();
     if (bridge?.detectKaraokeCredits) {
         return normalize(await bridge.detectKaraokeCredits(sample), sample.length);
+    }
+
+    // 桌面里没有这个方法：preload 也是旧的，网页那条路在桌面里根本不存在（没有 /api 服务）。
+    if (typeof window !== 'undefined' && (window as unknown as { electron?: unknown }).electron) {
+        throw new Error(STALE_DESKTOP_BRIDGE);
     }
 
     const response = await fetch(DETECT_CREDITS_ROUTE, {
