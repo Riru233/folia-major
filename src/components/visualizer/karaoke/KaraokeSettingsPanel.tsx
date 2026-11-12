@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button, ColorField, Group, Row, Segmented, type SettingsGroupDef } from '../../modal/settings/kit';
 import type { VisualizerSettingsPanelProps } from '../definition';
-import { SliderRow, ToggleRow } from '../panelRows';
+import { SliderRow, StepperRow, ToggleRow } from '../panelRows';
 import { selectDisplayLyrics, selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
 import { getPlaybackSongKey } from '../../../utils/appPlaybackGuards';
 import {
@@ -13,10 +13,14 @@ import {
     isKaraokeCreditsBridgeStale,
     detectKaraokeCreditsWithAi,
 } from '../../../services/karaokeCreditsAi';
+import { useKaraokeLeadInStore } from '../../../stores/useKaraokeLeadInStore';
 import { resolveKaraokeCredits } from './karaokeCredits';
 import {
     KARAOKE_FONT_SCALE_MAX,
     KARAOKE_FONT_SCALE_MIN,
+    KARAOKE_LEAD_IN_GAP_MAX,
+    KARAOKE_LEAD_IN_GAP_MIN,
+    KARAOKE_LEAD_IN_MIN,
     KARAOKE_STROKE_MAX,
     KARAOKE_STROKE_MIN,
 } from './tuning';
@@ -30,7 +34,7 @@ import {
 
 // src/components/visualizer/karaoke/KaraokeSettingsPanel.tsx
 // 卡拉OK 的参数面板：颜色（四色 + 描边宽度）、文字（字号 / 字体 / 字重 / 斜体 / 繁体字形）、
-// 进度（预备进度样式 / 超长歌词 / 切页动画），以及这首歌开头的「歌曲信息」。
+// 进度（预备点交叉时间 / 消失间隔 / 预备进度样式 / 超长歌词 / 切页动画），以及这首歌开头的「歌曲信息」。
 // 滑块沿用设置窗口的草稿 / 松手提交语义，颜色用 kit 的取色钮。
 
 const COLOR_GROUP: SettingsGroupDef = { id: 'vis-karaoke-color', titleKey: 'options.karaokeColorSection' };
@@ -180,6 +184,81 @@ const KaraokeInfoRows: React.FC<{ t: VisualizerSettingsPanelProps['t'] }> = ({ t
     );
 };
 
+/**
+ * 预备点那一组：交叉时间 + 消失间隔。
+ *
+ * 交叉时间按歌单独记（useKaraokeLeadInStore）：前奏三秒的歌要三秒，前奏二十秒的要二十秒，
+ * 一个全局值套不到所有歌上。所以这里改的是「当前这首歌」，没记过的歌跟着设置里的全局值走；
+ * 想回到全局就按「改用全局值」。没有正在播放的歌时，改的就是全局值。
+ */
+const KaraokeLeadInRows: React.FC<{
+    t: VisualizerSettingsPanelProps['t'];
+    tuning: KaraokeTuning;
+    onTuningChange?: VisualizerSettingsPanelProps<KaraokeTuning>['onTuningChange'];
+    onSliderPointerDown?: VisualizerSettingsPanelProps<KaraokeTuning>['onSliderPointerDown'];
+    onSliderCommit?: VisualizerSettingsPanelProps<KaraokeTuning>['onSliderCommit'];
+}> = ({ t, tuning, onTuningChange, onSliderPointerDown, onSliderCommit }) => {
+    const displaySong = usePlaybackStore(selectDisplaySong);
+    const songKey = displaySong ? getPlaybackSongKey(displaySong) : null;
+    const override = useKaraokeLeadInStore(state => (songKey ? state.bySong[songKey] : undefined));
+    const setSeconds = useKaraokeLeadInStore(state => state.setSeconds);
+    const hasOverride = typeof override === 'number';
+    const seconds = hasOverride ? override : tuning.leadInSeconds;
+
+    const saveSeconds = (value: number) => {
+        if (songKey) {
+            setSeconds(songKey, value);
+            return;
+        }
+        onTuningChange?.({ leadInSeconds: value });
+    };
+
+    return (
+        <>
+            {/* 交叉时间没有上限，用带减号/加号的输入框而不是滑块：滑块总得给个顶，
+                而前奏多长都能填。最低 0（0 就是关掉预备点）。 */}
+            <StepperRow
+                label={t('options.karaokeLeadIn')}
+                note={t('options.karaokeLeadInHint')}
+                value={seconds}
+                min={KARAOKE_LEAD_IN_MIN}
+                step={0.5}
+                unit="s"
+                onChange={saveSeconds}
+            />
+            {/* 间隔的上限是交叉时间的三分之一：三个点必须都赶在交叉结束前走完，
+                所以量程跟着上面一格走；交叉时间为 0（关掉预备点）时不给拖。 */}
+            <SliderRow
+                label={t('options.karaokeLeadInGap')}
+                note={t('options.karaokeLeadInGapHint')}
+                value={tuning.leadInGapSeconds}
+                min={KARAOKE_LEAD_IN_GAP_MIN}
+                max={Math.max(
+                    KARAOKE_LEAD_IN_GAP_MIN,
+                    Math.round(Math.min(KARAOKE_LEAD_IN_GAP_MAX, seconds / 3) * 10) / 10,
+                )}
+                step={0.1}
+                format={value => `${value.toFixed(1)}s`}
+                disabled={seconds <= 0}
+                onChange={value => onTuningChange?.({ leadInGapSeconds: value })}
+                onDragStart={onSliderPointerDown}
+                onDragEnd={onSliderCommit}
+            />
+            {songKey && (
+                <Row label={t('options.karaokeLeadInReset')}>
+                    <Button
+                        variant="quiet"
+                        onClick={() => setSeconds(songKey, null)}
+                        disabled={!hasOverride}
+                    >
+                        {t('options.karaokeLeadInResetAction')}
+                    </Button>
+                </Row>
+            )}
+        </>
+    );
+};
+
 const KaraokeSettingsPanel: React.FC<VisualizerSettingsPanelProps<KaraokeTuning>> = ({
     t,
     tuning: karaokeTuning = DEFAULT_KARAOKE_TUNING,
@@ -269,6 +348,13 @@ const KaraokeSettingsPanel: React.FC<VisualizerSettingsPanelProps<KaraokeTuning>
             </Group>
 
             <Group def={PROGRESS_GROUP}>
+                <KaraokeLeadInRows
+                    t={t}
+                    tuning={karaokeTuning}
+                    onTuningChange={onTuningChange}
+                    onSliderPointerDown={onSliderPointerDown}
+                    onSliderCommit={onSliderCommit}
+                />
                 <Row label={t('options.karaokeProgressStyle')} note={t('options.karaokeProgressStyleHint')}>
                     <Segmented<KaraokeProgressStyle>
                         value={karaokeTuning.progressStyle}

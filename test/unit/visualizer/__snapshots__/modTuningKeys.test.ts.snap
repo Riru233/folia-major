@@ -308,6 +308,18 @@ exports[`mod tuning keys > are pinned, so a renamed or dropped key is a visible 
     "italic": {
       "type": "boolean",
     },
+    "leadInGapSeconds": {
+      "max": 10,
+      "min": 0.1,
+      "step": 0.1,
+      "type": "number",
+    },
+    "leadInSeconds": {
+      "max": 60,
+      "min": 0,
+      "step": 0.5,
+      "type": "number",
+    },
     "overflowMode": {
       "options": [
         "scroll",

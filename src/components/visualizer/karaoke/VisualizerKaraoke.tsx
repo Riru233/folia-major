@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useMotionValueEvent } from 'framer-motion';
 import {
     BUILTIN_FONT_STACKS,
@@ -14,8 +14,11 @@ import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
 import { buildKaraokeChunks, chunkFillProgress, type KaraokeChunk } from './karaokeSegments';
 import { resolveKaraokeScrollOffset, resolveKaraokeWrapScrollOffset } from './karaokeScroll';
 import { karaokeCreditsOpacity, resolveKaraokeCredits } from './karaokeCredits';
+import { resolveKaraokePage } from './karaokePaging';
+import { LEAD_IN_DOT_COLORS, resolveLeadInDotOpacities } from './karaokeLeadIn';
 import { toTraditionalLyrics } from './karaokeHanzi';
 import { useKaraokeInfoOverrideStore } from '../../../stores/useKaraokeInfoOverrideStore';
+import { useKaraokeLeadInStore } from '../../../stores/useKaraokeLeadInStore';
 import { useKaraokeInfoAutoDetect } from './useKaraokeInfoAutoDetect';
 import { selectDisplayPlayerState, selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
 import { getPlaybackSongKey } from '../../../utils/appPlaybackGuards';
@@ -99,14 +102,56 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
 
     const { activeLine, recentCompletedLine, nextLines } = useVisualizerRuntime({ currentTime, currentLineIndex, lines });
 
+    // 开头的「歌名 / 作词 / 作曲」不是歌词：提出来单独显示，唱到作曲那句末尾再淡出。
+    // 这首歌如果手动指定过「开头哪几行是信息」，以那份为准（自动识别漏掉/认错的就落在这里）。
+    // 预览用的是示例歌词，和播放键对不上，所以预览里一律走自动识别。
+    const displaySong = usePlaybackStore(selectDisplaySong);
+    const displayPlayerState = usePlaybackStore(selectDisplayPlayerState);
+    const songKey = !isPreviewMode && displaySong ? getPlaybackSongKey(displaySong) : null;
+    const infoOverride = useKaraokeInfoOverrideStore(state => (songKey ? state.bySong[songKey] : undefined));
+    // 交叉时间按歌记：这首歌单独设过就用它，没设过跟着设置里的全局值。
+    const leadInOverride = useKaraokeLeadInStore(state => (songKey ? state.bySong[songKey] : undefined));
+    const leadInSeconds = typeof leadInOverride === 'number' ? leadInOverride : karaokeTuning.leadInSeconds;
+    const credits = useMemo(
+        () => resolveKaraokeCredits(lines, {
+            title: infoOverride?.title || songTitle || null,
+            hiddenIndexes: infoOverride ? infoOverride.hiddenIndexes : null,
+            rows: infoOverride?.rows ?? null,
+        }),
+        [lines, songTitle, infoOverride],
+    );
+
+    // 被提走的那几行（署名）既不上屏，也不占「两句一页」的格子：页的划分按去掉它们之后的歌词算
+    // （见 karaokePaging.ts）。按原数组算的话，开头三行署名会把第一句真歌词挤到第二行、第一行空着。
+    const hiddenIndexes = useMemo(() => new Set(credits ? credits.hiddenIndexes : []), [credits]);
+    const hiddenLines = useMemo(
+        () => new Set([...hiddenIndexes].map(index => lines[index])),
+        [hiddenIndexes, lines],
+    );
+
     // 两句一页：第 1、2 句同屏（第一行靠左、第二行靠右），第 2 句唱完才翻页，换成第 3、4 句。
     // 句与句之间的空档 currentLineIndex 会退回 -1：这时按刚唱完的那句算页，页面才不会闪掉。
     const anchorIndex = currentLineIndex >= 0
         ? currentLineIndex
         : (recentCompletedLine ? lines.indexOf(recentCompletedLine) : -1);
-    const pageStart = anchorIndex >= 0 ? anchorIndex - (anchorIndex % 2) : -1;
-    const pageFirstLine = pageStart >= 0 ? lines[pageStart] ?? null : null;
-    const pageSecondLine = pageStart >= 0 ? lines[pageStart + 1] ?? null : null;
+    // 交叉时间之前只放歌名和歌曲信息，歌词不露面；倒数窗一开，歌词、信息、预备点三者同屏。
+    // 门槛就是「标题结束 - 交叉时间」，和预备点的倒数窗是同一个起点。
+    const leadInWindowStart = credits ? credits.fadeEnd - leadInSeconds : Number.POSITIVE_INFINITY;
+    const [leadInWindowOpen, setLeadInWindowOpen] = useState(false);
+    useEffect(() => {
+        setLeadInWindowOpen(currentTime.get() >= leadInWindowStart);
+    }, [currentTime, leadInWindowStart]);
+    useMotionValueEvent(currentTime, 'change', time => {
+        const open = time >= leadInWindowStart;
+        setLeadInWindowOpen(previous => (previous === open ? previous : open));
+    });
+
+    // 交叉时间里还没有可跟唱的句子（开头那屏歌曲信息期间），第一页先亮出来：
+    // 主要歌词提前显示，用户看到的是「等一下要唱这句」，而不是一片空。
+    const { pageStart, firstLine: pageFirstLine, secondLine: pageSecondLine } = useMemo(
+        () => resolveKaraokePage(lines, hiddenIndexes, anchorIndex, { previewFirstPage: leadInWindowOpen }),
+        [lines, hiddenIndexes, anchorIndex, leadInWindowOpen],
+    );
 
     // 两行都按同样的字块切分渲染：行高、折行位置必须与「正在唱」的那一行完全一致，
     // 否则一句开唱时整块歌词会因行高变化上下跳一下（就是之前那个「第二句抖动」）。
@@ -118,22 +163,6 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
     const chunks = activeLine && activeLine === pageSecondLine ? secondChunks : firstChunks;
     const rtl = useMemo(() => isRtlText(activeLine?.fullText ?? ''), [activeLine]);
     const progressStyle = karaokeTuning.progressStyle;
-
-    // 开头的「歌名 / 作词 / 作曲」不是歌词：提出来单独显示，唱到作曲那句末尾再淡出。
-    // 这首歌如果手动指定过「开头哪几行是信息」，以那份为准（自动识别漏掉/认错的就落在这里）。
-    // 预览用的是示例歌词，和播放键对不上，所以预览里一律走自动识别。
-    const displaySong = usePlaybackStore(selectDisplaySong);
-    const displayPlayerState = usePlaybackStore(selectDisplayPlayerState);
-    const songKey = !isPreviewMode && displaySong ? getPlaybackSongKey(displaySong) : null;
-    const infoOverride = useKaraokeInfoOverrideStore(state => (songKey ? state.bySong[songKey] : undefined));
-    const credits = useMemo(
-        () => resolveKaraokeCredits(lines, {
-            title: infoOverride?.title || songTitle || null,
-            hiddenIndexes: infoOverride ? infoOverride.hiddenIndexes : null,
-            rows: infoOverride?.rows ?? null,
-        }),
-        [lines, songTitle, infoOverride],
-    );
     // 歌曲信息那块也一起转：「作词：」「作曲：」这两行的标签本就是中文，转了简体、不转标题区，
     // 同一块画面里会一边简体一边繁体。识别（resolveKaraokeCredits）仍看原句，
     // 「作词：」这类本地规则认得的是简体写法，先转再认会漏。
@@ -158,12 +187,6 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         active: !isPreviewMode && displayPlayerState === PlayerState.PLAYING,
         needsDetection: !infoOverride && credits === null,
     });
-
-    // 被提走的那几行不再参与两句一页（它们只是署名，不该被唱）。
-    const hiddenLines = useMemo(
-        () => new Set(credits ? credits.hiddenIndexes.map(index => lines[index]) : []),
-        [credits, lines],
-    );
 
     const filledRefs = useRef<(HTMLSpanElement | null)[]>([]);
     /** 上一次写给每一块的进度；换句或换样式时清空，让所有块重画一遍。 */
@@ -199,6 +222,9 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
      *  连节点一起记：换歌之后是新节点，值就算一样也得重新写一遍。 */
     const creditsRef = useRef<HTMLDivElement | null>(null);
     const lastCreditsWriteRef = useRef<{ node: HTMLDivElement | null; opacity: number }>({ node: null, opacity: -1 });
+    /** 开头三个预备点（红绿蓝三个圆），以及上一次写进去的不透明度。同样逐帧写，不参与 React 重渲染。 */
+    const leadInDotRefs = useRef<(HTMLSpanElement | null)[]>([]);
+    const lastLeadInWriteRef = useRef<number[]>([]);
     const activeLineRef = useRef(activeLine);
     activeLineRef.current = activeLine;
 
@@ -362,6 +388,29 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         node.style.visibility = opacity <= 0 ? 'hidden' : 'visible';
     }, [credits]);
 
+    /** 开头的三个预备点：交叉时间里按蓝→绿→红逐个消失，三个都在交叉点之前走完。 */
+    const paintLeadIn = useCallback((time: number) => {
+        const opacities = resolveLeadInDotOpacities(
+            time,
+            credits?.fadeEnd ?? 0,
+            leadInSeconds,
+            karaokeTuning.leadInGapSeconds,
+        );
+        for (let index = 0; index < opacities.length; index += 1) {
+            const node = leadInDotRefs.current[index];
+            if (!node) {
+                continue;
+            }
+            const opacity = opacities[index];
+            if (Math.abs((lastLeadInWriteRef.current[index] ?? -1) - opacity) < EPSILON) {
+                continue;
+            }
+            lastLeadInWriteRef.current[index] = opacity;
+            node.style.opacity = opacity.toFixed(3);
+            node.style.visibility = opacity <= 0 ? 'hidden' : 'visible';
+        }
+    }, [credits, leadInSeconds, karaokeTuning.leadInGapSeconds]);
+
     const paintFill = useCallback((time: number) => {
         const current = chunksRef.current;
         for (let index = 0; index < current.length; index++) {
@@ -387,7 +436,8 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         }
         applyScroll(time);
         paintCredits(time);
-    }, [progressStyle, rtl, applyScroll, paintCredits]);
+        paintLeadIn(time);
+    }, [progressStyle, rtl, applyScroll, paintCredits, paintLeadIn]);
 
     useMotionValueEvent(currentTime, 'change', paintFill);
 
@@ -602,6 +652,33 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                     style={{ bottom: LYRICS_BOTTOM_PX }}
                     className="absolute inset-x-0 z-0 flex flex-col justify-end px-10 pointer-events-none"
                 >
+                    {/* 开头三个预备点：红绿蓝三个圆，排在歌名那一屏和第一句歌词之间，
+                        在「预备交叉时间」里按蓝→绿→红逐个消失，间隔由「消失间隔」定，
+                        三个都赶在交叉点（标题结束）之前走完。
+                        大小按歌词字号算（一个点约四分之一个字高），白色描边保证深色封面上也看得见；
+                        不透明度由 paintLeadIn 逐帧写，所以这里是常挂的、初始化写成不可见。 */}
+                    {credits && (
+                        <div className="mb-2 flex w-full shrink-0 items-center gap-2" aria-hidden="true">
+                            {LEAD_IN_DOT_COLORS.map((color, index) => (
+                                <span
+                                    key={color}
+                                    ref={node => { leadInDotRefs.current[index] = node; }}
+                                    style={{
+                                        display: 'block',
+                                        width: `calc(${lineFontSize} * 0.26)`,
+                                        height: `calc(${lineFontSize} * 0.26)`,
+                                        borderRadius: '999px',
+                                        background: color,
+                                        border: `calc(${lineFontSize} * 0.045) solid #ffffff`,
+                                        boxShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
+                                        opacity: 0,
+                                        visibility: 'hidden',
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
+
                     {/* 译文就一行浮在歌词上方：用主题的次要色和字幕字体，不带卡拉OK 的描边和配色。 */}
                     {activeLine?.translation && !hideTranslationSubtitle && (
                         // 译文和歌词在同一块画面里，字形得跟着走：开了繁体就一起转（非中文的译文原样）。

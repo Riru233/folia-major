@@ -32,6 +32,16 @@ export interface KaraokeTuning {
     italic: boolean;
     /** 中文歌词按繁体显示（简转繁）。日文假名、韩文、英文那一行原样不动。 */
     traditionalScript: boolean;
+    /**
+     * 预备交叉时间（秒）：开头那三个预备点在这个倒数窗里依次消失，交叉时间之前只放歌名和信息。
+     * 这里存的是全局值，单首歌改过的值存在 useKaraokeLeadInStore。0 就是不要预备点。
+     */
+    leadInSeconds: number;
+    /**
+     * 消失间隔（秒）：相邻两个预备点消失之间隔多久。
+     * 三个点都赶在交叉时间结束前走完，所以间隔最多是交叉时间的三分之一。
+     */
+    leadInGapSeconds: number;
     /** 未唱的字变成已唱的样子用哪种方式。 */
     progressStyle: KaraokeProgressStyle;
     /** 翻页（换到下一组两句）时要不要那条淡入上浮的动画；关掉就是硬切。 */
@@ -51,6 +61,8 @@ export const DEFAULT_KARAOKE_TUNING: KaraokeTuning = {
     fontWeight: 800,
     italic: false,
     traditionalScript: false,
+    leadInSeconds: 3,
+    leadInGapSeconds: 1,
     progressStyle: 'sweep',
     pageAnimation: true,
     overflowMode: 'scroll',

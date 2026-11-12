@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Row, Slider, Toggle } from '../modal/settings/kit';
+import { Stepper } from '../panelTab/shell/Stepper';
 
 // src/components/visualizer/panelRows.tsx
 // What the option panels of the lyric styles and of the backgrounds share when they draw rows of
@@ -75,6 +76,51 @@ export const SliderRow: React.FC<SliderRowProps> = ({ label, onDragStart, onDrag
         <Row label={label} note={note} sub={sub} disabled={disabled}>
             <Slider {...slider} stacked />
             <span ref={markRef} hidden />
+        </Row>
+    );
+};
+
+type StepperRowProps = {
+    label: React.ReactNode;
+    value: number;
+    step: number;
+    onChange: (value: number) => void;
+    /** How low the number may go; a press or a typed value that goes under stops here. */
+    min?: number;
+    /** How high it may go; leave it out for a value with no ceiling. */
+    max?: number;
+    /** Shown after the number, and in the tooltips of the two buttons. */
+    unit?: string;
+    note?: React.ReactNode;
+    sub?: boolean;
+    disabled?: boolean;
+};
+
+/**
+ * A row that is one number with a minus and a plus: no track, so a value with no upper bound
+ * still fits (a slider would have to pick a top for it). The number can be typed as well.
+ */
+export const StepperRow: React.FC<StepperRowProps> = ({ label, value, step, onChange, min, max, unit, note, sub, disabled }) => {
+    const clamp = (next: number) => {
+        let out = Number.isFinite(next) ? next : value;
+        if (typeof min === 'number') {
+            out = Math.max(min, out);
+        }
+        if (typeof max === 'number') {
+            out = Math.min(max, out);
+        }
+        return out;
+    };
+
+    return (
+        <Row label={label} note={note} sub={sub} disabled={disabled}>
+            <Stepper
+                value={value}
+                step={step}
+                unit={unit}
+                label={typeof label === 'string' ? label : ''}
+                onChange={next => onChange(clamp(next))}
+            />
         </Row>
     );
 };

@@ -21,6 +21,13 @@ export const KARAOKE_STROKE_MAX = 10;
 /** 字号倍率的上下限：下限还能看清，上限不至于一行只放得下两个字。 */
 export const KARAOKE_FONT_SCALE_MIN = 0.5;
 export const KARAOKE_FONT_SCALE_MAX = 2;
+/** 预备交叉时间的下限（秒）：0 关掉预备点。上限不设——前奏多长都能填，具体到歌的值存在 useKaraokeLeadInStore。 */
+export const KARAOKE_LEAD_IN_MIN = 0;
+/** Folium 调参面板给交叉时间的量程上限（秒）：60 秒够长前奏了；存下来的值不受这个数限制。 */
+export const KARAOKE_LEAD_IN_MOD_MAX = 60;
+/** 消失间隔的范围（秒）：上限给到和交叉时间一样长，实际渲染再按「交叉时间 / 3」收窄。 */
+export const KARAOKE_LEAD_IN_GAP_MIN = 0.1;
+export const KARAOKE_LEAD_IN_GAP_MAX = 10;
 
 const FONT_STYLES: readonly KaraokeFontStyle[] = ['theme', 'sans', 'serif', 'mono'];
 const PROGRESS_STYLES: readonly KaraokeProgressStyle[] = ['sweep', 'fade', 'jump'];
@@ -60,6 +67,19 @@ export const normalizeKaraokeTuning = (value: Partial<KaraokeTuning> | null | un
         traditionalScript: typeof stored.traditionalScript === 'boolean'
             ? stored.traditionalScript
             : DEFAULT_KARAOKE_TUNING.traditionalScript,
+        // 交叉时间不设上限，只要是个非负的有限数就收：前奏二十秒的歌也填得进去。
+        leadInSeconds: (() => {
+            const storedSeconds = stored.leadInSeconds;
+            return typeof storedSeconds === 'number' && Number.isFinite(storedSeconds) && storedSeconds >= KARAOKE_LEAD_IN_MIN
+                ? storedSeconds
+                : DEFAULT_KARAOKE_TUNING.leadInSeconds;
+        })(),
+        leadInGapSeconds: numberWithin(
+            stored.leadInGapSeconds,
+            DEFAULT_KARAOKE_TUNING.leadInGapSeconds,
+            KARAOKE_LEAD_IN_GAP_MIN,
+            KARAOKE_LEAD_IN_GAP_MAX,
+        ),
         progressStyle: oneOf(stored.progressStyle, PROGRESS_STYLES, DEFAULT_KARAOKE_TUNING.progressStyle),
         pageAnimation: typeof stored.pageAnimation === 'boolean' ? stored.pageAnimation : DEFAULT_KARAOKE_TUNING.pageAnimation,
         overflowMode: oneOf(stored.overflowMode, OVERFLOW_MODES, DEFAULT_KARAOKE_TUNING.overflowMode),
@@ -77,6 +97,8 @@ export default defineVisualizerTuning<KaraokeTuning>({
         fontWeight: modNumber(100, 900, 100),
         italic: MOD_SWITCH,
         traditionalScript: MOD_SWITCH,
+        leadInSeconds: modNumber(KARAOKE_LEAD_IN_MIN, KARAOKE_LEAD_IN_MOD_MAX, 0.5),
+        leadInGapSeconds: modNumber(KARAOKE_LEAD_IN_GAP_MIN, KARAOKE_LEAD_IN_GAP_MAX, 0.1),
         progressStyle: modChoice(PROGRESS_STYLES),
         pageAnimation: MOD_SWITCH,
         overflowMode: modChoice(OVERFLOW_MODES),
