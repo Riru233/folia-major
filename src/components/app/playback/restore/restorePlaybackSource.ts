@@ -2,6 +2,7 @@ import i18n from '../../../../i18n/config';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { getCachedCoverUrl, loadCachedOrFetchCover } from '../../../../services/coverCache';
 import { getLocalSongs } from '../../../../services/db';
+import { isGatedVideoRecord } from '../../../../shinoinject/lab/labVideoGate';
 import { applyLocalLibraryEntityDisplay, buildUnifiedLocalSong } from '../../../../services/playbackAdapters';
 import { getLocalLibraryCatalogSnapshot } from '../../../../services/localLibraryEntityRepository';
 import { getNavidromeConfig } from '../../../../services/navidromeService';
@@ -261,6 +262,8 @@ const restoreSourceForSong = async (
                 notifyPlaybackFailed({ song, reason: null, phase: 'restore', willAutoSkip: false });
             }
         };
+        // The full table: the record has to be there to tell "deleted" from "hidden by the video
+        // experiment", and the id lookup must not turn into a title match against another song.
         const songs = await getLocalSongs();
         if (overtaken()) return 'stale';
 
@@ -268,11 +271,28 @@ const restoreSourceForSong = async (
             songToRestore = songs.find(candidate => candidate.id === localSongId);
         }
 
-        if (!songToRestore) {
+        // A local video with the video experiment off: the library does not show it, so it is not
+        // restored either. The record is still there, hence "not in the library" rather than a file
+        // that cannot be read.
+        if (songToRestore && isGatedVideoRecord(songToRestore)) {
+            tellLocalFailure('status.localSongNotInLibrary');
+            return 'failed';
+        }
+
+        const storedIdStillInLibrary = localSongId
+            ? songs.some(candidate => candidate.id === localSongId)
+            : false;
+
+        if (!songToRestore && !storedIdStillInLibrary) {
             songToRestore = songs.find(candidate =>
                 (candidate.title || candidate.fileName) === song.name &&
                 Math.abs(candidate.duration - song.durationMs) < 1000,
             );
+        }
+
+        if (songToRestore && isGatedVideoRecord(songToRestore)) {
+            tellLocalFailure('status.localSongNotInLibrary');
+            return 'failed';
         }
 
         if (!songToRestore) {

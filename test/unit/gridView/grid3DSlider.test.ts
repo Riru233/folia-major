@@ -29,10 +29,10 @@ describe('getGrid3DSliderSecondaryText', () => {
         expect(getGrid3DSliderSecondaryText(folder)).toBe('Astros/Classics/Cello');
     });
 
-    // 虚拟的「全部歌曲」在路径的位置显示自己的名称，不退回描述「本地 / Folder」：这是 local-library
+    // 虚拟的「全部媒体」在路径的位置显示自己的名称，不退回描述「本地 / Folder」：这是 local-library
     // 截图基线里的文字。P3.1 起滑条条目带上 isVirtual 后这里改过一次，这条用例把它钉住。
     it('shows the virtual All Songs folder by its name on the second line, not its description', () => {
-        for (const name of ['全部歌曲', 'All Songs']) {
+        for (const name of ['全部媒体', 'All Songs']) {
             const folder = {
                 type: 'folder',
                 name,

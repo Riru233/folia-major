@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-import { getFromCache, getLocalSongs } from '../../../../services/db';
+import { getFromCache } from '../../../../services/db';
+import { getVisibleLocalSongs } from '../../../../services/localMusicService';
 import { getLocalLibraryCatalogSnapshot } from '../../../../services/localLibraryEntityRepository';
 import { buildLocalQueue } from '../../../../services/playbackAdapters';
 import { prefetchNearbySongs } from '../../../../services/prefetchService';
@@ -127,7 +128,9 @@ export function useSessionRestoreController({
                 ));
                 if (containsLocalSnapshot) {
                     const [localSongs, catalog] = await Promise.all([
-                        getLocalSongs(),
+                        // A local video is not restored while the video experiment is off: the record stays in
+                        // the library, the remembered queue just does not bring it back.
+                        getVisibleLocalSongs(),
                         getLocalLibraryCatalogSnapshot(),
                     ]);
                     const songsById = new Map(localSongs.map(song => [song.id, song]));

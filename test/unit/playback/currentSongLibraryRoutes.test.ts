@@ -76,6 +76,8 @@ vi.mock('@/services/db', () => ({
     getFromCacheWithMigration: async () => null,
 }));
 vi.mock('@/services/localMusicService', () => ({
+    // The library list reads through this one; these tests seed audio records only.
+    getVisibleLocalSongs: async () => env.songs,
     getAudioFromLocalSong: async (song: { id: string }) => {
         env.note(`wait local file ${song.id}`);
         return env.unreadable.has(song.id) ? null : `blob:${song.id}`;

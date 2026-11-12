@@ -23,6 +23,16 @@ contextBridge.exposeInMainWorld('electron', {
     getAutomixModelsPresent: () => ipcRenderer.invoke('automix-models-present'),
     // One-way stage marks from the automix session into the runtime log. See services/automix/diag.ts.
     diagMark: (text) => ipcRenderer.send('automix-diag', text),
+    // The scene engine's room sound (Steam Audio): SceneAcousticsApi of src/services/sceneSound/acousticsTypes.ts.
+    // See electron/acoustics/host.cjs.
+    sceneAcoustics: {
+        available: () => ipcRenderer.invoke('scene-acoustics-available'),
+        computeRoom: (request) => ipcRenderer.invoke('scene-acoustics-compute', request),
+    },
+    // A small picture of a scene's surface, to light the scene by it. See electron/scenes/screenCapture.cjs.
+    sceneScreen: {
+        capture: (request) => ipcRenderer.invoke('scene-screen-capture', request),
+    },
     // Old automix models left in the folder an earlier version let the listener choose. See main.cjs.
     checkLegacyModels: () => ipcRenderer.invoke('legacy-models-check'),
     resolveLegacyModels: (action) => ipcRenderer.invoke('legacy-models-resolve', action),
@@ -78,6 +88,18 @@ contextBridge.exposeInMainWorld('electron', {
     },
     platform: process.platform,
     isLinuxX11: process.platform === 'linux' && !process.env.WAYLAND_DISPLAY,
+    // 实验性「视频」背景：bilibili 的账号与只读接口（electron/bilibili.cjs）。登录在它自己的窗口里
+    // 完成，密码不经过这个页面。
+    bilibili: {
+        getStatus: () => ipcRenderer.invoke('bilibili-auth-status'),
+        openLogin: () => ipcRenderer.invoke('bilibili-auth-login'),
+        signOut: () => ipcRenderer.invoke('bilibili-auth-logout'),
+        request: (request) => ipcRenderer.invoke('bilibili-request', request),
+    },
+    // 本地曲库的目录卡片只存相对路径（A/B）：第一次调用会请用户在磁盘上指出导入根，之后按根名记住，
+    // 用系统文件管理器打开目标目录本身（不是父目录）。网页版没有这个 API，见 services/localFolderSystemOpen.ts。
+    openLocalFolderInSystem: (rootName, relativePath, rebind) =>
+        ipcRenderer.invoke('local-folder-reveal', rootName, relativePath, rebind === true),
     getSettings: () => ipcRenderer.invoke('get-settings'),
     saveSettings: (key, value) => ipcRenderer.invoke('save-settings', key, value),
     onWallpaperModeChanged: (callback) => {
@@ -193,6 +215,8 @@ contextBridge.exposeInMainWorld('electron', {
     quitApp: () => ipcRenderer.invoke('app-quit'),
     isWindowMaximized: () => ipcRenderer.invoke('window-is-maximized'),
     isWindowFullscreen: () => ipcRenderer.invoke('window-is-fullscreen'),
+    hasNativeTrafficLights: () => ipcRenderer.invoke('window-has-native-traffic-lights'),
+    setTrafficLightsVisible: (visible) => ipcRenderer.invoke('window-set-traffic-lights-visible', visible),
     onWindowFullscreenChanged: (callback) => {
         const listener = (_event, fullscreen) => callback(fullscreen);
         ipcRenderer.on('window-fullscreen-changed', listener);
@@ -211,7 +235,7 @@ contextBridge.exposeInMainWorld('electron', {
     setKeyCaptureActive: (active) => ipcRenderer.send('key-capture-active', active === true),
     getMainWindowClickThroughEnabled: () => ipcRenderer.invoke('window-get-click-through'),
     setMainWindowClickThroughEnabled: (enabled) => ipcRenderer.invoke('window-set-click-through', enabled),
-    setMainWindowClickThroughUnlockHover: (active, viewportWidth, coordinates) => ipcRenderer.invoke('window-set-click-through-unlock-hover', active, viewportWidth, coordinates),
+    setMainWindowClickThroughUnlockHover: (active, viewportWidth, coordinates, side) => ipcRenderer.invoke('window-set-click-through-unlock-hover', active, viewportWidth, coordinates, side),
     getMainWindowAlwaysOnTop: () => ipcRenderer.invoke('window-get-always-on-top'),
     setMainWindowAlwaysOnTop: (enabled) => ipcRenderer.invoke('window-set-always-on-top', enabled),
     onMainWindowClickThroughChanged: (callback) => {

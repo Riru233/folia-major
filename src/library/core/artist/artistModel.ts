@@ -66,11 +66,11 @@ export const mapOnlineArtistDetail = (detail: ProviderCollection): LibraryArtist
     aliases: detail.aliases,
 });
 
-/** 「全部歌曲」那一层集合的类型（omni 的 getCollectionTracks 把它接到 catalog.getArtistSongs）。 */
+/** 「全部媒体」那一层集合的类型（omni 的 getCollectionTracks 把它接到 catalog.getArtistSongs）。 */
 export const ARTIST_SONGS_COLLECTION_TYPE = 'artist_songs';
 
 /**
- * 歌手的「全部歌曲」（#918）：压进导航栈的那一层在线集合，id 就是歌手的 id，曲目经 omni 分页读歌手的歌。
+ * 歌手的「全部媒体」（#918）：压进导航栈的那一层在线集合，id 就是歌手的 id，曲目经 omni 分页读歌手的歌。
  * 只给在线歌手（本地与 Navidrome 的歌都在专辑里）；名字由调用方翻译好，封面与曲目数取歌手详情。
  */
 export const artistSongsCollection = (

@@ -24,7 +24,7 @@ const historyState = (page: Page) => page.evaluate(() => {
     };
 });
 
-/** 导入本地曲库、打开「全部歌曲」，用开发浮层换到 bravais（之后打开的集合与歌手页也由 bravais 渲染）。 */
+/** 导入本地曲库、打开「全部媒体」，用开发浮层换到 bravais（之后打开的集合与歌手页也由 bravais 渲染）。 */
 const openAllSongsInBravais = async (page: Page) => {
     await installBaseState(page, { neteaseMode: 'guest', localImportFixture });
     await mockNeteaseApi(page, 'guest');
@@ -46,7 +46,7 @@ test('with the list panel open, opening the layer right below folds back past th
     await openAllSongsInBravais(page);
     await waitForWall(page);
 
-    // 全部歌曲：方向键落到离缝最近的一张，Enter 展开聚焦卡，点上面的歌手（bravais 的歌手页）。
+    // 全部媒体：方向键落到离缝最近的一张，Enter 展开聚焦卡，点上面的歌手（bravais 的歌手页）。
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
@@ -84,7 +84,7 @@ test('with the list panel open, opening the layer right below folds back past th
     // 没有压新记录：退回去的是已有的那条。
     expect(folded.length).toBe(withPanel.length);
 
-    // 浏览器后退沿完整路径：歌手之前是全部歌曲。
+    // 浏览器后退沿完整路径：歌手之前是全部媒体。
     await page.waitForTimeout(600);
     await page.goBack();
     await expect.poll(async () => (await historyState(page)).stack).toEqual(['All Songs']);

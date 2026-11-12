@@ -22,7 +22,7 @@ export interface ResolvedLocalSongLyricMetadata {
 }
 
 const stripAudioExtension = (fileName: string): string => (
-    fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i, '')
+    fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac|mp4|mkv)$/i, '')
 );
 
 // Uses the canonical title for scoring and the latest provider identity only as a lookup accelerator.

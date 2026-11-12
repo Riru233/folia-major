@@ -193,7 +193,7 @@ const hashIndex = (key: string, modulo: number) => {
 /**
  * 屏内那两块里刻意指定的内容：每一种磁贴屏内都有，教程的字幕才指得到。
  * 左块（模板 A）：专辑大卡、歌曲、歌手、要展开的歌、歌单、歌曲、歌曲、歌单。
- * 右块（模板 B）：歌手、歌曲、「我喜欢的音乐」、要打开的歌单、私人 FM、歌曲、专辑、歌手、「全部歌曲」。
+ * 右块（模板 B）：歌手、歌曲、「我喜欢的音乐」、要打开的歌单、私人 FM、歌曲、专辑、歌手、「全部媒体」。
  */
 const HOME_OVERRIDES: Record<string, BravaisWallItem> = {
     [slotKey('left', 0)]: { kind: 'album', hue: 168, count: 12, titleWidth: 0.66 },

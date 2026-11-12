@@ -47,7 +47,7 @@ const LocalSongLyricMatch: React.FC<LocalSongLyricMatchProps> = ({ song, onClose
 
     // Derive song information for matching
     const songInfo = useMemo(() => {
-        const title = song.title || song.fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i, '');
+        const title = song.title || song.fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac|mp4|mkv)$/i, '');
         const artist = song.onlineMetadata?.artists.map(item => item.name).join(', ')
             || song.importedMetadata.artistNames.join(', ');
         const durationMs = song.duration || 0;

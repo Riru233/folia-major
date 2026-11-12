@@ -1,3 +1,4 @@
+import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtTopLeft';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls, useIsPresent } from 'framer-motion';
 import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Loader2, Heart, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
@@ -279,6 +280,7 @@ export const GridView: React.FC<GridViewProps> = ({
     declaredActions,
 }) => {
     const { t } = useTranslation();
+    const lowerBackButton = useWindowButtonsAtTopLeft();
     const bottomBarPanelBottomPx = useSidePanelBottomPx();
     const fullBleedCover = useGridViewSettingsStore(state => state.gridViewFullBleedCover);
     // Only the full-bleed layout can be square: the polaroid frame needs the extra height for the
@@ -528,7 +530,7 @@ export const GridView: React.FC<GridViewProps> = ({
         && isOnlineResource
         && !isDailyRecommendationsCollection
         && collection?.type !== 'radio';
-    // 本地排序只给文件夹（含虚拟的「全部歌曲」）：这是视图规则，不随变更能力走。
+    // 本地排序只给文件夹（含虚拟的「全部媒体」）：这是视图规则，不随变更能力走。
     const supportsLocalTrackSorting = isLocalCollection && collection?.type === 'folder';
     const {
         isLocalFolderCollection,

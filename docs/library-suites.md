@@ -297,7 +297,7 @@ suite 自己的外观操作（bravais 的缝等级、打开面板、定位正在
 
 页面本身（不是动作）要做的：来源与分区页签、条目列表、打开条目（`homeResources.actions.openOnlineCard` / `openLocalGroup` / `openNavidromeCard`）。core 的 hooks 是 `useLibraryHomeSources`、`useLibraryHomeOnline`、`useLibraryHomeLocal`、`useLibraryHomeNavidrome`、`useLibraryHomeDirectory`。
 
-首页的**特殊集合**（我喜欢的音乐、云盘、私人 FM、每日推荐、本地的全部歌曲与「我喜欢」、Navidrome 的随机 / 收藏）由 core 的纯函数 `resolveLibraryHomeSpecial(card, source)`（`core/home/homeSpecialCards`，先后在 `LIBRARY_HOME_SPECIAL_ORDER`）判定：只看卡片的身份字段（id、type、`isVirtual`、来源对象上 provider 给的 `isLiked`），不看显示名；`source`（`online` / `local` / `navidrome`）决定同样的字段怎么解释。全部歌曲的 id 是 `LOCAL_ALL_SONGS_ID`（`localHomeModel`）。想给它们特别标识或直达入口的 suite 用它，不要在组件里按名字判断；grid / TUI 目前不用。`useLibraryHomeNavidrome()` 另给 `cardsBySection`（五个 section 各自的卡片，不限当前 section）。
+首页的**特殊集合**（我喜欢的音乐、云盘、私人 FM、每日推荐、本地的全部媒体与「我喜欢」、Navidrome 的随机 / 收藏）由 core 的纯函数 `resolveLibraryHomeSpecial(card, source)`（`core/home/homeSpecialCards`，先后在 `LIBRARY_HOME_SPECIAL_ORDER`）判定：只看卡片的身份字段（id、type、`isVirtual`、来源对象上 provider 给的 `isLiked`），不看显示名；`source`（`online` / `local` / `navidrome`）决定同样的字段怎么解释。全部媒体的 id 是 `LOCAL_ALL_SONGS_ID`（`localHomeModel`）。想给它们特别标识或直达入口的 suite 用它，不要在组件里按名字判断；grid / TUI 目前不用。`useLibraryHomeNavidrome()` 另给 `cardsBySection`（五个 section 各自的卡片，不限当前 section）。
 
 | 动作 | 是什么 | 分级 | 用到的 core |
 | --- | --- | --- | --- |
@@ -329,7 +329,7 @@ suite 自己的外观操作（bravais 的缝等级、打开面板、定位正在
 | `open-artist` | 打开歌曲上的其他歌手 | 推荐 | `onOpenArtist` |
 | `reload` / `resume-sync` | 加载失败时重试、专辑分页中断时续页 | 推荐 | `resource.reload()` / `resource.retryAlbums()` |
 | `edit-entity` | 编辑本地歌手实体 | 可选 | `onEditEntity`（对话框由宿主提供） |
-| `open-all-songs` | 打开在线歌手的「全部歌曲」（热门之外还有歌时；#918） | 可选 | `useArtistView` 的 `actions.openAllSongs()`：用 `artistSongsCollection` 拼出一层在线集合（type `artist_songs`）交给宿主的 `onOpenCollection`，由集合页渲染 |
+| `open-all-songs` | 打开在线歌手的「全部媒体」（热门之外还有歌时；#918） | 可选 | `useArtistView` 的 `actions.openAllSongs()`：用 `artistSongsCollection` 拼出一层在线集合（type `artist_songs`）交给宿主的 `onOpenCollection`，由集合页渲染 |
 
 歌手资源的状态：`idle` / `loading` 显示加载中；`ready` 但没有 `detail` 是空态；`error` 显示加载失败。
 

@@ -37,7 +37,7 @@ import { useBravaisSeamStore } from './bravaisSeamLevel';
 // - 当前页过滤（设计稿 §7.6）：过滤词是目录会话的 query（与 GridMap、TUI 读写同一份；换页签 / section 换目录、离开首页时
 //   由 core 的目录开关规则丢掉）。墙上打字进缝里的输入位（useBravaisSeamFilter），过滤时墙退化为以缝为中心的有限拼贴。
 //   非批量模式下 `/` 留给全局搜索（「搜索在线平台」），不是过滤字符。
-// - 特殊集合（我喜欢的音乐、私人 FM、全部歌曲…）：磁贴的类型标签换样式；缝里二级切换下面是它们的直达入口，数据来自
+// - 特殊集合（我喜欢的音乐、私人 FM、全部媒体…）：磁贴的类型标签换样式；缝里二级切换下面是它们的直达入口，数据来自
 //   shortcutCards（这个来源里不限当前 section 的卡片），只列此刻真有、没被隐藏的（projectHomeShortcuts）。
 // 这个组件只渲染 null；被探针读 props（directoryKey、items、hiddenScope、batchConfig、layerKey、onOpen）。
 

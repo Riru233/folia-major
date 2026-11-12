@@ -19,6 +19,7 @@ import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import { openSettings } from '../../stores/useSettingsModalStore';
 import type { MotionValue } from 'framer-motion';
 import { useGlass } from '@/shinoinject/useGlass';
+import { resolveDockedBarColors } from './dockedBarTheme';
 
 // src/components/docked-player/DockedPlayerBar.tsx
 // 贴底的「停靠」样式底部播放条，可在外观设置里与浮动胶囊（FloatingPlayerControls）互斥切换。
@@ -122,8 +123,8 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
     onTogglePlay,
     onToggleLoop,
     noTrackText = 'No Track',
-    primaryColor = 'var(--text-primary)',
-    secondaryColor = 'var(--text-secondary)',
+    primaryColor = '#fff',
+    secondaryColor = '#fffa',
     isDaylight,
     hideControlBar = false,
     controlsDisabled = false,
@@ -150,6 +151,8 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
     const setIsPanelOpen = useAppViewStore(state => state.setIsPanelOpen);
     const hidePanelButton = usePlayerChromeSettingsStore(state => state.hidePlayerRightPanelButton);
     const showOpenPanelCloseButton = usePlayerChromeSettingsStore(state => state.showOpenPanelCloseButton);
+    // 停靠栏的配色：Dreamcore 是原来那套，莫奈是另一套色晕。布局与图标不动，见 dockedBarTheme。
+    const dockedBarAppearance = usePlayerChromeSettingsStore(state => state.dockedBarAppearance);
     // 同一个自动隐藏时钟：设置里开了「自动隐藏控制栏」时，停靠栏和播放页那套控制件一起收下去，
     // 鼠标一动就回来（时钟在 usePlayerChromeAutoHide 里，这里只读结果）。
     const isPlayerChromeHidden = useAppChromeStore(state => state.isPlayerChromeHidden);
@@ -163,10 +166,6 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
             setSliderVolume(volume);
         }
     }, [volume]);
-
-    if (hideControlBar) {
-        return null;
-    }
 
     const songName = displaySong?.name || noTrackText;
     const artistName = displaySong ? getSongArtistLabel(displaySong) : '';
@@ -195,20 +194,15 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
         onNext: trackNavigation?.onNext ?? (() => { }),
     }), [displayLyrics, loopMode, onToggleLoop, slotContext, trackNavigation]);
 
-    // 停靠栏不画自己的底：它直接压在页面内容上，只有控件本身可见（内容从栏下面穿过去）。
-    const surfaceStyle: React.CSSProperties = {
-        color: primaryColor,
-    };
+    // 配色全在 dockedBarTheme 里：两套外观结构一致（底部一笔颜色、往上淡到全透明），
+    // 只是那笔颜色不同；Dreamcore 不另铺底，莫奈的底色就画在栏自己那层渐变上。
+    const colors = resolveDockedBarColors(dockedBarAppearance, isDaylight, primaryColor, secondaryColor);
 
     const iconButtonClass = `flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
         controlsDisabled
             ? 'cursor-not-allowed opacity-30'
-            : 'opacity-60 hover:bg-white/10 hover:opacity-100'
+            : `opacity-60 ${colors.iconButtonHoverClass} hover:opacity-100`
     }`;
-
-    const coverSurfaceStyle: React.CSSProperties = {
-        backgroundColor: isDaylight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)',
-    };
 
     // 封面本体：有没有 artwork 两种情况都一样，可点 / 不可点只是外面那层壳的区别。
     const coverContent = displayCoverUrl ? (
@@ -224,6 +218,14 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
         </div>
     );
     useGlass();
+
+    // 「隐藏进度条」把整条栏收走。这一句必须留在所有 hook 之后：之前它写在 useMemo / useGlass 前面，
+    // 于是播放页（开隐藏进度条时这里返回 null）与首页之间来回切一次，hook 数量就变了，React 直接抛
+    // 「Rendered more/fewer hooks than expected」——停靠栏在真机上「不生效」多半是这一步炸掉的。
+    if (hideControlBar) {
+        return null;
+    }
+
     return (
         <>
             <div
@@ -235,14 +237,20 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                 data-chrome-hidden={isPlayerView && isPlayerChromeHidden ? 'true' : 'false'}
             >
                 {/* 垂直 flex：上一行是信息 / 传输 / 槽位，下一行是进度条。 */}
-                <div className="flex flex-col gap-1 p-1 bg-gradient-to-t from-[var(--bg-color)]/60 to-transparent" style={surfaceStyle}>
+                <div
+                    className={`flex flex-col gap-1 p-1 ${colors.surfaceClassName}`}
+                    style={{ ...colors.surfaceStyle, color: colors.textPrimary }}
+                >
                     {/* 水平 grid：左信息、中播放键、右传输与按钮。
                         播放键自己就是中间那一列（auto），左右两侧是等宽的 1fr——不论右边挂了多少颗按钮、
                         左边歌名多长，它永远落在整条栏的正中。上一曲贴在左列末尾、下一曲贴在右列开头，
                         所以传输键看上去仍是一簇，只是不再把播放键往一侧挤。 */}
                     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-[5px]">
                         {/* 左：封面 + 文字信息（左右排布，文字靠左），末尾挂上一曲 */}
-                        <div className="flex min-w-0 items-center gap-3 [text-shadow:_0_0px_4px_var(--bg-color),_0_0px_4px_var(--bg-color)]">
+                        <div
+                            className="flex min-w-0 items-center gap-3"
+                            style={{ textShadow: colors.titleTextShadow }}
+                        >
                             {/* 封面：不在播放页时它本身就是回歌词画报的入口（悬停浮一层淡膜 + 箭头提示）。 */}
                             {canReturnToPlayer ? (
                                 <button
@@ -251,7 +259,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                     aria-label={returnToPlayerLabel}
                                     title={returnToPlayerLabel}
                                     className="group/cover relative h-[48px] w-[48px] shrink-0 overflow-hidden rounded-[5px] transition-transform hover:scale-[1.03] active:scale-95"
-                                    style={coverSurfaceStyle}
+                                    style={colors.coverStyle}
                                 >
                                     {coverContent}
                                     <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100">
@@ -261,7 +269,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                             ) : (
                                 <div
                                     className="h-[48px] w-[48px] shrink-0 overflow-hidden rounded-[5px]"
-                                    style={coverSurfaceStyle}
+                                    style={colors.coverStyle}
                                 >
                                     {coverContent}
                                 </div>
@@ -271,13 +279,13 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                 <div className="flex min-w-0 items-baseline gap-2">
                                     <span className="truncate text-sm font-medium leading-tight">{songName}</span>
                                     {artistName && (
-                                        <span className="shrink-0 truncate text-xs leading-tight opacity-50" style={{ color: secondaryColor }}>
+                                        <span className={`shrink-0 truncate text-xs leading-tight ${colors.artistFadeClass}`} style={{ color: colors.textSecondary }}>
                                             {artistName}
                                         </span>
                                     )}
                                 </div>
                                 {/* 第二行：进度时间 */}
-                                <div className="text-[11px] leading-tight opacity-60" style={{ color: secondaryColor }}>
+                                <div className={`text-[11px] leading-tight ${colors.timeFadeClass}`} style={{ color: colors.textSecondary }}>
                                     <DockedTimeReadout currentTime={currentTime} duration={duration} />
                                 </div>
                             </div>
@@ -289,7 +297,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                 title={prevLabel}
                                 className={`${iconButtonClass} ml-auto shrink-0`}
                             >
-                                <SkipBack size={18} fill="#fff" style={{filter: 'drop-shadow(0 0 1px #000)'}} />
+                                <SkipBack size={18} fill={colors.iconFill} style={colors.iconStyle} />
                             </button>
                         </div>
 
@@ -304,14 +312,11 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                             className={`mx-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full z-[20] shadow-lg transition-transform ${
                                 controlsDisabled || !canTogglePlay ? 'cursor-not-allowed opacity-45' : 'hover:scale-105'
                             }`}
-                            style={{ background: "linear-gradient(to bottom, #9cafd788, #316faf88, #47cbfa88)",
-                                    color: '#fff',
-                                    borderTop: '#fffa 1px solid',
-                                    borderBottom: '#fffa 1px solid',
-                                    outline: '#666 1px solid',
-                                 }}
+                            style={colors.playButtonStyle}
                         >
-                            {isPlaying ? <Pause style={{filter: 'drop-shadow(0 0 1px #000)'}} size={18} fill="currentColor" /> : <Play style={{filter: 'drop-shadow(0 0 1px #000)'}} size={18} fill="currentColor" className="ml-0.5" />}
+                            {isPlaying
+                                ? <Pause style={colors.playIconStyle} size={18} fill="currentColor" />
+                                : <Play style={colors.playIconStyle} size={18} fill="currentColor" className="ml-0.5" />}
                         </button>
 
                         {/* 右：下一曲 + 音量，最右端是槽位按钮（推到列尾） */}
@@ -324,7 +329,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                 title={nextLabel}
                                 className={`${iconButtonClass} shrink-0`}
                             >
-                                <SkipForward size={18} fill="#fff" style={{filter: 'drop-shadow(0 0 1px #000)'}} />
+                                <SkipForward size={18} fill={colors.iconFill} style={colors.iconStyle} />
                             </button>
 
                             {/* 音量：图标是静音开关，右边一条细滑杆。拖动时先只改本地值，松手才落盘。 */}
@@ -337,7 +342,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                     aria-pressed={isMuted}
                                     className={iconButtonClass}
                                 >
-                                    <VolumeIcon style={{filter: 'drop-shadow(0 0 1px #000)'}} fill="#fff" size={18} />
+                                    <VolumeIcon style={colors.iconStyle} fill={colors.iconFill} size={18} />
                                 </button>
                                 <input
                                     type="range"
@@ -355,7 +360,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                         setVolume(next);
                                     }}
                                     className="w-20 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-                                    style={{ accentColor: primaryColor }}
+                                    style={{ accentColor: colors.accent }}
                                 />
                             </div>
 
@@ -364,7 +369,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                 <PlayerControlSlotButton
                                     actionId={slotPrimary}
                                     context={resolvedSlotContext}
-                                    primaryColor={primaryColor}
+                                    primaryColor={colors.textPrimary}
                                     isDaylight={isDaylight}
                                     controlsDisabled={controlsDisabled}
                                     onCustomize={slotCustomization.openPrimaryPicker}
@@ -372,7 +377,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                 <PlayerControlSlotButton
                                     actionId={slotSecondary}
                                     context={resolvedSlotContext}
-                                    primaryColor={primaryColor}
+                                    primaryColor={colors.textPrimary}
                                     isDaylight={isDaylight}
                                     controlsDisabled={controlsDisabled}
                                     onCustomize={slotCustomization.openSecondaryPicker}
@@ -401,7 +406,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                         aria-expanded={isPanelOpen}
                                         data-testid="docked-panel-toggle"
                                         className={`${iconButtonClass} ${isPanelOpen ? 'opacity-100' : ''}`}
-                                        style={isPanelOpen ? { backgroundColor: isDaylight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.14)' } : undefined}
+                                        style={isPanelOpen ? { backgroundColor: colors.panelToggleActiveColor } : undefined}
                                     >
                                         {isPanelOpen ? <X size={18} /> : <Settings2 size={18} />}
                                     </button>
@@ -416,9 +421,9 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                             currentTime={currentTime}
                             duration={duration}
                             onSeek={onSeek}
-                            primaryColor={primaryColor}
-                            secondaryColor={secondaryColor}
-                            trackColor={isDaylight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)'}
+                            primaryColor={colors.progressFill}
+                            secondaryColor={colors.textSecondary}
+                            trackColor={colors.progressTrack}
                             disabled={controlsDisabled}
                             edgeStyle="square"
                         />

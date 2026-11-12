@@ -5,7 +5,7 @@ import { MoreHorizontal } from "lucide-react";
 import { gridGlassCircleStyle } from "../shared/gridGlassChrome";
 
 // src/library/suites/grid/artist/ArtistHeaderPillButton.tsx
-// 网格歌手页页头右端的一颗圆钮：点开是一份两项的菜单（「加入热门歌曲」「全部歌曲」）。
+// 网格歌手页页头右端的一颗圆钮：点开是一份两项的菜单（「加入热门歌曲」「全部媒体」）。
 // 按钮本身只剩三个点（40×40 的圆，表面取集合页那组液态玻璃 gridGlassCircleStyle，与返回、面板开关同款），
 // 窄屏宽屏一样大；菜单朝左下展开（钮在右端，left-0 会顶出窗口）。
 // 菜单里的每一项各自决定可不可用：不可用的照样列出来、变淡、点不动（能力的 enabled）。

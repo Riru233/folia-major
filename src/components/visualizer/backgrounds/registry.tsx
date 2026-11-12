@@ -8,7 +8,12 @@ import type {
 // src/components/visualizer/backgrounds/registry.tsx
 // Discovers shell-level background modes from their local entry modules.
 
-const backgroundEntryModules = import.meta.glob<VisualizerBackgroundEntryModule>('./*/entry.tsx', { eager: true });
+// The experimental 「视频」 background entry lives under src/shinoinject/lab/videoBackground
+// (it is part of the Shino Lab feature, migrated there); include it alongside the builtin entries.
+const backgroundEntryModules = import.meta.glob<VisualizerBackgroundEntryModule>([
+    './*/entry.tsx',
+    '../../../shinoinject/lab/videoBackground/entry.tsx',
+], { eager: true });
 
 const buildBackgroundRegistry = (modules: Record<string, VisualizerBackgroundEntryModule>) => {
     const entries = Object.entries(modules).map(([path, module]) => {

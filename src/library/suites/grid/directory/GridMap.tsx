@@ -1,3 +1,4 @@
+import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtTopLeft';
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls } from 'framer-motion';
 import { Check, ChevronLeft, Disc, Eye, EyeOff, ListFilter, X } from 'lucide-react';
@@ -72,6 +73,8 @@ interface GridMapProps {
     onTogglePlaylistHidden?: (item: GridMapItem) => void;
     batchConfig?: GridMapBatchConfig;
     ponderPageScope?: 'grid-page' | 'local-grid-map-page';
+    /** 本地文件夹卡片的右键菜单（删歌单 / 打开所在位置）；只有本地首页装配。 */
+    onFolderContextMenu?: (event: React.MouseEvent, folderPath: string) => void;
 }
 
 const NO_HIDDEN_IDS: ReadonlySet<string> = new Set();
@@ -95,6 +98,7 @@ const MapCard = React.memo<{
     isBatchMode: boolean;
     isBatchSelected: boolean;
     onTogglePlaylistHidden?: () => void;
+    onContextMenu?: (event: React.MouseEvent) => void;
     cardWidth: number;
     cardHeight: number;
 }>(
@@ -107,12 +111,13 @@ const MapCard = React.memo<{
         isBatchMode,
         isBatchSelected,
         onTogglePlaylistHidden,
+        onContextMenu,
         cardWidth,
         cardHeight,
     }) => {
         const { t } = useTranslation();
         const isPlaylistSelectionDisabled = isPlaylistEditMode && isHideableDirectoryItem(item);
-        // 文件夹卡（含虚拟的「全部歌曲」）的标题、描述行数、「本目录 N 首」都按 folderLabel 判断，见 gridMapCardText。
+        // 文件夹卡（含虚拟的「全部媒体」）的标题、描述行数、「本目录 N 首」都按 folderLabel 判断，见 gridMapCardText。
         const folderLabel = resolveGridMapFolderLabel(item);
         const displayName = resolveGridMapCardTitle(item);
 
@@ -129,6 +134,12 @@ const MapCard = React.memo<{
                 onClick={(e) => {
                     e.stopPropagation();
                     if (!isPlaylistSelectionDisabled) onSelect();
+                }}
+                onContextMenu={(event) => {
+                    if (!onContextMenu) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onContextMenu(event);
                 }}
             >
                 {/* Square Polaroid Photo Area */}
@@ -234,6 +245,8 @@ const MapCard = React.memo<{
             prev.item.summary === next.item.summary &&
             prev.item.trackCount === next.item.trackCount &&
             prev.item.type === next.item.type &&
+            prev.item.path === next.item.path &&
+            prev.item.isVirtual === next.item.isVirtual &&
             prev.isDaylight === next.isDaylight &&
             prev.isPlaylistEditMode === next.isPlaylistEditMode &&
             prev.isHidden === next.isHidden &&
@@ -242,7 +255,8 @@ const MapCard = React.memo<{
             prev.onTogglePlaylistHidden === next.onTogglePlaylistHidden &&
             prev.cardWidth === next.cardWidth &&
             prev.cardHeight === next.cardHeight &&
-            prev.onSelect === next.onSelect
+            prev.onSelect === next.onSelect &&
+            prev.onContextMenu === next.onContextMenu
         );
     }
 );
@@ -264,8 +278,10 @@ export const GridMap: React.FC<GridMapProps> = ({
     onTogglePlaylistHidden,
     batchConfig,
     ponderPageScope = 'grid-page',
+    onFolderContextMenu,
 }) => {
     const { t } = useTranslation();
+    const lowerBackButton = useWindowButtonsAtTopLeft();
     const bottomBarPanelBottomPx = useSidePanelBottomPx();
     // 地图底色（页头渐变与根节点共用一套值，换色只改这里）。
     const mapBackgroundColor = isDaylight ? 'rgba(250, 249, 246, 0.95)' : 'rgba(9, 9, 11, 0.95)';
@@ -656,6 +672,7 @@ export const GridMap: React.FC<GridMapProps> = ({
 
     const cardWrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+    // 批量选择 / 隐藏编辑时不给卡片挂右键菜单：那时弹「删除整张歌单」会误删到批选之外的范围。
     const memoizedCards = useMemo(() => {
         return renderedIndexes.map((idx) => {
             const item = displayItems[idx];
@@ -698,6 +715,10 @@ export const GridMap: React.FC<GridMapProps> = ({
                             : undefined}
                         cardWidth={layoutConfig.cardWidth}
                         cardHeight={layoutConfig.cardHeight}
+                        onContextMenu={onFolderContextMenu && !(batchConfig && showCutInPanel) && !isPlaylistEditMode
+                            && item.type === 'folder' && item.path && !item.isVirtual
+                            ? (event) => onFolderContextMenu(event, String(item.path))
+                            : undefined}
                         onSelect={() => {
                             // A drag may still emit a click on the card; suppress it before any batch toggle.
                             if (suppressSelectionRef.current) return;
@@ -724,6 +745,7 @@ export const GridMap: React.FC<GridMapProps> = ({
         selectedBatchItemIds,
         toggleBatchItemSelected,
         onTogglePlaylistHidden,
+        onFolderContextMenu,
         layoutConfig.cardWidth,
         layoutConfig.cardHeight,
         layoutConfig.maxDistance,
@@ -1007,7 +1029,7 @@ export const GridMap: React.FC<GridMapProps> = ({
                 <button
                     data-glass data-glass-light data-glass-jelly
                     onClick={onBack}
-                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95"
+                    className={`relative ${lowerBackButton ? 'top-7' : ''} w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95`}
                     style={{ ...gridGlassCircleStyle(isDaylight), color: 'var(--text-primary)' }}
                 >
                     <ChevronLeft size={20} />

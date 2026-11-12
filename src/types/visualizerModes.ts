@@ -40,6 +40,8 @@ export const BUILTIN_VISUALIZER_BACKGROUND_MODES = [
     'sora',
     'url',
     'transparent',
+    // 实验性：Shino 实验室里的开关决定它出不出现（见 components/visualizer/backgrounds/availability.ts）。
+    'video',
 ] as const;
 
 export const DEFAULT_VISUALIZER_MODE: VisualizerMode = 'classic';

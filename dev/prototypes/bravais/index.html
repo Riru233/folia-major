@@ -483,7 +483,7 @@ const localFolders = [];
         node.folderKeys = localFolders.filter(f => f.path === node.path || f.path.startsWith(node.path + '/')).map(f => f.key);
     }
 })(localTree);
-localFolders.unshift({ key: 'f:__all__', kind: 'folder', virtual: true, title: '全部歌曲', artist: '本地', album: '', path: null,
+localFolders.unshift({ key: 'f:__all__', kind: 'folder', virtual: true, title: '全部媒体', artist: '本地', album: '', path: null,
     hue: localTracks[0].hue, tracks: localTracks });
 const PLAYLISTS = ['深夜の作業用', '通勤 BGM', '雨の日', 'Vocaloid 精选', '2026 年度', '冬の歌', '抒情', '跑步', 'Lo-fi', '随便听听', 'Henceforth 收藏', '私藏'];
 const allPlaylists = PLAYLISTS.map((title, i) => {
@@ -1583,7 +1583,7 @@ function syncLocalMode() {
     renderPanelBody();
     renderSeamMeta();
 }
-// 选中文件夹展开成曲目（去重：「全部歌曲」和具体文件夹可能同时选中）
+// 选中文件夹展开成曲目（去重：「全部媒体」和具体文件夹可能同时选中）
 function selectedTracks() {
     const seen = new Set(), out = [];
     for (const f of localFolders) if (state.selected.has(f.key)) for (const t of f.tracks) if (!seen.has(t.key)) { seen.add(t.key); out.push(t); }

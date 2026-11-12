@@ -901,7 +901,7 @@
         "homeTabs": "首页的信息条是一道窄缝：最上面是「书库」和折叠，下面竖排着一级页签——歌单、电台、专辑、本地、Navidrome。",
         "homeFlip": "换页签时整条信息条翻一次，墙也整面换成那一页的内容。键盘上 F6 / Shift + F6 轮换页签。",
         "homeSections": "本地和 Navidrome 多一列二级切换（文件夹、专辑、艺术家、歌单……）。只有选中的那项竖着写出名字，其余只留图标，悬停看全名。切换只换墙上的内容，不进新的一层。",
-        "homeShortcuts": "下面那几列竖排小字是直达入口：我喜欢的音乐、私人 FM、全部歌曲……点它和点墙上那张卡一样，私人 FM 直接开播。地方不够时，它们挪进「⋯」。",
+        "homeShortcuts": "下面那几列竖排小字是直达入口：我喜欢的音乐、私人 FM、全部媒体……点它和点墙上那张卡一样，私人 FM 直接开播。地方不够时，它们挪进「⋯」。",
         "dockAccount": "工具格正上方是账户入口：登录了是头像和昵称，没登录时是「连接在线平台」。点它打开登录窗口，换平台、登录、退出都在里面。",
         "dockTools": "最底下四格：搜索在线平台、设置、队列拼贴（进入 Lattice）和「⋯」。",
         "dockMenu": "其余的都在「⋯」里：这一页签的项在前（过滤当前页、目录、管理隐藏、导入……），分隔线之后是「回到播放页」这类去处。",
@@ -1137,7 +1137,7 @@
         "collection": "专辑、歌单和文件夹的右下角露出一叠错开的页边，标签写成「种类 · 曲目数」，点开是一张曲目表。页边可以在设置里关掉。",
         "artist": "歌手是双色调人像，名字更大，没有副标题。",
         "artistHover": "指针停上去，或者键盘焦点落到它上面时，人像会恢复原来的颜色。",
-        "special": "我喜欢的音乐、私人 FM、全部歌曲这类特殊卡片，标签换成强调色底，前面加一个小图标。私人 FM 是电台，点了直接开始播放，不会打开新的一层。",
+        "special": "我喜欢的音乐、私人 FM、全部媒体这类特殊卡片，标签换成强调色底，前面加一个小图标。私人 FM 是电台，点了直接开始播放，不会打开新的一层。",
         "open": "点一张集合不会跳到新页面：被点的那张原地变成新层的第 1 首（集合封面通常就是第一首的封面），其余位置从它开始，一圈圈翻成新内容。",
         "openSeam": "缝不会合上，里面的内容翻成这个集合的信息条。",
         "back": "返回时（信息条里的 ‹、Esc 或浏览器后退），墙从缝开始往两边翻回上一层，键盘焦点落回当初点的那张。",
@@ -1220,7 +1220,7 @@
         "atSign": "输入 @ 可筛选队列中的歌手或专辑；后面会显示各项包含的歌曲数。",
         "narrowed": "选中后会收成输入行标签，列表只显示该项的歌曲。",
         "flags": "输入 -- 可查看批量操作：--remove 移除，--next 移到下一首，--end 移到队尾。",
-        "scope": "它操作的是筛选出的全部歌曲，不是高亮行。预览会显示“将影响 N 首”。",
+        "scope": "它操作的是筛选出的全部媒体，不是高亮行。预览会显示“将影响 N 首”。",
         "guards": "没有搜索词或 @ 筛选时拒绝执行，避免清空队列；正在播放的歌曲会排除。"
       },
       "desktop": {
@@ -1401,7 +1401,7 @@
 | `bravais-seam` | `bravais-seam-home-navigation` | 首页：页签、二级切换与直达 | `ponder.captions.bravaisSeam.homeTabs` | 首页的信息条是一道窄缝：最上面是「书库」和折叠，下面竖排着一级页签——歌单、电台、专辑、本地、Navidrome。 | tabs：一级页签 | `ponder.anchors.bravaisSeam.tabs` |
 | `bravais-seam` | `bravais-seam-home-navigation` | 首页：页签、二级切换与直达 | `ponder.captions.bravaisSeam.homeFlip` | 换页签时整条信息条翻一次，墙也整面换成那一页的内容。键盘上 F6 / Shift + F6 轮换页签。 | tabLocal：本地 | `ponder.anchors.bravaisSeam.tabLocal` |
 | `bravais-seam` | `bravais-seam-home-navigation` | 首页：页签、二级切换与直达 | `ponder.captions.bravaisSeam.homeSections` | 本地和 Navidrome 多一列二级切换（文件夹、专辑、艺术家、歌单……）。只有选中的那项竖着写出名字，其余只留图标，悬停看全名。切换只换墙上的内容，不进新的一层。 | sections：二级切换 | `ponder.anchors.bravaisSeam.sections` |
-| `bravais-seam` | `bravais-seam-home-navigation` | 首页：页签、二级切换与直达 | `ponder.captions.bravaisSeam.homeShortcuts` | 下面那几列竖排小字是直达入口：我喜欢的音乐、私人 FM、全部歌曲……点它和点墙上那张卡一样，私人 FM 直接开播。地方不够时，它们挪进「⋯」。 | shortcuts：直达入口 | `ponder.anchors.bravaisSeam.shortcuts` |
+| `bravais-seam` | `bravais-seam-home-navigation` | 首页：页签、二级切换与直达 | `ponder.captions.bravaisSeam.homeShortcuts` | 下面那几列竖排小字是直达入口：我喜欢的音乐、私人 FM、全部媒体……点它和点墙上那张卡一样，私人 FM 直接开播。地方不够时，它们挪进「⋯」。 | shortcuts：直达入口 | `ponder.anchors.bravaisSeam.shortcuts` |
 | `bravais-seam` | `bravais-seam-home-dock` | 账户入口与工具格 | `ponder.captions.bravaisSeam.dockAccount` | 工具格正上方是账户入口：登录了是头像和昵称，没登录时是「连接在线平台」。点它打开登录窗口，换平台、登录、退出都在里面。 | account：账户入口 | `ponder.anchors.bravaisSeam.account` |
 | `bravais-seam` | `bravais-seam-home-dock` | 账户入口与工具格 | `ponder.captions.bravaisSeam.dockTools` | 最底下四格：搜索在线平台、设置、队列拼贴（进入 Lattice）和「⋯」。 | tools：工具格 | `ponder.anchors.bravaisSeam.tools` |
 | `bravais-seam` | `bravais-seam-home-dock` | 账户入口与工具格 | `ponder.captions.bravaisSeam.dockMenu` | 其余的都在「⋯」里：这一页签的项在前（过滤当前页、目录、管理隐藏、导入……），分隔线之后是「回到播放页」这类去处。 | menuPopup：⋯ 菜单 | `ponder.anchors.bravaisSeam.menuPopup` |
@@ -1422,7 +1422,7 @@
 | `bravais-wall` | `bravais-wall-tiles` | 认出磁贴的种类 | `ponder.captions.bravaisWall.collection` | 专辑、歌单和文件夹的右下角露出一叠错开的页边，标签写成「种类 · 曲目数」，点开是一张曲目表。页边可以在设置里关掉。 | collection：集合 | `ponder.anchors.bravaisWall.collection` |
 | `bravais-wall` | `bravais-wall-tiles` | 认出磁贴的种类 | `ponder.captions.bravaisWall.artist` | 歌手是双色调人像，名字更大，没有副标题。 | artist：歌手 | `ponder.anchors.bravaisWall.artist` |
 | `bravais-wall` | `bravais-wall-tiles` | 认出磁贴的种类 | `ponder.captions.bravaisWall.artistHover` | 指针停上去，或者键盘焦点落到它上面时，人像会恢复原来的颜色。 | artist：歌手 | `ponder.anchors.bravaisWall.artist` |
-| `bravais-wall` | `bravais-wall-tiles` | 认出磁贴的种类 | `ponder.captions.bravaisWall.special` | 我喜欢的音乐、私人 FM、全部歌曲这类特殊卡片，标签换成强调色底，前面加一个小图标。私人 FM 是电台，点了直接开始播放，不会打开新的一层。 | special：特殊集合 | `ponder.anchors.bravaisWall.special` |
+| `bravais-wall` | `bravais-wall-tiles` | 认出磁贴的种类 | `ponder.captions.bravaisWall.special` | 我喜欢的音乐、私人 FM、全部媒体这类特殊卡片，标签换成强调色底，前面加一个小图标。私人 FM 是电台，点了直接开始播放，不会打开新的一层。 | special：特殊集合 | `ponder.anchors.bravaisWall.special` |
 | `bravais-wall` | `bravais-wall-open` | 翻牌换层 | `ponder.captions.bravaisWall.open` | 点一张集合不会跳到新页面：被点的那张原地变成新层的第 1 首（集合封面通常就是第一首的封面），其余位置从它开始，一圈圈翻成新内容。 | origin：被点的集合 | `ponder.anchors.bravaisWall.origin` |
 | `bravais-wall` | `bravais-wall-open` | 翻牌换层 | `ponder.captions.bravaisWall.openSeam` | 缝不会合上，里面的内容翻成这个集合的信息条。 | seam：信息条 | `ponder.anchors.bravaisWall.seam` |
 | `bravais-wall` | `bravais-wall-open` | 翻牌换层 | `ponder.captions.bravaisWall.back` | 返回时（信息条里的 ‹、Esc 或浏览器后退），墙从缝开始往两边翻回上一层，键盘焦点落回当初点的那张。 | origin：被点的集合 | `ponder.anchors.bravaisWall.origin` |
@@ -1688,7 +1688,7 @@
 | `queue-command-surface` | `queue-command-facets` | @ 把范围收窄 | `ponder.captions.queueCommand.atSign` | 输入 @ 可筛选队列中的歌手或专辑；后面会显示各项包含的歌曲数。 | suggestions：歌手 / 专辑建议 | `ponder.anchors.queueCommand.suggestions` |
 | `queue-command-surface` | `queue-command-facets` | @ 把范围收窄 | `ponder.captions.queueCommand.narrowed` | 选中后会收成输入行标签，列表只显示该项的歌曲。 | input：输入行 | `ponder.anchors.queueCommand.input` |
 | `queue-command-surface` | `queue-command-batch` | -- 对筛出来的全部下手 | `ponder.captions.queueCommand.flags` | 输入 -- 可查看批量操作：--remove 移除，--next 移到下一首，--end 移到队尾。 | input：输入行 | `ponder.anchors.queueCommand.input` |
-| `queue-command-surface` | `queue-command-batch` | -- 对筛出来的全部下手 | `ponder.captions.queueCommand.scope` | 它操作的是筛选出的全部歌曲，不是高亮行。预览会显示“将影响 N 首”。 | preview：批量操作预览 | `ponder.anchors.queueCommand.preview` |
+| `queue-command-surface` | `queue-command-batch` | -- 对筛出来的全部下手 | `ponder.captions.queueCommand.scope` | 它操作的是筛选出的全部媒体，不是高亮行。预览会显示“将影响 N 首”。 | preview：批量操作预览 | `ponder.anchors.queueCommand.preview` |
 | `queue-command-surface` | `queue-command-batch` | -- 对筛出来的全部下手 | `ponder.captions.queueCommand.guards` | 没有搜索词或 @ 筛选时拒绝执行，避免清空队列；正在播放的歌曲会排除。 | preview：批量操作预览 | `ponder.anchors.queueCommand.preview` |
 | `queue-settings` | `queue-settings-behavior` | 加到末尾还是加到下一首 | `ponder.captions.queueSettings.append` | 这一行的两段决定「加入播放队列」到底加到哪儿。默认是追加到末尾，先听完手上排着的。 | append：追加到末尾 | `ponder.anchors.queueSettings.append` |
 | `queue-settings` | `queue-settings-behavior` | 加到末尾还是加到下一首 | `ponder.captions.queueSettings.next` | 选择后，新歌曲会插到当前歌曲后面。这个设置会影响卡片、队列行和命令窗口里的所有加入队列入口。 | next：追加到下一首 | `ponder.anchors.queueSettings.next` |

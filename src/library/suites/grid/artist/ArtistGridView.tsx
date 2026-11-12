@@ -1,3 +1,4 @@
+import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtTopLeft';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls, useIsPresent } from 'framer-motion';
 import { ChevronLeft, ListMusic, ListPlus, RefreshCw } from 'lucide-react';
@@ -94,7 +95,7 @@ interface ArtistGridViewProps {
     theme: Theme;
     isDaylight: boolean;
     onEditEntity?: (entityId: string) => void;
-    /** 宿主压入一层集合（「全部歌曲」，#918）；没给时没有这个入口。 */
+    /** 宿主压入一层集合（「全部媒体」，#918）；没给时没有这个入口。 */
     onOpenCollection?: (collection: LibraryCollectionDescriptor) => void;
     isInteractive?: boolean;
     /**
@@ -344,6 +345,7 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
 }) => {
     useGlass();
     const { t } = useTranslation();
+    const lowerBackButton = useWindowButtonsAtTopLeft();
     // The artist wall renders the same cards as GridView, so it follows the same look settings.
     const fullBleedCover = useGridViewSettingsStore(state => state.gridViewFullBleedCover);
     const squareCards = useGridViewSettingsStore(state => state.gridViewSquareCards) && fullBleedCover;
@@ -1318,12 +1320,8 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
                 </div>
             )}
 
-            {/* 页头底下压一层底色渐变（与集合页同一个值）：标题、副标题落在卡片上也读得清。 */}
-            <div className="pointer-events-none fixed inset-x-0 top-0 z-[69] h-[130px] bg-gradient-to-b from-[var(--bg-color)] to-transparent" />
-
-            {/* 页头：返回、面板开关两颗玻璃圆钮，右边紧跟歌手名与副标题（排布照集合页 GridView）。
-                三个点那颗菜单钮在页头右端，和右上角的同步 / 重试提示竖着排在一起。 */}
-            <div className="absolute left-6 top-9 z-[70] flex items-center gap-3">
+            {/* Header Area */}
+            <div className={`absolute ${lowerBackButton ? 'top-6' : 'top-0'} left-0 p-6 z-30 flex items-center gap-4`}>
                 <button
                     // 返回按钮表示看完了（onDone）：宿主清掉浏览会话、让每套 suite 忘掉布局记录，再返回
                     // （Escape 与浏览器后退保留）。P4.5 起这条语义在宿主，不在这里清。
@@ -1368,7 +1366,7 @@ const ArtistGridView: React.FC<ArtistGridViewProps> = ({
                                 disabled: !capabilities['enqueue-scope'].enabled,
                             }]
                             : []),
-                        // #918：热门歌曲只有 10 首，不在任何专辑里的单曲只在「全部歌曲」那一层看得到。
+                        // #918：热门歌曲只有 10 首，不在任何专辑里的单曲只在「全部媒体」那一层看得到。
                         // 加载中先画成不可点；读完确定没有更多歌时这一项不出现（与 Bravais 海报上的按钮一致）。
                         ...(offers('open-all-songs')
                             && (capabilities['open-all-songs'].enabled || capabilities['open-all-songs'].reason === 'loading')

@@ -95,7 +95,7 @@ describe('local collection cover keys', () => {
             { entities: [entity('e-al', 'Album')], assignments: [assignment('s1', 'e-al')] },
             assetUrl,
         );
-        // 重扫：多了一首、封面换了、歌单改了名、界面换了语言（「全部歌曲」的名字变了）。
+        // 重扫：多了一首、封面换了、歌单改了名、界面换了语言（「全部媒体」的名字变了）。
         const otherT = ((key: string) => `other:${key}`) as unknown as TFunction;
         const after = buildLocalHomeGroups(
             [song('s3', 'Root/A', { localCoverAssetId: 'c9' }), song('s1', 'Root/A', { localCoverAssetId: 'c2' }), song('s5', 'Root/A')],

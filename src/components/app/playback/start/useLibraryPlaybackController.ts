@@ -4,7 +4,8 @@ import type { MotionValue } from 'framer-motion';
 import { LyricParserFactory } from '../../../../utils/lyrics/LyricParserFactory';
 import { getFromCacheWithMigration, getLocalSong, getLocalSongs, removeFromCache, saveLocalSong, saveToCache } from '../../../../services/db';
 import { getCachedCoverUrl, loadCachedOrFetchCover } from '../../../../services/coverCache';
-import { ensureLocalSongCoverAsset } from '../../../../services/localMusicService';
+import { ensureLocalSongCoverAsset, getVisibleLocalSongs } from '../../../../services/localMusicService';
+import { withoutGatedVideoSongs } from '../../../../shinoinject/lab/labVideoGate';
 import { addSongsToLocalPlaylist, buildCanonicalLocalSongIdIndex, createLocalPlaylist, getLocalPlaylists, setLocalSongFavorite } from '../../../../services/localPlaylistService';
 import { applyLocalLibraryEntityDisplay, buildLocalQueue, buildNavidromeQueue, buildUnifiedLocalSong, buildUnifiedNavidromeSong, resolveLocalSongMetadata } from '../../../../services/playbackAdapters';
 import { getPrefetchedData, prefetchNearbySongs } from '../../../../services/prefetchService';
@@ -294,7 +295,9 @@ export function useLibraryPlaybackController({
 
     const loadLocalSongs = useCallback(async () => {
         try {
-            const songs = await getLocalSongs();
+            // No video records while the video experiment is off: they stay in the library, the list just
+            // does not show them (getVisibleLocalSongs).
+            const songs = await getVisibleLocalSongs();
             setLocalSongs(songs);
         } catch (error) {
             console.error('Failed to load local songs:', error);
@@ -329,19 +332,29 @@ export function useLibraryPlaybackController({
     }, []);
 
     const onRefreshLocalSongs = useCallback(async () => {
-        const [songs, catalog] = await Promise.all([
+        const [allSongs, catalog] = await Promise.all([
             getLocalSongs(),
             getLocalLibraryCatalogSnapshot(),
             loadLocalPlaylists(),
         ]);
+        // The list and the queue take the visible subset: with the video experiment off, video records are
+        // not in it (they stay in the library).
+        const songs = withoutGatedVideoSongs(allSongs);
         setLocalSongs(songs);
         const songsById = new Map(songs.map(song => [song.id, song]));
+        const allSongsById = new Map(allSongs.map(song => [song.id, song]));
+        const playingBefore = usePlaybackStore.getState().currentSong;
+        const playingKey = playingBefore ? getPlaybackSongKey(playingBefore) : null;
         const rebuild = (snapshot: SongResult): SongResult | null => {
             if (!isLocalPlaybackSong(snapshot)) return snapshot;
-            const localSong = songsById.get(snapshot.localRef.songId);
+            const localSong = songsById.get(snapshot.localRef.songId)
+                // The song playing, hidden by that switch, is still rebuilt from the full table: its record is
+                // there and its sound is still coming out, so it must not be cleared as a deleted record is.
+                ?? (playingKey !== null && getPlaybackSongKey(snapshot) === playingKey
+                    ? allSongsById.get(snapshot.localRef.songId)
+                    : undefined);
             return localSong ? buildLocalQueue([localSong], undefined, catalog)[0] || null : null;
         };
-        const playingBefore = usePlaybackStore.getState().currentSong;
         if (playingBefore && !rebuild(playingBefore)) {
             // The playing local file is no longer in the library: no song is shown. Its load, if one
             // is still running, stops at its next check and never clears these two itself. Where
@@ -965,7 +978,7 @@ export function useLibraryPlaybackController({
             if (!nextLyrics && !matchData?.noAutoMatch && !matchData?.matchedIsPureMusic) {
                 try {
                     if (!showedLoadingToast && !start.quiet) {
-                        setStatusMsg({ type: 'info', text: t('status.loadingSong') || '' });
+                        setStatusMsg({ type: 'info', activity: 'loading', text: t('status.loadingSong') || '' });
                         showedLoadingToast = true;
                     }
                     const navidromeMetadata = getProviderSongMetadata(navidromeSong);
@@ -1077,7 +1090,7 @@ export function useLibraryPlaybackController({
             }
 
             if (!coverUrl) {
-                coverUrl = getProviderSongMetadata(navidromeSong).coverUrl || navidromeApi.getCoverArtUrl(config, navidromeId);
+                coverUrl = getProviderSongMetadata(navidromeSong).coverUrl || navidromeApi.getCoverArtUrl(config, navidromeId, 600);
             }
 
             // The HiFi route also takes the file's format from the server's record: its signal path shows it.
@@ -1511,7 +1524,7 @@ export function useLibraryPlaybackController({
         }
 
   const settingsLyricSettings = useLyricSettingsStore.getState();
-        setStatusMsg({ type: 'info', text: t('status.matchingBestLyrics') || '' });
+        setStatusMsg({ type: 'info', activity: 'loading', text: t('status.matchingBestLyrics') || '' });
 
         try {
             if (isLocalPlaybackSong(currentSong)) {

@@ -6,7 +6,8 @@ import { PlayerState } from '../../../../types';
 import type { LyricData, SongResult, StageSource, StageStatus, StatusMessage } from '../../../../types';
 import type { AudioQualityPreference, MediaId } from '../../../../types/onlineMusic';
 import type { ThemeCacheSongKey } from '../../../../services/themeCache';
-import { getOnlineProviderIdForSong, getPlaybackSongKey, isStagePlaybackSong } from '../../../../utils/appPlaybackGuards';
+import { getOnlineProviderIdForSong, getPlaybackSongKey, isLocalPlaybackSong, isStagePlaybackSong } from '../../../../utils/appPlaybackGuards';
+import { isLabVideoPlaybackEnabled } from '../../../../shinoinject/lab/labVideoGate';
 import type {
     PlaybackSnapshot,
     StageLyricsClockState,
@@ -292,7 +293,15 @@ export function useElectronWindowPlaybackHandoff({
         }
         const queueWritesAtStart = handoffQueueWritesRef.current ?? undefined;
         const queueRewritten = queueWritesAtStart !== undefined && wholeQueueWritesSoFar() !== queueWritesAtStart;
-        if (!snapshot?.currentSong) {
+        // A local video the video experiment has since hidden is not handed over: the library no longer
+        // shows it, and taking it over would leave a current song that cannot sound.
+        const handsOverAGatedVideo = Boolean(
+            snapshot?.currentSong
+            && isLocalPlaybackSong(snapshot.currentSong)
+            && snapshot.currentSong.isVideo === true
+            && !isLabVideoPlaybackEnabled(),
+        );
+        if (!snapshot?.currentSong || handsOverAGatedVideo) {
             void releaseTrackLeftInMpv();
             pendingResumeTimeRef.current = null;
             shouldAutoPlayRef.current = false;

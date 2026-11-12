@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import FloatingPlayerControls from '../../FloatingPlayerControls';
 import DockedPlayerBar from '../../docked-player/DockedPlayerBar';
 import SearchWorkspace from '../search/SearchWorkspace';
@@ -14,6 +14,8 @@ import { useBottomLayoutTracking } from '../../../hooks/useBottomLayoutTracking'
 import { useNowPlayingCardLayoutStore } from './now-playing-toast/nowPlayingCardLayoutStore';
 import { useTransitionBorderCue } from './now-playing-toast/useTransitionBorderCue';
 import { usePlayerChromeSettingsStore } from '../../../stores/usePlayerChromeSettingsStore';
+import OffsetTuningBar from './OffsetTuningBar';
+import { useOffsetTuningStore } from '../../../shinoinject/lab/videoBackground/useOffsetTuningStore';
 
 // Centralized app-level overlay renderer so App.tsx does not mount leaf overlays directly.
 type AppOverlaysProps = {
@@ -37,6 +39,15 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
         floatingControls,
         nowPlayingToast,
     } = model;
+
+    // 「在画面中调整」音画偏移：设置里的按钮打开它，并把人送到歌词画报上，悬浮窗常驻在播放条上方。
+    const isOffsetTuningOpen = useOffsetTuningStore(state => state.isOpen);
+    const navigateToPlayer = floatingControls?.onNavigateToPlayer;
+    const currentView = floatingControls?.currentView;
+    useEffect(() => {
+        if (!isOffsetTuningOpen || !navigateToPlayer) return;
+        if (currentView !== 'player') navigateToPlayer();
+    }, [isOffsetTuningOpen, navigateToPlayer, currentView]);
 
     const showPlayerBar = Boolean(floatingControls)
         && (floatingControls!.currentView !== 'lattice' || !isCurrentSongPosterVisible);
@@ -73,8 +84,8 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
                     onTogglePlay={floatingControls.onTogglePlay}
                     onToggleLoop={floatingControls.onToggleLoop}
                     noTrackText={floatingControls.noTrackText}
-                    primaryColor={floatingControls.primaryColor}
-                    secondaryColor={floatingControls.secondaryColor}
+                    // primaryColor={floatingControls.primaryColor}
+                    // secondaryColor={floatingControls.secondaryColor}
                     isDaylight={floatingControls.isDaylight}
                     hideControlBar={floatingControls.hideControlBar}
                     controlsDisabled={floatingControls.controlsDisabled}
@@ -95,6 +106,8 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
             {/* 「正在播放」那块浮起来的卡片是浮动胶囊的伴生物：停靠栏自己就在屏幕底部把这首歌摆在明面上，
                 再弹一块是重复的，所以停靠样式下不画它。 */}
             {nowPlayingToast && playerBarStyle === 'floating' && (!capsuleCarriesCard || isPositioningCard) && <NowPlayingToast {...nowPlayingToast} />}
+
+            {isOffsetTuningOpen && floatingControls && <OffsetTuningBar isDaylight={floatingControls.isDaylight} />}
 
             {/* The one HiFi signal-path sheet: the badge, the controls tab tile and the palette command open it through hifiPanelStore. */}
             <HifiSignalPathPanel />

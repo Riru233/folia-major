@@ -82,7 +82,7 @@ export type LibraryArtistSnapshot = {
     /** 热门歌曲（最多 10 首，按显示顺序，含不可播放的）；每次变化都是新数组。 */
     readonly topSongs: SongResult[];
     /**
-     * 热门歌曲之外这位歌手还有歌（在线：取热门歌曲的那一页答了 hasMore）。为 true 时歌手页给「全部歌曲」入口
+     * 热门歌曲之外这位歌手还有歌（在线：取热门歌曲的那一页答了 hasMore）。为 true 时歌手页给「全部媒体」入口
      * （#918：不在任何专辑里的单曲只在那里看得到）。本地与 Navidrome 歌手恒为 false：它们的歌都在专辑里。
      */
     readonly hasMoreSongs: boolean;

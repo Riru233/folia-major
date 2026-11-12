@@ -257,6 +257,10 @@ declare global {
     canGoPrevious: boolean;
     canGoNext: boolean;
     isPlaying: boolean;
+    title?: string | null;
+    artist?: string | null;
+    loopMode?: 'off' | 'all' | 'one';
+    canCycleLoop?: boolean;
   }
 
   type ElectronTaskbarControlAction = 'previous' | 'play-pause' | 'next';
@@ -810,10 +814,35 @@ declare global {
 
   interface Window {
     electron?: {
+      /**
+       * 实验性「视频」背景的 bilibili 半边（electron/bilibili.cjs）：账号状态、登录窗口，以及一个只放行
+       * api.bilibili.com 的请求代理。网页版没有它，见 services/bilibili/transport.ts。
+       */
+      bilibili?: {
+        getStatus: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
+        openLogin: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
+        signOut: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
+        request: (request: import('./types/bilibili').BilibiliBridgeRequest) => Promise<import('./types/bilibili').BilibiliBridgeResponse>;
+      };
       webUtils?: {
         /** Resolves the OS path of a dropped File (File.path was removed in modern Electron). */
         getPathForFile: (file: File) => string;
       };
+      /**
+       * 本地歌单右键「打开此文件夹」。渲染端只有相对路径 `A/B`，主进程按导入根名 `A`
+       * 查用户先前选定的磁盘根目录并打开目标目录本身；没绑定时弹系统目录选择框。`rebind` 让位置失效后重选。
+       * 网页版没有这个 API，见 services/localFolderSystemOpen.ts。
+       */
+      openLocalFolderInSystem?: (
+        rootName: string,
+        relativePath: string,
+        rebind?: boolean,
+      ) => Promise<{
+        ok: boolean;
+        reason?: 'cancelled' | 'missing' | 'invalid' | 'desktop-only';
+        /** 主进程已弹过目录选择框，渲染端不要因为失败立刻再弹一次。 */
+        prompted?: boolean;
+      }>;
       /** Beat This! on the CPU in the analysis worker - automix's fallback only. Null when the weights are absent. */
       runBeatThis?: (
         chunks: Array<{ data: Float32Array; frames: number }>,
@@ -1020,6 +1049,8 @@ declare global {
       quitApp: () => Promise<boolean>;
       isWindowMaximized: () => Promise<boolean>;
       isWindowFullscreen: () => Promise<boolean>;
+      hasNativeTrafficLights: () => Promise<boolean>;
+      setTrafficLightsVisible: (visible: boolean) => Promise<boolean>;
       onWindowFullscreenChanged: (callback: (fullscreen: boolean) => void) => () => void;
       getWindowTransparentMode: () => Promise<boolean>;
       setWindowTransparentMode: (
@@ -1039,7 +1070,7 @@ declare global {
       setKeyCaptureActive?: (active: boolean) => void;
       getMainWindowClickThroughEnabled: () => Promise<boolean>;
       setMainWindowClickThroughEnabled: (enabled: boolean) => Promise<boolean>;
-      setMainWindowClickThroughUnlockHover: (active: boolean, viewportWidth?: number, coordinates?: { screenX: number; clientX: number }) => Promise<boolean>;
+      setMainWindowClickThroughUnlockHover: (active: boolean, viewportWidth?: number, coordinates?: { screenX: number; clientX: number }, side?: 'left' | 'right') => Promise<boolean>;
       getMainWindowAlwaysOnTop: () => Promise<boolean>;
       setMainWindowAlwaysOnTop: (enabled: boolean) => Promise<boolean>;
       onMainWindowClickThroughChanged: (callback: (state: ElectronMainWindowClickThroughState) => void) => () => void;

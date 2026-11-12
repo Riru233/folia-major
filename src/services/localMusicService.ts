@@ -30,6 +30,9 @@ import { useLyricSettingsStore } from '../stores/useLyricSettingsStore';
 import { getLocalLyricFilePriority, isSameLocalLyricFormatOrder, normalizeLocalLyricFormatOrder, type LocalLyricFileFormat } from '../utils/lyrics/localLyricFormatOrder';
 import { readLyricFile } from '../utils/lyrics/lyricFileDecoding';
 import { isLocalFolderIgnored, normalizeLocalFolderPath, runLocalFolderMutation, setLocalFolderIgnored } from './localLibraryFolderIgnore';
+import { collectLocalFolderSongIds, normalizeLocalFolderPath as normalizeLocalFolderRecordPath } from '../utils/localFolderPaths';
+import { isImportableVideoFileName, isVideoMediaFileName, resolveLocalMediaKind } from '../utils/localMediaKind';
+import { isGatedVideoRecord, isLabVideoPlaybackEnabled, withoutGatedVideoSongs } from '../shinoinject/lab/labVideoGate';
 
 
 type EmbeddedMetadata = EmbeddedMetadataResult;
@@ -90,7 +93,10 @@ const localCoverAssetRequestMap = new Map<string, Promise<LocalSong>>();
 const songsWithoutEmbeddedCover = new Map<string, string>();
 const BROWSER_AUDIO_EXTENSIONS = /\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i;
 const ELECTRON_FALLBACK_AUDIO_EXTENSIONS = /\.(alac|ape|wv|tta|wma|aif|aiff|caf|dsf|dff)$/i;
-const KNOWN_AUDIO_EXTENSIONS = /\.(mp3|flac|m4a|wav|ogg|opus|aac|alac|ape|wv|tta|wma|aif|aiff|caf|dsf|dff)$/i;
+// 视频（MV）：直接当曲目导入。声音走和音频一样的那条链（<audio> 放它的音轨），画面另由歌词背景使用。
+// mp4 里的 H.264/AAC 浏览器能自己解；mkv 是 Chromium 不认识的容器，音轨要靠转码回退拆出来，
+// 画面只有在运行时能解的时候才显示（见 localSongVideoSource / VideoLayer 的降级）。
+const KNOWN_AUDIO_EXTENSIONS = /\.(mp3|flac|m4a|wav|ogg|opus|aac|alac|ape|wv|tta|wma|aif|aiff|caf|dsf|dff|mp4|mkv)$/i;
 const LYRIC_EXTENSIONS = /\.(lrc|vtt|ttml|qrc|yrc|krc|fia)$/i;
 const TRANSLATION_LYRIC_EXTENSIONS = /\.t\.(lrc|vtt)$/i;
 const IMPORT_CONCURRENCY = 6;
@@ -254,26 +260,28 @@ export function extractMetadataFromFilename(fileName: string): { title?: string;
 // Get audio duration from file
 async function getAudioDuration(file: File): Promise<number> {
     const playbackInput = await repairFlacMetadata(file, true);
+    // 视频文件用 <video> 读时长：<audio> 拿到 mkv 只会报错，mp4 两者都行，但同一份媒体元数据没必要换元素。
+    const probe = isVideoMediaFileName(file.name) ? document.createElement('video') : new Audio();
     return new Promise((resolve) => {
-        const audio = new Audio();
         const url = createSafeObjectUrl(playbackInput);
         if (!url) {
             resolve(0);
             return;
         }
 
-        audio.addEventListener('loadedmetadata', () => {
-            const duration = audio.duration * 1000; // Convert to milliseconds
+        probe.addEventListener('loadedmetadata', () => {
+            const seconds = probe.duration;
             URL.revokeObjectURL(url);
-            resolve(duration);
+            // 坏容器/流式文件可能报 Infinity、NaN：按「不知道时长」处理，别把 NaN 写进曲库。
+            resolve(Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0); // Convert to milliseconds
         });
 
-        audio.addEventListener('error', () => {
+        probe.addEventListener('error', () => {
             URL.revokeObjectURL(url);
             resolve(0); // Default duration on error
         });
 
-        audio.src = url;
+        probe.src = url;
     });
 }
 
@@ -281,14 +289,36 @@ function canImportElectronFallbackAudio(): boolean {
     return typeof window !== 'undefined' && typeof window.electron?.requestTranscodeFallback === 'function';
 }
 
-function isAudioFile(file: File): boolean {
-    return BROWSER_AUDIO_EXTENSIONS.test(file.name)
-        || (canImportElectronFallbackAudio() && ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(file.name));
+/** 这个文件是不是一条可以进曲库的「歌」（音频，或者带音轨的视频）。 */
+function isImportableMediaFile(file: File): boolean {
+    return isImportableMediaFileName(file.name);
 }
 
-function isAudioFileName(fileName: string): boolean {
+function isImportableMediaFileName(fileName: string): boolean {
+    const canTranscodeFallback = canImportElectronFallbackAudio();
     return BROWSER_AUDIO_EXTENSIONS.test(fileName)
-        || (canImportElectronFallbackAudio() && ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(fileName));
+        // 音频的转码回退只取决于桌面端有没有那座桥，与视频实验无关。
+        || (canTranscodeFallback && ELECTRON_FALLBACK_AUDIO_EXTENSIONS.test(fileName))
+        // mp4/mkv 属于 Shino 实验室的「视频播放」：实验关着时本地曲库不识别视频格式，
+        // 打开后才导入（mkv 仍需转码回退）。已有记录的画面由 VideoLayer 按同一个开关关掉。
+        || isImportableVideoFileName(fileName, {
+            videoPlaybackEnabled: isLabVideoPlaybackEnabled(),
+            canTranscodeFallback,
+        });
+}
+
+/**
+ * 快照按「媒体文件」记下的容器，与实验开关无关。
+ * 必须比 isImportableMediaFileName 宽：快照里漏掉视频文件，差集就会把已入库的视频记录当成
+ * 「文件已不存在」删掉，而关掉实验本身不该动库里的记录。新视频要不要建记录，由导入阶段的
+ * buildImportedSong 按门控决定。
+ */
+function isSnapshotMediaFileName(fileName: string): boolean {
+    return isImportableMediaFileName(fileName)
+        || isImportableVideoFileName(fileName, {
+            videoPlaybackEnabled: true,
+            canTranscodeFallback: canImportElectronFallbackAudio(),
+        });
 }
 
 function getFolderCoverPriority(fileName: string): number {
@@ -357,7 +387,7 @@ function getSnapshotFileKind(fileName: string): LocalLibrarySnapshotFile['kind']
     if (getFolderCoverPriority(lowerName) !== -1) {
         return 'cover';
     }
-    if (isAudioFileName(fileName)) {
+    if (isSnapshotMediaFileName(fileName)) {
         return 'audio';
     }
     return 'other';
@@ -696,7 +726,11 @@ async function collectImportDiffPlan(
 
     const changedEntries: FileEntryForImport[] = [];
     const reusedSongs: LocalSong[] = [];
-    const removedSongs = existingSongs.filter(song => !currentAudioPaths.has(song.filePath));
+    // 视频记录在实验关着时也不删：快照侧已把视频容器记作媒体文件（isSnapshotMediaFileName），
+    // 这里再兜一层，防止旧快照或将来分类改动让关开关变成一次隐形的删库。
+    const removedSongs = existingSongs.filter(song => (
+        !currentAudioPaths.has(song.filePath) && !isGatedVideoRecord(song)
+    ));
     const allRelevantFiles = Array.from(currentFiles.values()).sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
     for (const snapshotFile of allRelevantFiles) {
@@ -796,7 +830,7 @@ async function buildImportedSong(
     const file = entry.file;
     const getFileMs = 0;
 
-    if (!isAudioFile(file)) {
+    if (!isImportableMediaFile(file)) {
         return {
             song: null,
             metrics: {
@@ -907,6 +941,8 @@ async function buildImportedSong(
         fileLastModified: file.lastModified,
         fileSignature: buildFileSignature(entry.relativePath, file.size, file.lastModified),
         mimeType: file.type,
+        // 视频曲目：名字决定了它是 MV，播放时它的画面被强制当作歌词背景（见 VideoLayer）。
+        mediaKind: resolveLocalMediaKind(file.name),
         bitrate: embeddedMetadata.bitrate || 0,
         addedAt: existingSong?.addedAt || Date.now(),
         title: titleOrigin === 'import' ? importedMetadata.title : existingSong?.title || importedMetadata.title,
@@ -990,6 +1026,7 @@ async function hydrateSongMetadata(song: LocalSong): Promise<LocalSong> {
         // makes every cached playback representation look stale and re-transcode on each play.
         song.fileLastModified = file.lastModified;
         song.mimeType = file.type;
+        song.mediaKind = resolveLocalMediaKind(file.name);
         song.bitrate = embeddedMetadata.bitrate || song.bitrate || 0;
         const filenameMetadata = extractMetadataFromFilename(file.name);
         song.importedMetadata = buildImportedMetadataSnapshot({
@@ -1756,6 +1793,57 @@ export async function getAudioFromFile(file: File): Promise<string> {
     return url;
 }
 
+/**
+ * 删除一张本地「歌单」（导入文件夹扫描出来的目录卡片）：这个路径以及它下面所有子路径的歌。
+ * 只动曲库侧：IndexedDB 歌曲、封面缓存、歌单里的引用；磁盘上的文件与文件夹一概不动。
+ *
+ * 为了让「删掉」保持成立，必须同时掐断重扫把歌导回来的路，否则下一次刷新 / hydration 就会回滚：
+ * - 子歌单 `A/B`：把这条路径记为曲库侧的扫描忽略（不是磁盘文件），主歌单 `A` 不受影响；
+ * - 主歌单 `A`：整根移除（连目录柄与快照一起清掉），它的所有子歌单按路径前缀一起消失。
+ * 整个操作排进 runLocalFolderMutation，与在途扫描 / hydration 串行，避免互相覆盖。
+ */
+export async function deleteLocalFolderSongRecords(folderPath: string): Promise<number> {
+    const normalizedPath = normalizeLocalFolderRecordPath(folderPath);
+    if (!normalizedPath) return 0;
+    return runLocalFolderMutation(async () => {
+        const allSongs = await getLocalSongs();
+        const songIds = collectLocalFolderSongIds(allSongs, normalizedPath);
+        if (songIds.length === 0) {
+            // 曲库可能刚被别处改动过；仍派发一次事件，让 UI 与曲库对齐。
+            notifyLocalMusicUpdated();
+            return 0;
+        }
+
+        if (!normalizedPath.includes('/')) {
+            await removeImportedRootContents(normalizedPath);
+            return songIds.length;
+        }
+
+        await setLocalFolderIgnored(normalizedPath, true);
+        songIds.forEach(id => {
+            fileHandleMap.delete(id);
+            localCoverAssetRequestMap.delete(id);
+            songsWithoutEmbeddedCover.delete(id);
+        });
+        // 封面缓存清理失败不该让整次删除半途抛错：数据库删除是主线，缓存失败只记日志。
+        const results = await Promise.allSettled([
+            dbDeleteLocalSongs(songIds),
+            ...songIds.map(id => removeCachedCover(`cover_local_${id}`)),
+        ]);
+        const [dbResult, ...coverResults] = results;
+        if (dbResult.status === 'rejected') throw dbResult.reason;
+        coverResults.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                console.warn(`[LocalMusic] Could not clear cover cache for ${songIds[index]}`, result.reason);
+            }
+        });
+        await removeDeletedSongIdsFromPlaylists(songIds);
+        notifyLocalMusicUpdated();
+        console.log(`[LocalMusic] Deleted ${songIds.length} library records under folder ${normalizedPath}`);
+        return songIds.length;
+    });
+}
+
 // Delete songs by their specific IDs
 export async function deleteSongsByIds(songIds: string[]): Promise<void> {
     const uniqueSongIds = Array.from(new Set(songIds));
@@ -1867,6 +1955,14 @@ export async function clearFolderIgnore(folderName: string): Promise<void> {
 export function deleteFolderSongs(folderName: string): Promise<void> {
     return runLocalFolderMutation(() => deleteFolderContents(folderName));
 }
+
+/**
+ * 曲库列表、队列和会话恢复用的本地歌曲：受「视频播放」实验门控，关掉时不含视频记录。
+ * 记录本身不删——重新打开开关就立刻回来；维护路径（导入差集、重扫、删除、歌单修复）仍读完整表
+ * （getLocalSongs），并且快照分类不看开关（isSnapshotMediaFileName），否则关着开关重扫会把
+ * 视频记录当成「文件已不存在」删掉。
+ */
+export const getVisibleLocalSongs = async (): Promise<LocalSong[]> => withoutGatedVideoSongs(await getLocalSongs());
 
 async function deleteFolderContents(folderName: string): Promise<void> {
     folderName = normalizeLocalFolderPath(folderName);

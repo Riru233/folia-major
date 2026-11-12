@@ -1,4 +1,4 @@
-import { Boxes, Contrast, Database, Gauge, Keyboard, LayoutGrid, Link2, Monitor, MonitorPlay, PlayCircle, SlidersHorizontal, Terminal, TextAlignStart, type LucideIcon } from 'lucide-react';
+import { Boxes, Contrast, Database, FlaskConical, Gauge, Keyboard, LayoutGrid, Link2, Monitor, MonitorPlay, PlayCircle, SlidersHorizontal, Terminal, TextAlignStart, type LucideIcon } from 'lucide-react';
 // src/components/modal/settings/navigation/settingsNavModel.ts
 // Single source of truth for the settings categories: their order in the side list, their grouping,
 // icons and names. A category is cut by what the listener is looking at or doing, so each page holds
@@ -16,6 +16,7 @@ export type SettingsSectionId =
     | 'integration'
     | 'storage'
     | 'desktop'
+    | 'lab'
     | 'mods'
     | 'developer';
 
@@ -81,6 +82,9 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
         id: 'advanced',
         labelKey: 'options.settingsGroupAdvanced',
         sections: [
+            // 实验室：还带着「实验」标签的功能。视频播放与 bilibili 的视频背景都在这里，关掉开关
+            // 它们带来的设置、背景类型和面板入口就一起消失。
+            { id: 'lab', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab' },
             // The loader only exists in the desktop main process; on web there is nothing to switch on.
             { id: 'mods', icon: Boxes, labelKey: 'options.settingsPageMods', electronOnly: true },
             { id: 'developer', icon: Terminal, labelKey: 'options.settingsPageDeveloper' },

@@ -172,6 +172,8 @@ export function buildUnifiedLocalSong({
         isLocal: true,
         localRef: { songId: localSong.id },
         sourceRef: { kind: 'local', mediaId: localSong.id },
+        // 视频曲目（MV）在列表里带一个 MV 标记，和在线平台那些视频曲目同一套显示。
+        ...(localSong.mediaKind === 'video' ? { isVideo: true } : {}),
         playbackSourceRevision: buildLocalSourceRevision(localSong),
     };
 

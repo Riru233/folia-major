@@ -9,7 +9,7 @@ import { isHomeImportBusy } from './homeSources';
 
 // src/library/core/home/localHomeModel.ts
 // Builds local-library overview groups for the desktop Grid3D surface.
-// P3.3 起放在 core（原 suites/grid/home/localGrid3DModel.ts）：本地页签的分组（文件夹含虚拟「全部歌曲」、专辑、
+// P3.3 起放在 core（原 suites/grid/home/localGrid3DModel.ts）：本地页签的分组（文件夹含虚拟「全部媒体」、专辑、
 // 歌手、歌单）、四个 section 的定义、卡片视图模型、批量 section、右上角三个导入动作——任何 suite 的首页共用。
 // 本地封面的 URL 由调用方注入（解析封面资源要看运行环境，属于 service），这里保持纯函数。
 
@@ -37,7 +37,7 @@ export const getLocalCoverUrl = (songs: LocalSong[], coverAssetUrl: LocalCoverAs
     return localCoverUrl || preferredSong.onlineMetadata?.coverUrl;
 };
 
-/** 文件夹页签最前面那张虚拟的「全部歌曲」卡的 id。 */
+/** 文件夹页签最前面那张虚拟的「全部媒体」卡的 id。 */
 export const LOCAL_ALL_SONGS_ID = 'folder-__all-songs__';
 
 const sortByName = <T extends { name: string }>(items: T[]) => (

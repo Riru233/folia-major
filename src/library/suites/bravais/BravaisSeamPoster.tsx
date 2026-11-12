@@ -23,7 +23,7 @@ import './bravaisPoster.css';
 // 播放热门 / 加入队列、「⋯ 更多」（列表面板、折叠、本地歌手的编辑），以及「关于艺术家」（简介两行截断、统计附注）、
 // 专辑补页进度、加载失败与重试这些状态行（与完整信息条同一套组件）。
 // 底色是海报自己的（不跟缝的材质预设、透明缝、叠色与熄灯走）；画面全是静态的，没有逐帧动画。
-// 变体：歌手的「全部歌曲」那一层（seam.artistSongs，#918）也画这幅海报——大字仍是歌手名，旁边的小词换成「全部歌曲」，
+// 变体：歌手的「全部媒体」那一层（seam.artistSongs，#918）也画这幅海报——大字仍是歌手名，旁边的小词换成「全部媒体」，
 // 热门三首换成一个超大的歌曲总数（同样的立体残影），按钮是集合页的播放全部 / 加入队列；构图按这一层的 key 定，与歌手页那幅不同。
 
 const TOP_SONG_COUNT = 3;
@@ -102,7 +102,7 @@ const BravaisSeamPoster: React.FC<{ layer: BravaisLayer; actions: BravaisSeamAct
     const artistSongs = seam.artistSongs;
     const name = artistSongs?.name ?? seam.title;
     const coverUrl = artistSongs ? artistSongs.coverUrl : artist?.coverUrl;
-    // 名字旁边的小词：歌手页是「歌手」，「全部歌曲」那一层换成「全部歌曲」（更宽，大字要跟着重新量）。
+    // 名字旁边的小词：歌手页是「歌手」，「全部媒体」那一层换成「全部媒体」（更宽，大字要跟着重新量）。
     const kicker = artistSongs ? t('artistGrid.allSongs') : t('libraryBravais.kind.artist');
     const topSongs = useMemo(
         () => layer.items.filter(item => item.kind === 'track').slice(0, TOP_SONG_COUNT),
@@ -140,7 +140,7 @@ const BravaisSeamPoster: React.FC<{ layer: BravaisLayer; actions: BravaisSeamAct
             alive = false;
             observer.disconnect();
         };
-    // 小词也算：从歌手页进「全部歌曲」时海报实例被复用、名字不变，只有小词变宽。
+    // 小词也算：从歌手页进「全部媒体」时海报实例被复用、名字不变，只有小词变宽。
     }, [kicker, name]);
     return (
         <section className="bravais-poster" style={style} aria-label={t('libraryBravaisArtist.posterLabel')} data-bravais-poster>
@@ -219,7 +219,7 @@ const BravaisSeamPoster: React.FC<{ layer: BravaisLayer; actions: BravaisSeamAct
 
                 <div className="bravais-poster-bottom">
                     {/* 统计已是「关于艺术家」的附注：相同时元数据行不重复（过滤中是匹配数，照常显示）。 */}
-                    {/* 全部歌曲的变体：曲目数就是下面那个大数字，元数据行不重复。 */}
+                    {/* 全部媒体的变体：曲目数就是下面那个大数字，元数据行不重复。 */}
                     {seam.meta && !artistSongs && !(artist?.stats && artist.stats === seam.meta) && (
                         <BravaisSeamFlipText as="div" flipKey={seam.meta} className="bravais-poster-meta">{seam.meta}</BravaisSeamFlipText>
                     )}

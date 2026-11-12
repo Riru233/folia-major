@@ -225,9 +225,9 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
         {/* 浮层里名字在按钮内展开；页头里改成从圆钮左边滑出的独立小条，免得把搜索栏挤走。 */}
         {!isHeader && (
           <span
-            className={`st-t-move overflow-hidden whitespace-nowrap text-xs font-semibold transition-[max-width,opacity,padding] ${showLabel ? "max-w-[180px] pl-2.5 pr-3 opacity-100" : "max-w-0 opacity-0"}`}
+            className={`st-t-move overflow-hidden whitespace-nowrap text-xs font-semibold transition-[max-width,opacity,padding] ${showLabel || status === 'checking' ? "max-w-[180px] pl-2.5 pr-3 opacity-100" : "max-w-0 opacity-0"}`}
           >
-            {providerLabel}
+            {status === 'checking' ? t('login.rowChecking') : providerLabel}
           </span>
         )}
       </button>

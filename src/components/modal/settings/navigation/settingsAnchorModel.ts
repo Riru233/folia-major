@@ -19,8 +19,12 @@ export const SETTINGS_ANCHOR_DEFINITIONS = {
     latticeSettings: { section: 'player' },
     bottomUiSettings: { section: 'player' },
     stageTrackPill: { section: 'player' },
-    videoLayerSettings: { section: 'player' },
     labPlayerUi: { section: 'player' },
+
+    // pages/LabPage — 实验里的视频播放与 bilibili 视频背景
+    shinoLabVideoPlayback: { section: 'lab' },
+    videoLayerSettings: { section: 'lab' },
+    shinoLabBilibili: { section: 'lab' },
 
     // pages/HomePage; the library UI is drawn only where there is more than one to choose from, and
     // the Bravais group only while bravais is the one in effect.

@@ -222,7 +222,7 @@ export const projectDirectoryRows = ({
     const rows = resolveDirectoryRows({ displayItems, trees, query, collapsedIds }).map((row): BravaisDirectoryRow => {
         const node = row.node;
         if (!node) {
-            // 平铺的条目（专辑、歌手、树外的「全部歌曲」）：选中与没选中。
+            // 平铺的条目（专辑、歌手、树外的「全部媒体」）：选中与没选中。
             const item = row.kind === 'item' ? row.item : null;
             const id = item ? String(item.id) : '';
             const selected = selectedIds.has(id);

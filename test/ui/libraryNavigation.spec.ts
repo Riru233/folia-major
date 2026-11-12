@@ -253,7 +253,8 @@ test('the player panel Cover tab opens the album, and Back returns to the player
     await expect(page.getByTestId('panel-toggle')).toBeVisible();
 
     await page.getByTestId('panel-toggle').locator('button').last().click();
-    // 封面页是面板的默认页：歌名下面是歌手与专辑，点专辑名打开它。
+    // 面板默认开在控制页，先切到封面页：歌名下面是歌手与专辑，点专辑名打开它。
+    await page.locator('[data-ponder-panel-tab-button="cover"]').click();
     await page.getByText('Fixture Album', { exact: true }).last().click();
     await expect(grid(page)).toHaveAttribute('data-library-surface', 'collection');
     await expect(grid(page).getByText('Midnight Train').first()).toBeVisible();
@@ -277,6 +278,7 @@ test('[bravais] the player panel Cover tab enters the album as a whole wall, and
     await watchShifts(page);
 
     await page.getByTestId('panel-toggle').locator('button').last().click();
+    await page.locator('[data-ponder-panel-tab-button="cover"]').click();
     await page.getByText('Fixture Album', { exact: true }).last().click();
     await expect(bravais(page)).toHaveAttribute('data-library-surface', 'collection');
     await expect(bravaisStage(page).locator('[data-bravais-seam-title]').first()).toHaveText('Fixture Album');
@@ -478,7 +480,7 @@ test('[bravais] every way back flips the wall once: Back, browser back, the N1 f
     await expect(bravaisStage(page).locator('.bravais-tile[data-library-entry]').first()).toBeAttached();
 
     const stackNow = async () => (await historyState(page)).stack;
-    // 聚焦卡上的歌手（全部歌曲、专辑页都有这一首）。
+    // 聚焦卡上的歌手（全部媒体、专辑页都有这一首）。
     const openArtist = async () => {
         await waitForWall(page);
         await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -527,7 +529,7 @@ test('[bravais] every way back flips the wall once: Back, browser back, the N1 f
     await settle();
     expect(await shifts(page)).toEqual(['back', 'push', 'back', 'push', 'back']);
 
-    // 面包屑：列表面板开着，展开折叠的中间层，点第 1 层（全部歌曲）。面板记录被越过，落地后面板关着。
+    // 面包屑：列表面板开着，展开折叠的中间层，点第 1 层（全部媒体）。面板记录被越过，落地后面板关着。
     await openAlbum();
     await settle();
     await bravaisStage(page).locator('[data-bravais-seam-action="list"]').click();

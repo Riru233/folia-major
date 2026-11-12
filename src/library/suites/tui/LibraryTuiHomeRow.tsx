@@ -9,7 +9,7 @@ import { isDirectoryItemHidden, isHideableDirectoryItem } from '../../core/direc
 
 // src/library/suites/tui/LibraryTuiHomeRow.tsx
 // TUI 首页目录的一行：焦点 / 选中标记、名称（本地文件夹按目录树缩进，可展开的节点带 ▾ / ▸）、类型、曲目数、
-// 说明，等宽排列。文件夹的说明格放路径（虚拟的「全部歌曲」放它的名称，规则见 core/directory/directoryItems）；
+// 说明，等宽排列。文件夹的说明格放路径（虚拟的「全部媒体」放它的名称，规则见 core/directory/directoryItems）；
 // 树上对不上条目的节点（没有直属歌曲的上层文件夹、被忽略的文件夹）只用来表达层级。单击移动焦点，双击打开
 // （节点是展开 / 折叠）；可隐藏的条目行尾有 [隐藏] / [取消隐藏]。
 

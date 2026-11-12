@@ -25,7 +25,7 @@ const importLocal = async (page: Page) => {
     await expect(page.getByText('All Songs').first()).toBeVisible();
 };
 
-/** 打开「全部歌曲」，再用开发浮层把打开着的集合换到 bravais。 */
+/** 打开「全部媒体」，再用开发浮层把打开着的集合换到 bravais。 */
 const openAllSongsInBravais = async (page: Page) => {
     await importLocal(page);
     await page.getByRole('heading', { name: 'All Songs' }).first().click();
@@ -61,7 +61,7 @@ test('typing on the wall goes into the seam input, narrows the wall to a finite 
     await expect(paletteFilterBox(page)).toHaveCount(0);
     await expect(palettePanel(page)).toHaveCount(0);
     await expect(collection(page)).toHaveAttribute('data-bravais-mode', 'finite');
-    // 有限拼贴不重复：全部歌曲里只有一首 Midnight Train。
+    // 有限拼贴不重复：全部媒体里只有一首 Midnight Train。
     await expect.poll(() => page.locator('.bravais-tile[data-library-entry]').count()).toBe(1);
 
     await page.keyboard.press('ArrowDown');

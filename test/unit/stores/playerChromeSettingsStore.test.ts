@@ -4,6 +4,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // The macOS native-fullscreen window button is experimental and must remain opt-in.
 
 describe('player chrome settings store', () => {
+    it.each([['darwin', 'right'], ['win32', 'right'], ['linux', 'right']])('defaults controls on %s to %s', async (platform, side) => {
+        vi.stubGlobal('window', { electron: { platform }, localStorage });
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+        expect(usePlayerChromeSettingsStore.getState().titlebarSide).toBe(side);
+        usePlayerChromeSettingsStore.getState().handleSetTitlebarSide(side === 'left' ? 'right' : 'left');
+        expect(values.get('window_titlebar_side')).toBe(side === 'left' ? 'right' : 'left');
+    });
+
+    it('falls back to the right for a malformed saved side on macOS', async () => {
+        values.set('window_titlebar_side', 'invalid');
+        vi.stubGlobal('window', { electron: { platform: 'darwin' }, localStorage });
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+        expect(usePlayerChromeSettingsStore.getState().titlebarSide).toBe('right');
+    });
+
+    it('restores an explicit left side over the default', async () => {
+        values.set('window_titlebar_side', 'left');
+        vi.stubGlobal('window', { electron: { platform: 'darwin' }, localStorage });
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+        expect(usePlayerChromeSettingsStore.getState().titlebarSide).toBe('left');
+    });
+
     let values: Map<string, string>;
 
     beforeEach(() => {
@@ -61,5 +83,33 @@ describe('player chrome settings store', () => {
         const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
 
         expect(usePlayerChromeSettingsStore.getState().hideCursorWhenIdle).toBe(true);
+    });
+
+    it('gives the docked bar Dreamcore when nothing is stored', async () => {
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
+    });
+
+    it('restores and persists the docked bar palette, and ignores a value it does not know', async () => {
+        values.set('docked_player_bar_appearance', 'monet');
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('monet');
+
+        usePlayerChromeSettingsStore.getState().handleSetDockedBarAppearance('dreamcore');
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
+        expect(localStorage.getItem('docked_player_bar_appearance')).toBe('dreamcore');
+
+        usePlayerChromeSettingsStore.getState().handleSetDockedBarAppearance('guache' as never);
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
+        expect(localStorage.getItem('docked_player_bar_appearance')).toBe('dreamcore');
+    });
+
+    it('falls back to Dreamcore when the stored palette is not one it knows', async () => {
+        values.set('docked_player_bar_appearance', 'guache');
+        const { usePlayerChromeSettingsStore } = await import('@/stores/usePlayerChromeSettingsStore');
+
+        expect(usePlayerChromeSettingsStore.getState().dockedBarAppearance).toBe('dreamcore');
     });
 });

@@ -12,6 +12,7 @@ import { NavidromeConfig, NavidromeServerProfile } from '../../types/navidrome';
 import VisPlayground from '../visualizer/window/VisPlayground';
 import { useVisualizerTunings } from '../visualizer/useVisualizerTunings';
 import ThemePark from './ThemePark';
+import SceneWindow from '../scenes/settings/SceneWindow';
 import LyricFilterSettingsModal from './LyricFilterSettingsModal';
 import type { LyricFilterDraft } from './LyricFilterSettingsModal';
 import GlobalLyricOffsetModal from './settings/GlobalLyricOffsetModal';
@@ -327,6 +328,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
     const [showVisPlayground, setShowVisPlayground] = useState(false);
     const [showThemePark, setShowThemePark] = useState(false);
+    const [showSceneWindow, setShowSceneWindow] = useState(false);
     const [showLyricFilterSettings, setShowLyricFilterSettings] = useState(false);
     const [showGlobalLyricOffset, setShowGlobalLyricOffset] = useState(false);
     const [showAiHelpPrompt, setShowAiHelpPrompt] = useState(false);
@@ -339,6 +341,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         setActiveTab(initialTab);
         setShowVisPlayground(initialSubview === 'visualizer');
         setShowThemePark(initialSubview === 'themePark');
+        setShowSceneWindow(initialSubview === 'scene');
         setShowLyricFilterSettings(initialSubview === 'lyricFilter');
         setShowGlobalLyricOffset(initialSubview === 'globalLyricOffset');
 
@@ -903,6 +906,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     };
     const isAnySubviewOpen = showVisPlayground
         || showThemePark
+        || showSceneWindow
         || showLyricFilterSettings
         || showGlobalLyricOffset
         || showAiHelpPrompt
@@ -912,7 +916,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     // open sheet takes the key on the document and stops it (shared/Sheet.tsx). A menu or a pick
     // list that is open takes the key before this window hears it as well. The two work windows
     // leave Escape to their owner, so they are what it can find open here.
-    const isWorkWindowOpen = showVisPlayground || showThemePark;
+    const isWorkWindowOpen = showVisPlayground || showThemePark || showSceneWindow;
 
     const closeWorkWindows = () => {
         if (shouldCloseModalOnSubviewBack) {
@@ -921,6 +925,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         }
         setShowVisPlayground(false);
         setShowThemePark(false);
+        setShowSceneWindow(false);
     };
 
     useEffect(() => {
@@ -1049,6 +1054,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         },
         onOpenVisPlayground: () => setShowVisPlayground(true),
         onOpenThemePark: () => setShowThemePark(true),
+        onOpenSceneWindow: () => setShowSceneWindow(true),
         onToggleTransparentPlayerBackground: resolvedToggleTransparentPlayerBackground,
         viewProps: {
             appearance: {
@@ -1404,6 +1410,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             setShowThemePark(false);
                         }}
                         onClose={() => closeSubviewOrModal(() => setShowThemePark(false))}
+                    />
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {showSceneWindow && (
+                    <SceneWindow
+                        isDaylight={isDaylight}
+                        theme={theme}
+                        onClose={() => closeSubviewOrModal(() => setShowSceneWindow(false))}
                     />
                 )}
             </AnimatePresence>
