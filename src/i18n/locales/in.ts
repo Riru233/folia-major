@@ -1950,6 +1950,7 @@ export default {
     "playAll": "Putar Semua",
     "loadMore": "Muat Lebih Banyak",
     "loading": "Memuat...",
+    "searchButton": "Cari",
     "searchDatabase": "CARI DATABASE...",
     "searchLocal": "Cari lagu lokal...",
     "searchNavidrome": "Cari navidrome",

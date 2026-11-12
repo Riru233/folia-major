@@ -32,6 +32,7 @@ import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions'
 import { useLibraryHomeDirectory } from '../../../core/home/useLibraryHomeDirectory';
 import { useLibraryHomeListRegistration, useLibraryHomeTabsRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
 import { useGridMapVisibilityStore } from './gridMapVisibilityStore';
+import { useIsBottomLayoutCompact } from '../../../../stores/useBottomDockStore';
 import { cycleIndex, isOnlineHomeTab } from '../../../core/home/homeSources';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
 import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
@@ -217,6 +218,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     }, [shownTabIndex]);
 
     const reduceMotion = useReducedMotionFor('uiMicroMotion');
+    // 紧凑档（窗口窄于 960，progress-bar v3，见 useBottomLayoutTracking）：页头的搜索框收成一颗搜索钮、
+    // 页签胶囊挪到整行中间。没挂档位追踪的页面（OBS 之类）一直是桌面档，页头照旧。
+    const isCompact = useIsBottomLayoutCompact();
 
     const onlineList = useLibraryHomeOnline(homeResources, { ...homeSources, tab: shownTab });
     const homeActions = homeResources.actions;
@@ -237,8 +241,23 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const gridRootRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [scanDetailsExpanded, setScanDetailsExpanded] = useState(false);
+    /** 紧凑档的搜索框是不是已经展开；桌面档一直是展开的，不看这个。 */
+    const [isCompactSearchOpen, setIsCompactSearchOpen] = useState(false);
 
     const showUpdateIndicator = useUpdateIndicator();
+
+    // 回到桌面档就收起：下次再进紧凑档，页头从收起的搜索钮开始，不会留着一个空展开的输入框。
+    useEffect(() => {
+        if (!isCompact) setIsCompactSearchOpen(false);
+    }, [isCompact]);
+
+    // 展开后把焦点直接交给输入框：点那一下就是来打字的，不用再点一次。
+    // 等一帧再聚焦：宽度过渡从这一帧才开始，input 的可见性也跟着这一帧才翻转（收起时它是 pointer-events-none）。
+    useEffect(() => {
+        if (!isCompact || !isCompactSearchOpen) return;
+        const frame = requestAnimationFrame(() => searchInputRef.current?.focus());
+        return () => cancelAnimationFrame(frame);
+    }, [isCompact, isCompactSearchOpen]);
 
     // Reset focused index when switching tabs.
     useEffect(() => {
@@ -282,6 +301,12 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         runAction: () => false,
     });
 
+    /** 紧凑档：把展开的搜索框收回圆钮，顺手把焦点还给页面，别停在一个已经看不见的输入框上。 */
+    const collapseCompactSearch = () => {
+        setIsCompactSearchOpen(false);
+        searchInputRef.current?.blur();
+    };
+
     // Search committed callback
     const handleSearch = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -300,6 +325,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         });
 
         if (didSearch) {
+            // 紧凑档里提交完就把输入框收回圆钮，页头回到「胶囊居中 + 一颗搜索钮」那条安静的样子。
+            collapseCompactSearch();
             onSearchCommitted(query, searchSource);
         }
     };
@@ -566,7 +593,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 inert={isGridMapOpen}
                 className={`z-[20] select-none ${isGridMapOpen ? 'pointer-events-none' : ''}`}
             >
-                <div className="grid grid-cols-2 md:grid-cols-2 items-center w-full py-4 md:py-10 md:px-4 gap-y-4 md:gap-y-0">
+                <div className="relative grid grid-cols-2 grid-cols-2 items-center w-full py-4 py-10 px-4 gap-y-4 gap-y-0">
                     {/* Left title and settings */}
                     <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
                         {/* 左侧按钮组 */}
@@ -692,7 +719,14 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             </div>
                         )}
                         
-                        <div className="relative scale-90 md:scale-100 mt-[5px] ml-[10px] origin-center rounded-full -inset-1" style={{ overflow: 'visible' }}>
+                        <div
+                            // 紧凑档里页签胶囊脱离左边那一组、居到整条页头中间（左右两组按钮仍各贴一边）：
+                            // 按自身宽度居中，换页签、加页签时都不会偏。尺寸与桌面档一致（不做 scale-90 的缩小）。
+                            className={`origin-center rounded-full ${isCompact
+                                ? 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
+                                : 'relative scale-90 md:scale-100 mt-[5px] ml-[10px] -inset-1'}`}
+                            style={{ overflow: 'visible' }}
+                        >
                             {/* 玻璃底色单独做绝对定位层，与摇杆、页签同为兄弟层级：摇杆不再嵌在玻璃元素里，
                                 否则它自己的流体玻璃 backdrop 只能采到父级已经模糊过的背景，被削弱。 */}
                             <div
@@ -872,7 +906,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                                     setHomeViewTab(tab.key);
                                                     focusActiveSlider();
                                                 }}
-                                                className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isActive ? activeTabBg : navPillInactiveText}`}
+                                                className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${isActive ? activeTabBg : navPillInactiveText}`}
                                             >
                                                 <span className="relative z-20">{tab.label}</span>
                                             </button>
@@ -881,7 +915,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 })}
                                 {props.extraTabs?.map(tab => (
                                     <button key={tab.id} type="button" onClick={tab.select}
-                                        className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap ${navPillInactiveText}`}>
+                                        className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}>
                                         {tab.label}
                                     </button>
                                 ))}
@@ -889,7 +923,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     <button
                                         onClick={() => onOpenStagePlayer?.()}
                                         data-stage-active={stageIsActive ? 'true' : 'false'}
-                                        className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap ${navPillInactiveText}`}
+                                        className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}
                                     >
                                         <span className="relative z-10">{t('home.stage')}</span>
                                     </button>
@@ -913,8 +947,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
                     {/* Right Search Bar（左边紧挨着平台切换与返回歌词画报两颗圆钮） */}
                     <div className="flex items-center justify-end gap-3 order-2 md:order-none">
-                        {/* 窄屏这一行放不下两颗圆钮（左边的页签胶囊会顶过来），那里仍用右脚那颗浮层，见文件末尾。 */}
-                        <div className="hidden md:flex">
+                        {/* 平台切换（没人登录时就是登录入口）所有宽度都在页头里，窄屏也不再退到右下角的浮层：
+                            紧凑档页签胶囊已经居中、不再往这边顶，这一行放得下。 */}
+                        <div className="flex shrink-0">
                             <SwitcherPill
                                 variant="header"
                                 account={account}
@@ -923,7 +958,13 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         </div>
                         <form
                         onSubmit={handleSearch}
-                        className="relative w-full md:w-56 transition-all focus-within:md:w-72  rounded-full"
+                        className={`relative rounded-full transition-all ${
+                            isCompact
+                                // 紧凑档：收起时只有一颗圆钮那么宽，点开沿右边向内展开——宽度走过渡，
+                                // 玻璃跟着一起变宽，看起来就是那颗钮浮出来成了输入框。
+                                ? (isCompactSearchOpen ? 'w-56 shrink-0' : 'w-10 shrink-0')
+                                : 'w-full md:w-56 focus-within:md:w-72'
+                        }`}
                         data-glass
                         data-glass-jelly
                         data-glass-light
@@ -940,11 +981,32 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             outline: "1px solid rgba(40,40,40,0.2)",
                             boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                             color: isDaylight ? "#000" : "#fff",
-                            overflow: "auto",
+                            // 紧凑档收起时要把溢出的输入框裁掉，展开到一半不该露出半截内容。
+                            overflow: isCompact ? "hidden" : "auto",
                             ...headerFadeStyle,
                         }}
                         >
-                            {isSearchingActive ? (
+                            {isCompact ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (isCompactSearchOpen) {
+                                            void handleSearch();
+                                            return;
+                                        }
+                                        setIsCompactSearchOpen(true);
+                                    }}
+                                    title={t('home.searchButton')}
+                                    aria-label={t('home.searchButton')}
+                                    aria-expanded={isCompactSearchOpen}
+                                    data-testid="home-search-toggle"
+                                    className="absolute left-0 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full"
+                                >
+                                    {isSearchingActive
+                                        ? <Loader2 className="h-4 w-4 animate-spin opacity-40" />
+                                        : <Search className="h-4 w-4 opacity-40 transition-opacity hover:opacity-100" />}
+                                </button>
+                            ) : isSearchingActive ? (
                                 <Loader2 className="absolute left-3 top-1/2 w-4 h-4 animate-spin opacity-40 -mt-2" />
                             ) : (
                                 <Search
@@ -958,7 +1020,24 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className={`w-full border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text placeholder:italic`}
+                                onKeyDown={e => {
+                                    // 紧凑档：Esc 收起，输入框里的字留着（下次展开接着改）。
+                                    if (e.key !== 'Escape' || !isCompact) return;
+                                    e.preventDefault();
+                                    collapseCompactSearch();
+                                }}
+                                onBlur={e => {
+                                    // 紧凑档里没打字就离开这一块，自动收回圆钮；指针挪到那颗钮上不算离开。
+                                    if (!isCompact || searchQuery.trim()) return;
+                                    const next = e.relatedTarget;
+                                    if (next instanceof Node && e.currentTarget.parentElement?.contains(next)) return;
+                                    setIsCompactSearchOpen(false);
+                                }}
+                                // 收起时输入框只是被裁掉了，别让它还能被 Tab 选中。
+                                tabIndex={isCompact && !isCompactSearchOpen ? -1 : undefined}
+                                className={`w-full border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text placeholder:italic ${
+                                    isCompact && !isCompactSearchOpen ? 'pointer-events-none opacity-0' : 'opacity-100'
+                                }`}
                                 style={{ color: 'var(--text-primary)' }}
                             />
                         </form>
@@ -1002,11 +1081,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 })}
             </div>
 
-            {/* 窄屏的平台切换：还是原来右脚那颗浮层（md 起挪进页头，见上面的搜索栏）。
-                返回歌词画报的箭头在播放条上，这里不再有它。 */}
-            <div className="md:hidden">
-                <SwitcherPill account={account} />
-            </div>
+            {/* 窄屏原本在这里挂一颗浮层版的平台切换，现在已经统一挪进页头（见上面的搜索栏那一行），
+                所以不再保留第二颗。返回歌词画报的箭头在播放条上，这里从来没有它。 */}
 
         </div>
     );

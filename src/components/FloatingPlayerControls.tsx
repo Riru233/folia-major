@@ -958,11 +958,11 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                         onPointerMove={handlePositionDragMove}
                         onPointerUp={handlePositionDragEnd}
                         onPointerCancel={handlePositionDragEnd}
-                        className={`shadow-2xl overflow-hidden rounded-full relative isolate transition-colors duration-300 select-none
+                        className={`shadow-2xl overflow-hidden relative isolate transition-colors duration-300 select-none
                             ${isPositioning ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
                             ${isCompact
                                 // 紧凑档收起和展开同一个宽度、同一个圆角（展开是圆角卡片，不是更高的胶囊），内边距交给里面的排布。
-                                ? `compact-capsule w-full ${glassBgExpanded}`
+                                ? `rounded-[30px] compact-capsule w-full ${glassBgExpanded} `
                                 : `rounded-full ${showExpanded ? `p-3 ${glassBgExpanded} w-full` : `px-4 py-2 ${glassBgCollapsed} ${COLLAPSED_WIDTH_CLASS}`}`}`}
                         style={{
                             touchAction: isPositioning ? "none" : undefined,

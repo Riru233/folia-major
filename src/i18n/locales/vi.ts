@@ -1946,6 +1946,7 @@ export default {
     "playAll": "Phát tất cả",
     "loadMore": "Tải thêm",
     "loading": "Đang tải...",
+    "searchButton": "Tìm kiếm",
     "searchDatabase": "TÌM TRÊN MẠNG...",
     "searchLocal": "Tìm nhạc trên máy...",
     "searchNavidrome": "Tìm trên Navidrome...",

@@ -1950,6 +1950,7 @@ export default {
     "playAll": "播放全部",
     "loadMore": "加载更多",
     "loading": "加载中...",
+    "searchButton": "搜索",
     "searchDatabase": "搜索在线歌曲...",
     "searchLocal": "搜索本地歌曲...",
     "searchNavidrome": "搜索navidrome...",

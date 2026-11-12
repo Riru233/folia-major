@@ -1948,6 +1948,7 @@ export default {
     "playAll": "Play All",
     "loadMore": "Load More",
     "loading": "Loading...",
+    "searchButton": "Search",
     "searchDatabase": "SEARCH DATABASE...",
     "searchLocal": "Search local songs...",
     "searchNavidrome": "Search navidrome",
