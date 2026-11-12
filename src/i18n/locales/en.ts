@@ -3990,6 +3990,7 @@ export default {
     "videoLayerUrlDesc": "Used when no local video is chosen.",
     "videoLayerOpacity": "Opacity",
     "videoLayerFit": "Fit",
+    "videoLayerFitDesc": "Applies to every video: the loop behind the lyrics, the song's own picture and the video background.",
     "videoLayerFitCover": "Cover (crop)",
     "videoLayerFitContain": "Contain",
     "videoLayerNotInExport": "Not included in visual config import/export, and not shown in OBS sources: OBS runs its own browser and cannot open the local video picked here.",

@@ -4,6 +4,7 @@ import { currentTime } from '../../../stores/motionSignals';
 import { selectDisplayPlayerState, selectDisplaySong, usePlaybackStore } from '../../../stores/usePlaybackStore';
 import { useBilibiliMvStore, selectMvOffsetSec } from '../useBilibiliMvStore';
 import { useShinoLabStore } from '../useShinoLabStore';
+import { useVideoLayerSettingsStore } from '../../../stores/useVideoLayerSettingsStore';
 import { songKeyOf } from '../bilibili/mvMatch';
 import { mvTargetTime } from '../bilibili/avSync';
 import LatentBackground from '../../../components/visualizer/backgrounds/latent/LatentBackground';
@@ -38,6 +39,8 @@ const BilibiliMvBackground: React.FC<VisualizerBackgroundRenderProps> = ({
     const enabled = useShinoLabStore(state => state.bilibiliMvEnabled);
     const autoMatch = useShinoLabStore(state => state.bilibiliAutoMatch);
     const quality = useShinoLabStore(state => state.bilibiliMvQuality);
+    // 填充方式是全局的视频设置：歌词后方的装饰视频、曲目自带的 MV、这里的 bilibili 背景都照同一份来。
+    const fit = useVideoLayerSettingsStore(state => state.videoLayerFit);
     const resolution = useBilibiliMvStore(state => state.resolution);
     const resolveForSong = useBilibiliMvStore(state => state.resolveForSong);
 
@@ -168,7 +171,8 @@ const BilibiliMvBackground: React.FC<VisualizerBackgroundRenderProps> = ({
             playsInline
             preload="auto"
             aria-hidden
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full"
+            style={{ objectFit: fit }}
             onError={() => setFailedUrl(source)}
         />
     );

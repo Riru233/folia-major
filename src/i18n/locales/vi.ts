@@ -3959,6 +3959,7 @@ export default {
     "videoLayerUrlDesc": "Dùng khi chưa chọn video nội bộ.",
     "videoLayerOpacity": "Độ mờ đục",
     "videoLayerFit": "Khớp khung",
+    "videoLayerFitDesc": "Áp dụng cho mọi video: video sau lời bài hát, hình ảnh của bài hát và nền video.",
     "videoLayerFitCover": "Phủ kín (cắt viền)",
     "videoLayerFitContain": "Vừa khung (nguyên vẹn)",
     "videoLayerNotInExport": "Không kèm trong nhập/xuất giao diện và không hiện trên nguồn OBS: OBS dùng trình duyệt riêng nên không thể đọc video nội bộ tại đây.",

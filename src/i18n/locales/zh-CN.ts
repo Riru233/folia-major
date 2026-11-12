@@ -3993,6 +3993,7 @@ export default {
     "videoLayerUrlDesc": "未选择本地视频时使用。",
     "videoLayerOpacity": "不透明度",
     "videoLayerFit": "填充方式",
+    "videoLayerFitDesc": "对所有视频生效：歌词后方的装饰视频、曲目自带的画面、视频背景都按这一项摆放。",
     "videoLayerFitCover": "铺满（裁切）",
     "videoLayerFitContain": "完整显示",
     "videoLayerNotInExport": "不参与视觉配置导入导出，也不在 OBS 源中显示：OBS 使用独立浏览器，无法读取这里选择的本地视频。",

@@ -35,7 +35,7 @@ const O = {
     videoFile: option(VIDEO, 'videoLayerLocalFile', 'options.videoLayerLocalFile', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
     videoUrl: option(VIDEO, 'videoLayerUrl', 'options.videoLayerUrl', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
     videoOpacity: option(VIDEO, 'videoLayerOpacity', 'options.videoLayerOpacity', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
-    videoFit: option(VIDEO, 'videoLayerFit', 'options.videoLayerFit', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
+    videoFit: option(VIDEO, 'videoLayerFit', 'options.videoLayerFit'),
     bilibiliMv: option(BILIBILI, 'shinoLabBilibiliMv', 'options.shinoLabBilibiliMv'),
     bilibiliAccount: option(BILIBILI, 'shinoLabBilibiliAccount', 'options.shinoLabBilibiliAccount', { available: () => useShinoLabStore.getState().bilibiliMvEnabled }),
     bilibiliAutoMatch: option(BILIBILI, 'shinoLabBilibiliAutoMatch', 'options.shinoLabBilibiliAutoMatch', { available: () => useShinoLabStore.getState().bilibiliMvEnabled }),
@@ -225,18 +225,20 @@ const LabPage: React.FC = () => {
                                 format={percent}
                             />
                         </Row>
-                        <Row sub option={O.videoFit}>
-                            <Segmented
-                                value={video.fit}
-                                options={[
-                                    { value: 'cover', label: t('options.videoLayerFitCover') },
-                                    { value: 'contain', label: t('options.videoLayerFitContain') },
-                                ]}
-                                onChange={video.setFit}
-                            />
-                        </Row>
                     </Reveal>
                 </Reveal>
+                {/* 填充方式是所有视频共用的一项设置：歌词后方的装饰视频、曲目自带 MV、bilibili 背景都照它摆放。
+                    它不挂在「视频播放」总开关或「歌词后方显示视频」下面——只想用视频背景的人也改得到。 */}
+                <Row option={O.videoFit} note={t('options.videoLayerFitDesc')}>
+                    <Segmented
+                        value={video.fit}
+                        options={[
+                            { value: 'cover', label: t('options.videoLayerFitCover') },
+                            { value: 'contain', label: t('options.videoLayerFitContain') },
+                        ]}
+                        onChange={video.setFit}
+                    />
+                </Row>
             </Group>
 
             <Group def={BILIBILI}>

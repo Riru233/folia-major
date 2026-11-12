@@ -3992,6 +3992,7 @@ export default {
     "videoLayerUrlDesc": "Dipakai saat tidak ada video lokal yang dipilih.",
     "videoLayerOpacity": "Opasitas",
     "videoLayerFit": "Penyesuaian",
+    "videoLayerFitDesc": "Berlaku untuk semua video: video di belakang lirik, gambar bawaan lagu, dan latar video.",
     "videoLayerFitCover": "Penuh (dipotong)",
     "videoLayerFitContain": "Utuh",
     "videoLayerNotInExport": "Tidak ikut impor/ekspor konfigurasi visual dan tidak tampil di sumber OBS: OBS memakai browser sendiri dan tidak dapat membuka video lokal yang dipilih di sini.",

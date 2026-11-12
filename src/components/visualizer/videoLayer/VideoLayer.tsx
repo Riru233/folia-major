@@ -16,9 +16,10 @@ import { useShinoLabStore } from '../../../shinoinject/lab/useShinoLabStore';
 // playback clock (seek, song change) re-aligns it, and slow drift is corrected every few seconds.
 // The video position is the song position modulo the video length, so a short loop keeps cycling.
 //
-// 视频曲目（MV）在这里接管：当前这首歌自己的画面压过设置里那条视频层——不看开关、满不透明、铺满，
+// 视频曲目（MV）在这里接管：当前这首歌自己的画面压过设置里那条视频层——不看开关、满不透明，
 // 而且不循环（一首歌对应一段画面，放完就停在最后一帧）。声音仍旧由播放链里的 <audio> 负责，
 // 这里只是同一个文件的第二个读者，所以两者的进度要一直对得上：它比装饰用的循环视频对得更紧。
+// 填充方式（铺满／完整显示）是全局的视频设置，两种画面都照它来，画面来源换了不会偷偷变回铺满。
 
 const DRIFT_CHECK_MS = 2000;
 const DRIFT_TOLERANCE_SEC = 0.35;
@@ -190,7 +191,7 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused, staticMode = false }) =
             preload="auto"
             aria-hidden
             className="absolute inset-0 h-full w-full pointer-events-none"
-            style={{ opacity: isSongVideo ? 1 : opacity, objectFit: isSongVideo ? 'cover' : fit }}
+            style={{ opacity: isSongVideo ? 1 : opacity, objectFit: fit }}
             onError={() => {
                 if (isSongVideo) degradeToSettings('media error');
             }}
