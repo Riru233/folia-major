@@ -978,7 +978,7 @@ export function useLibraryPlaybackController({
             if (!nextLyrics && !matchData?.noAutoMatch && !matchData?.matchedIsPureMusic) {
                 try {
                     if (!showedLoadingToast && !start.quiet) {
-                        setStatusMsg({ type: 'info', text: t('status.loadingSong') || '' });
+                        setStatusMsg({ type: 'info', activity: 'loading', text: t('status.loadingSong') || '' });
                         showedLoadingToast = true;
                     }
                     const navidromeMetadata = getProviderSongMetadata(navidromeSong);
@@ -1090,7 +1090,7 @@ export function useLibraryPlaybackController({
             }
 
             if (!coverUrl) {
-                coverUrl = getProviderSongMetadata(navidromeSong).coverUrl || navidromeApi.getCoverArtUrl(config, navidromeId);
+                coverUrl = getProviderSongMetadata(navidromeSong).coverUrl || navidromeApi.getCoverArtUrl(config, navidromeId, 600);
             }
 
             // The HiFi route also takes the file's format from the server's record: its signal path shows it.
@@ -1524,7 +1524,7 @@ export function useLibraryPlaybackController({
         }
 
   const settingsLyricSettings = useLyricSettingsStore.getState();
-        setStatusMsg({ type: 'info', text: t('status.matchingBestLyrics') || '' });
+        setStatusMsg({ type: 'info', activity: 'loading', text: t('status.matchingBestLyrics') || '' });
 
         try {
             if (isLocalPlaybackSong(currentSong)) {

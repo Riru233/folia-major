@@ -1,6 +1,7 @@
 import React, { forwardRef, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, MotionValue } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useWindowButtonsAtTopLeft } from '../../hooks/useWindowButtonsAtTopLeft';
 import { ChevronLeft } from 'lucide-react';
 import { AudioBands, Theme } from '../../types';
 import { resolveThemeFontStack, resolveThemeFontWeight } from '../../utils/fontStacks';
@@ -80,6 +81,7 @@ const VisualizerShell = forwardRef<HTMLDivElement, VisualizerShellProps>(({
     className = '',
 }, ref) => {
     const { t } = useTranslation();
+    const lowerBackButton = useWindowButtonsAtTopLeft();
     const backdrop = useContext(VisualizerBackdropContext);
     const isInBackdrop = backdrop !== null;
     const pointerArea = backdrop?.pointerArea ?? null;
@@ -256,7 +258,7 @@ const VisualizerShell = forwardRef<HTMLDivElement, VisualizerShellProps>(({
                         outline: "1px solid rgba(40,40,40,0.2)",
                         boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
                     }}
-                    className="absolute top-6 left-6 z-30 h-12 w-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md bg-black/20 hover:bg-white/10 text-white/60 pointer-events-auto"
+                    className={`absolute ${lowerBackButton ? 'top-12' : 'top-6'} left-6 z-30 h-12 w-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md bg-black/20 hover:bg-white/10 text-white/60 pointer-events-auto`}
                 >
                     <ChevronLeft size={20} />
                 </motion.button>

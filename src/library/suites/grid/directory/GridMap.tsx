@@ -1,3 +1,4 @@
+import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtTopLeft';
 import React, { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls } from 'framer-motion';
 import { Check, ChevronLeft, Disc, Eye, EyeOff, ListFilter, X } from 'lucide-react';
@@ -280,6 +281,7 @@ export const GridMap: React.FC<GridMapProps> = ({
     onFolderContextMenu,
 }) => {
     const { t } = useTranslation();
+    const lowerBackButton = useWindowButtonsAtTopLeft();
     const bottomBarPanelBottomPx = useSidePanelBottomPx();
     // 地图底色（页头渐变与根节点共用一套值，换色只改这里）。
     const mapBackgroundColor = isDaylight ? 'rgba(250, 249, 246, 0.95)' : 'rgba(9, 9, 11, 0.95)';
@@ -1027,7 +1029,7 @@ export const GridMap: React.FC<GridMapProps> = ({
                 <button
                     data-glass data-glass-light data-glass-jelly
                     onClick={onBack}
-                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95"
+                    className={`relative ${lowerBackButton ? 'top-7' : ''} w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-105 active:scale-95`}
                     style={{ ...gridGlassCircleStyle(isDaylight), color: 'var(--text-primary)' }}
                 >
                     <ChevronLeft size={20} />

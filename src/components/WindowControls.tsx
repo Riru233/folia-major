@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { usePlayerChromeSettingsStore } from "../stores/usePlayerChromeSettingsStore";
 import { useAppChromeStore } from "../stores/useAppChromeStore";
+import { useNativeTrafficLights } from "../hooks/useNativeTrafficLights";
 import { useGlass } from "@/shinoinject/useGlass";
 
 // 与 AppShell 的 TITLEBAR_REVEAL_HEIGHT、播放桥的 revealThreshold 一致：顶部 56px 是标题栏热区。
@@ -28,11 +29,13 @@ type ControlId =
   | "close";
 
 export default function WindowControls({
+  side = "right",
   revealed,
   isDaylight = false,
   isMainWindowClickThroughEnabled = false,
   hideFullscreenButton,
 }: {
+  side?: "left" | "right";
   revealed: boolean;
   isDaylight?: boolean;
   isMainWindowClickThroughEnabled?: boolean;
@@ -44,6 +47,8 @@ export default function WindowControls({
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // 窗口带系统红绿灯时，最小化/最大化/关闭由系统接管，这里只剩固定、遥控和全屏。
+  const nativeTrafficLights = useNativeTrafficLights();
   const buttonBaseClass = `flex items-center justify-center h-[calc(100% - 6px)] mb-[6px] transition-all border-[1px] border-[#fff7] border-solid duration-200 text-white outline outline-1 outline-solid outline-[rgba(120,120,120,0.5)] shadow-[2px_2px_8px_2px_rgba(40,40,40,0.4)]
   ${
         isMac ? 'before:top-1.5 before:-bottom-0.5' : 'before:top-0.5 before:bottom-0.5'}`
@@ -338,6 +343,195 @@ export default function WindowControls({
     [setIsTitlebarHeld],
   );
 
+  const pinControl = (
+    <button
+      data-glass
+      data-glass-light
+      data-glass-strength="0.8"
+      data-glass-blur="1"
+      data-glass-bend="5"
+      data-control="pin"
+      className={`relative ${pinBtnClass}`}
+      tabIndex={standardControlsVisible ? 0 : -1}
+      title={t(
+        isTitlebarPinned ? "ui.unpinWindowControls" : "ui.pinWindowControls",
+      )}
+      aria-label={t(
+        isTitlebarPinned ? "ui.unpinWindowControls" : "ui.pinWindowControls",
+      )}
+      aria-pressed={isTitlebarPinned}
+      onClick={() =>
+        handleToggleAlwaysShowMainWindowTitlebar(!isTitlebarPinned)
+      }
+    >
+      {touchHoverOverlay("pin")}
+      {isTitlebarPinned ? (
+        <PinOff className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={14} />
+      ) : (
+        <Pin className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={14} />
+      )}
+    </button>
+  );
+
+  const remoteControl = (
+    <button
+      data-glass
+      data-glass-strength="0.8"
+      data-glass-blur="1"
+      data-glass-bend="5"
+      data-control="remote"
+      className={`relative ${remoteBtnClass}`}
+      title={t("ui.remoteControl")}
+      tabIndex={remoteControlVisible ? 0 : -1}
+      onClick={() => void electron.openRemoteControl?.()}
+    >
+      {touchHoverOverlay("remote")}
+      <Radio className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={15} />
+    </button>
+  );
+
+  const fullscreenControl = hideFullscreenButton ? null : (
+    <button
+      data-glass
+      data-glass-strength="0.8"
+      data-glass-blur="1"
+      data-glass-bend="5"
+      data-control="fullscreen"
+      className={`relative ${remoteBtnClass}`}
+      tabIndex={standardControlsVisible ? 0 : -1}
+      title={t(isFullscreen ? "ui.exitFullscreen" : "ui.enterFullscreen")}
+      aria-label={t(
+        isFullscreen ? "ui.exitFullscreen" : "ui.enterFullscreen",
+      )}
+      onClick={() => void electron.toggleFullscreenWindow()}
+    >
+      {touchHoverOverlay("fullscreen")}
+      {isFullscreen ? (
+        <Minimize
+          className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
+          size={13}
+        />
+      ) : (
+        <Maximize
+          className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
+          size={13}
+        />
+      )}
+    </button>
+  );
+
+  const minimizeControl = (
+    <button
+      data-glass
+      data-glass-strength="0.8"
+      data-glass-blur="1"
+      data-glass-bend="5"
+      data-control="minimize"
+      className={`relative ${btnClass}`}
+      tabIndex={standardControlsVisible ? 0 : -1}
+      onClick={() => electron.minimizeWindow()}
+    >
+      {touchHoverOverlay("minimize")}
+      <Minus className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={16} />
+    </button>
+  );
+
+  // 全屏状态下不显示最大化 / 还原按钮：全屏时它只会和全屏按钮重复，
+  // 而且「还原」在全屏里没有意义。
+  const maximizeControl = isFullscreen ? null : (
+    <button
+      data-glass
+      data-glass-strength="0.8"
+      data-glass-blur="1"
+      data-glass-bend="5"
+      data-control="maximize"
+      className={`relative ${btnClass}`}
+      tabIndex={standardControlsVisible ? 0 : -1}
+      title={t(
+        usesNativeFullscreen
+          ? isExpanded
+            ? "ui.exitFullscreen"
+            : "ui.enterFullscreen"
+          : isExpanded
+            ? "ui.restoreWindow"
+            : "ui.maximizeWindow",
+      )}
+      aria-label={t(
+        usesNativeFullscreen
+          ? isExpanded
+            ? "ui.exitFullscreen"
+            : "ui.enterFullscreen"
+          : isExpanded
+            ? "ui.restoreWindow"
+            : "ui.maximizeWindow",
+      )}
+      onClick={async () => {
+        if (usesNativeFullscreen) {
+          await electron.toggleFullscreenWindow();
+        } else {
+          await electron.toggleMaximizeWindow();
+          setIsMaximized(await electron.isWindowMaximized());
+        }
+      }}
+    >
+      {touchHoverOverlay("maximize")}
+      {usesNativeFullscreen ? (
+        isExpanded ? (
+          <Minimize
+            className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
+            size={13}
+          />
+        ) : (
+          <Maximize
+            className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
+            size={13}
+          />
+        )
+      ) : isExpanded ? (
+        <Copy
+          className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
+          size={13}
+        />
+      ) : (
+        <Square
+          className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
+          size={13}
+        />
+      )}
+    </button>
+  );
+
+  const closeControl = (
+    <button
+      data-glass
+      data-glass-strength="0.8"
+      data-glass-blur="1"
+      data-glass-bend="5"
+      data-control="close"
+      className={`relative ${closeBtnClass}`}
+      tabIndex={standardControlsVisible ? 0 : -1}
+      onClick={() => electron.closeWindow()}
+    >
+      {touchHoverOverlay("close")}
+      <X className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={16} />
+    </button>
+  );
+
+  // 窗口带系统红绿灯时，最小化 / 最大化 / 关闭由系统接管，这一组整段不画。
+  const systemControls = nativeTrafficLights ? null : side === "left" ? (
+    <>
+      {closeControl}
+      {minimizeControl}
+      {maximizeControl}
+    </>
+  ) : (
+    <>
+      {minimizeControl}
+      {maximizeControl}
+      {closeControl}
+    </>
+  );
+
   useGlass();
   return (
     // 外层只负责手势和果冻：data-glass-jelly 的每帧写入会直接改这个节点的 style.transform，
@@ -363,171 +557,27 @@ export default function WindowControls({
         } as React.CSSProperties
       }
     >
+      {/* 触控放大朝控制栏所在的那一侧展开：靠右时钉住右上角，靠左时钉住左上角。 */}
       <div
-        className={`flex h-full origin-top-right transition-transform duration-200${
-          isTouchPressed ? " scale-150" : ""
-        }`}
+        className={`flex h-full ${
+          side === "left" ? "origin-top-left" : "origin-top-right"
+        } transition-transform duration-200${isTouchPressed ? " scale-150" : ""}`}
       >
-        <button
-          data-glass
-          data-glass-light
-          data-glass-strength="0.8"
-          data-glass-blur="1"
-          data-glass-bend="5"
-          data-control="pin"
-          className={`relative ${pinBtnClass}`}
-          tabIndex={standardControlsVisible ? 0 : -1}
-          title={t(
-            isTitlebarPinned ? "ui.unpinWindowControls" : "ui.pinWindowControls",
-          )}
-          aria-label={t(
-            isTitlebarPinned ? "ui.unpinWindowControls" : "ui.pinWindowControls",
-          )}
-          aria-pressed={isTitlebarPinned}
-          onClick={() =>
-            handleToggleAlwaysShowMainWindowTitlebar(!isTitlebarPinned)
-          }
-        >
-          {touchHoverOverlay("pin")}
-          {isTitlebarPinned ? (
-            <PinOff className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={14} />
-          ) : (
-            <Pin className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={14} />
-          )}
-        </button>
-        <button
-          data-glass
-          data-glass-strength="0.8"
-          data-glass-blur="1"
-          data-glass-bend="5"
-          data-control="remote"
-          className={`relative ${remoteBtnClass}`}
-          title={t("ui.remoteControl")}
-          tabIndex={remoteControlVisible ? 0 : -1}
-          onClick={() => void electron.openRemoteControl?.()}
-        >
-          {touchHoverOverlay("remote")}
-          <Radio className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={15} />
-        </button>
-        {!hideFullscreenButton && (
-          <button
-            data-glass
-            data-glass-strength="0.8"
-            data-glass-blur="1"
-            data-glass-bend="5"
-            data-control="fullscreen"
-            className={`relative ${remoteBtnClass}`}
-            tabIndex={standardControlsVisible ? 0 : -1}
-            title={t(isFullscreen ? "ui.exitFullscreen" : "ui.enterFullscreen")}
-            aria-label={t(
-              isFullscreen ? "ui.exitFullscreen" : "ui.enterFullscreen",
-            )}
-            onClick={() => void electron.toggleFullscreenWindow()}
-          >
-            {touchHoverOverlay("fullscreen")}
-            {isFullscreen ? (
-              <Minimize
-                className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
-                size={13}
-              />
-            ) : (
-              <Maximize
-                className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
-                size={13}
-              />
-            )}
-          </button>
+        {side === "left" ? (
+          <>
+            {systemControls}
+            {fullscreenControl}
+            {remoteControl}
+            {pinControl}
+          </>
+        ) : (
+          <>
+            {pinControl}
+            {remoteControl}
+            {fullscreenControl}
+            {systemControls}
+          </>
         )}
-        <button
-          data-glass
-          data-glass-strength="0.8"
-          data-glass-blur="1"
-          data-glass-bend="5"
-          data-control="minimize"
-          className={`relative ${btnClass}`}
-          tabIndex={standardControlsVisible ? 0 : -1}
-          onClick={() => electron.minimizeWindow()}
-        >
-          {touchHoverOverlay("minimize")}
-          <Minus className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={16} />
-        </button>
-        {/* 全屏状态下不显示最大化 / 还原按钮：全屏时它只会和全屏按钮重复，
-            而且「还原」在全屏里没有意义。 */}
-        {!isFullscreen && (
-          <button
-            data-glass
-            data-glass-strength="0.8"
-            data-glass-blur="1"
-            data-glass-bend="5"
-            data-control="maximize"
-            className={`relative ${btnClass}`}
-            tabIndex={standardControlsVisible ? 0 : -1}
-            title={t(
-              usesNativeFullscreen
-                ? isExpanded
-                  ? "ui.exitFullscreen"
-                  : "ui.enterFullscreen"
-                : isExpanded
-                  ? "ui.restoreWindow"
-                  : "ui.maximizeWindow",
-            )}
-            aria-label={t(
-              usesNativeFullscreen
-                ? isExpanded
-                  ? "ui.exitFullscreen"
-                  : "ui.enterFullscreen"
-                : isExpanded
-                  ? "ui.restoreWindow"
-                  : "ui.maximizeWindow",
-            )}
-            onClick={async () => {
-              if (usesNativeFullscreen) {
-                await electron.toggleFullscreenWindow();
-              } else {
-                await electron.toggleMaximizeWindow();
-                setIsMaximized(await electron.isWindowMaximized());
-              }
-            }}
-          >
-            {touchHoverOverlay("maximize")}
-            {usesNativeFullscreen ? (
-              isExpanded ? (
-                <Minimize
-                  className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
-                  size={13}
-                />
-              ) : (
-                <Maximize
-                  className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
-                  size={13}
-                />
-              )
-            ) : isExpanded ? (
-              <Copy
-                className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
-                size={13}
-              />
-            ) : (
-              <Square
-                className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]"
-                size={13}
-              />
-            )}
-          </button>
-        )}
-        <button
-          data-glass
-          data-glass-strength="0.8"
-          data-glass-blur="1"
-          data-glass-bend="5"
-          data-control="close"
-          className={`relative ${closeBtnClass}`}
-          tabIndex={standardControlsVisible ? 0 : -1}
-          onClick={() => electron.closeWindow()}
-        >
-          {touchHoverOverlay("close")}
-          <X className="relative drop-shadow-[0_0_1px_#000] hover:drop-shadow-[0_0_1px_#000,0_0_1px_#000]" size={16} />
-        </button>
       </div>
     </div>
   );

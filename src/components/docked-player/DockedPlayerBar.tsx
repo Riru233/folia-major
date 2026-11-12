@@ -167,10 +167,6 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
         }
     }, [volume]);
 
-    if (hideControlBar) {
-        return null;
-    }
-
     const songName = displaySong?.name || noTrackText;
     const artistName = displaySong ? getSongArtistLabel(displaySong) : '';
     const shownVolume = isMuted ? 0 : sliderVolume;
@@ -222,6 +218,14 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
         </div>
     );
     useGlass();
+
+    // 「隐藏进度条」把整条栏收走。这一句必须留在所有 hook 之后：之前它写在 useMemo / useGlass 前面，
+    // 于是播放页（开隐藏进度条时这里返回 null）与首页之间来回切一次，hook 数量就变了，React 直接抛
+    // 「Rendered more/fewer hooks than expected」——停靠栏在真机上「不生效」多半是这一步炸掉的。
+    if (hideControlBar) {
+        return null;
+    }
+
     return (
         <>
             <div
