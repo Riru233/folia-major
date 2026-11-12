@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveKaraokeScrollOffset } from '@/components/visualizer/karaoke/karaokeScroll';
+import { resolveKaraokeScrollOffset, resolveKaraokeWrapScrollOffset } from '@/components/visualizer/karaoke/karaokeScroll';
 
 describe('karaoke horizontal follow', () => {
     it('does not move while the sung part is still inside the frame', () => {
@@ -32,5 +32,28 @@ describe('karaoke horizontal follow', () => {
         // 唱到 1700 时，右侧 1400 那一段还放得下，不用再动。
         expect(resolveKaraokeScrollOffset(2000, 1400, 1700, true)).toBe(300);
         expect(resolveKaraokeScrollOffset(2000, 1400, 2000, true)).toBe(0);
+    });
+});
+
+describe('karaoke vertical follow (wrap mode)', () => {
+    it('stays put while the content fits the frame', () => {
+        expect(resolveKaraokeWrapScrollOffset(320, 400, 360, 1)).toBe(0);
+        expect(resolveKaraokeWrapScrollOffset(400, 400, 400, 1)).toBe(0);
+    });
+
+    it('pushes up exactly enough to keep the singing row whole', () => {
+        // 内容 520 高、框 400 高；唱到的那一行底部在 470：推 70 就把这行整个露出来。
+        expect(resolveKaraokeWrapScrollOffset(520, 400, 470, 1)).toBe(70);
+    });
+
+    it('never scrolls past the end of the content', () => {
+        expect(resolveKaraokeWrapScrollOffset(520, 400, 900, 1)).toBe(120);
+    });
+
+    it('keeps a lower target when a preview ratio is asked for', () => {
+        // 0.85 是给下面留预告的旧行为：唱到 380 就开始推，推 0（400*0.85=340，380>340 → 40）。
+        expect(resolveKaraokeWrapScrollOffset(520, 400, 380, 0.85)).toBe(40);
+        // 以行底为准、不给提前量时，同一位置完全不动。
+        expect(resolveKaraokeWrapScrollOffset(520, 400, 380, 1)).toBe(0);
     });
 });

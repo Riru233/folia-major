@@ -40,6 +40,19 @@ const EPSILON = 0.004;
  */
 const LYRICS_BOTTOM_PX = 48;
 
+/**
+ * 「换行」模式下歌词页框的最大高度。
+ *
+ * 这里只留一个「极长内容才生效」的兜底上限：正常两句折行撑死六七行，框必须整段装得下。
+ * 之前给 58vh，内容一旦略微超过框高，超出的那几行就在框底被裁掉——最后一句的下半截
+ * 一直露不全，非要等竖直跟唱把它推上来才看得见。高度放到「几乎不会触发」，裁切和
+ * 随之而来的整体上移就都不会发生了。
+ */
+const WRAP_MAX_HEIGHT = '80vh';
+
+/** 竖直跟唱时给行底留的余量：描边是画在字外面的，贴着框底会被切掉一点。 */
+const WRAP_BOTTOM_PADDING = 6;
+
 /** 首字符落在这些区段就按从右往左扫（阿拉伯文、希伯来文等）。 */
 const RTL_TEXT = /[\u0590-\u05ff\u0600-\u06ff\u0700-\u074f\u0780-\u07bf\ufb1d-\ufdff\ufe70-\ufeff]/;
 
@@ -121,6 +134,10 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
     const wrapVisibleHeightRef = useRef(0);
     /** 上一次写进 DOM 的位移。同一个值不重复写，切页/停顿的时候才不会抖。 */
     const lastTransformRef = useRef('');
+    /** 这一句已经滚到的位置（横向 / 竖直各一个）。换句或重量时清空，让位移从当前时间重新算起。
+     *  跟唱只准往前推进：字块交界处算回来的几个像素会让整行退一下再前进，跟着节拍看就是抖。 */
+    const lastXOffsetRef = useRef<number | null>(null);
+    const lastYOffsetRef = useRef<number | null>(null);
     const activeLineRef = useRef(activeLine);
     activeLineRef.current = activeLine;
 
@@ -136,6 +153,8 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
             wrapTargetRef.current.style.transform = '';
         }
         lastTransformRef.current = '';
+        lastXOffsetRef.current = null;
+        lastYOffsetRef.current = null;
         const frameRect = clip ? clip.getBoundingClientRect() : null;
         const metrics = { left: [] as number[], width: [] as number[], top: [] as number[], height: [] as number[] };
         // 换句时数组里可能还留着上一句（更长）的尾部槽位：那些是 null，算总宽时不能拿它们当末块，
@@ -165,7 +184,10 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         visibleWidthRef.current = visible;
         scrollRangeRef.current = Math.max(0, total - visible);
         wrapVisibleHeightRef.current = clip ? clip.clientHeight : 0;
-        wrapRangeRef.current = clip ? Math.max(0, clip.scrollHeight - clip.clientHeight) : 0;
+        // 亚像素的差值（内容比框高 0.4 像素）不值得算作「要滚」，否则整页会平白挪一像素。
+        // 取整之后还不到 4px 的溢出同样当没溢出：那种量级滚一次只是让整块歌词上下跳一下。
+        const wrapRange = clip ? Math.round(clip.scrollHeight - clip.clientHeight) : 0;
+        wrapRangeRef.current = wrapRange >= 4 ? wrapRange : 0;
     }, []);
 
     /**
@@ -198,6 +220,8 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         if (!line || chunks.length === 0) {
             writeTransform(target, '');
             writeTransform(wrapTarget, '');
+            lastXOffsetRef.current = null;
+            lastYOffsetRef.current = null;
             return;
         }
         const metrics = chunkMetricsRef.current;
@@ -217,30 +241,46 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
             const range = wrapRangeRef.current;
             if (range <= 0) {
                 writeTransform(wrapTarget, '');
+                lastYOffsetRef.current = null;
                 return;
             }
             const top = metrics.top[frontier] ?? 0;
             const height = metrics.height[frontier] ?? 0;
-            const offset = Math.round(resolveKaraokeWrapScrollOffset(
+            // 以「这一行的底部」为准，而不是唱到的那一点：整行必须完整露在框里，否则下半截被
+            // 框底切掉，看上去就是「最后一行显示不全」。keepRatio 给 1，不加提前量——唱到行底
+            // 顶住框底才推，推完正好把整行露出来。
+            // 只准往前走：字块交界处算出来的值会往回退一两个像素，跟着节拍退一下再进就是抖。
+            const raw = Math.round(resolveKaraokeWrapScrollOffset(
                 wrapVisibleHeightRef.current + range,
                 wrapVisibleHeightRef.current,
-                top + height * progress,
+                top + height + WRAP_BOTTOM_PADDING,
+                1,
             ));
+            const previous = lastYOffsetRef.current;
+            const offset = previous === null ? raw : Math.max(previous, raw);
+            lastYOffsetRef.current = offset;
             writeTransform(wrapTarget, `translateY(-${offset}px)`);
             return;
         }
         // 换回滚动模式时把竖直位移清掉。
         writeTransform(wrapTarget, '');
+        lastYOffsetRef.current = null;
 
         const range = scrollRangeRef.current;
         if (range <= 0) {
             writeTransform(target, '');
+            lastXOffsetRef.current = null;
             return;
         }
         const left = metrics.left[frontier] ?? 0;
         const width = metrics.width[frontier] ?? 0;
         const cursor = left + width * progress;
-        const offset = Math.round(resolveKaraokeScrollOffset(visibleWidthRef.current + range, visibleWidthRef.current, cursor, rtl));
+        // 同上：块与块的交界处会算回来一点点，只准往前滚，免得跟着节拍每秒退回一像素。
+        // RTL 的行是反的：唱得越往后，需要左移的量越小，所以那边只准往回（取更小的值）。
+        const raw = Math.round(resolveKaraokeScrollOffset(visibleWidthRef.current + range, visibleWidthRef.current, cursor, rtl));
+        const previous = lastXOffsetRef.current;
+        const offset = previous === null ? raw : (rtl ? Math.min(previous, raw) : Math.max(previous, raw));
+        lastXOffsetRef.current = offset;
         writeTransform(target, offset > 0 ? `translateX(-${offset}px)` : '');
     }, [rtl, karaokeTuning.overflowMode, writeTransform]);
 
@@ -376,7 +416,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         return (
             <div
                 key={`${side}-${line.startTime}`}
-                className="flex w-full flex-col"
+                className="flex w-full shrink-0 flex-col"
             >
                 {/* 三种状态共用同一套结构（下层量尺寸、上层填充），所以换行位置、行高在「未唱／正在唱／已唱」
                     之间完全一样。以前未唱和已唱是纯文本、正在唱是逐字 span 且带 white-space: pre，
@@ -452,9 +492,11 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={pageAnimation ? { duration: 0.28, ease: 'easeOut' } : { duration: 0 }}
                         className="flex w-full flex-col gap-2 overflow-hidden"
-                        style={wrapMode ? { maxHeight: '42vh', justifyContent: 'flex-start' } : undefined}
+                        // 换行模式要给折行留够竖直空间：框太矮的话两行歌词一折行就顶到框外，
+                        // 跟唱一往上推就露出一半、被裁掉一半，看上去就是「一滚就抖」。
+                        style={wrapMode ? { maxHeight: WRAP_MAX_HEIGHT, justifyContent: 'flex-start' } : undefined}
                     >
-                        <div ref={wrapTargetRef} className="flex w-full flex-col gap-2" style={{ willChange: 'transform' }}>
+                        <div ref={wrapTargetRef} className="flex w-full shrink-0 flex-col gap-2" style={{ willChange: 'transform' }}>
                             {renderRow(pageFirstLine, 'start', firstChunks)}
                             {renderRow(pageSecondLine, 'end', secondChunks)}
                         </div>
