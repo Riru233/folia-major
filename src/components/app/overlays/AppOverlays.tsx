@@ -96,6 +96,8 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
                     showReturnToPlayer={floatingControls.currentView !== 'player'}
                     onReturnToPlayer={floatingControls.onNavigateToPlayer}
                     isPlayerView={floatingControls.currentView === 'player'}
+                    onOpenLattice={model.dockedBar.onOpenLattice}
+                    onOpenArtist={model.dockedBar.onOpenArtist}
                 />
             )}
 

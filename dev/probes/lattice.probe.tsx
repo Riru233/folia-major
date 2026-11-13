@@ -122,6 +122,7 @@ function LatticeProbe({ covers = 'off', queueLength = 12, withLyrics = false, wi
                 },
                 onCommitBottomBarOffset: () => {},
             } : null,
+            dockedBar: { onOpenLattice: () => {}, onOpenArtist: () => {} },
         }} />
         <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 100 }}>
             <button onClick={() => setCurrentSong(source[(source.indexOf(currentSong!) + 1) % source.length])}>Next track</button>

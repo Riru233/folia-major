@@ -1182,6 +1182,7 @@ export default {
     "selectPlaceholder": "Vui lòng chọn...",
     "previousTrack": "Bài trước",
     "nextTrack": "Bài tiếp theo",
+    "openLattice": "Mở ảnh ghép hàng đợi",
     "stageTrackPillNext": "Phát tiếp theo",
     "stageTrackPillNow": "Đang phát",
     "stageTrackPillOpenPlayer": "Mở trình phát",

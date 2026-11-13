@@ -71,6 +71,7 @@ import {
 } from './components/app/search/searchCollectionAdapters';
 import { usePlayerPanelModel } from './components/app/player-panel/usePlayerPanelModel';
 import { createQueueMutations } from './components/app/player-panel/createQueueMutations';
+import { resolveDockedArtistCollection } from './components/docked-player/dockedArtistCollection';
 import { Album, Artist, LyricData, Theme, PlayerState, SongResult, ReplayGainMode, StatusMessage, PlaybackContext, StageLoopMode, UnifiedSong } from './types';
 import type { LocalSong } from './types';
 import { getLocalSongArrayBuffer } from './services/localMusicService';
@@ -2250,6 +2251,24 @@ export default function App() {
     const playerDisplayQueue = useMemo(() => (
         playQueue.map(song => applyLocalLibraryEntityDisplay(song, localLibraryCatalog, playerDisplayCatalogIndex))
     ), [localLibraryCatalog, playQueue, playerDisplayCatalogIndex]);
+    // 停靠栏上点歌名去队列拼贴：回调身份稳定，浮层模型才不会被每次渲染重建。
+    const handleDockedBarLatticeOpen = useCallback(() => navigateToLattice(), [navigateToLattice]);
+    // 停靠栏上点歌手名的去处：本地歌按当前目录打开这位歌手名下的全部歌，Navidrome 按歌手 id，
+    // 在线歌问 provider 要目录引用。解析不出来时给一句提示，不把点击悄悄吞掉。
+    const handleDockedBarArtistOpen = useCallback(async (artist: Artist) => {
+        if (!playerDisplayCurrentSong) return;
+        const collection = await resolveDockedArtistCollection({
+            song: playerDisplayCurrentSong,
+            artist,
+            localSongs,
+            localCatalog: localLibraryCatalog,
+        });
+        if (collection) {
+            navigateToCollection(collection, currentView === 'player' ? 'player' : 'home');
+            return;
+        }
+        setStatusMsg({ type: 'error', text: t('search.catalogUnavailable') });
+    }, [currentView, localLibraryCatalog, localSongs, navigateToCollection, playerDisplayCurrentSong, setStatusMsg, t]);
     // 搜索结果同样在展示时按当前目录重算：结果是提交那一刻的快照，导入后紧接着搜，实体目录可能还没加载完。
     const resolveSearchResultDisplay = useCallback((track: UnifiedSong) => (
         track.isLocal
@@ -2352,6 +2371,8 @@ export default function App() {
         stageIsNextUp,
         stageTrackPillOnScreen,
         openSongCardPanel,
+        onOpenDockedLattice: handleDockedBarLatticeOpen,
+        onOpenDockedArtist: handleDockedBarArtistOpen,
     });
     const settingsDialog = useSettingsDialogModel({
         themeController,

@@ -10,12 +10,13 @@ import { usePlayerControlSlotCustomization } from '../floating-player/usePlayerC
 import type { PlayerControlSlotActionId } from '../floating-player/playerControlSlotActions';
 import type { SlotContextFromApp, TrackNavigation } from '../FloatingPlayerControls';
 import { PlayerState } from '../../types';
+import type { Artist } from '../../types';
 import { usePlaybackStore, selectDisplayCoverUrl, selectDisplayLyrics, selectDisplaySong } from '../../stores/usePlaybackStore';
 import { useAudioSettingsStore } from '../../stores/useAudioSettingsStore';
 import { useAppViewStore } from '../../stores/useAppViewStore';
 import { useAppChromeStore } from '../../stores/useAppChromeStore';
 import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
-import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
+import { getProviderSongMetadata, getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import { openSettings } from '../../stores/useSettingsModalStore';
 import type { MotionValue } from 'framer-motion';
 import { useGlass } from '@/shinoinject/useGlass';
@@ -111,6 +112,10 @@ export interface DockedPlayerBarProps {
      * 这两件只属于歌词画报：别的页面上齿轮还在，栏也不该跟着鼠标闲下来就消失。
      */
     isPlayerView?: boolean;
+    /** 点歌名去队列拼贴（Lattice）；不给就只是一个不动的歌名。 */
+    onOpenLattice?: () => void;
+    /** 点歌手名去这位歌手的页面；不给就只是不动的歌手名。 */
+    onOpenArtist?: (artist: Artist) => void;
 }
 
 const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
@@ -135,6 +140,8 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
     showReturnToPlayer = false,
     onReturnToPlayer,
     isPlayerView = false,
+    onOpenLattice,
+    onOpenArtist,
 }) => {
     const { t } = useTranslation();
     // 歌名 / 歌手 / 封面直接从播放 store 读「当前该显示的那一层」：混音过渡时它仍然指着还在响的那首，
@@ -169,6 +176,12 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
 
     const songName = displaySong?.name || noTrackText;
     const artistName = displaySong ? getSongArtistLabel(displaySong) : '';
+    // 歌手名要能点着去歌手页，所以按位拆开（与搜索结果行同一套元数据）；空的时候退回拼好的那一串。
+    const songArtists = useMemo(
+        () => (displaySong ? getProviderSongMetadata(displaySong).artists.filter(artist => artist.name.trim()) : []),
+        [displaySong],
+    );
+    const openLatticeLabel = t('ui.openLattice');
     const shownVolume = isMuted ? 0 : sliderVolume;
     const VolumeIcon = shownVolume === 0 ? VolumeX : shownVolume < 0.5 ? Volume1 : Volume2;
     const muteLabel = t(isMuted ? 'commandPalette.volumeUnmute' : 'commandPalette.volumeMute');
@@ -275,10 +288,41 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                 </div>
                             )}
                             <div className="flex min-w-0 flex-col justify-center gap-1 text-left">
-                                {/* 第一行：歌名 + 歌手 */}
+                                {/* 第一行：歌名（点了去队列拼贴）+ 歌手（每位单独可点，去了歌手页） */}
                                 <div className="flex min-w-0 items-baseline gap-2">
-                                    <span className="truncate text-sm font-medium leading-tight">{songName}</span>
-                                    {artistName && (
+                                    {displaySong && onOpenLattice ? (
+                                        <button
+                                            type="button"
+                                            onClick={onOpenLattice}
+                                            aria-label={openLatticeLabel}
+                                            title={openLatticeLabel}
+                                            className="min-w-0 truncate text-left text-sm font-medium leading-tight hover:underline"
+                                        >
+                                            {songName}
+                                        </button>
+                                    ) : (
+                                        <span className="truncate text-sm font-medium leading-tight">{songName}</span>
+                                    )}
+                                    {songArtists.length > 0 ? (
+                                        <span className={`min-w-0 shrink truncate text-xs leading-tight ${colors.artistFadeClass}`} style={{ color: colors.textSecondary }}>
+                                            {songArtists.map((artist, artistIndex) => (
+                                                <React.Fragment key={`${artist.entityId || artist.id}-${artistIndex}`}>
+                                                    {artistIndex > 0 && ', '}
+                                                    {onOpenArtist ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onOpenArtist(artist)}
+                                                            aria-label={t('libraryBravaisAlbum.openArtist', { name: artist.name })}
+                                                            title={t('libraryBravaisAlbum.openArtist', { name: artist.name })}
+                                                            className="hover:underline"
+                                                        >
+                                                            {artist.name}
+                                                        </button>
+                                                    ) : artist.name}
+                                                </React.Fragment>
+                                            ))}
+                                        </span>
+                                    ) : artistName && (
                                         <span className={`shrink-0 truncate text-xs leading-tight ${colors.artistFadeClass}`} style={{ color: colors.textSecondary }}>
                                             {artistName}
                                         </span>

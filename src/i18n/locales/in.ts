@@ -1184,6 +1184,7 @@ export default {
     "selectPlaceholder": "Pilih...",
     "previousTrack": "Lagu sebelumnya",
     "nextTrack": "Lagu berikutnya",
+    "openLattice": "Buka kolase antrean",
     "stageTrackPillNext": "Selanjutnya diputar",
     "stageTrackPillNow": "Sedang diputar",
     "stageTrackPillOpenPlayer": "Buka halaman pemutar",

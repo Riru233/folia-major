@@ -1184,6 +1184,7 @@ export default {
     "selectPlaceholder": "请选择...",
     "previousTrack": "上一首",
     "nextTrack": "下一首",
+    "openLattice": "打开队列拼贴",
     "stageTrackPillNext": "接下来播放",
     "stageTrackPillNow": "正在播放",
     "stageTrackPillOpenPlayer": "打开播放页",

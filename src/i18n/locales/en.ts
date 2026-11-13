@@ -1184,6 +1184,7 @@ export default {
     "selectPlaceholder": "Select...",
     "previousTrack": "Previous track",
     "nextTrack": "Next track",
+    "openLattice": "Open the queue collage",
     "stageTrackPillNext": "Next playing",
     "stageTrackPillNow": "Now playing",
     "stageTrackPillOpenPlayer": "Open the player",

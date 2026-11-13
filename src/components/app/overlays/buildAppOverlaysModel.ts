@@ -7,6 +7,7 @@ import type MemoryMonitorWindow from '../../debug/MemoryMonitorWindow';
 import type NowPlayingToast from './NowPlayingToast';
 import { PlayerState } from '../../../types';
 import type { SongResult, UnifiedSong, LyricData } from '../../../types';
+import type { Artist } from '../../../types';
 import { resolvePlaybackNeighbors } from '../../../utils/playbackNeighbors';
 import { getPlaybackSongKey } from '../../../utils/appPlaybackGuards';
 import { getSongAlbumLabel, getSongArtistLabel } from '../../../services/onlineMusic/songMetadata';
@@ -29,6 +30,11 @@ export type AppOverlaysModel = {
     debugOverlay?: DebugOverlayProps | null;
     memoryMonitor?: MemoryMonitorProps | null;
     floatingControls?: FloatingControlsProps | null;
+    /** 停靠栏里歌名 / 歌手名的去处；栏自己从播放 store 读歌，只缺这两个动作。 */
+    dockedBar: {
+        onOpenLattice: () => void;
+        onOpenArtist: (artist: Artist) => void;
+    };
     nowPlayingToast?: NowPlayingToastProps | null;
 };
 
@@ -122,6 +128,10 @@ export type AppOverlaysDeps = {
     stageTrackPillOnScreen: boolean;
     /** 点卡片时展开右侧面板的歌曲卡片（切到 cover 页并打开） */
     openSongCardPanel: () => void;
+    /** 停靠栏：点歌名去队列拼贴。 */
+    onOpenDockedLattice: () => void;
+    /** 停靠栏：点歌手名去这位歌手的页面（本地 / Navidrome / 在线各自解析）。 */
+    onOpenDockedArtist: (artist: Artist) => void;
 };
 
 type BuildAppOverlaysModelParams = AppOverlaysAmbient & AppOverlaysDeps;
@@ -190,6 +200,8 @@ export const buildAppOverlaysModel = ({
     playerControlSlotSecondary,
     playerControlSlotContext,
     onCommitPlayerBottomBarOffset,
+    onOpenDockedLattice,
+    onOpenDockedArtist,
 }: BuildAppOverlaysModelParams): AppOverlaysModel => {
     // Gated on stageTrackPillOnScreen (computed in App: display mode plus which page allows the
     // card) rather than on the view directly, so the countdown that feeds the "up next" preview
@@ -342,5 +354,9 @@ export const buildAppOverlaysModel = ({
                 })(),
             }
             : null,
+        dockedBar: {
+            onOpenLattice: onOpenDockedLattice,
+            onOpenArtist: onOpenDockedArtist,
+        },
     };
 };
