@@ -42,6 +42,11 @@ export interface KaraokeTuning {
      * 三个点都赶在交叉时间结束前走完，所以间隔最多是交叉时间的三分之一。
      */
     leadInGapSeconds: number;
+    /**
+     * 预备点的直径，屏幕像素：三个圆一样大，直接给尺寸而不是倍率。
+     * 不跟着歌词字号走；白色边框固定宽度，不随点变大变小。
+     */
+    leadInDotSize: number;
     /** 未唱的字变成已唱的样子用哪种方式。 */
     progressStyle: KaraokeProgressStyle;
     /** 翻页（换到下一组两句）时要不要那条淡入上浮的动画；关掉就是硬切。 */
@@ -63,6 +68,7 @@ export const DEFAULT_KARAOKE_TUNING: KaraokeTuning = {
     traditionalScript: false,
     leadInSeconds: 3,
     leadInGapSeconds: 1,
+    leadInDotSize: 10,
     progressStyle: 'sweep',
     pageAnimation: true,
     overflowMode: 'scroll',

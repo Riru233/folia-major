@@ -308,6 +308,11 @@ exports[`mod tuning keys > are pinned, so a renamed or dropped key is a visible 
     "italic": {
       "type": "boolean",
     },
+    "leadInDotSize": {
+      "max": 40,
+      "min": 4,
+      "type": "number",
+    },
     "leadInGapSeconds": {
       "max": 10,
       "min": 0.1,

@@ -3544,6 +3544,8 @@ export default {
     "karaokeLeadInResetAction": "改用全局值",
     "karaokeLeadInGap": "预备点消失间隔",
     "karaokeLeadInGapHint": "相邻两个预备点消失之间隔多久。三个点都要赶在交叉时间结束前走完，所以最大只到这个交叉时间的三分之一；比如交叉时间 3 秒、间隔 1 秒，就是 5 秒蓝、6 秒绿、7 秒红（交叉点在 8 秒）。",
+    "karaokeLeadInDotSize": "预备点直径",
+    "karaokeLeadInDotSizeHint": "三个圆的直径，直接按屏幕像素给，不跟着歌词字号变。白色边框固定 2 像素，点变多大边框都不变粗。",
     "karaokeProgressStyle": "预备进度样式",
     "karaokeProgressStyleHint": "还没唱到的字怎么变成唱过的样子：从左往右扫过去、按时间淡入，或者一个字块一个字块地跳。",
     "karaokeProgressSweep": "扫过",

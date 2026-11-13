@@ -655,21 +655,28 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
                     {/* 开头三个预备点：红绿蓝三个圆，排在歌名那一屏和第一句歌词之间，
                         在「预备交叉时间」里按蓝→绿→红逐个消失，间隔由「消失间隔」定，
                         三个都赶在交叉点（标题结束）之前走完。
-                        大小按歌词字号算（一个点约四分之一个字高），白色描边保证深色封面上也看得见；
+                        直径由「预备点大小」直接给（屏幕像素，含白边，所以用 border-box），
+                        白边固定 2px、不随直径变；点与点的间距按直径的比例走。
                         不透明度由 paintLeadIn 逐帧写，所以这里是常挂的、初始化写成不可见。 */}
                     {credits && (
-                        <div className="mb-2 flex w-full shrink-0 items-center gap-2" aria-hidden="true">
+                        <div
+                            className="mb-2 flex w-full shrink-0 items-center"
+                            style={{ gap: `calc(${karaokeTuning.leadInDotSize}px * 0.75)` }}
+                            aria-hidden="true"
+                        >
                             {LEAD_IN_DOT_COLORS.map((color, index) => (
                                 <span
                                     key={color}
                                     ref={node => { leadInDotRefs.current[index] = node; }}
                                     style={{
                                         display: 'block',
-                                        width: `calc(${lineFontSize} * 0.26)`,
-                                        height: `calc(${lineFontSize} * 0.26)`,
+                                        boxSizing: 'border-box',
+                                        flex: '0 0 auto',
+                                        width: `${karaokeTuning.leadInDotSize}px`,
+                                        height: `${karaokeTuning.leadInDotSize}px`,
                                         borderRadius: '999px',
                                         background: color,
-                                        border: `calc(${lineFontSize} * 0.045) solid #ffffff`,
+                                        border: '2px solid #ffffff',
                                         boxShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
                                         opacity: 0,
                                         visibility: 'hidden',

@@ -18,6 +18,8 @@ import { resolveKaraokeCredits } from './karaokeCredits';
 import {
     KARAOKE_FONT_SCALE_MAX,
     KARAOKE_FONT_SCALE_MIN,
+    KARAOKE_LEAD_IN_DOT_SIZE_MAX,
+    KARAOKE_LEAD_IN_DOT_SIZE_MIN,
     KARAOKE_LEAD_IN_GAP_MAX,
     KARAOKE_LEAD_IN_GAP_MIN,
     KARAOKE_LEAD_IN_MIN,
@@ -34,7 +36,7 @@ import {
 
 // src/components/visualizer/karaoke/KaraokeSettingsPanel.tsx
 // 卡拉OK 的参数面板：颜色（四色 + 描边宽度）、文字（字号 / 字体 / 字重 / 斜体 / 繁体字形）、
-// 进度（预备点交叉时间 / 消失间隔 / 预备进度样式 / 超长歌词 / 切页动画），以及这首歌开头的「歌曲信息」。
+// 进度（预备点交叉时间 / 消失间隔 / 预备点大小 / 预备进度样式 / 超长歌词 / 切页动画），以及这首歌开头的「歌曲信息」。
 // 滑块沿用设置窗口的草稿 / 松手提交语义，颜色用 kit 的取色钮。
 
 const COLOR_GROUP: SettingsGroupDef = { id: 'vis-karaoke-color', titleKey: 'options.karaokeColorSection' };
@@ -241,6 +243,21 @@ const KaraokeLeadInRows: React.FC<{
                 format={value => `${value.toFixed(1)}s`}
                 disabled={seconds <= 0}
                 onChange={value => onTuningChange?.({ leadInGapSeconds: value })}
+                onDragStart={onSliderPointerDown}
+                onDragEnd={onSliderCommit}
+            />
+            {/* 直径直接给像素，不跟着歌词字号走；白边固定 2px，不随直径变。
+                交叉时间为 0（没有预备点）时跟上面一格一起变灰。 */}
+            <SliderRow
+                label={t('options.karaokeLeadInDotSize')}
+                note={t('options.karaokeLeadInDotSizeHint')}
+                value={tuning.leadInDotSize}
+                min={KARAOKE_LEAD_IN_DOT_SIZE_MIN}
+                max={KARAOKE_LEAD_IN_DOT_SIZE_MAX}
+                step={1}
+                format={value => `${Math.round(value)}px`}
+                disabled={seconds <= 0}
+                onChange={value => onTuningChange?.({ leadInDotSize: value })}
                 onDragStart={onSliderPointerDown}
                 onDragEnd={onSliderCommit}
             />

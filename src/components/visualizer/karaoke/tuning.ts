@@ -28,6 +28,9 @@ export const KARAOKE_LEAD_IN_MOD_MAX = 60;
 /** 消失间隔的范围（秒）：上限给到和交叉时间一样长，实际渲染再按「交叉时间 / 3」收窄。 */
 export const KARAOKE_LEAD_IN_GAP_MIN = 0.1;
 export const KARAOKE_LEAD_IN_GAP_MAX = 10;
+/** 预备点直径的范围（屏幕像素）：下限还看得出是个圆，上限不至于把歌名挤走。 */
+export const KARAOKE_LEAD_IN_DOT_SIZE_MIN = 4;
+export const KARAOKE_LEAD_IN_DOT_SIZE_MAX = 40;
 
 const FONT_STYLES: readonly KaraokeFontStyle[] = ['theme', 'sans', 'serif', 'mono'];
 const PROGRESS_STYLES: readonly KaraokeProgressStyle[] = ['sweep', 'fade', 'jump'];
@@ -80,6 +83,12 @@ export const normalizeKaraokeTuning = (value: Partial<KaraokeTuning> | null | un
             KARAOKE_LEAD_IN_GAP_MIN,
             KARAOKE_LEAD_IN_GAP_MAX,
         ),
+        leadInDotSize: numberWithin(
+            stored.leadInDotSize,
+            DEFAULT_KARAOKE_TUNING.leadInDotSize,
+            KARAOKE_LEAD_IN_DOT_SIZE_MIN,
+            KARAOKE_LEAD_IN_DOT_SIZE_MAX,
+        ),
         progressStyle: oneOf(stored.progressStyle, PROGRESS_STYLES, DEFAULT_KARAOKE_TUNING.progressStyle),
         pageAnimation: typeof stored.pageAnimation === 'boolean' ? stored.pageAnimation : DEFAULT_KARAOKE_TUNING.pageAnimation,
         overflowMode: oneOf(stored.overflowMode, OVERFLOW_MODES, DEFAULT_KARAOKE_TUNING.overflowMode),
@@ -99,6 +108,7 @@ export default defineVisualizerTuning<KaraokeTuning>({
         traditionalScript: MOD_SWITCH,
         leadInSeconds: modNumber(KARAOKE_LEAD_IN_MIN, KARAOKE_LEAD_IN_MOD_MAX, 0.5),
         leadInGapSeconds: modNumber(KARAOKE_LEAD_IN_GAP_MIN, KARAOKE_LEAD_IN_GAP_MAX, 0.1),
+        leadInDotSize: modNumber(KARAOKE_LEAD_IN_DOT_SIZE_MIN, KARAOKE_LEAD_IN_DOT_SIZE_MAX),
         progressStyle: modChoice(PROGRESS_STYLES),
         pageAnimation: MOD_SWITCH,
         overflowMode: modChoice(OVERFLOW_MODES),

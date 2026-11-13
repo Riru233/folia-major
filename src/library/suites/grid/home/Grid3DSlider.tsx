@@ -833,7 +833,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                         hasFloatingPlayer ? 'pt-6 md:pt-8 pb-0 -mb-4 md:-mb-6' : 'pt-5 md:pt-6 pb-4'
                     } ${isDaylight? '[text-shadow:0_0_5px_#fff,0_0_10px_#fff,0_0_20px_#fff]':' [text-shadow:0_0_5px_#000,0_0_10px_#fff,0_0_20px_#000]'}`}
                 >
-                    <div className="text-4xl mx-auto" style={{ color: 'var(--text-primary)' }}>
+                    <div className="text-5xl mx-auto font-light" style={{ color: 'var(--text-primary)' }}>
                         {focusedDisplayName}
                     </div>
                     <p className="text-m opacity-50 mt-1" style={{ color: 'var(--text-secondary)' }}>
