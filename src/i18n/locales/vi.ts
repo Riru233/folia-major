@@ -1951,6 +1951,7 @@ export default {
     "loadMore": "Tải thêm",
     "loading": "Đang tải...",
     "searchButton": "Tìm kiếm",
+    "searchClose": "Đóng tìm kiếm",
     "searchDatabase": "TÌM TRÊN MẠNG...",
     "searchLocal": "Tìm nhạc trên máy...",
     "searchNavidrome": "Tìm trên Navidrome...",

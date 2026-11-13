@@ -1953,6 +1953,7 @@ export default {
     "loadMore": "Load More",
     "loading": "Loading...",
     "searchButton": "Search",
+    "searchClose": "Close search",
     "searchDatabase": "SEARCH DATABASE...",
     "searchLocal": "Search local songs...",
     "searchNavidrome": "Search navidrome",

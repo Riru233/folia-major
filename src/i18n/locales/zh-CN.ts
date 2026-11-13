@@ -1955,6 +1955,7 @@ export default {
     "loadMore": "加载更多",
     "loading": "加载中...",
     "searchButton": "搜索",
+    "searchClose": "收起搜索",
     "searchDatabase": "搜索在线歌曲...",
     "searchLocal": "搜索本地歌曲...",
     "searchNavidrome": "搜索navidrome...",

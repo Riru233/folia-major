@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Loader2, Settings, LayoutDashboard } from 'lucide-react';
+import { Search, Loader2, Settings, LayoutDashboard, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../../stores/useSearchNavigationStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -252,10 +252,11 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     }, [isCompact]);
 
     // 展开后把焦点直接交给输入框：点那一下就是来打字的，不用再点一次。
-    // 等一帧再聚焦：宽度过渡从这一帧才开始，input 的可见性也跟着这一帧才翻转（收起时它是 pointer-events-none）。
+    // 等一帧再聚焦：那一帧起搜索层才开始从右边滑进来。preventScroll 是必须的——搜索层此刻还在
+    // 页头右侧之外（translateX(100%)），浏览器默认会为了露出它把整个页面横向滚一段。
     useEffect(() => {
         if (!isCompact || !isCompactSearchOpen) return;
-        const frame = requestAnimationFrame(() => searchInputRef.current?.focus());
+        const frame = requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }));
         return () => cancelAnimationFrame(frame);
     }, [isCompact, isCompactSearchOpen]);
 
@@ -579,6 +580,21 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         // opacity 排前面：它按 300ms 淡，其余属性沿用这些元素原本 150ms 的过渡（例如搜索框展开宽度）。
         transition: 'opacity 300ms ease-in-out, all 150ms',
     };
+    /** 页头这几颗玻璃共用的一套底色、描边与文字色：搜索钮、桌面档的搜索框、紧凑档占满页头的搜索框。 */
+    const headerGlassStyle: React.CSSProperties = {
+        backgroundColor: isDaylight
+            ? "rgba(215,215,215,0.42)"
+            : "rgba(40, 40, 40, 0.42)",
+        borderTop: isDaylight
+            ? "1px solid rgba(255,255,255,0.32)"
+            : "1px solid rgba(255,255,255,0.22)",
+        borderBottom: isDaylight
+            ? "1px solid rgba(255,255,255,0.32)"
+            : "1px solid rgba(255,255,255,0.22)",
+        outline: "1px solid rgba(40,40,40,0.2)",
+        boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
+        color: isDaylight ? "#000" : "#fff",
+    };
 
     return (
         <div
@@ -593,7 +609,17 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 inert={isGridMapOpen}
                 className={`z-[20] select-none ${isGridMapOpen ? 'pointer-events-none' : ''}`}
             >
-                <div className="relative grid grid-cols-2 grid-cols-2 items-center w-full py-4 py-10 px-4 gap-y-4 gap-y-0">
+            {/* 页头是道推拉门：紧凑档点开搜索时，整排按钮向左滑出，搜索框从右边滑进来占满整条页头；
+                收起时两边各自滑回。进出都只做 transform——不给祖先加 opacity 或 filter，那会把
+                backdrop-filter 的取样根截断在容器里，玻璃在动画期间就会消失；元素自己的 opacity 不参与
+                那个判定，所以页头因地图淡出仍按原来的逐个淡。这一层不裁切：扫库进度气泡是往下弹的，
+                要留它出去；滑出去的两层由页面自己的 overflow-hidden 收掉。 */}
+            <div className="relative">
+                <div
+                    className="transition-transform duration-300 ease-out"
+                    style={{ transform: isCompact && isCompactSearchOpen ? 'translateX(-100%)' : 'translateX(0)' }}
+                >
+                    <div className="relative grid grid-cols-2 grid-cols-2 items-center w-full py-4 py-10 px-4 gap-y-4 gap-y-0">
                     {/* Left title and settings */}
                     <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
                         {/* 左侧按钮组 */}
@@ -956,57 +982,79 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 surfaceStyle={headerFadeStyle}
                             />
                         </div>
-                        <form
-                        onSubmit={handleSearch}
-                        className={`relative rounded-full transition-all ${
-                            isCompact
-                                // 紧凑档：收起时只有一颗圆钮那么宽，点开沿右边向内展开——宽度走过渡，
-                                // 玻璃跟着一起变宽，看起来就是那颗钮浮出来成了输入框。
-                                ? (isCompactSearchOpen ? 'w-56 shrink-0' : 'w-10 shrink-0')
-                                : 'w-full md:w-56 focus-within:md:w-72'
-                        }`}
-                        data-glass
-                        data-glass-jelly
-                        data-glass-light
+                        {isCompact ? (
+                            // 紧凑档收着的时候这里只有一颗圆钮：点开之后整条页头交给搜索层（见下面），
+                            // 页头这一排按钮一起向左滑出去。
+                            <button
+                                type="button"
+                                onClick={() => setIsCompactSearchOpen(true)}
+                                title={t('home.searchButton')}
+                                aria-label={t('home.searchButton')}
+                                aria-expanded={isCompactSearchOpen}
+                                data-testid="home-search-toggle"
+                                data-glass
+                                data-glass-jelly
+                                data-glass-light
+                                className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full"
+                                style={{ ...headerGlassStyle, ...headerFadeStyle }}
+                            >
+                                {isSearchingActive
+                                    ? <Loader2 className="h-4 w-4 animate-spin opacity-40" />
+                                    : <Search className="h-4 w-4 opacity-40 transition-opacity hover:opacity-100" />}
+                            </button>
+                        ) : (
+                            <form
+                            onSubmit={handleSearch}
+                            className="relative w-full rounded-full transition-all md:w-56 focus-within:md:w-72"
+                            data-glass
+                            data-glass-jelly
+                            data-glass-light
+                            style={{ ...headerGlassStyle, ...headerFadeStyle }}
+                            >
+                                {isSearchingActive ? (
+                                    <Loader2 className="absolute left-3 top-1/2 w-4 h-4 animate-spin opacity-40 -mt-2" />
+                                ) : (
+                                    <Search
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 w-4 h-4 cursor-pointer hover:opacity-100 transition-opacity"
+                                        onClick={() => handleSearch()}
+                                    />
+                                )}
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    className="w-full border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text placeholder:italic"
+                                    style={{ color: 'var(--text-primary)' }}
+                                />
+                            </form>
+                        )}
+                    </div>
+                    </div>
+                </div>
+
+                {/* 紧凑档展开的搜索：从右边滑进来占满整条页头（左右 padding 与页头一致，所以贴齐两侧）。
+                    收起时滑回右边、同时断掉指针与焦点；输入框里的字留着，下次展开接着改。 */}
+                {isCompact && (
+                    <div
+                        className="absolute inset-0 flex items-center px-4 transition-transform duration-300 ease-out"
                         style={{
-                            backgroundColor: isDaylight
-                            ? "rgba(215,215,215,0.42)"
-                            : "rgba(40, 40, 40, 0.42)",
-                            borderTop: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                            borderBottom: isDaylight
-                            ? "1px solid rgba(255,255,255,0.32)"
-                            : "1px solid rgba(255,255,255,0.22)",
-                            outline: "1px solid rgba(40,40,40,0.2)",
-                            boxShadow: "2px 2px 8px 2px rgba(40,40,40,0.4)",
-                            color: isDaylight ? "#000" : "#fff",
-                            // 紧凑档收起时要把溢出的输入框裁掉，展开到一半不该露出半截内容。
-                            overflow: isCompact ? "hidden" : "auto",
-                            ...headerFadeStyle,
+                            transform: isCompactSearchOpen ? 'translateX(0)' : 'translateX(100%)',
+                            pointerEvents: isCompactSearchOpen ? 'auto' : 'none',
                         }}
+                        aria-hidden={!isCompactSearchOpen}
+                        inert={!isCompactSearchOpen}
+                    >
+                        <form
+                            onSubmit={handleSearch}
+                            className="relative h-10 w-full rounded-full"
+                            data-glass
+                            data-glass-jelly
+                            data-glass-light
+                            style={{ ...headerGlassStyle, ...headerFadeStyle }}
                         >
-                            {isCompact ? (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (isCompactSearchOpen) {
-                                            void handleSearch();
-                                            return;
-                                        }
-                                        setIsCompactSearchOpen(true);
-                                    }}
-                                    title={t('home.searchButton')}
-                                    aria-label={t('home.searchButton')}
-                                    aria-expanded={isCompactSearchOpen}
-                                    data-testid="home-search-toggle"
-                                    className="absolute left-0 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full"
-                                >
-                                    {isSearchingActive
-                                        ? <Loader2 className="h-4 w-4 animate-spin opacity-40" />
-                                        : <Search className="h-4 w-4 opacity-40 transition-opacity hover:opacity-100" />}
-                                </button>
-                            ) : isSearchingActive ? (
+                            {isSearchingActive ? (
                                 <Loader2 className="absolute left-3 top-1/2 w-4 h-4 animate-spin opacity-40 -mt-2" />
                             ) : (
                                 <Search
@@ -1021,28 +1069,35 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 onKeyDown={e => {
-                                    // 紧凑档：Esc 收起，输入框里的字留着（下次展开接着改）。
-                                    if (e.key !== 'Escape' || !isCompact) return;
+                                    // Esc 收起，输入框里的字留着（下次展开接着改）。
+                                    if (e.key !== 'Escape') return;
                                     e.preventDefault();
                                     collapseCompactSearch();
                                 }}
                                 onBlur={e => {
-                                    // 紧凑档里没打字就离开这一块，自动收回圆钮；指针挪到那颗钮上不算离开。
-                                    if (!isCompact || searchQuery.trim()) return;
+                                    // 没打字就离开这一块，自动收回圆钮；指针挪到同一块里的那几颗图标上不算离开。
+                                    if (searchQuery.trim()) return;
                                     const next = e.relatedTarget;
                                     if (next instanceof Node && e.currentTarget.parentElement?.contains(next)) return;
                                     setIsCompactSearchOpen(false);
                                 }}
-                                // 收起时输入框只是被裁掉了，别让它还能被 Tab 选中。
-                                tabIndex={isCompact && !isCompactSearchOpen ? -1 : undefined}
-                                className={`w-full border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text placeholder:italic ${
-                                    isCompact && !isCompactSearchOpen ? 'pointer-events-none opacity-0' : 'opacity-100'
-                                }`}
+                                className="h-10 w-full rounded-full border border-white/10 py-2 pl-10 pr-10 text-sm placeholder:italic placeholder:text-current placeholder:opacity-40 focus:border-white/20 focus:outline-none select-text"
                                 style={{ color: 'var(--text-primary)' }}
                             />
+                            {/* 收起：打完字（或改到一半）不想搜了就按这个，输入框跟着滑回右边。 */}
+                            <button
+                                type="button"
+                                onClick={collapseCompactSearch}
+                                title={t('home.searchClose')}
+                                aria-label={t('home.searchClose')}
+                                className="absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full transition-colors hover:bg-white/15"
+                            >
+                                <X className="h-3.5 w-3.5 opacity-50" />
+                            </button>
                         </form>
                     </div>
-                </div>
+                )}
+            </div>
             </div>
 
             {/* Desktop Canvas Surface。每个访问过的页签常驻一层（keep-alive）：切页签只切换可见性和横向位移，

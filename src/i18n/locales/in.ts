@@ -1955,6 +1955,7 @@ export default {
     "loadMore": "Muat Lebih Banyak",
     "loading": "Memuat...",
     "searchButton": "Cari",
+    "searchClose": "Tutup pencarian",
     "searchDatabase": "CARI DATABASE...",
     "searchLocal": "Cari lagu lokal...",
     "searchNavidrome": "Cari navidrome",

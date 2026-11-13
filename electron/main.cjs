@@ -5984,8 +5984,9 @@ function createWindow(options = {}) {
       type: useDesktopWindowType ? 'desktop' : undefined,
       // 主窗口的最小尺寸：紧凑模式下导航栏、停靠栏和设置面板都要放得下，
       // 再小就会开始互相挤（600 × 770 是 2026-11-14 定的下限）。
-      minWidth: 600,
-      minHeight: 770,
+      // 壁纸模式例外：那一刻窗口就是整块屏幕，720p 之类的屏幕比这个下限还矮，
+      // 套下限会把窗口撑出屏幕，所以壁纸窗沿用宽松的值。
+      ...(useWallpaperGeometry ? { minWidth: 350, minHeight: 100 } : { minWidth: 600, minHeight: 770 }),
       // macOS 正常模式：hidden 标题栏保留系统红绿灯，内容仍铺满整窗；
       // 其余平台（以及 mac 壁纸模式）保持完全无边框。
       ...(useMacNativeTrafficLights
