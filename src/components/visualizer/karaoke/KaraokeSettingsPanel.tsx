@@ -16,6 +16,8 @@ import {
 import { useKaraokeLeadInStore } from '../../../stores/useKaraokeLeadInStore';
 import { resolveKaraokeCredits } from './karaokeCredits';
 import {
+    KARAOKE_CREDITS_ADVANCE_MAX,
+    KARAOKE_CREDITS_ADVANCE_MIN,
     KARAOKE_FONT_SCALE_MAX,
     KARAOKE_FONT_SCALE_MIN,
     KARAOKE_LEAD_IN_DOT_SIZE_MAX,
@@ -276,6 +278,45 @@ const KaraokeLeadInRows: React.FC<{
     );
 };
 
+/**
+ * 歌曲信息提前消失：整块信息（歌名 + 作词/作曲）在原淡出点之前多少秒淡完。
+ *
+ * 上限跟着「这首歌的交叉时间」走：再早就是在重合开始之前就把信息撤了，那段时间会变成空屏。
+ * 交叉时间按歌存（useKaraokeLeadInStore），所以这里的量程也按当前这首歌算。
+ */
+const KaraokeCreditsAdvanceRow: React.FC<{
+    t: VisualizerSettingsPanelProps['t'];
+    tuning: KaraokeTuning;
+    onTuningChange?: VisualizerSettingsPanelProps<KaraokeTuning>['onTuningChange'];
+    onSliderPointerDown?: VisualizerSettingsPanelProps<KaraokeTuning>['onSliderPointerDown'];
+    onSliderCommit?: VisualizerSettingsPanelProps<KaraokeTuning>['onSliderCommit'];
+}> = ({ t, tuning, onTuningChange, onSliderPointerDown, onSliderCommit }) => {
+    const displaySong = usePlaybackStore(selectDisplaySong);
+    const songKey = displaySong ? getPlaybackSongKey(displaySong) : null;
+    const override = useKaraokeLeadInStore(state => (songKey ? state.bySong[songKey] : undefined));
+    const seconds = typeof override === 'number' ? override : tuning.leadInSeconds;
+    const max = Math.max(
+        KARAOKE_CREDITS_ADVANCE_MIN,
+        Math.round(Math.min(KARAOKE_CREDITS_ADVANCE_MAX, seconds) * 10) / 10,
+    );
+
+    return (
+        <SliderRow
+            label={t('options.karaokeCreditsAdvance')}
+            note={t('options.karaokeCreditsAdvanceHint')}
+            value={Math.min(tuning.creditsAdvanceSeconds, max)}
+            min={KARAOKE_CREDITS_ADVANCE_MIN}
+            max={max}
+            step={0.1}
+            format={value => `${value.toFixed(1)}s`}
+            disabled={max <= KARAOKE_CREDITS_ADVANCE_MIN}
+            onChange={value => onTuningChange?.({ creditsAdvanceSeconds: value })}
+            onDragStart={onSliderPointerDown}
+            onDragEnd={onSliderCommit}
+        />
+    );
+};
+
 const KaraokeSettingsPanel: React.FC<VisualizerSettingsPanelProps<KaraokeTuning>> = ({
     t,
     tuning: karaokeTuning = DEFAULT_KARAOKE_TUNING,
@@ -401,6 +442,13 @@ const KaraokeSettingsPanel: React.FC<VisualizerSettingsPanelProps<KaraokeTuning>
             </Group>
 
             <Group def={INFO_GROUP}>
+                <KaraokeCreditsAdvanceRow
+                    t={t}
+                    tuning={karaokeTuning}
+                    onTuningChange={onTuningChange}
+                    onSliderPointerDown={onSliderPointerDown}
+                    onSliderCommit={onSliderCommit}
+                />
                 <KaraokeInfoRows t={t} />
             </Group>
         </>

@@ -301,6 +301,43 @@ const titleOnlyCredits = (lines: Line[], title: string): KaraokeCredits | null =
     };
 };
 
+/**
+ * 歌曲信息「提前消失」：把整个淡出窗往前挪 seconds 秒，淡出宽度不变，标题区因此更早退场。
+ *
+ * @param credits 原本算好的标题区
+ * @param seconds 想提前多少秒（0 就是不动）
+ * @param overlapStart 重合开始的时刻（= 标题结束 - 交叉时间）：淡出不能早于这里，
+ *        否则「交叉时间之前只显示曲名和信息」那一段会变成空屏
+ *
+ * 实际提前量取三者最小：想提前的秒数、到重合开始为止的余量、淡出起点本身（不让时间变成负数）。
+ */
+export const advanceKaraokeCreditsFade = (
+    credits: KaraokeCredits,
+    seconds: number,
+    overlapStart: number,
+): KaraokeCredits => {
+    if (!(seconds > 0)) {
+        return credits;
+    }
+
+    const width = credits.fadeEnd - credits.fadeStart;
+    const advance = Math.min(
+        seconds,
+        Math.max(0, credits.fadeEnd - (Number.isFinite(overlapStart) ? overlapStart : 0)),
+        Math.max(0, credits.fadeStart),
+    );
+
+    if (advance <= 0) {
+        return credits;
+    }
+
+    return {
+        ...credits,
+        fadeStart: credits.fadeStart - advance,
+        fadeEnd: credits.fadeStart - advance + width,
+    };
+};
+
 /** 标题区在这一时刻的不透明度：唱到作曲那句末尾之前是 1，之后线性淡到 0。 */
 export const karaokeCreditsOpacity = (credits: KaraokeCredits, time: number): number => {
     if (time <= credits.fadeStart) {

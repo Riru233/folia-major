@@ -47,6 +47,11 @@ export interface KaraokeTuning {
      * 不跟着歌词字号走；白色边框固定宽度，不随点变大变小。
      */
     leadInDotSize: number;
+    /**
+     * 歌曲信息提前消失（秒）：开头的歌名、作词、作曲整块在原本的淡出点之前这么多秒淡完。
+     * 最多提前到「重合开始」那一刻（标题结束 - 交叉时间），再早就是空屏；0 就是按原来的时机淡出。
+     */
+    creditsAdvanceSeconds: number;
     /** 未唱的字变成已唱的样子用哪种方式。 */
     progressStyle: KaraokeProgressStyle;
     /** 翻页（换到下一组两句）时要不要那条淡入上浮的动画；关掉就是硬切。 */
@@ -69,6 +74,7 @@ export const DEFAULT_KARAOKE_TUNING: KaraokeTuning = {
     leadInSeconds: 3,
     leadInGapSeconds: 1,
     leadInDotSize: 10,
+    creditsAdvanceSeconds: 0,
     progressStyle: 'sweep',
     pageAnimation: true,
     overflowMode: 'scroll',

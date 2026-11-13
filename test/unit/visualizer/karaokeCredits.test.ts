@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Line } from '@/types';
 import {
+    advanceKaraokeCreditsFade,
     karaokeCreditsOpacity,
     resolveKaraokeCredits,
 } from '@/components/visualizer/karaoke/karaokeCredits';
@@ -188,5 +189,38 @@ describe('karaokeCreditsOpacity', () => {
         samples.slice(1).forEach((value, index) => {
             expect(value).toBeLessThanOrEqual(samples[index]);
         });
+    });
+});
+
+describe('advanceKaraokeCreditsFade', () => {
+    // withIntro: 作曲唱到 6s，fadeStart 6、fadeEnd 6.8；交叉时间 3s 时重合开始是 3.8。
+    const credits = resolveKaraokeCredits(withIntro(), { title: 'T' })!;
+
+    it('moves the whole fade window earlier by the requested seconds', () => {
+        const moved = advanceKaraokeCreditsFade(credits, 1, 0);
+
+        expect(moved.fadeEnd).toBeCloseTo(credits.fadeEnd - 1);
+        expect(moved.fadeStart).toBeCloseTo(credits.fadeStart - 1);
+        // 淡出宽度不变，只是整块前移。
+        expect(moved.fadeEnd - moved.fadeStart).toBeCloseTo(credits.fadeEnd - credits.fadeStart);
+    });
+
+    it('never pulls the fade before the start of the overlap', () => {
+        const overlapStart = credits.fadeEnd - 3;
+        const moved = advanceKaraokeCreditsFade(credits, 5, overlapStart);
+
+        expect(moved.fadeEnd).toBeCloseTo(overlapStart);
+    });
+
+    it('never starts before the beginning of the song', () => {
+        const moved = advanceKaraokeCreditsFade({ ...credits, fadeStart: 0.4, fadeEnd: 1.2 }, 3, 0);
+
+        expect(moved.fadeStart).toBe(0);
+        expect(moved.fadeEnd).toBeCloseTo(0.8);
+    });
+
+    it('leaves the credits alone when nothing is asked or nothing can move', () => {
+        expect(advanceKaraokeCreditsFade(credits, 0, 0)).toBe(credits);
+        expect(advanceKaraokeCreditsFade(credits, 2, credits.fadeEnd + 5)).toBe(credits);
     });
 });

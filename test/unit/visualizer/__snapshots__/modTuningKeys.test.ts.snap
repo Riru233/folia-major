@@ -285,6 +285,12 @@ exports[`mod tuning keys > are pinned, so a renamed or dropped key is a visible 
     },
   },
   "karaoke": {
+    "creditsAdvanceSeconds": {
+      "max": 10,
+      "min": 0,
+      "step": 0.1,
+      "type": "number",
+    },
     "fontScale": {
       "max": 2,
       "min": 0.5,

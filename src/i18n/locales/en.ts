@@ -3544,6 +3544,8 @@ export default {
     "karaokeLeadInGapHint": "How long between two dots vanishing. All three are gone before the overlap ends, so the gap tops out at a third of the overlap: with a 3s overlap and a 1s gap and the overlap ending at 8s, blue goes at 5s, green at 6s, red at 7s.",
     "karaokeLeadInDotSize": "Count-in dot diameter",
     "karaokeLeadInDotSizeHint": "Diameter of the three dots, given in screen pixels and independent of the lyric font size. The white border stays 2px, however big the dots get.",
+    "karaokeCreditsAdvance": "Song info leaves early",
+    "karaokeCreditsAdvanceHint": "The opening title, lyricist and composer block finishes fading this many seconds before its usual point, clearing the way for the lyrics. It can go no earlier than the start of the overlap (title end minus the overlap time), or the screen would be empty for a while. Set 0 to keep the original timing.",
     "karaokeProgressStyle": "Lead-in progress",
     "karaokeProgressStyleHint": "How the words not sung yet turn into the sung look: swept left to right, faded in by time, or flipped chunk by chunk.",
     "karaokeProgressSweep": "Sweep",

@@ -3546,6 +3546,8 @@ export default {
     "karaokeLeadInGapHint": "Berapa lama jeda sebelum titik berikutnya hilang. Ketiganya hilang sebelum waktu tumpang tindih berakhir, jadi jeda maksimal sepertiga dari waktu itu: tumpang tindih 3 detik, jeda 1 detik, dan titik tumpang tindih di detik ke-8 berarti biru hilang di detik 5, hijau 6, merah 7.",
     "karaokeLeadInDotSize": "Diameter titik hitung mundur",
     "karaokeLeadInDotSizeHint": "Diameter ketiga titik, dalam piksel layar dan tidak mengikuti ukuran huruf lirik. Garis putih tetap 2 piksel, sebesar apa pun titiknya.",
+    "karaokeCreditsAdvance": "Info lagu hilang lebih awal",
+    "karaokeCreditsAdvanceHint": "Blok judul, penulis lirik, dan komposer di awal selesai memudar sekian detik lebih awal dari biasanya agar lirik mendapat ruang. Tidak bisa lebih awal dari mulainya tumpang tindih (akhir judul dikurangi waktu tumpang tindih), kalau tidak layar akan kosong sebentar. Isi 0 untuk memakai waktu semula.",
     "karaokeProgressStyle": "Gaya progres awal",
     "karaokeProgressStyleHint": "Bagaimana kata yang belum dinyanyikan berubah jadi tampilan sudah dinyanyikan: disapu dari kiri ke kanan, memudar mengikuti waktu, atau berubah per potongan.",
     "karaokeProgressSweep": "Sapu",

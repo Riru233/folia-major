@@ -3538,6 +3538,8 @@ export default {
     "karaokeLeadInGapHint": "Bao lâu thì chấm kế tiếp biến mất. Cả ba chấm đều biến mất trước khi hết thời gian chồng lấn, nên khoảng cách tối đa bằng một phần ba thời gian đó: chồng lấn 3 giây, khoảng cách 1 giây và điểm chồng lấn ở giây thứ 8 thì lam mất ở 5 giây, lục ở 6 giây, đỏ ở 7 giây.",
     "karaokeLeadInDotSize": "Đường kính chấm đếm ngược",
     "karaokeLeadInDotSizeHint": "Đường kính của ba chấm, tính bằng pixel màn hình và không phụ thuộc cỡ chữ lời. Viền trắng luôn dày 2 pixel, chấm to đến đâu viền cũng không dày thêm.",
+    "karaokeCreditsAdvance": "Thông tin bài hát biến mất sớm",
+    "karaokeCreditsAdvanceHint": "Khối tựa, lời và nhạc ở đầu mờ đi sớm hơn thời điểm cũ ngần này giây để nhường chỗ cho lời. Không thể sớm hơn lúc bắt đầu chồng lấn (tựa kết thúc trừ thời gian chồng lấn), nếu không sẽ có một đoạn màn hình trống. Đặt 0 để giữ thời điểm cũ.",
     "karaokeProgressStyle": "Kiểu tiến trình chuẩn bị",
     "karaokeProgressStyleHint": "Cách những chữ chưa hát chuyển thành dạng đã hát: quét từ trái sang phải, mờ dần theo thời gian, hoặc đổi theo từng mảng chữ.",
     "karaokeProgressSweep": "Quét",

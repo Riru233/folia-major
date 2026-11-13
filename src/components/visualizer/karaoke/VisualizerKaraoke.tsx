@@ -13,7 +13,7 @@ import VisualizerShell from '../VisualizerShell';
 import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
 import { buildKaraokeChunks, chunkFillProgress, type KaraokeChunk } from './karaokeSegments';
 import { resolveKaraokeScrollOffset, resolveKaraokeWrapScrollOffset } from './karaokeScroll';
-import { karaokeCreditsOpacity, resolveKaraokeCredits } from './karaokeCredits';
+import { advanceKaraokeCreditsFade, karaokeCreditsOpacity, resolveKaraokeCredits } from './karaokeCredits';
 import { resolveKaraokePage } from './karaokePaging';
 import { LEAD_IN_DOT_COLORS, resolveLeadInDotOpacities } from './karaokeLeadIn';
 import { toTraditionalLyrics } from './karaokeHanzi';
@@ -120,6 +120,14 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         }),
         [lines, songTitle, infoOverride],
     );
+
+    // 「歌曲信息提前消失」：整块信息（歌名 + 作词/作曲）按设置往前挪，最多提前到重合开始那一刻。
+    // 预备点的倒数窗和交叉点仍按原来的 fadeEnd 算——提前消失只影响信息本身，不动节奏。
+    const fadingCredits = useMemo(() => (
+        credits
+            ? advanceKaraokeCreditsFade(credits, karaokeTuning.creditsAdvanceSeconds, credits.fadeEnd - leadInSeconds)
+            : null
+    ), [credits, karaokeTuning.creditsAdvanceSeconds, leadInSeconds]);
 
     // 被提走的那几行（署名）既不上屏，也不占「两句一页」的格子：页的划分按去掉它们之后的歌词算
     // （见 karaokePaging.ts）。按原数组算的话，开头三行署名会把第一句真歌词挤到第二行、第一行空着。
@@ -371,13 +379,13 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         writeTransform(target, offset > 0 ? `translateX(-${offset}px)` : '');
     }, [rtl, karaokeTuning.overflowMode, writeTransform]);
 
-    /** 标题区只在开头露脸：唱到作曲末尾开始淡出，第一句歌词出来时正好淡完。 */
+    /** 标题区只在开头露脸：唱到作曲末尾开始淡出，第一句歌词出来时正好淡完（可以再提前几秒）。 */
     const paintCredits = useCallback((time: number) => {
         const node = creditsRef.current;
-        if (!node || !credits) {
+        if (!node || !fadingCredits) {
             return;
         }
-        const opacity = karaokeCreditsOpacity(credits, time);
+        const opacity = karaokeCreditsOpacity(fadingCredits, time);
         const last = lastCreditsWriteRef.current;
         if (last.node === node && Math.abs(opacity - last.opacity) < EPSILON) {
             return;
@@ -386,7 +394,7 @@ const VisualizerKaraoke: React.FC<VisualizerKaraokeProps> = (props) => {
         node.style.opacity = opacity.toFixed(3);
         // 淡到 0 之后整块撤掉：它盖在画面正中，留着会白占一层合成。
         node.style.visibility = opacity <= 0 ? 'hidden' : 'visible';
-    }, [credits]);
+    }, [fadingCredits]);
 
     /** 开头的三个预备点：交叉时间里按蓝→绿→红逐个消失，三个都在交叉点之前走完。 */
     const paintLeadIn = useCallback((time: number) => {

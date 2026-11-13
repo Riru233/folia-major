@@ -3546,6 +3546,8 @@ export default {
     "karaokeLeadInGapHint": "相邻两个预备点消失之间隔多久。三个点都要赶在交叉时间结束前走完，所以最大只到这个交叉时间的三分之一；比如交叉时间 3 秒、间隔 1 秒，就是 5 秒蓝、6 秒绿、7 秒红（交叉点在 8 秒）。",
     "karaokeLeadInDotSize": "预备点直径",
     "karaokeLeadInDotSizeHint": "三个圆的直径，直接按屏幕像素给，不跟着歌词字号变。白色边框固定 2 像素，点变多大边框都不变粗。",
+    "karaokeCreditsAdvance": "歌曲信息提前消失",
+    "karaokeCreditsAdvanceHint": "开头的歌名、作词、作曲整块在原淡出点之前这么多秒淡完，给歌词腾地方。最多提前到「重合开始」那一刻，也就是标题结束减交叉时间：再早就会有一段空屏。设为 0 就按原来的时机淡出。",
     "karaokeProgressStyle": "预备进度样式",
     "karaokeProgressStyleHint": "还没唱到的字怎么变成唱过的样子：从左往右扫过去、按时间淡入，或者一个字块一个字块地跳。",
     "karaokeProgressSweep": "扫过",
