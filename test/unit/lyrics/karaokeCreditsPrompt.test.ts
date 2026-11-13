@@ -26,6 +26,15 @@ describe('karaoke credits prompt parity', () => {
         expect(cjs.KARAOKE_CREDITS_SCHEMA_NAME).toBe(esm.KARAOKE_CREDITS_SCHEMA_NAME);
         expect(cjs.KARAOKE_CREDITS_MAX_OUTPUT_TOKENS).toBe(esm.KARAOKE_CREDITS_MAX_OUTPUT_TOKENS);
     });
+
+    it('asks the model to hide a leading ellipsis line as well', () => {
+        // 开头的「……」不是歌词，只是一串空点：模型认信息行时要顺手把它划进去。
+        const prompt = esm.buildKaraokeCreditsSystemPrompt();
+
+        expect(prompt).toContain('省略号');
+        expect(prompt).toContain('……');
+        expect(prompt).toContain('...');
+    });
 });
 
 describe('buildKaraokeCreditsSourcePrompt', () => {
