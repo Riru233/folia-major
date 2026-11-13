@@ -15,6 +15,7 @@ import {
 } from '../../../services/karaokeCreditsAi';
 import { useKaraokeLeadInStore } from '../../../stores/useKaraokeLeadInStore';
 import { resolveKaraokeCredits } from './karaokeCredits';
+import KaraokeTimelinePreview from './KaraokeTimelinePreview';
 import {
     KARAOKE_CREDITS_ADVANCE_MAX,
     KARAOKE_CREDITS_ADVANCE_MIN,
@@ -406,6 +407,7 @@ const KaraokeSettingsPanel: React.FC<VisualizerSettingsPanelProps<KaraokeTuning>
             </Group>
 
             <Group def={PROGRESS_GROUP}>
+                <KaraokeTimelinePreview t={t} tuning={karaokeTuning} />
                 <KaraokeLeadInRows
                     t={t}
                     tuning={karaokeTuning}

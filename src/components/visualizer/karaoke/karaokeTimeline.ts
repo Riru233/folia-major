@@ -20,7 +20,7 @@ export interface KaraokeTimelineInput {
 export interface KaraokeTimeline {
     /** 横轴总长（秒）：从 0 到第一句之后留一点余量。 */
     span: number;
-    /** 信息块亮着的时间段，已经按「提前消失」前移。 */
+    /** 信息块亮着的时间段：起点恒为 0s，终点按「提前消失」前移。 */
     info: { start: number; end: number } | null;
     /** 交叉窗：标题和歌词同屏，三个预备点在这段里走完。 */
     overlap: { start: number; end: number } | null;
@@ -66,7 +66,8 @@ export const buildKaraokeTimeline = ({
 
     return {
         span: Math.max(lyricStart + TAIL_SECONDS, fading.fadeEnd, 1),
-        info: { start: Math.max(0, fading.fadeStart), end: Math.max(0, fading.fadeEnd) },
+        // 信息块从头就在屏幕上：起点钉死在 0s，只有「什么时候淡完」会随调参变。
+        info: { start: 0, end: Math.max(0, fading.fadeEnd) },
         overlap: { start: overlapStart, end: lyricStart },
         dots,
         lyricStart,
