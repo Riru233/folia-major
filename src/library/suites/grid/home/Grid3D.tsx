@@ -807,8 +807,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                         values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
                                         result="dispB"
                                     />
-                                    <feOffset in="dispR" dx="-2.4" dy="-2.4" result="dispRShift" />
-                                    <feOffset in="dispB" dx="2.4" dy="2.4" result="dispBShift" />
+                                    <feOffset in="dispR" dx="-2.6" dy="-2.6" result="dispRShift" />
+                                    <feOffset in="dispB" dx="2.6" dy="2.6" result="dispBShift" />
                                     {/* 三通道必须用 screen 相加，不能用 feMerge：feMerge 是「盖上去」，
                                         每个通道都是不透明的，后画的会把先画的整个盖掉，最后只剩蓝色一层。
                                         screen 在两个不透明图层上就是逐通道相加（交叠项为 0），
