@@ -347,9 +347,9 @@ export default function WindowControls({
     <button
       data-glass
       data-glass-light
-      data-glass-strength="0.8"
+      data-glass-strength="8"
       data-glass-blur="1"
-      data-glass-bend="5"
+      data-glass-bend="120"
       data-control="pin"
       className={`relative ${pinBtnClass}`}
       tabIndex={standardControlsVisible ? 0 : -1}
@@ -376,9 +376,9 @@ export default function WindowControls({
   const remoteControl = (
     <button
       data-glass
-      data-glass-strength="0.8"
+      data-glass-strength="8"
       data-glass-blur="1"
-      data-glass-bend="5"
+      data-glass-bend="120"
       data-control="remote"
       className={`relative ${remoteBtnClass}`}
       title={t("ui.remoteControl")}
@@ -393,9 +393,9 @@ export default function WindowControls({
   const fullscreenControl = hideFullscreenButton ? null : (
     <button
       data-glass
-      data-glass-strength="0.8"
+      data-glass-strength="8"
       data-glass-blur="1"
-      data-glass-bend="5"
+      data-glass-bend="120"
       data-control="fullscreen"
       className={`relative ${remoteBtnClass}`}
       tabIndex={standardControlsVisible ? 0 : -1}
@@ -423,9 +423,9 @@ export default function WindowControls({
   const minimizeControl = (
     <button
       data-glass
-      data-glass-strength="0.8"
+      data-glass-strength="8"
       data-glass-blur="1"
-      data-glass-bend="5"
+      data-glass-bend="120"
       data-control="minimize"
       className={`relative ${btnClass}`}
       tabIndex={standardControlsVisible ? 0 : -1}
@@ -441,9 +441,9 @@ export default function WindowControls({
   const maximizeControl = isFullscreen ? null : (
     <button
       data-glass
-      data-glass-strength="0.8"
+      data-glass-strength="8"
       data-glass-blur="1"
-      data-glass-bend="5"
+      data-glass-bend="120"
       data-control="maximize"
       className={`relative ${btnClass}`}
       tabIndex={standardControlsVisible ? 0 : -1}
@@ -504,9 +504,9 @@ export default function WindowControls({
   const closeControl = (
     <button
       data-glass
-      data-glass-strength="0.8"
+      data-glass-strength="8"
       data-glass-blur="1"
-      data-glass-bend="5"
+      data-glass-bend="120"
       data-control="close"
       className={`relative ${closeBtnClass}`}
       tabIndex={standardControlsVisible ? 0 : -1}
