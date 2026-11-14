@@ -296,7 +296,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                             onClick={onOpenLattice}
                                             aria-label={openLatticeLabel}
                                             title={openLatticeLabel}
-                                            className="min-w-0 truncate text-left text-sm font-medium leading-tight hover:underline"
+                                            className="min-w-0 truncate text-left text-sm font-medium leading-tight hover:underline [text-shadow:0_0_2px_#000,0_0_4px_#000]"
                                         >
                                             {songName}
                                         </button>
@@ -314,7 +314,7 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                                             onClick={() => onOpenArtist(artist)}
                                                             aria-label={t('libraryBravaisAlbum.openArtist', { name: artist.name })}
                                                             title={t('libraryBravaisAlbum.openArtist', { name: artist.name })}
-                                                            className="hover:underline"
+                                                            className="hover:underline [text-shadow:0_0_2px_#000,0_0_4px_#000]"
                                                         >
                                                             {artist.name}
                                                         </button>
