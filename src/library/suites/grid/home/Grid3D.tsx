@@ -1011,14 +1011,17 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                                 className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${isActive ? activeTabBg : navPillInactiveText}`}
                                             >
                                                 {/* 福利页签不写字，用 BLG 队标：宽度锁在两个字符（2em，跟着这一排的字号走），
-                                                    这样它的胶囊宽度和旁边的「专辑」「本地」对齐，切页签时那一排不跳。 */}
-                                                <span className="relative z-20">
+                                                    这样它的胶囊宽度和旁边的「专辑」「本地」对齐，切页签时那一排不跳。
+                                                    队标本身的尺寸是固定的，紧凑档也一样——宽度不随胶囊变窄而缩小：
+                                                    外层 flex 不许压缩它（shrink-0 + 固定 2em），图片还要 max-w-none，
+                                                    否则 tailwind preflight 那条 img { max-width: 100% } 会让容器一窄图片就跟着被压小。 */}
+                                                <span className="relative z-20 flex w-[2em] shrink-0 items-center justify-center">
                                                     {tab.key === 'welfare' ? (
                                                         <img
                                                             src={BLG_LOGO_URL}
                                                             alt=""
                                                             draggable={false}
-                                                            className="block h-4 w-[2em] select-none object-contain"
+                                                            className="block h-4 w-[2em] min-w-[2em] max-w-none shrink-0 select-none object-contain"
                                                         />
                                                     ) : tab.label}
                                                 </span>
