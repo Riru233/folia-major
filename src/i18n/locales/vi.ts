@@ -4435,6 +4435,24 @@ export default {
         "description": "Sau khi đăng nhập, danh sách phát riêng tư của bạn nay có thể tải bài hát với phân trang thực tế. Máy chủ tự lưu trữ cần chạy qq-music-api 3.1.2 trở lên; phiên bản cũ hơn sẽ tự động quay về cơ chế dự phòng, và danh sách phát không đọc được sẽ báo rõ là danh sách không công khai thay vì hiển thị trống."
       }
     },
+    "v0_7_29_1": {
+      "intro": "Chào mừng bạn đến với 0.7.29S, bản sửa lỗi tiếp sau 0.7.29 (Feynman Update). Nền trình phát khi cài mới giờ là Latent chỉ có lớp lỏng, bảng thông tin bên cạnh trong bố cục lưới có lại đường viền, và ô tìm kiếm ở bố cục gọn hiện lại lịch sử tìm kiếm.",
+      "banner": {
+        "alt": "Folia Shino 0.7.29S · Fluid Update"
+      },
+      "fluidDefault": {
+        "title": "Nền khởi đầu chỉ còn chất lỏng",
+        "description": "Bản cài mới mở Latent với riêng lớp lỏng: không có lớp điểm ảnh, không trộn, màu lấy từ bìa và chủ đề, lớp phủ dễ đọc đã tắt. Tốc độ cơ bản 0.1, phản hồi âm thanh tối đa 2, độ méo 2, độ xoáy 1."
+      },
+      "railEdges": {
+        "title": "Dải thông tin bên cạnh có lại đường viền",
+        "description": "Bảng thông tin bên cạnh trong bố cục lưới có đường viền trở lại, trông cùng loại với các bảng bên cạnh."
+      },
+      "compactLayout": {
+        "title": "Tìm kiếm ở bố cục gọn",
+        "description": "Khi ô tìm kiếm trượt ra ở bố cục gọn, bấm vào ô không còn thu nó lại nữa, và lịch sử tìm kiếm hiện lại — cùng loại kính lỏng như ở bố cục máy tính, rộng bằng ô chứa nó."
+      }
+    },
     "v0_7_29": {
       "intro": "Chào mừng bạn đến với 0.7.29, Feynman Update—một bản cập nhật lớn. FM cá nhân có tường radio riêng, có kiểu lời bài hát mới tên Metaphor, và tính năng kiểm tra hiệu năng cho biết máy tính này chạy được chất lượng hình ảnh đến mức nào. Để chúc mừng BLG vô địch Chung kết Thế giới Liên Minh Huyền Thoại 2026, thư viện còn có thêm tab Phúc lợi, nơi các ca khúc liên quan đến Liên Minh Huyền Thoại được phát trọn bài mà không cần đăng nhập.",
       "banner": {

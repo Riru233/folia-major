@@ -44,7 +44,11 @@ describe('new features release', () => {
     it.each(Object.keys(LOCALES))('has the banner text in %s whenever the release carries one', (locale) => {
         const banner = NEW_FEATURES_RELEASE.banner;
         if (!banner) return;
-        for (const key of [`${banner.i18nKey}.alt`, `${banner.i18nKey}.hint`]) {
+        // Every banner has a picture description. The jump hint only exists where the banner opens a
+        // tab: a title image (no targetTab) is drawn alone, with nothing to click.
+        const keys = [`${banner.i18nKey}.alt`];
+        if (banner.targetTab) keys.push(`${banner.i18nKey}.hint`);
+        for (const key of keys) {
             expect(lookup(LOCALES[locale], key), key).toEqual(expect.any(String));
         }
     });

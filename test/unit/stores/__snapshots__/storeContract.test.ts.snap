@@ -75,6 +75,8 @@ exports[`store contract > keeps every localStorage key the stores read or write 
   "hidden_grid_playlists",
   "hide_taskbar_icon",
   "home_layout_style",
+  "karaoke_info_v1",
+  "karaoke_lead_in_v1",
   "karaoke_tuning",
   "last_home_view_tab",
   "latent_background_tuning",

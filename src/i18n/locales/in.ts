@@ -4468,6 +4468,24 @@ export default {
         "description": "Setelah masuk, playlist pribadi buatan Anda kini dapat memuat lagu dengan paging sungguhan. Backend yang di-host sendiri harus memakai qq-music-api 3.1.2 atau lebih baru; backend lama beralih otomatis, dan playlist yang tidak dapat dibaca kini menjelaskan bahwa playlist itu tidak publik, alih-alih tampil kosong tanpa keterangan."
       }
     },
+    "v0_7_29_1": {
+      "intro": "Selamat datang di 0.7.29S, rilis perbaikan yang menyusul 0.7.29, Feynman Update. Latar pemutar pada pemasangan baru kini Latent murni cair, panel info samping di tata letak grid kembali bergaris tepi, dan kotak pencarian di tata letak ringkas memunculkan riwayatnya lagi.",
+      "banner": {
+        "alt": "Folia Shino 0.7.29S · Fluid Update"
+      },
+      "fluidDefault": {
+        "title": "Latar awal hanya cairan",
+        "description": "Pemasangan baru membuka Latent dengan lapisan cair saja: tanpa lapisan piksel, tanpa campuran, warna diambil dari sampul dan tema, dan lapisan keterbacaan dimatikan. Kecepatan dasar 0.1, respons audio hingga 2, distorsi 2, pusaran 1."
+      },
+      "railEdges": {
+        "title": "Strip info samping kembali bergaris tepi",
+        "description": "Panel info samping pada tata letak grid kembali punya garis tepi, sehingga tampak sejenis dengan panel di sebelahnya."
+      },
+      "compactLayout": {
+        "title": "Pencarian di tata letak ringkas",
+        "description": "Saat kolom pencarian tergeser keluar di tata letak ringkas, mengklik kolomnya tidak lagi menutupnya, dan riwayat pencarian muncul lagi — dengan kaca cair yang sama seperti di tata letak desktop, selebar kolom yang menaunginya."
+      }
+    },
     "v0_7_29": {
       "intro": "Selamat datang di 0.7.29, Feynman Update—sebuah pembaruan besar. FM Pribadi kini punya dinding radio sendiri, ada gaya lirik baru bernama Metaphor, dan pemeriksaan performa memberi tahu seberapa tinggi kualitas visual yang sanggup dijalankan komputer ini. Untuk merayakan BLG menjuarai Kejuaraan Dunia League of Legends 2026, pustaka juga mendapat tab Kesejahteraan tempat lagu-lagu terkait League of Legends diputar penuh tanpa masuk akun.",
       "banner": {

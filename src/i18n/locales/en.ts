@@ -1,4 +1,4 @@
-﻿
+
 
 export default {
   "appleMusic": {
@@ -4464,6 +4464,24 @@ export default {
       "qqPrivatePlaylists": {
         "title": "Private QQ Music Playlists",
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
+      }
+    },
+    "v0_7_29_1": {
+      "intro": "Welcome to 0.7.29S, a fix release that follows 0.7.29, the Feynman Update. The player background a fresh install starts with is now pure fluid Latent, the grid layout's side info panel has its border back, and the compact layout's search box brings up its history again.",
+      "banner": {
+        "alt": "Folia Shino 0.7.29S · Fluid Update"
+      },
+      "fluidDefault": {
+        "title": "Fluid-only starting background",
+        "description": "A fresh install opens on Latent with only its fluid layer: no pixel layer, no mix, colors taken from the cover and the theme, and the readability overlay off. Base speed 0.1, audio response up to 2, distortion 2, swirl 1."
+      },
+      "railEdges": {
+        "title": "The side info strip has its border back",
+        "description": "The grid layout's side info panel is outlined again, so it reads as the same kind of surface as the panels beside it."
+      },
+      "compactLayout": {
+        "title": "Search in the compact layout",
+        "description": "With the search field slid out in the compact layout, clicking the field no longer collapses it, and the search history shows again — with the same liquid glass as the desktop field, and as wide as the field it belongs to."
       }
     },
     "v0_7_29": {
