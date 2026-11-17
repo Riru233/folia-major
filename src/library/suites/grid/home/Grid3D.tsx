@@ -283,24 +283,10 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         setFocusedIndex(0);
     }, [homeViewTab]);
 
-    // 回到桌面档就把紧凑档的搜索层收回去：下次再进紧凑档从收起的搜索钮开始，
-    // 不会留着一个已经滑出去的输入框。
-    useEffect(() => {
-        if (!isCompact) setIsCompactSearchOpen(false);
-    }, [isCompact]);
-
-    // 搜索层滑进来之后把焦点直接交给输入框：点那一下就是来打字的，不用再点一次。
-    // 等一帧再聚焦：那一帧起搜索层才开始从右边滑进来。preventScroll 是必须的——此刻它还在
-    // 页头右侧之外（translateX(100%)），浏览器默认会为了露出它把整个页面横向滚一段。
-    useEffect(() => {
-        if (!isCompact || !isCompactSearchOpen) return undefined;
-        const frame = requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }));
-        return () => cancelAnimationFrame(frame);
-    }, [isCompact, isCompactSearchOpen]);
-
     // 点搜索框与历史面板以外的地方就把搜索层收回去（和点那颗 × 一样）。用 pointerdown 而不是 click：
     // 指针落在别处（例如海报、页签）时先收起，那一下不会同时被当成「先点搜索框、再点别处」。
-    // 历史面板挂在表单里，所以按「在不在表单内」判断；搜索钮自己不算外面，否则点它等于先收再开。
+    // 历史面板挂在 body 上（HomeSearchHistoryPopover），所以白名单按 data-home-search-layer 认：
+    // 搜索钮、两档的搜索表单、历史面板自己都带这个标记；带漏了，点输入框就会被当成「点外面」而立刻收起。
     useEffect(() => {
         if (!isCompact || !isCompactSearchOpen) return undefined;
         const handlePointerDown = (event: PointerEvent) => {
@@ -1093,6 +1079,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 aria-label={t('home.searchButton')}
                                 aria-expanded={isCompactSearchOpen}
                                 data-testid="home-search-toggle"
+                                /* 「点外面收起」的白名单：这颗钮自己也带这个标记，点它等于先收起再打开。 */
+                                data-home-search-layer
                                 data-glass
                                 data-glass-jelly
                                 data-glass-light
@@ -1108,6 +1096,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 ref={searchFormRef}
                                 onSubmit={handleSearch}
                                 className="relative w-full rounded-full transition-all md:w-56 focus-within:md:w-72"
+                                /* 历史面板虽然挂在 body 上，但输入框、下拉箭头都在这张表单里：
+                                    「点外面收起」按这个标记判断里面／外面。 */
+                                data-home-search-layer
                                 data-glass
                                 data-glass-jelly
                                 data-glass-light
@@ -1185,6 +1176,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             ref={compactSearchFormRef}
                             onSubmit={handleSearch}
                             className="relative h-10 w-full rounded-full"
+                            /* 「点外面收起」的白名单：这条搜索层整体算里面（输入框、× 都在其中），
+                                历史面板自己也带这个标记（它挂在 body 上，不在表单里）。 */
+                            data-home-search-layer
                             data-glass
                             data-glass-jelly
                             data-glass-light
@@ -1249,6 +1243,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     onRemove={forgetSearchHistoryQuery}
                                     onClear={clearSearchHistory}
                                     isDaylight={isDaylight}
+                                    stretch
                                 />
                             </HomeSearchHistoryPopover>
                         </form>
