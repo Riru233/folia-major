@@ -32,6 +32,7 @@ export const HomeSearchHistory: React.FC<HomeSearchHistoryProps> = ({
     onRemove,
     onClear,
     isDaylight,
+    stretch = false,
     className = '',
 }) => {
     const { t } = useTranslation();

@@ -283,6 +283,37 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         setFocusedIndex(0);
     }, [homeViewTab]);
 
+    // 回到桌面档就把紧凑档的搜索层收回去：下次再进紧凑档从收起的搜索钮开始，
+    // 不会留着一个已经滑出去的输入框。
+    useEffect(() => {
+        if (!isCompact) setIsCompactSearchOpen(false);
+    }, [isCompact]);
+
+    // 搜索层滑进来之后把焦点直接交给输入框：点那一下就是来打字的，不用再点一次。
+    // 等一帧再聚焦：那一帧起搜索层才开始从右边滑进来。preventScroll 是必须的——此刻它还在
+    // 页头右侧之外（translateX(100%)），浏览器默认会为了露出它把整个页面横向滚一段。
+    useEffect(() => {
+        if (!isCompact || !isCompactSearchOpen) return undefined;
+        const frame = requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }));
+        return () => cancelAnimationFrame(frame);
+    }, [isCompact, isCompactSearchOpen]);
+
+    // 点搜索框与历史面板以外的地方就把搜索层收回去（和点那颗 × 一样）。用 pointerdown 而不是 click：
+    // 指针落在别处（例如海报、页签）时先收起，那一下不会同时被当成「先点搜索框、再点别处」。
+    // 历史面板挂在表单里，所以按「在不在表单内」判断；搜索钮自己不算外面，否则点它等于先收再开。
+    useEffect(() => {
+        if (!isCompact || !isCompactSearchOpen) return undefined;
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+            if (!(target instanceof Node)) return;
+            if (target instanceof Element && target.closest('[data-home-search-layer]')) return;
+            setIsCompactSearchOpen(false);
+            setIsSearchHistoryOpen(false);
+        };
+        document.addEventListener('pointerdown', handlePointerDown, true);
+        return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+    }, [isCompact, isCompactSearchOpen]);
+
     useEffect(() => {
         setFocusedIndex(0);
     }, [activeProviderId, activeUser?.id]);
