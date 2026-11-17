@@ -7,12 +7,12 @@
 .lattice-back {
     position: absolute;
     /* --window-buttons-drop：窗口按钮靠左时 AppShell 设的下移量，让开标题栏；借用这个类的刷新钮、分区胶囊一起下移。 */
-    top: calc(20px + var(--window-buttons-drop, 0px));
+    top: calc(40px + var(--window-buttons-drop, 0px));
     left: 24px;
     z-index: 5;
     display: grid;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     place-items: center;
     border-radius: 999px !important;
     color: inherit;
