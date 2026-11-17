@@ -48,7 +48,12 @@ export const ArtistGridInfoCutInPanel = ({
                     exit={{ opacity: 0, x: -60, scale: 0.95 }}
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className="absolute left-6 top-24 z-[80] flex w-80 flex-col overflow-y-auto rounded-3xl border p-6 shadow-2xl pointer-events-auto theme-glass-panel"
-                    style={{ bottom: bottomBarBottomPx, boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)' }}
+                    style={{
+                        borderTop: "1px solid #fff6",
+                        borderBottom: "1px solid #fff6",
+                        outline: "1px solid rgba(35,35,35,0.3)",
+                        boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
+                    }}
                 >
                     <div className="mb-4 flex items-center justify-between gap-2">
                         <h3 className="min-w-0 flex-1 truncate text-lg font-bold">{artistName}</h3>

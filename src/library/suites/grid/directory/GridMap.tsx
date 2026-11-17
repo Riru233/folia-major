@@ -1129,7 +1129,19 @@ export const GridMap: React.FC<GridMapProps> = ({
                         exit={{ opacity: 0, x: -60, scale: 0.95 }}
                         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                         className="absolute left-6 top-24 w-80 rounded-3xl z-[80] flex flex-col p-6 shadow-2xl border pointer-events-auto theme-glass-panel"
-                        style={{ bottom: bottomBarPanelBottomPx }}
+                        style={{
+                                backgroundColor: isDaylight
+                                    ? "rgba(255,255,255,0.4)"
+                                    : "rgba(0,0,0,0.4)",
+                                borderTop: isDaylight
+                                    ? "1px solid #fff6"
+                                    : "1px solid #fff5",
+                                borderBottom: isDaylight
+                                    ? "1px solid #fff6"
+                                    : "1px solid #fff5",
+                                outline: "1px solid rgba(35,35,35,0.3)",
+                                boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
+                        }}
                     >
                         {batchConfig ? (
                             <GridMapBatchPanel
