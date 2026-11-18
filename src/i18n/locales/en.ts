@@ -2111,8 +2111,6 @@ export default {
     "radioTab": "Radio",
     "explore": "Explore",
     "welfare": "Welfare",
-    "welfareChampion": "We are the champions!",
-    "welfareChampionSubtitle": "Congratulations to BLG for winning the 2026 League of Legends World Championship!",
     "welfarePermanent": "Version archive",
     "welfareLimited": "Limited-time welfare",
     "welfarePermanentHint": "Classic tracks, in 0.7.29 only",

@@ -2113,8 +2113,6 @@ export default {
     "radioTab": "Radio",
     "explore": "Jelajahi",
     "welfare": "Bonus",
-    "welfareChampion": "Kami juara!",
-    "welfareChampionSubtitle": "Selamat kepada BLG yang menjadi juara League of Legends World Championship 2026!",
     "welfarePermanent": "Arsip versi",
     "welfareLimited": "Bonus terbatas",
     "welfarePermanentHint": "Lagu klasik, hanya di versi 0.7.29",

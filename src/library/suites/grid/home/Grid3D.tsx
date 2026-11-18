@@ -9,8 +9,6 @@ import LocalGrid3DView from './LocalGrid3DView';
 import NavidromeGrid3DView from './NavidromeGrid3DView';
 import { useGrid3DTabKeys } from './useGrid3DTabKeys';
 import DesktopGrid3DSurface from './DesktopGrid3DSurface';
-import WelfareChampionBanner from './WelfareChampionBanner';
-import { BLG_LOGO_URL } from './welfareChampionAssets';
 import OnlineProviderAccountlessPanel from '../account/OnlineProviderAccountlessPanel';
 import HomeLoginPanel from '../../../../components/login/HomeLoginPanel';
 import SwitcherPill from '../../../../components/login/SwitcherPill';
@@ -592,10 +590,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         }
         if (key === 'welfare') {
             // 只有分组入口卡，所以没有加载态、没有空态：入口卡就是这一页的全部内容。
-            // 顶部横幅整幅 100% 宽，占自己的一行；下面的墙面照旧撑满剩余高度。
+            // 冠军横幅（整幅 100% 宽）已经随 0.7.29 的素材一起下掉，这一页现在只剩墙面自己。
             return (
-                <div className="w-full h-full flex-1 flex flex-col min-h-0 gap-3">
-                    <WelfareChampionBanner />
+                <div className="w-full h-full flex-1 flex flex-col min-h-0">
                     <div className="flex-1 min-h-0">
                         <DesktopGrid3DSurface
                             focusMemoryScope="welfare"
@@ -1010,21 +1007,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                                 }}
                                                 className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${isActive ? activeTabBg : navPillInactiveText}`}
                                             >
-                                                {/* 福利页签不写字，用 BLG 队标：宽度锁在两个字符（2em，跟着这一排的字号走），
-                                                    这样它的胶囊宽度和旁边的「专辑」「本地」对齐，切页签时那一排不跳。
-                                                    队标本身的尺寸是固定的，紧凑档也一样——宽度不随胶囊变窄而缩小：
-                                                    外层 flex 不许压缩它（shrink-0 + 固定 2em），图片还要 max-w-none，
-                                                    否则 tailwind preflight 那条 img { max-width: 100% } 会让容器一窄图片就跟着被压小。 */}
-                                                <span className="relative z-20 flex w-[2em] shrink-0 items-center justify-center">
-                                                    {tab.key === 'welfare' ? (
-                                                        <img
-                                                            src={BLG_LOGO_URL}
-                                                            alt=""
-                                                            draggable={false}
-                                                            className="block h-4 w-[2em] min-w-[2em] max-w-none shrink-0 select-none object-contain"
-                                                        />
-                                                    ) : tab.label}
-                                                </span>
+                                                {/* 福利页签原来不写字、用 BLG 队标；队标随 0.7.29 的素材一起下掉后
+                                                    回到普通文字页签，和其它页签同一套排版（宽度自然跟着文字走）。 */}
+                                                <span className="relative z-20">{tab.label}</span>
                                             </button>
                                         </span>
                                     );

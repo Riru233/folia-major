@@ -2113,8 +2113,6 @@ export default {
     "radioTab": "推荐",
     "explore": "探索",
     "welfare": "BLG",
-    "welfareChampion": "我们是冠军！",
-    "welfareChampionSubtitle": "恭喜BLG战队在2026年英雄联盟全球总决赛中获得冠军！",
     "welfarePermanent": "版本典藏",
     "welfareLimited": "限时福利",
     "welfarePermanentHint": "经典歌曲，0.7.29 版本限定",

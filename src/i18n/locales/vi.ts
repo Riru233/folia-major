@@ -2109,8 +2109,6 @@ export default {
     "radioTab": "Radio",
     "explore": "Khám phá",
     "welfare": "Ưu đãi",
-    "welfareChampion": "Chúng ta là nhà vô địch!",
-    "welfareChampionSubtitle": "Chúc mừng BLG vô địch Chung kết Thế giới Liên Minh Huyền Thoại 2026!",
     "welfarePermanent": "Bộ sưu tập phiên bản",
     "welfareLimited": "Ưu đãi có thời hạn",
     "welfarePermanentHint": "Ca khúc kinh điển, chỉ có ở bản 0.7.29",
