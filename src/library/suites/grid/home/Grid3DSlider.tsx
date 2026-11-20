@@ -1095,19 +1095,19 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                                     )}
                                                 </div>
                                                 <div className="w-full text-left pt-2 min-w-0">
-                                                    <h3 className="text-m truncate max-w-full tracking-tight">
+                                                    <h3 className="text-m truncate max-w-full tracking-tight text-center">
                                                         {displayName}
                                                     </h3>
                                                     {secondaryText && (
                                                         <p
-                                                            className={`text-xs opacity-50 max-w-full mt-1 font-medium ${folderPath ? 'line-clamp-2 break-words' : 'truncate'}`}
+                                                            className={`text-xs opacity-50 max-w-full mt-1 text-center font-medium ${folderPath ? 'line-clamp-2 break-words' : 'truncate'}`}
                                                             title={folderPath || undefined}
                                                         >
                                                             {secondaryText}
                                                         </p>
                                                     )}
                                                     {summaryText && (
-                                                        <p className="text-[10px] leading-snug opacity-45 mt-2 line-clamp-2">
+                                                        <p className="text-[10px] text-center leading-snug opacity-45 mt-2 line-clamp-2">
                                                             {summaryText}
                                                         </p>
                                                     )}
