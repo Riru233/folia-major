@@ -10,6 +10,8 @@ import {
     STRETCH_SPRING,
     STRETCH_X,
     STRETCH_Y,
+    isThumbAtEdge,
+    stretchAmountForDrag,
     stretchAmountFromSpeed,
 } from './thumbStretch';
 
@@ -244,19 +246,26 @@ export const useHomeTabThumb = <K extends string>({
         glideToIndex(activeIndex);
     }, [activeIndex, measure, glideToIndex]);
 
-    const clampLeft = useCallback((value: number) => {
+    // 轨道两端在「摇杆 left」上的取值范围。触边判定与钳制共用这一份，免得两处各算一遍算出不同的端点。
+    const leftBounds = useCallback((): { min: number; max: number } => {
         const layout = layoutRef.current;
-        if (layout.length === 0) return value;
-        const maxLeft = layout[layout.length - 1].left + layout[layout.length - 1].width - thumbWidth.get();
-        return Math.max(0, Math.min(maxLeft, value));
+        if (layout.length === 0) return { min: 0, max: Number.POSITIVE_INFINITY };
+        const last = layout[layout.length - 1];
+        return { min: 0, max: Math.max(0, last.left + last.width - thumbWidth.get()) };
     }, [thumbWidth]);
 
     // 指针位置换算进容器自身布局坐标（兼容 scale-90），得到摇杆「中心对齐指针」的 left 目标。
-    const pointerTargetLeft = useCallback((clientX: number) => {
+    // 同时把钳制后的 left 与上界一起交出去：拖动中判断「有没有触边」要用这两个值，
+    // 用钳制后的而不是原始指针位置——指针拖出轨道之后 left 不再变化，那正是顶住的状态。
+    const pointerTarget = useCallback((clientX: number): { left: number; max: number } => {
         const scale = trackScaleRef.current || 1;
         const localX = (clientX - trackRectLeftRef.current) / scale;
-        return clampLeft(localX - thumbWidth.get() / 2);
-    }, [clampLeft, thumbWidth]);
+        const { max } = leftBounds();
+        const rawLeft = localX - thumbWidth.get() / 2;
+        return { left: Math.max(0, Math.min(max, rawLeft)), max };
+    }, [leftBounds, thumbWidth]);
+
+    const pointerTargetLeft = useCallback((clientX: number) => pointerTarget(clientX).left, [pointerTarget]);
 
     // 释放时按「摇杆中心到各可用页签中心的距离」四舍五入取最近的一个。
     const nearestTabIndex = useCallback((center: number) => {
@@ -299,23 +308,24 @@ export const useHomeTabThumb = <K extends string>({
 
     // 把「这一刻的横向移动速度」写进目标形变，并重新排停手计时。拖动时速度来自指针，滑行时来自摇杆自身，
     // 两条来源共用这一处，形变的手感和收回时机才不会分叉。
-    const applyStretchSpeed = useCallback((signedSpeed: number) => {
+    // amount 不传就按速度的方向取符号（滑行用）；拖动中由调用方给「触边 / 不触边」那一套（见 thumbStretch）。
+    const applyStretch = useCallback((amount: number) => {
         // 新的移动接上了：停掉正在收回的动画，形变重新交给速度。
         stretchReturnRef.current?.stop();
         stretchReturnRef.current = null;
-        stretchTarget.set(stretchAmountFromSpeed(signedSpeed));
+        stretchTarget.set(amount);
         // 停下不动时没有新的采样，靠这个计时器把形变收回。
         clearStretchIdleTimer();
         stretchIdleTimerRef.current = setTimeout(settleStretch, STRETCH_IDLE_MS);
     }, [clearStretchIdleTimer, settleStretch, stretchTarget]);
 
     // 不拖动的移动（点页签后摇杆自己滑过去、重新测量、松手吸附回最近页签）也要有形变：
-    // 这时没有指针速度可采样，改用摇杆自身的横向速度。速度是 MotionValue 的实时值，
-    // 只在摇杆真的在动时才有 change 事件，静止时这段监听不产生任何工作。
+    // 这时没有指针速度可采样，改用摇杆自身的横向速度，符号沿用滑行方向。
+    // 速度是 MotionValue 的实时值，只在摇杆真的在动时才有 change 事件，静止时这段监听不产生任何工作。
     useMotionValueEvent(thumbLeft, 'change', () => {
         if (draggingRef.current) return; // 拖动中一律用指针速度，避免和 jump 打架
         if (prefersReducedMotion()) return;
-        applyStretchSpeed(thumbLeft.getVelocity());
+        applyStretch(stretchAmountFromSpeed(thumbLeft.getVelocity()));
     });
 
     // 兜底收尾：在元素外松开、拖到窗口外松手、切走窗口（blur）时，pointerup 不一定派发到切换器上，
@@ -345,10 +355,10 @@ export const useHomeTabThumb = <K extends string>({
         };
     }, [dragging, dragScale, settleStretch]);
 
-    // 每次移动采样一次横向速度，平滑后经 stretchAmountFromSpeed 过一道曲线（有最小速度门槛）
-    // 写进目标形变，不进 React state；弹簧负责把目标化成形变。
+    // 拖动中每次移动采样一次横向速度，平滑后交给 stretchAmountForDrag：幅度由速度决定（有最小速度门槛），
+    // 符号由「有没有触边」决定，不看拖动方向。结果写进目标形变，不进 React state；弹簧负责把目标化成形变。
     // 采样间隔太短时先跳过、不推进采样点，让下一次拿到一个稳定的时间窗。
-    const sampleStretchSpeed = useCallback((clientX: number, timeStamp: number) => {
+    const sampleStretchSpeed = useCallback((clientX: number, timeStamp: number, atEdge: boolean) => {
         const sample = stretchSampleRef.current;
         if (!sample) {
             stretchSampleRef.current = { x: clientX, t: timeStamp };
@@ -356,14 +366,13 @@ export const useHomeTabThumb = <K extends string>({
         }
         const dt = timeStamp - sample.t;
         if (dt < SPEED_SAMPLE_MIN_MS) return;
-        // 速度带方向：clientX 变大（向右）为正，变小时为负。反向拖时估计值穿过 0，形变也就经过零，
-        // 不会从「向左的满形变」直接跳到「向右的满形变」。
+        // 速度只用来量幅度（下面取绝对值），方向不参与符号：左右拖都是同一套规则。
         const instantSpeed = ((clientX - sample.x) / dt) * 1000;
         stretchSpeedRef.current = stretchSpeedRef.current * SPEED_SMOOTHING
             + instantSpeed * (1 - SPEED_SMOOTHING);
         stretchSampleRef.current = { x: clientX, t: timeStamp };
-        applyStretchSpeed(stretchSpeedRef.current);
-    }, [applyStretchSpeed]);
+        applyStretch(stretchAmountForDrag(stretchSpeedRef.current, atEdge));
+    }, [applyStretch]);
 
     useEffect(() => () => {
         stretchReturnRef.current?.stop();
@@ -407,10 +416,13 @@ export const useHomeTabThumb = <K extends string>({
         }
         // 跟手用 jump 保持即时响应、不引入弹簧滞后；松手/吸附才交给弹簧。jump 会清掉正在跑的
         // 弹簧，所以松手时 .set 会从当前指针位置重新起弹，不会「飞回来」。
-        thumbLeft.jump(pointerTargetLeft(event.clientX));
-        // 越慢越平、越快越扁长：形变跟着这一下的横向速度走。
-        if (gesture.moved && stretchAllowedRef.current) sampleStretchSpeed(event.clientX, event.timeStamp);
-    }, [pointerTargetLeft, sampleStretchSpeed, thumbLeft]);
+        const target = pointerTarget(event.clientX);
+        thumbLeft.jump(target.left);
+        // 幅度跟着这一下的横向速度走，方向由「触没触边」定：顶到轨道两端时往上鼓，中间自由跟手时往两边甩。
+        if (gesture.moved && stretchAllowedRef.current) {
+            sampleStretchSpeed(event.clientX, event.timeStamp, isThumbAtEdge(target.left, target.max));
+        }
+    }, [pointerTarget, sampleStretchSpeed, thumbLeft]);
 
     const endDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         const gesture = gestureRef.current;
