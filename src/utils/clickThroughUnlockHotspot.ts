@@ -80,15 +80,6 @@ export const resolveUnlockButtonInset = ({ hasFullscreenButton, nativeTrafficLig
     + CLICK_THROUGH_UNLOCK_BUTTON_GAP
     + CLICK_THROUGH_UNLOCK_BUTTON_SHIFT;
 
-// Where the unlock button starts, measured in from its edge: the window buttons, the fixed gap and
-// the extra shift. AppShell and the hover hotspot both have to agree on this.
-export const resolveUnlockButtonInset = ({ hasFullscreenButton, nativeTrafficLights, side }: {
-    hasFullscreenButton: boolean;
-    nativeTrafficLights: boolean;
-    side: 'left' | 'right';
-}): number => resolveWindowControlsExtent({ hasFullscreenButton, nativeTrafficLights, side })
-    + CLICK_THROUGH_UNLOCK_BUTTON_GAP
-    + CLICK_THROUGH_UNLOCK_BUTTON_SHIFT;
 
 // With the window buttons on the left (`titlebarSide`) the row is mirrored: the same offsets count
 // from the left edge, and the hotspot covers 206px to 412px in from the left.
