@@ -42,6 +42,7 @@ import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
 import { useGlass } from '@/shinoinject/useGlass';
 import { isChromiumRenderer } from '../../../../utils/platform';
 import { useHomeTabThumb } from './useHomeTabThumb';
+import { Grid3DNav } from './Grid3DNav';
 
 // src/library/suites/grid/home/Grid3D.tsx
 // Glassmorphic interactive desktop home view replacing the legacy 3D carousel.
@@ -49,6 +50,11 @@ import { useHomeTabThumb } from './useHomeTabThumb';
 
 // 摇杆边缘的色散滤镜 id：滤镜定义在本组件的 <svg> 里，用 backdrop-filter: url(#…) 引用。
 const DISPERSION_FILTER_ID = 'grid3d-dispersion';
+
+// 试装 Grid3DNav：true 时页头那排页签让位（保留 DOM，只藏起来——摇杆的测量还挂在它上面），
+// 页签改由浮层导航承担：紧凑档是底部横条，宽松档是左侧竖栏。
+// 改回 false 就完全回到原来的页头胶囊，浮层导航也不会渲染。
+const USE_GRID3D_NAV = true;
 
 interface Grid3DProps {
     /** 在线账户 controller（宿主创建，见 LibraryHomeSurfaceProps）：登录按钮与右下角的切换器读它，换平台、登录、退出都在登录窗口里。 */
@@ -821,9 +827,10 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         <div
                             // 紧凑档里页签胶囊脱离左边那一组、居到整条页头中间（左右两组按钮仍各贴一边）：
                             // 按自身宽度居中，换页签、加页签时都不会偏。尺寸与桌面档一致（不做 scale-90 的缩小）。
+                            // 试装浮层导航（USE_GRID3D_NAV）时只藏起来、不卸载：摇杆的 trackRef 还要量它。
                             className={`origin-center rounded-full ${isCompact
                                 ? 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
-                                : 'relative scale-90 md:scale-100 mt-[5px] ml-[10px] -inset-1'}`}
+                                : 'relative scale-90 md:scale-100 mt-[5px] ml-[10px] -inset-1'}${USE_GRID3D_NAV ? ' hidden' : ''}`}
                             style={{ overflow: 'visible' }}
                         >
                             {/* 玻璃底色单独做绝对定位层，与摇杆、页签同为兄弟层级：摇杆不再嵌在玻璃元素里，
@@ -1278,6 +1285,28 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
             {/* 窄屏原本在这里挂一颗浮层版的平台切换，现在已经统一挪进页头（见上面的搜索栏那一行），
                 所以不再保留第二颗。返回歌词画报的箭头在播放条上，这里从来没有它。 */}
+
+            {/* 试装中的浮层导航（见文件顶部的 USE_GRID3D_NAV）：紧凑档底部横条、宽松档左侧竖栏。
+                只放页签、扩展页签与舞台；拼贴仍留在页头那颗图标上。它的层级压在 GridMap（z-[110]）与
+                底部播放胶囊（z-60）之下，地图铺开时更是整块藏起来（invisible）。
+                底部有播放胶囊（56 高、离底 16）时把横条抬到它上面，别叠在一起。 */}
+            {USE_GRID3D_NAV && (
+                <Grid3DNav
+                    tabs={homeTabs}
+                    activeTab={homeViewTab}
+                    onSelectTab={tab => {
+                        setHomeViewTab(tab);
+                        focusActiveSlider();
+                    }}
+                    extraTabs={props.extraTabs}
+                    stageEnabled={stageEnabled}
+                    stageIsActive={stageIsActive}
+                    onOpenStagePlayer={onOpenStagePlayer}
+                    isDaylight={isDaylight}
+                    bottomOffset={currentTrack ? 76 : 0}
+                    className={isGridMapOpen ? 'invisible' : ''}
+                />
+            )}
 
         </div>
     );
