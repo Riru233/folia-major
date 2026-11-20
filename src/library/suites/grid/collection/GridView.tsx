@@ -1,7 +1,7 @@
 import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtTopLeft';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls, useIsPresent } from 'framer-motion';
-import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Shuffle, Loader2, Heart, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
+import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Shuffle, Loader2, Heart, ListOrdered, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
 import GridPanelToggleButton from '../shared/GridPanelToggleButton';
 import { gridGlassCircleStyle } from '../shared/gridGlassChrome';
 import { useGlass } from '@/shinoinject/useGlass';
@@ -2150,6 +2150,15 @@ export const GridView: React.FC<GridViewProps> = ({
                                         {isDailyRecommendationsCollection
                                             ? (isEditMode ? t('home.finishManagingRecommendations') : t('home.manageRecommendations'))
                                             : (isEditMode ? t('localMusic.finishEditing') : t('localMusic.editPlaylist'))}
+                                    </button>
+                                )}
+                                {mutationCapabilities.reorderPlaylist.supported && (
+                                    <button
+                                        onClick={() => void mutations?.reorderPlaylist()}
+                                        className="w-full py-2.5 rounded-full text-xs font-semibold bg-zinc-800/10 dark:bg-zinc-100/10 hover:bg-zinc-900 hover:text-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                    >
+                                        <ListOrdered size={14} />
+                                        {t('localPlaylistOrder.edit')}
                                     </button>
                                 )}
                                 {mutationCapabilities.exportPlaylist.supported && (

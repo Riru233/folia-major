@@ -264,7 +264,10 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
     // 回到桌面档就收起：下次再进紧凑档，页头从收起的搜索钮开始，不会留着一个空展开的输入框。
     useEffect(() => {
-        if (!isCompact) setIsCompactSearchOpen(false);
+        if (!isCompact) {
+            setIsCompactSearchOpen(false);
+            setIsCompactTabsOpen(false);
+        }
     }, [isCompact]);
 
     // 展开后把焦点直接交给输入框：点那一下就是来打字的，不用再点一次。
@@ -297,6 +300,30 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         document.addEventListener('pointerdown', handlePointerDown, true);
         return () => document.removeEventListener('pointerdown', handlePointerDown, true);
     }, [isCompact, isCompactSearchOpen]);
+
+    // 点页签菜单与它的按钮以外的地方就把菜单收回去。用 pointerdown 与上面搜索层一致：
+    // 落在别处时先收起，那一下不会同时被当成「点按钮」。Esc 同样收起，并把焦点交回菜单按钮。
+    useEffect(() => {
+        if (!isCompact || !isCompactTabsOpen) return undefined;
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+            if (!(target instanceof Node)) return;
+            if (target instanceof Element && target.closest('[data-home-tabs-menu]')) return;
+            setIsCompactTabsOpen(false);
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            event.stopPropagation();
+            setIsCompactTabsOpen(false);
+            compactTabsButtonRef.current?.focus();
+        };
+        document.addEventListener('pointerdown', handlePointerDown, true);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown, true);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isCompact, isCompactTabsOpen]);
 
     useEffect(() => {
         setFocusedIndex(0);
@@ -442,6 +469,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         onCycleTab: delta => {
             const next = cycleIndex(navigationTabs, navigationTabs.findIndex(tab => tab.id === homeViewTab), delta, tab => tab.enabled);
             if (next < 0 || navigationTabs[next].id === homeViewTab) return;
+            // 键盘循环换页签时把紧凑档菜单也收起：不然它会浮在已经换过的页面上。
+            setIsCompactTabsOpen(false);
             navigationTabs[next].select();
         },
     });
@@ -1037,6 +1066,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     探索页有条目可铺时出现，不看有没有在播歌曲。 */}
                             </div>
                         </div>
+                        )}
                     </div>
 
                     {/* Center Tab Switcher */}
@@ -1152,7 +1182,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     收起时滑回右边、同时断掉指针与焦点；输入框里的字留着，下次展开接着改。 */}
                 {isCompact && (
                     <div
-                        className="absolute inset-0 flex items-center px-4 transition-transform duration-300 ease-out"
+                        className="absolute inset-0 flex items-center px-4 md:px-8 transition-transform duration-300 ease-out"
                         style={{
                             transform: isCompactSearchOpen ? 'translateX(0)' : 'translateX(100%)',
                             pointerEvents: isCompactSearchOpen ? 'auto' : 'none',
