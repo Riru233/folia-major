@@ -23,6 +23,7 @@ import type { LyricAntialias } from "../../../../types";
 import { VISUALIZER_FRAME_RATE_OPTIONS } from "../../../../utils/frameRateLimiter";
 import { formatLyricRenderScale, LYRIC_RENDER_SCALES } from "../../../../utils/lyricRenderQuality";
 import { LYRIC_ANTIALIAS_LABEL_KEYS } from "../../../visualizer/renderQuality/LyricRenderQualityRows";
+import { NATIVE_BLUR_SUPPORTED } from '../../../../utils/nativeBlurSupport';
 import {
   openPerfCheck } from '../../../perfCheck/openPerfCheck';
 import { Button, Group,
@@ -319,111 +320,75 @@ const GraphicsPage: React.FC = () => {
                         <Button onClick={() => openPerfCheck()}>{t('options.perfCheckRun')}</Button>
                     </Row>
                 )}
-          <Row option={O.staticMode} hint={t("options.enableStaticModeDesc")}>
-            <Toggle checked={theme.staticMode} onChange={theme.setStaticMode} />
-          </Row>
-          <Row
-            option={O.homeBackground}
-            hint={t("options.disableHomeDynamicBackgroundDesc")}
-          >
-            <Toggle
-              checked={theme.homeBackgroundOff}
-              onChange={theme.setHomeBackgroundOff}
-            />
-          </Row>
-          {!IS_LINUX && (
-            <Row
-              option={O.nativeBlur}
-              hint={t("options.enablePlayerPageNativeBlurHint")}
-              note={t("options.enablePlayerPageNativeBlurDesc")}
-            >
-              <Toggle
-                checked={nativeBlur}
-                onChange={(enabled) =>
-                  enabled ? setNativeBlurAsking(true) : setNativeBlur(false)
-                }
-              />
-            </Row>
-          )}
-          <Row option={O.frameRate} hint={t("options.visualizerFrameRateDesc")}>
-            <Toggle
-              checked={frameRateLimited}
-              onChange={(enabled) =>
-                visualizer.setFrameRate(
-                  enabled ? FRAME_RATE_WHEN_SWITCHED_ON : "off",
-                )
-              }
-            />
-          </Row>
-          <Reveal when={frameRateLimited}>
-            <Row sub option={O.frameRateValue}>
-              <Segmented
-                value={String(visualizer.frameRate)}
-                options={FRAME_RATE_CHOICES}
-                onChange={(value) => {
-                  const rate = VISUALIZER_FRAME_RATE_OPTIONS.find(
-                    (candidate) => String(candidate) === value,
-                  );
-                  if (rate) visualizer.setFrameRate(rate);
-                }}
-              />
-            </Row>
-          </Reveal>
-          <Row option={O.lyricRenderScale} note={t("options.lyricRenderScaleDesc")}>
-            <Select<string>
-              value={String(visualizer.renderQuality.scale)}
-              options={LYRIC_RENDER_SCALES.map((scale) => ({
-                value: String(scale),
-                label: formatLyricRenderScale(scale),
-              }))}
-              onChange={(value) => {
-                const scale = LYRIC_RENDER_SCALES.find(
-                  (candidate) => String(candidate) === value,
-                );
-                if (scale) visualizer.setRenderQuality({ scale });
-              }}
-            />
-          </Row>
-          <Row option={O.lyricAntialias} note={t("options.lyricAntialiasDesc")}>
-            <Segmented<LyricAntialias>
-              value={visualizer.renderQuality.antialias}
-              options={(["auto", "on", "off"] as const).map((mode) => ({
-                value: mode,
-                label: t(LYRIC_ANTIALIAS_LABEL_KEYS[mode]),
-              }))}
-              onChange={(antialias) => visualizer.setRenderQuality({ antialias })}
-            />
-          </Row>
-          {isElectron && (
-            <Row
-              option={O.backgroundThrottling}
-              hint={t("options.backgroundThrottlingHint")}
-              note={t("options.backgroundThrottlingDesc")}
-            >
-              <Toggle
-                checked={backgroundThrottling}
-                onChange={setBackgroundThrottling}
-              />
-            </Row>
-          )}
-          <Row
-            option={O.glowFix}
-            hint={
-              <>
-                {t("options.glowBlurQuantizeDesc")}{" "}
-                <Link href={CHROMIUM_FD_EXHAUSTION_DOCS_URL}>
-                  {t("options.glowBlurQuantizeDocs")}
-                </Link>
-              </>
-            }
-          >
-            <Toggle
-              checked={visualizer.glowFix}
-              onChange={visualizer.setGlowFix}
-            />
-          </Row>
-          {IS_WINDOWS_DESKTOP && <GpuPreferenceRow option={O.gpuPreference} />}
-        </Group>
+                <Row option={O.staticMode} hint={t('options.enableStaticModeDesc')}>
+                    <Toggle checked={theme.staticMode} onChange={theme.setStaticMode} />
+                </Row>
+                <Row option={O.homeBackground} hint={t('options.disableHomeDynamicBackgroundDesc')}>
+                    <Toggle checked={theme.homeBackgroundOff} onChange={theme.setHomeBackgroundOff} />
+                </Row>
+                {!IS_LINUX && (
+                    <Row
+                        option={O.nativeBlur}
+                        hint={t(NATIVE_BLUR_SUPPORTED ? 'options.enablePlayerPageNativeBlurHint' : 'options.enablePlayerPageNativeBlurUnsupported')}
+                        note={t('options.enablePlayerPageNativeBlurDesc')}
+                        disabled={!NATIVE_BLUR_SUPPORTED}
+                    >
+                        <Toggle checked={nativeBlur} disabled={!NATIVE_BLUR_SUPPORTED} onChange={enabled => (enabled ? setNativeBlurAsking(true) : setNativeBlur(false))} />
+                    </Row>
+                )}
+                <Row option={O.frameRate} hint={t('options.visualizerFrameRateDesc')}>
+                    <Toggle
+                        checked={frameRateLimited}
+                        onChange={enabled => visualizer.setFrameRate(enabled ? FRAME_RATE_WHEN_SWITCHED_ON : 'off')}
+                    />
+                </Row>
+                <Reveal when={frameRateLimited}>
+                    <Row sub option={O.frameRateValue}>
+                        <Segmented
+                            value={String(visualizer.frameRate)}
+                            options={FRAME_RATE_CHOICES}
+                            onChange={(value) => {
+                                const rate = VISUALIZER_FRAME_RATE_OPTIONS.find(candidate => String(candidate) === value);
+                                if (rate) visualizer.setFrameRate(rate);
+                            }}
+                        />
+                    </Row>
+                </Reveal>
+                <Row option={O.lyricRenderScale} note={t('options.lyricRenderScaleDesc')}>
+                    <Segmented
+                        value={String(visualizer.renderQuality.scale)}
+                        options={lyricRenderScaleChoices()}
+                        onChange={(value) => {
+                            const scale = LYRIC_RENDER_SCALES.find(candidate => String(candidate) === value);
+                            if (scale) visualizer.setRenderQuality({ scale });
+                        }}
+                    />
+                </Row>
+                <Row option={O.lyricAntialias} note={t('options.lyricAntialiasDesc')}>
+                    <Segmented<LyricAntialias>
+                        value={visualizer.renderQuality.antialias}
+                        options={lyricAntialiasChoices(t)}
+                        onChange={antialias => visualizer.setRenderQuality({ antialias })}
+                    />
+                </Row>
+                {isElectron && (
+                    <Row option={O.backgroundThrottling} hint={t('options.backgroundThrottlingHint')} note={t('options.backgroundThrottlingDesc')}>
+                        <Toggle checked={backgroundThrottling} onChange={setBackgroundThrottling} />
+                    </Row>
+                )}
+                <Row
+                    option={O.glowFix}
+                    hint={(
+                        <>
+                            {t('options.glowBlurQuantizeDesc')}{' '}
+                            <Link href={CHROMIUM_FD_EXHAUSTION_DOCS_URL}>{t('options.glowBlurQuantizeDocs')}</Link>
+                        </>
+                    )}
+                >
+                    <Toggle checked={visualizer.glowFix} onChange={visualizer.setGlowFix} />
+                </Row>
+                {IS_WINDOWS_DESKTOP && <GpuPreferenceRow option={O.gpuPreference} />}
+            </Group>
 
         <Group def={MOTION} foot={t("options.reduceMotionSectionDesc")}>
           <Row

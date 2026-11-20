@@ -1,7 +1,7 @@
 import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtTopLeft';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls, useIsPresent } from 'framer-motion';
-import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Shuffle, Loader2, Heart, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
+import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Shuffle, Loader2, Heart, ListOrdered, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
 import GridPanelToggleButton from '../shared/GridPanelToggleButton';
 import { gridGlassCircleStyle } from '../shared/gridGlassChrome';
 import { useGlass } from '@/shinoinject/useGlass';
@@ -1868,9 +1868,18 @@ export const GridView: React.FC<GridViewProps> = ({
                             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                             className="absolute left-6 top-24 w-80 rounded-3xl z-[80] overflow-y-auto overscroll-contain hide-scrollbar flex flex-col p-6 shadow-2xl border backdrop-blur-2xl pointer-events-auto theme-glass-panel"
                             style={{
-                                bottom: bottomBarPanelBottomPx,
-                                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
-                            }}
+                                backgroundColor: isDaylight
+                                    ? "rgba(255,255,255,0.4)"
+                                    : "rgba(0,0,0,0.4)",
+                                borderTop: isDaylight
+                                    ? "1px solid #fff6"
+                                    : "1px solid #fff5",
+                                borderBottom: isDaylight
+                                    ? "1px solid #fff6"
+                                    : "1px solid #fff5",
+                                outline: "1px solid rgba(35,35,35,0.3)",
+                                boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
+                                }}
                         >
                             {/* Cover Image */}
                             <div className="w-full aspect-square rounded-2xl overflow-hidden shadow-lg mb-4 bg-zinc-800/20 relative shrink-0">
@@ -2141,6 +2150,15 @@ export const GridView: React.FC<GridViewProps> = ({
                                         {isDailyRecommendationsCollection
                                             ? (isEditMode ? t('home.finishManagingRecommendations') : t('home.manageRecommendations'))
                                             : (isEditMode ? t('localMusic.finishEditing') : t('localMusic.editPlaylist'))}
+                                    </button>
+                                )}
+                                {mutationCapabilities.reorderPlaylist.supported && (
+                                    <button
+                                        onClick={() => void mutations?.reorderPlaylist()}
+                                        className="w-full py-2.5 rounded-full text-xs font-semibold bg-zinc-800/10 dark:bg-zinc-100/10 hover:bg-zinc-900 hover:text-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                    >
+                                        <ListOrdered size={14} />
+                                        {t('localPlaylistOrder.edit')}
                                     </button>
                                 )}
                                 {mutationCapabilities.exportPlaylist.supported && (

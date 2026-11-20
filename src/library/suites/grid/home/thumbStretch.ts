@@ -7,13 +7,20 @@
 // 只改摇杆自己的 width / height，按着不动会自己收回，也不跟那个开关走。两者会同时出现（容器归容器、
 // 摇杆归摇杆），调这里的手感不用去看 liquidglass 的那组常量。
 //
-// 形变强度是有符号的比例（-1 → 1），符号就是拖动方向：
-//   向右拖（强度 > 0）：宽度拉长、高度压扁；
-//   向左拖（强度 < 0）：反过来，宽度缩短、高度拉长。
-// 两条公式对两个方向通用，方向只体现在强度的正负上（比例乘在基准盒子上，锚点是盒子中心）：
+// 形变强度是有符号的比例（-1 → 1），符号表示「往哪个方向形变」，不是拖动方向：
+//   强度 > 0：宽度拉长、高度压扁（横向舒展）；
+//   强度 < 0：反过来，宽度缩短、高度拉长（竖向舒展）。
+// 两条公式通用，符号只体现在强度的正负上（比例乘在基准盒子上，锚点是盒子中心）：
 //   width  = 基准宽 × (1 + 强度 × STRETCH_X)
 //   height = 基准高 × (1 − 强度 × STRETCH_Y)
 // 因为按住时基准盒子先放大到 DRAG_SCALE（2）倍，看到的形变绝对量也会跟着放大。
+//
+// 谁来定这个符号，两条来源不一样：
+//   · 拖动中（useHomeTabThumb 的 sampleStretchSpeed）：符号只看「有没有触边」——摇杆顶到轨道两端
+//     时用负强度（被压住、往上鼓），在中间自由滑动时用正强度（往两边甩开）。左右拖同一套规则，
+//     不看拖动方向；见 stretchAmountForDrag。
+//   · 摇杆自己滑行（点页签、松手吸附、重新测量）：没有「触边」这回事，符号沿用滑行方向
+//     （向右为正、向左为负），看起来才像带着惯性甩过去的。
 
 // 【X 变形强度】速度拉满时宽度相对基准宽变化的比例：向右拖拉长这么多，向左拖就缩短这么多。
 // 想让形变更明显就往上加。两个轴都别太大：加起来超过 0.35 之后圆角会看着像被拉歪的胶囊。
@@ -61,9 +68,10 @@ export const STRETCH_RETURN_SECONDS = 0.3;
 // 换成 'linear' 会显得机械，换成更陡的 easeOut 会像被瞬间弹了一下。
 export const STRETCH_RETURN_EASE = [0.16, 1, 0.3, 1] as const;
 
-// 平滑后的横向速度（px/s，右为正、左为负）→ 形变强度（-1 → 1）：
+// 平滑后的横向速度（px/s，右为正、左为负）→ 形变强度（-1 → 1），符号是滑行方向。
+// 只给「摇杆自己没有指针拖着、靠弹簧滑行」的那条路用（点页签、松手吸附、重新测量）：
 // 速度大小没过门槛直接 0；过了门槛在 [STRETCH_MIN_SPEED, SPEED_FOR_FULL_STRETCH] 里归一化，
-// 再按幂曲线抬起来，最后把速度的符号还给结果——符号就是拖动方向。
+// 再按幂曲线抬起来，最后把速度的符号还给结果。
 export const stretchAmountFromSpeed = (speed: number) => {
     if (Number.isNaN(speed)) return 0;
     const magnitude = Math.abs(speed);
@@ -74,3 +82,34 @@ export const stretchAmountFromSpeed = (speed: number) => {
     const amount = Math.min(1, normalized ** STRETCH_CURVE_POWER);
     return speed < 0 ? -amount : amount;
 };
+
+/**
+ * 拖动中（指针正拖着摇杆走）的形变强度：符号只看这一下有没有顶到轨道两端，不看拖动方向。
+ *
+ *   · 触边（摇杆被钳在轨道最左或最右）：负强度 → 宽度缩短、高度拉长（往上鼓、被挤住）；
+ *   · 不触边（摇杆还在中间自由跟手）：正强度 → 宽度拉长、高度压扁（往两边甩开）。
+ *
+ * 幅度仍然来自横向速度：速度没过门槛就是 0（不变形），越过门槛后按同一条幂曲线拉满。
+ * 左右拖是同一套规则——往左拖到左边、往右拖到右边，都是触边，形变方向一致。
+ *
+ * @param speed 平滑后的横向速度（px/s，只在算幅度时用到绝对值）
+ * @param atEdge 摇杆此刻是否被钳在轨道两端（由调用方按钳制后的 left 判断）
+ */
+export const stretchAmountForDrag = (speed: number, atEdge: boolean) => {
+    const amount = Math.abs(stretchAmountFromSpeed(speed));
+    if (amount === 0) return 0;
+    return atEdge ? -amount : amount;
+};
+
+/**
+ * 摇杆此刻是否顶在轨道两端之一。`left` 传「已经钳制过」的 left、`maxLeft` 传钳制的上界，
+ * 两者都在轨道自身的布局坐标里。留 0.5px 容差：指针换算带小数，恰好压在端点时也不该漏判。
+ *
+ * 触边的判据必须用钳制后的结果，不能用指针原始位置——指针拖到轨道外面时 left 已经不再变化，
+ * 那正是「顶住了」的状态，用原始位置判断会在拖出轨道一截之后才认出来。
+ */
+export const isThumbAtEdge = (left: number, maxLeft: number): boolean => (
+    maxLeft <= 0.5
+        ? true
+        : left <= 0.5 || left >= maxLeft - 0.5
+);

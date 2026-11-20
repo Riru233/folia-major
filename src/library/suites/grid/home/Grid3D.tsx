@@ -9,8 +9,6 @@ import LocalGrid3DView from './LocalGrid3DView';
 import NavidromeGrid3DView from './NavidromeGrid3DView';
 import { useGrid3DTabKeys } from './useGrid3DTabKeys';
 import DesktopGrid3DSurface from './DesktopGrid3DSurface';
-import WelfareChampionBanner from './WelfareChampionBanner';
-import { BLG_LOGO_URL } from './welfareChampionAssets';
 import OnlineProviderAccountlessPanel from '../account/OnlineProviderAccountlessPanel';
 import HomeLoginPanel from '../../../../components/login/HomeLoginPanel';
 import SwitcherPill from '../../../../components/login/SwitcherPill';
@@ -282,6 +280,23 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     useEffect(() => {
         setFocusedIndex(0);
     }, [homeViewTab]);
+
+    // 点搜索框与历史面板以外的地方就把搜索层收回去（和点那颗 × 一样）。用 pointerdown 而不是 click：
+    // 指针落在别处（例如海报、页签）时先收起，那一下不会同时被当成「先点搜索框、再点别处」。
+    // 历史面板挂在 body 上（HomeSearchHistoryPopover），所以白名单按 data-home-search-layer 认：
+    // 搜索钮、两档的搜索表单、历史面板自己都带这个标记；带漏了，点输入框就会被当成「点外面」而立刻收起。
+    useEffect(() => {
+        if (!isCompact || !isCompactSearchOpen) return undefined;
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+            if (!(target instanceof Node)) return;
+            if (target instanceof Element && target.closest('[data-home-search-layer]')) return;
+            setIsCompactSearchOpen(false);
+            setIsSearchHistoryOpen(false);
+        };
+        document.addEventListener('pointerdown', handlePointerDown, true);
+        return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+    }, [isCompact, isCompactSearchOpen]);
 
     useEffect(() => {
         setFocusedIndex(0);
@@ -575,10 +590,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         }
         if (key === 'welfare') {
             // 只有分组入口卡，所以没有加载态、没有空态：入口卡就是这一页的全部内容。
-            // 顶部横幅整幅 100% 宽，占自己的一行；下面的墙面照旧撑满剩余高度。
+            // 冠军横幅（整幅 100% 宽）已经随 0.7.29 的素材一起下掉，这一页现在只剩墙面自己。
             return (
-                <div className="w-full h-full flex-1 flex flex-col min-h-0 gap-3">
-                    <WelfareChampionBanner />
+                <div className="w-full h-full flex-1 flex flex-col min-h-0">
                     <div className="flex-1 min-h-0">
                         <DesktopGrid3DSurface
                             focusMemoryScope="welfare"
@@ -993,18 +1007,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                                 }}
                                                 className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${isActive ? activeTabBg : navPillInactiveText}`}
                                             >
-                                                {/* 福利页签不写字，用 BLG 队标：宽度锁在两个字符（2em，跟着这一排的字号走），
-                                                    这样它的胶囊宽度和旁边的「专辑」「本地」对齐，切页签时那一排不跳。 */}
-                                                <span className="relative z-20">
-                                                    {tab.key === 'welfare' ? (
-                                                        <img
-                                                            src={BLG_LOGO_URL}
-                                                            alt=""
-                                                            draggable={false}
-                                                            className="block h-4 w-[2em] select-none object-contain"
-                                                        />
-                                                    ) : tab.label}
-                                                </span>
+                                                {/* 福利页签原来不写字、用 BLG 队标；队标随 0.7.29 的素材一起下掉后
+                                                    回到普通文字页签，和其它页签同一套排版（宽度自然跟着文字走）。 */}
+                                                <span className="relative z-20">{tab.label}</span>
                                             </button>
                                         </span>
                                     );
@@ -1062,6 +1067,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 aria-label={t('home.searchButton')}
                                 aria-expanded={isCompactSearchOpen}
                                 data-testid="home-search-toggle"
+                                /* 「点外面收起」的白名单：这颗钮自己也带这个标记，点它等于先收起再打开。 */
+                                data-home-search-layer
                                 data-glass
                                 data-glass-jelly
                                 data-glass-light
@@ -1077,6 +1084,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 ref={searchFormRef}
                                 onSubmit={handleSearch}
                                 className="relative w-full rounded-full transition-all md:w-56 focus-within:md:w-72"
+                                /* 历史面板虽然挂在 body 上，但输入框、下拉箭头都在这张表单里：
+                                    「点外面收起」按这个标记判断里面／外面。 */
+                                data-home-search-layer
                                 data-glass
                                 data-glass-jelly
                                 data-glass-light
@@ -1154,6 +1164,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                             ref={compactSearchFormRef}
                             onSubmit={handleSearch}
                             className="relative h-10 w-full rounded-full"
+                            /* 「点外面收起」的白名单：这条搜索层整体算里面（输入框、× 都在其中），
+                                历史面板自己也带这个标记（它挂在 body 上，不在表单里）。 */
+                            data-home-search-layer
                             data-glass
                             data-glass-jelly
                             data-glass-light
@@ -1218,6 +1231,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     onRemove={forgetSearchHistoryQuery}
                                     onClear={clearSearchHistory}
                                     isDaylight={isDaylight}
+                                    stretch
                                 />
                             </HomeSearchHistoryPopover>
                         </form>

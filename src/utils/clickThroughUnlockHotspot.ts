@@ -40,8 +40,12 @@ export const CLICK_THROUGH_MEDIA_CONTROLS_WIDTH = 86;
 
 // One window button is 44px wide (`w-11` in WindowControls).
 export const WINDOW_CONTROL_BUTTON_WIDTH = 44;
-// Room left for the macOS traffic lights when the drawn buttons share the left edge with them.
+// Room left for the macOS traffic lights when the drawn buttons share the left edge with them, in
+// window pixels: the traffic lights are native and do not follow the page zoom (界面缩放).
 export const NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH = 76;
+
+/** The traffic lights' room in CSS pixels at a page zoom of `zoom`. */
+export const nativeTrafficLightsReservedWidth = (zoom = 1): number => NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH / (zoom > 0 ? zoom : 1);
 // The lock and everything beside it sit this much further in than the window buttons need: the
 // buttons keep a clear band of their own at the edge, so their hover reveal never fights the lock.
 export const CLICK_THROUGH_UNLOCK_BUTTON_SHIFT = 30;
@@ -54,14 +58,16 @@ export const CLICK_THROUGH_MEDIA_CONTROLS_GAP = 6;
 // minimize / maximize / close are gone: only remote control and fullscreen are left, and on the
 // left they start after the traffic lights. The main process shifts its hotspot by the same
 // amounts (`resolveUnlockHotspot` in electron/mainWindowClickThrough.cjs).
-export const resolveWindowControlsExtent = ({ hasFullscreenButton, nativeTrafficLights, side }: {
+export const resolveWindowControlsExtent = ({ hasFullscreenButton, nativeTrafficLights, side, zoom = 1 }: {
     hasFullscreenButton: boolean;
     nativeTrafficLights: boolean;
     side: 'left' | 'right';
+    /** The page zoom (界面缩放): the traffic lights' room is fixed in window pixels. */
+    zoom?: number;
 }): number => {
     const optional = hasFullscreenButton ? 1 : 0;
     if (!nativeTrafficLights) return (4 + optional) * WINDOW_CONTROL_BUTTON_WIDTH;
-    return (side === 'left' ? NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH : 0) + (1 + optional) * WINDOW_CONTROL_BUTTON_WIDTH;
+    return (side === 'left' ? nativeTrafficLightsReservedWidth(zoom) : 0) + (1 + optional) * WINDOW_CONTROL_BUTTON_WIDTH;
 };
 
 // Where the unlock button starts, measured in from its edge: the window buttons, the fixed gap and
@@ -73,6 +79,7 @@ export const resolveUnlockButtonInset = ({ hasFullscreenButton, nativeTrafficLig
 }): number => resolveWindowControlsExtent({ hasFullscreenButton, nativeTrafficLights, side })
     + CLICK_THROUGH_UNLOCK_BUTTON_GAP
     + CLICK_THROUGH_UNLOCK_BUTTON_SHIFT;
+
 
 // With the window buttons on the left (`titlebarSide`) the row is mirrored: the same offsets count
 // from the left edge, and the hotspot covers 206px to 412px in from the left.

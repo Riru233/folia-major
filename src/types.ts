@@ -1259,7 +1259,9 @@ export const DEFAULT_NOMAND_BACKGROUND_TUNING: NomandBackgroundTuning = {
 };
 
 export const DEFAULT_LATENT_BACKGROUND_TUNING: LatentBackgroundTuning = {
-  displayMode: 'both',
+  // 新装默认（2026-11-17 用户要求）：只显示流体，不显示像素、也不混合；
+  // 颜色取封面与主题（cover-theme）；去掉可读性叠色。
+  displayMode: 'mesh',
   colorSource: 'cover-theme',
   // 新装默认：首页也让隐现跟着动（2026-11-15 用户要求默认关闭「仅在播放页启用动态效果」）。
   dynamicOnlyInPlayer: false,
@@ -1268,11 +1270,11 @@ export const DEFAULT_LATENT_BACKGROUND_TUNING: LatentBackgroundTuning = {
   ditheringAudioSpeed: 1.2,
   ditheringSize: 2.5,
   ditheringOpacity: 0.55,
-  meshSpeed: 0.3,
+  meshSpeed: 0.1,
   meshAudioSpeed: 2,
-  meshDistortion: 0.8,
-  meshSwirl: 0.1,
-  overlayEnabled: true,
+  meshDistortion: 2,
+  meshSwirl: 1,
+  overlayEnabled: false,
   overlayOpacity: 0.35,
 };
 

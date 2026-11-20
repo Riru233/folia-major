@@ -1,4 +1,4 @@
-﻿
+
 
 export default {
   "appleMusic": {
@@ -565,6 +565,8 @@ export default {
     "gpuPreferenceChanged": "Render GPU changed; restart Folia to apply it",
     "backgroundThrottlingOn": "Background throttling on",
     "backgroundThrottlingOff": "Background throttling off",
+    "uiZoomChanged": "Interface zoom: {{percent}}%",
+    "uiZoomOff": "Interface zoom off (100%)",
     "visualizerSwitched": "Switched to {{mode}} visualizer",
     "classicReset": "Classic tuning reset",
     "cadenzaReset": "Mindscape tuning reset",
@@ -629,6 +631,7 @@ export default {
     "queueInsertNext": "Queue insert to play next",
     "queueAppend": "Queue append to end",
     "equalizerModCurve": "\"{{mod}}\" put its own equalizer curve in place",
+    "themeModOverride": "The mod \"{{mod}}\" put its own theme over the song's theme",
     "equalizerModMode": "\"{{mod}}\" switched the sound to {{mode}}",
     "homeLayoutGrid": "Home layout switched to Vast Desktop",
     "homeLayoutCarousel": "Home layout switched to Classic",
@@ -955,6 +958,10 @@ export default {
       "settings-local-lyrics-priority": { "title": "Local song lyrics priority", "description": "Choose whether local songs prefer local or online lyrics" },
       "settings-local-lyric-format-order": { "title": "Local lyric file format priority", "description": "Choose which format wins when a track has several lyric files" },
       "settings-integration": { "title": "Integration settings", "description": "Open Stage, Now Playing, and Navidrome settings" },
+      "stem-mixer-toggle": { "title": "Stem mixer", "description": "Turn the live four-stem mixer on or off" },
+      "stem-mixer-karaoke": { "title": "Stem mixer: karaoke", "description": "Take the vocals out of the playing song" },
+      "stem-mixer-vocals": { "title": "Stem mixer: vocals only", "description": "Keep only the vocals of the playing song" },
+      "stem-mixer-reset": { "title": "Stem mixer: as recorded", "description": "Put all four stems back to 1.0×" },
       "automix-toggle": { "title": "Smart transition", "description": "Turn FOLIA smart transitions on or off" },
       "transition-mode-crossfade": { "title": "Transition mode: Folia Crossfade", "description": "Use the simple one-out one-in crossfade" },
       "transition-mode-automix": { "title": "Transition mode: Folia Automix", "description": "Analyse both tracks and mix them automatically" },
@@ -980,6 +987,10 @@ export default {
       "settings-update-channel": { "title": "Update channel", "description": "Choose the desktop app release channel" },
       "desktop-toggle-voice-input-pause": { "title": "Voice input pause", "description": "Toggle pausing playback during voice input" },
       "desktop-toggle-prevent-display-sleep": { "title": "Prevent display sleep during playback", "description": "Keep the display awake while music is playing" },
+      "settings-ui-zoom": { "title": "Interface zoom settings", "description": "Jump to the zoom of the whole main window" },
+      "ui-zoom-toggle": { "title": "Interface zoom", "description": "Turn zooming the whole main window to the chosen size on or off" },
+      "ui-zoom-in": { "title": "Zoom interface in", "description": "Make the whole main window one step larger" },
+      "ui-zoom-out": { "title": "Zoom interface out", "description": "Make the whole main window one step smaller" },
       "desktop-toggle-background-throttling": { "title": "Background throttling", "description": "Toggle throttling rendering and holding the lyric animation while Folia is minimised or hidden" },
       "settings-graphics": { "title": "Graphics settings", "description": "Open static mode, frame rate cap, Linux glow fix and reduced motion" },
       "settings-gpu-preference": { "title": "Render GPU settings", "description": "Jump to the choice of graphics card the app renders on" },
@@ -1044,6 +1055,7 @@ export default {
       "grid-resync-folder": { "title": "Reimport this folder", "description": "Scan this local folder again and refresh its songs" },
       "grid-resync-all-folders": { "title": "Reimport every folder", "description": "Scan every local folder again and refresh the library" },
       "grid-organize-song-info": { "title": "Organize song info", "description": "Clean up the titles, artists and albums of this folder" },
+      "grid-reorder-playlist": { "title": "Reorder playlist songs", "description": "Edit the order of songs in this local playlist" },
       "grid-export-playlist": { "title": "Export this playlist", "description": "Save this local playlist as an m3u8 file" },
       "grid-edit-entity": { "title": "Edit this album or artist", "description": "Open the local library entity editor for this collection" },
       "grid-set-cover": { "title": "Set collection cover", "description": "Choose a fixed cover for this local folder, album or playlist" },
@@ -1317,6 +1329,8 @@ export default {
     "background": "Background",
     "default": "Default",
     "aiTheme": "AI Theme",
+    "themeModOverride": "Theme from the mod \"{{mod}}\"",
+    "themeModOverrideRelease": "Back to the song's theme",
     "generateAIVisuals": "Generate AI Visuals",
     "generatingTheme": "Generating Theme...",
     "resetToDefaultTheme": "Reset to Default Theme",
@@ -1353,6 +1367,39 @@ export default {
       "width": "Stereo width",
       "space": "Space",
       "punch": "Punch"
+    },
+    "stemMixer": {
+      "title": "Stem mixer",
+      "hint": "Set drums, bass, other and vocals on their own",
+      "toggle": "Stem mixer",
+      "stem": {
+        "drums": "Drums",
+        "bass": "Bass",
+        "other": "Other",
+        "vocals": "Vocals"
+      },
+      "preset": {
+        "reset": "As recorded",
+        "karaoke": "Karaoke",
+        "vocals": "Vocals only"
+      },
+      "status": {
+        "off": "When on, the playing song is separated live on the GPU; what is not separated yet plays as recorded.",
+        "waiting": "Waiting for playback",
+        "separating": "Separating",
+        "ready": "Stems in effect",
+        "failed": "This song cannot be separated; playing it as recorded",
+        "notFollowing": "The playing source does not match the separated one; playing it as recorded",
+        "tooLong": "Longer than 20 minutes; not separated"
+      },
+      "block": {
+        "automix": "Not available while smart transitions are on: both take over the same playback.",
+        "automixAction": "Turn off smart transitions",
+        "hifi": "Not available on HiFi playback: the sound does not pass through here.",
+        "external": "Not available while an external player plays: the sound does not pass through here.",
+        "noGpu": "Not available on this device: it needs WebGPU and the bundled stem model.",
+        "tooSlow": "Separation is too slow on this GPU; turned off for this session."
+      }
     },
     "equalizerModCurve": "This curve comes from the mod \"{{name}}\"",
     "equalizerModCurveHint": "Your presets and custom slots are untouched. To adjust this curve, first save it to a custom slot.",
@@ -1517,6 +1564,7 @@ export default {
     "visualizerBeatEffectsHint": "Switches the beat effects of smart beat mode on or off and changes their strength; smart beat mode itself stays yours, but under On the effects switched on make the GPU analyse new songs.",
     "visualizerBackgroundHint": "Switches the background type of the player (each background's own pictures and options excepted).",
     "visualizerAnimationIntensityHint": "Changes the animation intensity of the lyrics and the background.",
+    "themeWriteHint": "Can lay its own theme over the song's theme; any theme you choose ends it.",
     "signatureVerified": "Verified",
     "signatureVerifiedDetail": "Carries a valid official Folium signature ({{key}}): its source and content were reviewed by Folium and have not changed since signing. Once enabled it still runs with the app's full privileges.",
     "signatureBeta": "Preview",
@@ -2049,6 +2097,9 @@ export default {
     "searchDatabase": "SEARCH DATABASE...",
     "searchLocal": "Search local songs...",
     "searchNavidrome": "Search navidrome",
+    "searchButton": "Search",
+    "navMenu": "Navigation menu",
+    "searchClose": "Close search",
     "searchHistory": "Recent searches",
     "searchHistoryClear": "Clear",
     "searchHistoryRemove": "Remove \"{{query}}\" from history",
@@ -2109,8 +2160,6 @@ export default {
     "radioTab": "Radio",
     "explore": "Explore",
     "welfare": "Welfare",
-    "welfareChampion": "We are the champions!",
-    "welfareChampionSubtitle": "Congratulations to BLG for winning the 2026 League of Legends World Championship!",
     "welfarePermanent": "Version archive",
     "welfareLimited": "Limited-time welfare",
     "welfarePermanentHint": "Classic tracks, in 0.7.29 only",
@@ -2909,6 +2958,7 @@ export default {
     "enablePlayerPageNativeBlur": "Enable Player Page Native Blur",
     "enablePlayerPageNativeBlurHint": "System blur replaces the player backgrounds; uses more resources",
     "enablePlayerPageNativeBlurDesc": "Applies only in the desktop app in non-transparent mode; moving the window may lag.",
+    "enablePlayerPageNativeBlurUnsupported": "Needs Windows 11 22H2 or later; not available on this system",
     "nativeBlurConfirmTitle": "System glass effect",
     "nativeBlurConfirmDesc": "This changes the window to a translucent background using the system glass effect. Folia backgrounds will not be shown.",
     "nativeBlurConfirmAction": "I understand",
@@ -2966,6 +3016,9 @@ export default {
     "disableVisualizerGeometricBackground": "Hide common geometric background",
     "disableVisualizerGeometricBackgroundDesc": "Hide the shared geometric background shapes on the player page.",
     "desktopTrayBehavior": "Desktop window behavior",
+    "uiZoom": "Interface zoom",
+    "uiZoomDesc": "Zoom the whole main window by a fixed step. With a large display scale in Windows the window feels cramped; zoom out to see more. The remote control window keeps its size.",
+    "uiZoomStep": "Zoom",
     "minimizeToTray": "Minimize to tray",
     "closeToTray": "Close window to tray",
     "closeToTrayDesc": "The close button hides the window to the tray instead of quitting",
@@ -4464,6 +4517,24 @@ export default {
         "description": "When signed in, your own private playlists now load their songs, with real paging. Self-hosted backends must run qq-music-api 3.1.2 or later; older backends fall back automatically, and a playlist that cannot be read now says it is not public instead of silently showing as empty."
       }
     },
+    "v0_7_29_1": {
+      "intro": "Welcome to 0.7.29S, a fix release that follows 0.7.29, the Feynman Update. The player background a fresh install starts with is now pure fluid Latent, the grid layout's side info panel has its border back, and the compact layout's search box brings up its history again.",
+      "banner": {
+        "alt": "Folia Shino 0.7.29S · Fluid Update"
+      },
+      "fluidDefault": {
+        "title": "Fluid-only starting background",
+        "description": "A fresh install opens on Latent with only its fluid layer: no pixel layer, no mix, colors taken from the cover and the theme, and the readability overlay off. Base speed 0.1, audio response up to 2, distortion 2, swirl 1."
+      },
+      "railEdges": {
+        "title": "The side info strip has its border back",
+        "description": "The grid layout's side info panel is outlined again, so it reads as the same kind of surface as the panels beside it."
+      },
+      "compactLayout": {
+        "title": "Search in the compact layout",
+        "description": "With the search field slid out in the compact layout, clicking the field no longer collapses it, and the search history shows again — with the same liquid glass as the desktop field, and as wide as the field it belongs to."
+      }
+    },
     "v0_7_29": {
       "intro": "Welcome to 0.7.29, the Feynman Update—a major update. Personal FM gets its own radio wall, there is a new lyric style called Metaphor, and a performance check tells you how much visual quality this computer can handle. To mark BLG winning the 2026 League of Legends World Championship, the library also gains a Welfare tab where League of Legends songs play in full without signing in.",
       "banner": {
@@ -5211,6 +5282,35 @@ export default {
     "useLocalInfoForSelected": "Use local info ({{count}})",
     "coverCacheFailed": "Metadata was saved, but the cover could not be cached. The online URL will still be used when available.",
     "lyricsNotAppliedOtherSaved": "Lyrics were not applied; the other selections were saved.",
+  },
+  "localPlaylistOrder": {
+    "edit": "Reorder playlist songs",
+    "list": "Song order",
+    "songCount_one": "{{count}} song",
+    "songCount_other": "{{count}} songs",
+    "dragSong": "Drag to move this song or the selected songs",
+    "dragCount": "Move {{count}}",
+    "insertBefore": "Insert staged songs before {{title}}",
+    "insertStart": "Insert at start",
+    "insertEnd": "Insert at end",
+    "stageTitle": "Staging",
+    "dragGroup": "Drag the group into the list",
+    "insertHint": "Drag the group between two songs, or use the insert button at the end of a row.",
+    "stageHint": "Put selected songs here, then insert them together where you want them.",
+    "listEmpty": "All songs are staged. Insert them back.",
+    "finishStaging": "Insert the staged songs back into the list before saving.",
+    "unsaved": "Order changed, not saved yet",
+    "selectAll": "Select all",
+    "selectedCount": "{{count}} selected",
+    "stageSelected": "Stage",
+    "sort": "Sort by title",
+    "sortTitle": "Sort the entire playlist by title?",
+    "sortNotice": "Sort all {{count}} songs, including staged ones, by title from A to Z? This can’t be undone after you save.",
+    "undo": "Undo",
+    "redo": "Redo",
+    "changed": "The playlist has changed. Reopen the editor to use its latest order.",
+    "failed": "Couldn’t save the order. Try again.",
+    "saving": "Saving…",
   },
   "localCollectionCover": {
     "menuLabel": "Set cover",

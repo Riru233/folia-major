@@ -19,7 +19,11 @@ type HomeSearchHistoryProps = {
     onRemove: (query: string) => void;
     onClear: () => void;
     isDaylight: boolean;
-    /** 宽度由调用方定：桌面页头那颗搜索框旁边是固定宽，紧凑档是占满整条搜索层。 */
+    /**
+     * 铺满调用方给的那一块：紧凑档的搜索层占满整条页头，历史面板也跟着同宽；桌面档收成固定的 288px。
+     * 两档的面板是同一个组件、同一套玻璃属性，只是宽度跟着搜索框走。
+     */
+    stretch?: boolean;
     className?: string;
 };
 
@@ -32,6 +36,7 @@ export const HomeSearchHistory: React.FC<HomeSearchHistoryProps> = ({
     onRemove,
     onClear,
     isDaylight,
+    stretch = false,
     className = '',
 }) => {
     const { t } = useTranslation();
@@ -46,9 +51,11 @@ export const HomeSearchHistory: React.FC<HomeSearchHistoryProps> = ({
     return (
         <div
             data-glass data-glass-jelly data-glass-light
+            /* 面板挂在 body 上，不在搜索表单里：页头「点外面收起」的白名单靠它自己这个标记认出里面。 */
+            data-home-search-layer
             id="home-search-history"
             data-testid="home-search-history"
-            className={`max-w-[calc(100vw-2rem)] rounded-2xl border-none p-3 ${surface} ${className}`}
+            className={`max-w-[calc(100vw-2rem)] rounded-2xl border-none p-3 ${stretch ? 'w-full' : 'w-72'} ${surface} ${className}`}
             style={{
                 backgroundColor: isDaylight ? 'rgba(215,215,215,0.42)' : 'rgba(40, 40, 40, 0.42)',
                 borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
@@ -144,10 +151,34 @@ export const HomeSearchHistoryPopover: React.FC<HomeSearchHistoryPopoverProps> =
             setBox({ top: rect.bottom + PANEL_GAP, left, width });
         };
         measure();
+        // 紧凑档的搜索层是滑进来的：面板打开的那一帧锚点还在页头右侧之外（translateX(100%)），
+        // 只量一次会把它定位到屏幕外一整屏宽。滑入的这段时间里跟着锚点重量，位置一稳定就停：
+        // 不留下常驻的逐帧回调（那是热路径）。桌面档第一帧就已经对，第二帧就停了。
+        let frame = 0;
+        let previousLeft = Number.NaN;
+        const FOLLOW_LIMIT_MS = 600;
+        const startedAt = performance.now();
+        const follow = () => {
+            const anchor = anchorRef.current;
+            if (!anchor) return;
+            const current = anchor.getBoundingClientRect().left;
+            measure();
+            const stable = Math.abs(current - previousLeft) < 0.5;
+            previousLeft = current;
+            if (stable || performance.now() - startedAt > FOLLOW_LIMIT_MS) return;
+            frame = requestAnimationFrame(follow);
+        };
+        frame = requestAnimationFrame(follow);
+        // 滑完之后再对一次：位置稳定判据够不到时（例如动画被系统降级成瞬移）这里兜底。
+        const anchor = anchorRef.current;
+        const onTransitionEnd = () => measure();
+        anchor?.addEventListener('transitionend', onTransitionEnd);
         window.addEventListener('resize', measure);
         // 捕获阶段听滚动：页头虽然不动，内容区滚动也会让锚点位置变。
         window.addEventListener('scroll', measure, true);
         return () => {
+            cancelAnimationFrame(frame);
+            anchor?.removeEventListener('transitionend', onTransitionEnd);
             window.removeEventListener('resize', measure);
             window.removeEventListener('scroll', measure, true);
         };

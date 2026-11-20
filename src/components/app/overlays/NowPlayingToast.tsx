@@ -247,12 +247,19 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
                         aria-label={isPositioning ? t('options.stageTrackPillReposition') : onActivate ? activateLabel : undefined}
                         style={{
                             ...(isPositioning ? { touchAction: 'none', outline: '2px solid currentColor', outlineOffset: 3 } : {}),
-                            backgroundColor: isDaylight ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-                            borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
-                            borderBottom: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
-                            outline: isPositioning ? '2px solid currentColor' : '1px solid rgba(35,35,35,0.3)',
+                            backgroundColor: isDaylight
+                            ? "rgba(255,255,255,0.4)"
+                            : "rgba(0,0,0,0.4)",
+                            borderTop: isDaylight
+                            ? "1px solid #fff6"
+                            : "1px solid #fff5",
+                            borderBottom: isDaylight
+                            ? "1px solid #fff6"
+                            : "1px solid #fff5",
+                            outline: "1px solid rgba(35,35,35,0.3)",
                             outlineOffset: isPositioning ? 3 : undefined,
-                            boxShadow: '2px 2px 8px 2px rgba(40,40,40,0.4)',
+                            boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
+                            transformOrigin: "bottom right",
                         }}
                         initial={{ opacity: 0, x: isPositioning ? 0 : -24 }}
                         animate={{ opacity: 1, x: 0 }}

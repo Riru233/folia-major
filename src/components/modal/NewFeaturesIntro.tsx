@@ -9,8 +9,9 @@ import { NEW_FEATURES_RELEASE } from './newFeaturesRelease';
 // The intro, then the features as the rows of one card. A major update carries a tag above the
 // intro with its codename. It is drawn with the settings kit's variables, so it goes inside a
 // sheet (ReleaseNotesDialog) or the settings window.
-// The banner (a release image) opens a home tab: the host passes `onOpenTab`, which closes
-// whatever window the notes are in and selects that tab. No host, no banner.
+// The banner (a release image) may open a home tab: with `targetTab` and a host passing
+// `onOpenTab`, clicking it closes whatever window the notes are in and selects that tab. A banner
+// without `targetTab` (this release's title image) is just drawn, with no hint and no click.
 type NewFeaturesIntroProps = {
     onOpenTab?: (tab: HomeViewTab) => void;
 };
@@ -18,24 +19,35 @@ type NewFeaturesIntroProps = {
 export const NewFeaturesIntro: React.FC<NewFeaturesIntroProps> = ({ onOpenTab }) => {
     const { t } = useTranslation();
     const { i18nKey, features, majorUpdate, banner } = NEW_FEATURES_RELEASE;
+    const bannerTarget = banner?.targetTab;
+    const bannerImage = (
+        <img src={banner?.imageUrl} alt={banner ? t(`${banner.i18nKey}.alt`) : ''} className="block w-full" />
+    );
 
     return (
         <>
-            {banner && onOpenTab && (
+            {banner && (bannerTarget && onOpenTab ? (
                 <button
                     type="button"
                     data-testid="release-banner"
-                    onClick={() => onOpenTab(banner.targetTab)}
+                    onClick={() => onOpenTab(bannerTarget)}
                     aria-label={t(`${banner.i18nKey}.alt`)}
                     title={t(`${banner.i18nKey}.hint`)}
                     className="st-card mb-3 block w-full cursor-pointer overflow-hidden rounded-xl bg-[var(--st-card)] shadow-[0_0_0_1px_var(--st-line)] transition-shadow hover:shadow-[0_0_0_2px_var(--st-accent)] focus-visible:shadow-[0_0_0_2px_var(--st-accent)] focus-visible:outline-none"
                 >
-                    <img src={banner.imageUrl} alt={t(`${banner.i18nKey}.alt`)} className="block w-full" />
+                    {bannerImage}
                     <span className="flex items-center justify-end px-2.5 py-1.5 text-[11px] leading-4 text-[color:var(--st-t2)]">
                         {t(`${banner.i18nKey}.hint`)}
                     </span>
                 </button>
-            )}
+            ) : (
+                <div
+                    data-testid="release-banner"
+                    className="st-card mb-3 block w-full overflow-hidden rounded-xl bg-[var(--st-card)] shadow-[0_0_0_1px_var(--st-line)]"
+                >
+                    {bannerImage}
+                </div>
+            ))}
             {majorUpdate && (
                 <span
                     data-testid="release-major-update"

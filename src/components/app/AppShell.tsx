@@ -14,11 +14,12 @@ import { usePlayerOverlayRoot, usePlayerOverlayReservation } from '../../hooks/u
 import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
 import { useNativeTrafficLights } from '../../hooks/useNativeTrafficLights';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
+import { resolveUiZoomFactor } from '../../utils/uiZoom';
 import {
     CLICK_THROUGH_MEDIA_CONTROLS_GAP,
     CLICK_THROUGH_PIN_BUTTON_WIDTH,
     CLICK_THROUGH_UNLOCK_BUTTON_WIDTH,
-    NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH,
+    nativeTrafficLightsReservedWidth,
     resolveUnlockButtonInset,
 } from '../../utils/clickThroughUnlockHotspot';
 import type { FoliumLayoutRect } from '../../mods/folium/contract';
@@ -106,10 +107,13 @@ const AppShell: React.FC<AppShellProps> = ({
     const nativeTrafficLights = useNativeTrafficLights();
     // 锁和切歌按钮的偏移：窗口按钮序列 + 固定的 4px 间隙 + 再往里让的 30px。
     // 30px 是这次有意往窗口内侧挪的距离，主进程的悬停热区按同一套数字算，两边必须一致。
+    // 红绿灯是原生的，不跟界面缩放走，给它让的位置要按缩放换回 CSS 像素。
+    const uiZoom = useDesktopSettingsStore(state => resolveUiZoomFactor(state.uiZoomEnabled, state.uiZoomStep));
     const clickThroughLockOffset = resolveUnlockButtonInset({
         hasFullscreenButton: hasFullscreenTitlebarButton,
         nativeTrafficLights,
         side: titlebarSide,
+        zoom: uiZoom,
     });
     const titlebarEdge = leftControls ? 'left' : 'right';
     // 置顶键紧挨着锁的左边；原生 Wayland 下置顶无效，不画它，切歌按钮顶上来。
@@ -119,7 +123,7 @@ const AppShell: React.FC<AppShellProps> = ({
     const clickThroughMediaOffset = showsClickThroughPin
         ? clickThroughPinOffset + CLICK_THROUGH_PIN_BUTTON_WIDTH + CLICK_THROUGH_MEDIA_CONTROLS_GAP
         : clickThroughPinOffset;
-    const windowControlsOffset = nativeTrafficLights && leftControls ? NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH : 0;
+    const windowControlsOffset = nativeTrafficLights && leftControls ? nativeTrafficLightsReservedWidth(uiZoom) : 0;
 
   useEffect(() => {
     if (!useCustomWindowRadius || !window.electron?.isWindowMaximized) {

@@ -9,6 +9,9 @@
 // @note default_theme_daylight（OBS 链接另有 isDaylight 参数）、disable_home_dynamic_background（以及只在迁移时读的旧键 enable_home_dynamic_background） 是用户明确决定「不进外观配置导入导出」的设置（2026-11-08）：配置码也用于 web 版 OBS 链接，
 // 只加 OBS 页面看得到的，这些在 OBS 页面上看不到。不要按 settings-feature-integration「视觉设置必须进
 // buildCurrentConfig / compressConfig / decompressConfig / validKeys / handleImportConfig」的规则把它们补进短码或 JSON。
+//
+// @note 刚刚装好、还没有任何选择时，夜间模式跟随系统（2026-11-17 用户要求）。解析规则与「为什么要把结果
+// 当场落盘」写在下面 initialFollowSystemTheme 那里。
 
 import { create } from 'zustand';
 import i18n from '../i18n/config';
@@ -27,7 +30,29 @@ export const readSystemThemeIsDaylight = (): boolean | null => {
     return window.matchMedia('(prefers-color-scheme: light)').matches;
 };
 
-const initialFollowSystemTheme = getStoredBoolean(FOLLOW_SYSTEM_THEME_STORAGE_KEY, false);
+/**
+ * 刚装好、还没有任何选择时，夜间模式跟随系统（2026-11-17 用户要求）；用户动过一次之后照他存的走。
+ *
+ * `follow_system_theme` 这个键过去只在用户开关过之后才写，所以「读不到」既可能是新装，也可能是
+ * 从前手动选过白天 / 夜间、从没碰过跟随开关的老用户（他们只有 `default_theme_daylight`）。按后者
+ * 的存法判断：已经有手动选择的人不改成跟随系统，其余（新装）跟随系统。
+ *
+ * 解析出来的值当场写回去：跟随系统期间同步系统主题只会写 `default_theme_daylight`，不写这个键，
+ * 不落盘的话新装用户第二次启动就会被上面那条老用户规则判成「手动选过」，跟随系统只活一次。
+ */
+const readOptionalStoredBoolean = (key: string): boolean | null => {
+    if (typeof window === 'undefined') return null;
+    const saved = localStorage.getItem(key);
+    return saved === null ? null : saved === 'true';
+};
+
+const initialFollowSystemTheme = (() => {
+    const stored = readOptionalStoredBoolean(FOLLOW_SYSTEM_THEME_STORAGE_KEY);
+    if (stored !== null) return stored;
+    const followsSystem = readOptionalStoredBoolean('default_theme_daylight') === null;
+    setStoredBoolean(FOLLOW_SYSTEM_THEME_STORAGE_KEY, followsSystem);
+    return followsSystem;
+})();
 const initialStoredDaylight = getStoredBoolean('default_theme_daylight', false);
 const initialDaylight = initialFollowSystemTheme
     ? (readSystemThemeIsDaylight() ?? initialStoredDaylight)
