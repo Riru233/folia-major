@@ -21,6 +21,8 @@ import { isChromiumRenderer } from '../../../../utils/platform';
 import type { LibraryHomeTabKey } from '../../../core/home/homeModel.contract';
 import type { LibraryHomeExtraTab } from '../../../core/suite/suite.contract';
 import { useNavTabThumb } from './useNavTabThumb';
+import { usePlayerChromeSettingsStore } from '../../../../stores/usePlayerChromeSettingsStore';
+import { DOCKED_PLAYER_BAR_HEIGHT_PX } from '../../../../components/docked-player/DockedPlayerBar';
 
 // src/library/suites/grid/home/Grid3DNav.tsx
 // 浮层导航竖栏。整块结构照搬页头那排页签胶囊（Grid3D.tsx 里的 pill + 摇杆）：
@@ -55,7 +57,7 @@ const NAV_DISPERSION_FILTER_ID = 'grid3d-nav-dispersion';
 
 /** 浮动容器的定位：横向与页头左边距（px-4 16 + 8）对齐，纵向钉在距窗口顶部 45px。
     两个值都写死，不再去量页头里的元素——那块占位已经换成高亮标题了。 */
-const COLUMN_LEFT_PX = 20;
+const COLUMN_LEFT_PX = 15;
 const COLUMN_TOP_PX = 40;
 /** 容器底边距：设置按钮钉在距窗口底部这个位置，与上方竖栏之间的间隔由窗口高度自动伸缩。 */
 const COLUMN_BOTTOM_PX = 24;
@@ -143,6 +145,10 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     // 页头那份 useGlass 只扫它自己 commit 的那一帧；这里自己再扫一次，首帧就挂上玻璃。
     useGlass();
 
+    // 停靠样式下窗口底边被那条播放栏占掉 94px：设置按钮得整条让上去，否则会被压在栏下面。
+    const playerBarStyle = usePlayerChromeSettingsStore(state => state.playerBarStyle);
+    const columnBottomPx = COLUMN_BOTTOM_PX + (playerBarStyle === 'docked' ? DOCKED_PLAYER_BAR_HEIGHT_PX - 40 : 0);
+
     // 摇杆需要的项与页头那排完全一致：不可用的页签带 disabled，拖动吸附时跳过它们。
     const thumbItems = React.useMemo(
         () => [
@@ -225,7 +231,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
             // 层级：压在页头（z-20）之上、GridMap（z-[110]）与底部播放胶囊（z-60）之下。
             // 高度撑满可视区：设置按钮用 mt-auto 钉到底部，中间那段间隔随窗口高度自己伸缩。
             className={`pointer-events-none fixed z-30 flex flex-col ${className}`}
-            style={{ left: COLUMN_LEFT_PX, top: COLUMN_TOP_PX, bottom: COLUMN_BOTTOM_PX }}
+            style={{ left: COLUMN_LEFT_PX, top: COLUMN_TOP_PX, bottom: columnBottomPx }}
             data-testid="grid3d-nav"
         >
             <div ref={wrapperRef} className="relative flex flex-1 flex-col items-start gap-2">

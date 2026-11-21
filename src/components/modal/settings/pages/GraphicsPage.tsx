@@ -42,7 +42,7 @@ import { Button, Group,
 import { GlassPresetGrid } from "./pictures";
 import { GpuPreferenceRow } from "./graphics/GpuPreferenceRow";
 import { useSettingsPage } from "./settingsPageContext";
-
+import {lyricRenderScaleChoices, lyricAntialiasChoices } from  "@/components/visualizer/renderQuality/LyricRenderQualityRows"
 // src/components/modal/settings/pages/GraphicsPage.tsx
 // The 动画与性能 page: what trades picture for smoothness or works around a renderer problem
 // (static mode, the home background, native blur, the frame-rate cap, the lyric canvas resolution and
@@ -364,6 +364,7 @@ const GraphicsPage: React.FC = () => {
                         }}
                     />
                 </Row>
+                
                 <Row option={O.lyricAntialias} note={t('options.lyricAntialiasDesc')}>
                     <Segmented<LyricAntialias>
                         value={visualizer.renderQuality.antialias}
