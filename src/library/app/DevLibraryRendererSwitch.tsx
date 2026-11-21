@@ -57,7 +57,7 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
             data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed h-[32px] w-max whitespace-nowrap ${isCompact ? 'bottom-[48px] left-2' : PLACEMENT_CLASS[placement]} z-[120] rounded-full border-current/30 px-2 py-1 text-[11px] leading-[22px]`}
+            className={`fixed h-[32px] w-max whitespace-nowrap left-[80px] ${isCompact ? 'bottom-[48px]' : PLACEMENT_CLASS[placement]} z-[120] rounded-full border-current/30 px-2 py-1 text-[11px] leading-[22px]`}
                     style={{
                         backgroundColor: "rgba(40, 40, 40, 0.42)",
                         borderTop:  "1px solid #fff5",

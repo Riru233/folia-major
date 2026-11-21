@@ -57,6 +57,8 @@ const NAV_DISPERSION_FILTER_ID = 'grid3d-nav-dispersion';
     两个值都写死，不再去量页头里的元素——那块占位已经换成高亮标题了。 */
 const COLUMN_LEFT_PX = 20;
 const COLUMN_TOP_PX = 40;
+/** 容器底边距：设置按钮钉在距窗口底部这个位置，与上方竖栏之间的间隔由窗口高度自动伸缩。 */
+const COLUMN_BOTTOM_PX = 24;
 
 const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
     playlist: ListMusic,
@@ -221,11 +223,12 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     return (
         <div
             // 层级：压在页头（z-20）之上、GridMap（z-[110]）与底部播放胶囊（z-60）之下。
-            className={`pointer-events-none fixed z-30 ${className}`}
-            style={{ left: COLUMN_LEFT_PX, top: COLUMN_TOP_PX }}
+            // 高度撑满可视区：设置按钮用 mt-auto 钉到底部，中间那段间隔随窗口高度自己伸缩。
+            className={`pointer-events-none fixed z-30 flex flex-col ${className}`}
+            style={{ left: COLUMN_LEFT_PX, top: COLUMN_TOP_PX, bottom: COLUMN_BOTTOM_PX }}
             data-testid="grid3d-nav"
         >
-            <div ref={wrapperRef} className="relative flex flex-col items-start gap-2">
+            <div ref={wrapperRef} className="relative flex flex-1 flex-col items-start gap-2">
                 {/* 平台切换（没人登录时就是登录入口）：浮动容器里排第一颗，设置按钮与它换了位置。
                     header 档就是页头那颗圆钮本身，尺寸 38，与竖栏 40 并排看着齐。 */}
                 {account && (
@@ -443,34 +446,42 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                     </div>
                 </div>
 
-                {/* 设置：原来页头左侧那颗，搬进这个浮动容器里、排在最后（与平台切换换了位置）。
-                    尺寸与队列拼贴、竖栏同宽（40），圆角拉满；有新版本时右上角点一个强调色圆点。 */}
+                {/* 设置：原来页头左侧那颗，搬进这个浮动容器里、钉在最底部（mt-auto 把间隔全吃掉）。
+                    尺寸与队列拼贴、竖栏同宽（40），圆角拉满；有新版本时右上角点一个强调色圆点。
+                    外层 layout + spring：窗口高度变化时它不是瞬间跳过去，而是带一点回弹滑到新位置；
+                    layout 只能挂在外层——里面那颗带 data-glass-jelly，transform 归果冻形变用。 */}
                 {onOpenSettings && (
-                    <button
-                        type="button"
-                        data-glass
-                        data-glass-jelly
-                        data-glass-light
-                        data-grid3d-settings
-                        onClick={onOpenSettings}
-                        title={t('ui.options')}
-                        aria-label={t('ui.options')}
-                        onPointerEnter={event => handleHover(t('ui.options'), event.currentTarget)}
-                        onPointerLeave={clearHover}
-                        onFocus={event => handleHover(t('ui.options'), event.currentTarget)}
-                        onBlur={clearHover}
-                        className="pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300"
-                        style={glassStyle}
+                    <motion.div
+                        layout
+                        transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.9 }}
+                        className="pointer-events-auto mt-auto"
                     >
-                        <Settings size={18} style={{ color: 'var(--text-primary)' }} />
-                        {updateAvailable && (
-                            <span
-                                aria-hidden="true"
-                                className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
-                                style={{ backgroundColor: 'var(--text-accent)' }}
-                            />
-                        )}
-                    </button>
+                        <button
+                            type="button"
+                            data-glass
+                            data-glass-jelly
+                            data-glass-light
+                            data-grid3d-settings
+                            onClick={onOpenSettings}
+                            title={t('ui.options')}
+                            aria-label={t('ui.options')}
+                            onPointerEnter={event => handleHover(t('ui.options'), event.currentTarget)}
+                            onPointerLeave={clearHover}
+                            onFocus={event => handleHover(t('ui.options'), event.currentTarget)}
+                            onBlur={clearHover}
+                            className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300"
+                            style={glassStyle}
+                        >
+                            <Settings size={18} style={{ color: 'var(--text-primary)' }} />
+                            {updateAvailable && (
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
+                                    style={{ backgroundColor: 'var(--text-accent)' }}
+                                />
+                            )}
+                        </button>
+                    </motion.div>
                 )}
 
                 {/* 共用的悬停标签：常驻一份（一份 data-glass），只是没悬停时不可见。
