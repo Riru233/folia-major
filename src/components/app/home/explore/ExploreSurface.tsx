@@ -191,7 +191,9 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                     if (hasSections) exploreScroll.top = event.currentTarget.scrollTop;
                     follow();
                 }}
-                className="h-full w-full overflow-y-auto fixed top-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                // 铺满整个窗口：这一层（首页页签层）自己就是 fixed inset-0，滚动区用 absolute inset-0 撑满它。
+                // 不再用 position:fixed —— 页签层要做缩放动画（transform），fixed 后代会因此被压回该层的盒子。
+                className="absolute inset-0 h-full w-full overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{
                     maskImage: 'linear-gradient(to bottom, transparent, black var(--ex-top-fade, 0px), black calc(100% - var(--ex-bottom-fade, 0px)), transparent)',
                 }}

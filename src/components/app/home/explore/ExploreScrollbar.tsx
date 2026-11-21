@@ -265,7 +265,7 @@ export const ExploreScrollbar: React.FC<ExploreScrollbarProps> = ({ list: listRe
     return (
         <div
             data-explore-scrollbar
-            className="pointer-events-none fixed right-2 top-1/2 z-30 -translate-y-1/2 select-none"
+            className="pointer-events-none absolute right-2 top-1/2 z-30 -translate-y-1/2 select-none"
             onWheel={onWheel}
         >
             <div className="relative h-[min(58vh,440px)] w-3">

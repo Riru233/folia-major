@@ -118,12 +118,19 @@ interface Grid3DProps {
     declaredActions?: LibraryDeclaredActions;
 }
 
-// 一级页签切换时整块首页视图的横向位移：往页签顺序的右边走就从右边进、旧视图往左出，反向往回。
-// 位移量取整屏宽（100%），进出两页首尾相接、切换过程中互不重叠（之前只有 40px，两页几乎叠在一起）。
-// 进出都只做 x 位移、不做 opacity：Chromium 会在祖先做 opacity 动画时丢掉后代的 backdrop-filter，
-// 视图内的 data-glass 面板会在整段切换动画期间不显示、动画结束才出现。只动 x（transform）没这个问题，
-// 所以旧页也不淡出、直接滑出去，动画结束再转回 hidden。
-const HOME_SURFACE_SLIDE_PERCENT = 100;
+// 一级页签切换：整块视图做「放大 / 消散」的接力，而不是左右滑动。
+// - 旧页：scale 1 → 1.1 同时淡出（消散）；
+// - 新页：scale 0.9 → 1（放大到原位），与旧页同时进行，两段共用同一条弹簧，像同一次镜头推进。
+// 隐身层（既非活动、也没在退场）停在 0.9 / 透明——下次被激活时就是从 0.9 长到 1，而不是从 1.1 缩回来。
+const HOME_SURFACE_HIDDEN_SCALE = 0.9;
+const HOME_SURFACE_EXIT_SCALE = 1.1;
+
+// 弹簧而不是定时曲线：中途换页签时目标值一变，动画从当前值接着走，天然可打断、不会跳帧。
+// 透明度单给一条短 tween——弹簧回弹时透明度跟着抖会显得脏。
+const HOME_SURFACE_TRANSITION = {
+    scale: { type: 'spring' as const, stiffness: 280, damping: 30, mass: 0.9 },
+    opacity: { duration: 0.26, ease: [0.22, 1, 0.36, 1] as const },
+};
 
 // 页签层内容包装：非活动层跳过重渲染（视图已常驻，父级的输入框、焦点等 state 变化不该再牵动它），
 // 活动层每次都重渲染以拿到最新 props。切换时 isActive 变化，比较器放行，自然重渲染。
@@ -133,10 +140,6 @@ const HomeTabLayerContent = React.memo(
     },
     (prev, next) => !prev.isActive && !next.isActive,
 );
-
-// 进出同时进行（各层都在，靠 animate 目标变化换位），旧视图淡出、新视图滑入，容器 overflow-hidden 裁掉横移。
-// 用同一条 easeOut 曲线、同一个时长，横移与淡出一起落定，看起来才是一块内容在滑动而不是两段动画。
-const HOME_SURFACE_TRANSITION = { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const };
 
 // 不常驻的页签：切走就卸载（退场动画放完即卸），再进来重新挂载、重新走一遍进入时的加载，不管上一次读没读完。
 // 探索页重新渲染本身就重（页签自己那条 1 秒加载环就是为它加的），留着常驻不如每次干净重挂。
@@ -226,9 +229,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         && activeAccountView !== 'resolving'
         && activeAccountView !== 'guest';
 
-    // 进出方向按页签在一级页签里的先后定：向后面的页签走，新视图从右侧进（direction=1）。
-    const shownTabIndex = homeTabs.findIndex(tab => tab.key === shownTab);
-
     // 页头左侧那行标题：跟着浮层导航的高亮项走（舞台播放、扩展页签都会接管）。
     const activeNavLabel = (() => {
         if (stageIsActive) return t('home.stage');
@@ -236,13 +236,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         if (extraTab) return extraTab.label;
         return homeTabs.find(tab => tab.key === homeViewTab)?.label ?? '';
     })();
-    const prevTabIndexRef = useRef(shownTabIndex);
-    const tabDirection = shownTabIndex === prevTabIndexRef.current
-        ? 0
-        : shownTabIndex > prevTabIndexRef.current ? 1 : -1;
-    useEffect(() => {
-        prevTabIndexRef.current = shownTabIndex;
-    }, [shownTabIndex]);
 
     const reduceMotion = useReducedMotionFor('uiMicroMotion');
     // 紧凑档（窗口窄于 960，progress-bar v3，见 useBottomLayoutTracking）：页头的搜索框收成一颗搜索钮、
@@ -502,11 +495,11 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const orderedLayerKeys = Array.from(new Set([...visitedTabs, ...exitingTabs, shownTab]))
         .filter(key => tabKeySet.has(key))
         .sort((a, b) => Number(a === shownTab) - Number(b === shownTab));
-    // 某层相对活动页签的横向停靠位：在活动页签右边就停在 +offset（从右侧滑入），左边反之。
-    const layerOffsetX = (key: LibraryHomeTabKey) => {
-        const idx = homeTabs.findIndex(tab => tab.key === key);
-        if (idx < 0 || idx === shownTabIndex) return 0;
-        return idx > shownTabIndex ? 1 : -1;
+    // 某层的动画状态：活动层停在原位，退场层放大消散，隐身层停在缩小位（下次激活就从这个尺寸长出来）。
+    const layerMotion = (isActive: boolean, isExiting: boolean) => {
+        if (isActive) return { scale: 1, opacity: 1 };
+        if (isExiting) return { scale: HOME_SURFACE_EXIT_SCALE, opacity: 0 };
+        return { scale: HOME_SURFACE_HIDDEN_SCALE, opacity: 0 };
     };
 
     // 单个页签层的内容：活动层用实时数据，非活动层用切走时的快照。活动层才可交互。
@@ -1202,31 +1195,37 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 </div>
             </div>
 
-            {/* Desktop Canvas Surface。每个访问过的页签常驻一层（keep-alive）：切页签只切换可见性和横向位移，
+            {/* Desktop Canvas Surface。每个访问过的页签常驻一层（keep-alive）：切页签只改缩放与透明度，
                 不重挂视图，所以不丢玻璃位移图、不重解码封面、不重跑各自一堆 effect。未选中层用 visibility:hidden
-                藏起来（保留布局尺寸，玻璃的 ResizeObserver 不会因此重建）。进出层都只做 x、不做 opacity：
-                Chromium 在祖先做 opacity 动画时会丢掉后代的 backdrop-filter；旧页直接滑出整屏，动画结束转回 hidden。 */}
-            <div className="flex-1 min-h-0 relative overflow-hidden">
+                藏起来（保留布局尺寸，玻璃的 ResizeObserver 不会因此重建）。
+                切换是「接力放大」：旧层同时放大到 1.1 并淡出，新层从 0.9 放大回 1，两段并行、同一个弹簧，
+                中途再换页签就从当前尺寸接着走，天然可打断。 */}
+            <div className="relative h-full overflow-hidden">
                 {orderedLayerKeys.map(key => {
                     const isActive = key === shownTab;
                     const isExiting = !isActive && exitingTabs.includes(key);
+                    // 探索页是「贴满整个窗口」的：这一层自己就 fixed inset-0 铺满视口，里面的滚动区用
+                    // absolute inset-0 撑满这一层，不再有 fixed 后代——所以它也能和别的页一样做缩放动画
+                    // （transform 只会把 fixed 后代压回这一层的盒子，而这一层的盒子本来就是整窗）。
+                    const isFixedSurface = key === 'explore';
                     return (
                         <motion.div
                             key={key}
-                            // 首次挂载（第一次访问该页签）从进入侧滑入，之后靠 animate 目标变化滑动。
-                            initial={{
-                                x: `${(isActive ? tabDirection : layerOffsetX(key)) * HOME_SURFACE_SLIDE_PERCENT}%`,
-                                opacity: 1,
-                            }}
-                            animate={isActive
-                                ? { x: '0%', opacity: 1 }
-                                : { x: `${layerOffsetX(key) * HOME_SURFACE_SLIDE_PERCENT}%`, opacity: 1 }}
+                            // 首次挂载（第一次访问该页签）从缩小位长出来，之后靠 animate 目标变化接力。
+                            initial={isActive
+                                ? { scale: HOME_SURFACE_HIDDEN_SCALE, opacity: 0 }
+                                : layerMotion(false, true)}
+                            animate={layerMotion(isActive, isExiting)}
                             transition={reduceMotion ? { duration: 0 } : HOME_SURFACE_TRANSITION}
                             onAnimationComplete={() => {
                                 if (isExiting) setExitingTabs(prev => prev.filter(k => k !== key));
                             }}
-                            className="absolute inset-0 flex flex-col items-center justify-center"
+                            className={isFixedSurface
+                                ? 'fixed inset-0 z-[1] flex flex-col'
+                                : 'absolute inset-0 flex flex-col items-center justify-center'}
                             style={{
+                                transformOrigin: 'center center',
+                                willChange: isExiting ? 'transform, opacity' : undefined,
                                 visibility: isActive || isExiting ? 'visible' : 'hidden',
                                 pointerEvents: isActive ? 'auto' : 'none',
                                 zIndex: isActive ? 3 : isExiting ? 2 : 1,
