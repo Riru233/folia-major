@@ -1,27 +1,64 @@
-import React, { useId, useLayoutEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
-    Compass, Disc3, FolderOpen, Gift, Layers, ListMusic, Radio, Server, Theater,
-    type LucideIcon,
+    Compass,
+    Disc3,
+    FolderOpen,
+    Gift,
+    Layers,
+    LayoutDashboard,
+    ListMusic,
+    Radio,
+    Server,
+    Settings,
+    Theater,
 } from 'lucide-react';
-import type { LibraryHomeTabKey, LibraryHomeTabView } from '../../../core/home/homeModel.contract';
-import type { LibraryHomeExtraTab } from '../../../core/suite/suite.contract';
-import { useIsBottomLayoutCompact } from '../../../../stores/useBottomDockStore';
-import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
-import { pillChromeClassesFor } from '../../../../components/shared/pillChrome';
 import { useGlass } from '@/shinoinject/useGlass';
+import SwitcherPill from '../../../../components/login/SwitcherPill';
+import type { LibraryAccountController } from '../../../core/account/account.contract';
+import { isChromiumRenderer } from '../../../../utils/platform';
+import type { LibraryHomeTabKey } from '../../../core/home/homeModel.contract';
+import type { LibraryHomeExtraTab } from '../../../core/suite/suite.contract';
+import { useNavTabThumb } from './useNavTabThumb';
 
 // src/library/suites/grid/home/Grid3DNav.tsx
-// 网格首页的页签导航，与 Grid3D 页头那一排用的是同一份数据（homeTabs + 扩展页签 + 舞台）。
-// 紧凑档（窗口窄于 960，见 useBottomLayoutCompact）铺成贴着底边的水平导航条；宽松档立成左侧的垂直导航栏。
-// 两档都是 floating：不改页面布局，宿主按需把内容让出边距即可。
+// 浮层导航竖栏。整块结构照搬页头那排页签胶囊（Grid3D.tsx 里的 pill + 摇杆）：
+// 玻璃底色单独做一层绝对定位的兄弟、摇杆是 z-10 的透镜、页签文字 z-20 压在摇杆之上，
+// 摇杆里四层渐进模糊 + 一层色散，按住放大一倍、按速度形变——都是同一套 DOM 和同一组属性，
+// 只把「横着排」换成「竖着排」，把色散与渐进模糊的 mask 从「四周一圈」换成「上下两端」。
+// 位置不写死：量页头设置按钮的盒子，挂在它下面 10px，窗口尺寸变化时重新量。
 
-/**
- * 页签的图标：只按 `LibraryHomeTabKey` 认，未知页签（宿主贡献的扩展页签）退到 Layers。
- * 图标是页签的辅助图形，文字照旧是 `label`，读屏只读文字。
- */
-const TAB_ICONS: Partial<Record<LibraryHomeTabKey, LucideIcon>> = {
+interface Grid3DNavProps {
+    tabs: readonly { key: LibraryHomeTabKey; label: string; disabledReason?: string }[];
+    activeTab: LibraryHomeTabKey;
+    onSelectTab: (tab: LibraryHomeTabKey) => void;
+    extraTabs?: readonly LibraryHomeExtraTab[];
+    stageEnabled?: boolean;
+    stageIsActive?: boolean;
+    onOpenStagePlayer?: () => void;
+    /** 队列拼贴：有可铺的墙时宿主传这个，按钮挂在竖栏下面。 */
+    onOpenLattice?: () => void;
+    showLattice?: boolean;
+    /** 平台切换 / 登录入口：同样挂在竖栏下面，排在队列拼贴之后。 */
+    account?: LibraryAccountController;
+    /** 设置入口：从页头搬进来，放在竖栏最上面一行。 */
+    onOpenSettings?: () => void;
+    /** 有新版本时在设置钮右上角点一个强调色圆点（页头原先是一段文字，竖栏只有 40px 放不下）。 */
+    updateAvailable?: boolean;
+    isDaylight?: boolean;
+    className?: string;
+}
+
+/** 摇杆边缘的色散滤镜 id：与页头那条分开，各用各的定义。 */
+const NAV_DISPERSION_FILTER_ID = 'grid3d-nav-dispersion';
+
+/** 浮动容器的定位：横向与页头左边距（px-4 16 + 8）对齐，纵向钉在距窗口顶部 45px。
+    两个值都写死，不再去量页头里的元素——那块占位已经换成高亮标题了。 */
+const COLUMN_LEFT_PX = 20;
+const COLUMN_TOP_PX = 40;
+
+const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
     playlist: ListMusic,
     radio: Radio,
     explore: Compass,
@@ -30,237 +67,428 @@ const TAB_ICONS: Partial<Record<LibraryHomeTabKey, LucideIcon>> = {
     navidrome: Server,
     welfare: Gift,
 };
-const FALLBACK_ICON = Layers;
-const STAGE_ICON = Theater;
 
-/**
- * 导航里的一项：原生页签、宿主贡献的扩展页签、舞台都摊平成同一形状。
- * 用 id 区分（扩展页签的 id 与原生页签的 key 由宿主保证不撞）。
- */
-type Grid3DNavItem = {
-    id: string;
-    label: string;
-    Icon: LucideIcon;
-    /** 不可用的原因：有值时按钮置灰，提示用它。 */
-    disabledReason?: string;
-    /** 画选中块的那一项（同一时刻最多一个，`layoutId` 只认一个）。 */
-    active: boolean;
-    /**
-     * 舞台正在放：只标 `data-stage-active`，不画选中态——此刻首页还停在某个原生页签上，
-     * 两边都点亮会同时出现两个「当前」。与 Grid3D 页头、Bravais 的工具条同一套约定。
-     */
-    stageActive?: boolean;
-    select: () => void;
+const iconFor = (key: string) => TAB_ICONS[key] ?? Layers;
+
+const TabIcon = ({ tabKey }: { tabKey: string }) => {
+    const Icon = iconFor(tabKey);
+    return <Icon size={18} className="relative z-20 shrink-0" />;
 };
 
-interface Grid3DNavProps {
-    /** 原生页签（homeSources.tabs，已翻译好 label）。 */
-    tabs: readonly LibraryHomeTabView[];
-    /** 当前页签（homeSources.tab）。 */
-    activeTab: LibraryHomeTabKey;
-    /** 切页签：与 Grid3D 页头一样，切完顺手把焦点交回海报轨道。 */
-    onSelectTab: (tab: LibraryHomeTabKey) => void;
-    /** 宿主贡献的页签（模组的首页页面）：有 active 为 true 时原生页签不算选中。 */
-    extraTabs?: readonly LibraryHomeExtraTab[];
-    stageEnabled?: boolean;
-    stageIsActive?: boolean;
-    onOpenStagePlayer?: () => void;
-    isDaylight: boolean;
-    /** 覆盖档位判定（预览、截图测试用）；不传就跟随 useBottomLayoutCompact。 */
-    compact?: boolean;
-    /** 紧凑档导航条离底边的距离（px），默认贴底；底部还有播放胶囊时传它的高度。 */
-    bottomOffset?: number;
-    /** 宽松档导航栏离左边的距离（px）。 */
-    sideOffset?: number;
-    className?: string;
+interface NavTabButtonProps {
+    label: string;
+    title: string;
+    active: boolean;
+    icon: React.ReactNode;
+    onClick: () => void;
+    disabled?: boolean;
+    dataStageActive?: string;
+    /** 悬停 / 聚焦时把「标签 + 锚元素」报上去，由整根竖栏共用的一颗标签胶囊去显示。 */
+    onHover?: (label: string, anchor: HTMLElement) => void;
+    onHoverEnd?: () => void;
 }
 
-/**
- * 玻璃表面，与页头那颗搜索钮、SwitcherPill 的 header 模式同源（Grid3D.headerGlassStyle）。
- * 横向那条只描上下两条高光边；竖向栏要把左右两条长边也描上，否则一条 70vh 高的竖栏只剩两个短边发亮。
- */
-const navGlassSurface = (isDaylight: boolean, vertical: boolean): React.CSSProperties => {
-    const edge = isDaylight ? '1px solid #fff6' : '1px solid #fff5';
-    return {
-        backgroundColor: isDaylight ? 'rgba(215,215,215,0.42)' : 'rgba(40, 40, 40, 0.42)',
-        borderTop: edge,
-        borderBottom: edge,
-        ...(vertical ? { borderLeft: edge, borderRight: edge } : {}),
-        outline: '1px solid rgba(35,35,35,0.3)',
-        boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
-        color: isDaylight ? '#000' : '#fff',
-    };
-};
+// 一项：只有图标；标签由整根竖栏共用的一颗胶囊统一显示（见 Grid3DNav 里那颗）。
+// 不给每项各挂一颗：每颗都要 data-glass，等于常驻七份 backdrop-filter，滚动时最费的那部分。
+const NavTabButton: React.FC<NavTabButtonProps> = ({
+    label,
+    title,
+    active,
+    icon,
+    onClick,
+    disabled,
+    dataStageActive,
+    onHover,
+    onHoverEnd,
+}) => (
+    <button
+        type="button"
+        data-home-tab
+        data-stage-active={dataStageActive}
+        disabled={disabled}
+        title={title}
+        aria-label={title}
+        aria-current={active ? 'page' : undefined}
+        onClick={onClick}
+        onPointerEnter={onHover ? event => onHover(label, event.currentTarget) : undefined}
+        onPointerLeave={onHoverEnd}
+        onFocus={onHover ? event => onHover(label, event.currentTarget) : undefined}
+        onBlur={onHoverEnd}
+        className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-35"
+        style={{ color: active ? 'var(--text-accent)' : 'var(--text-primary)' }}
+    >
+        {icon}
+    </button>
+);
 
 export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     tabs,
     activeTab,
     onSelectTab,
     extraTabs,
-    stageEnabled = false,
-    stageIsActive = false,
+    stageEnabled,
+    stageIsActive,
     onOpenStagePlayer,
-    isDaylight,
-    compact,
-    bottomOffset = 0,
-    sideOffset = 12,
+    onOpenLattice,
+    showLattice,
+    account,
+    onOpenSettings,
+    updateAvailable = false,
+    isDaylight = false,
     className = '',
 }) => {
     const { t } = useTranslation();
-    // 宿主没给档位就自己跟着底部布局走：没有挂档位追踪的页面（OBS 之类）一直是宽松档。
-    const compactFromStore = useIsBottomLayoutCompact();
-    const isCompact = compact ?? compactFromStore;
-    const reduceMotion = useReducedMotionFor('uiMicroMotion');
-    const chrome = pillChromeClassesFor(isDaylight);
-    // 选中块按实例分隔：同一时刻可能有两个同档导航（预览页），共用一条 layoutId 会让高亮在两份之间跳。
-    const instanceId = useId();
-    const navRef = useRef<HTMLElement>(null);
-    const activeItemRef = useRef<HTMLButtonElement>(null);
+    // 页头那份 useGlass 只扫它自己 commit 的那一帧；这里自己再扫一次，首帧就挂上玻璃。
     useGlass();
 
-    // 扩展页签开着时原生页签都不算选中（见 LibraryHomeExtraTab.active 的约定）。
-    const extraTabActive = Boolean(extraTabs?.some(tab => tab.active));
-    const primaryItems: Grid3DNavItem[] = [
-        ...tabs.map(tab => ({
-            id: tab.key,
-            label: tab.label,
-            Icon: TAB_ICONS[tab.key] ?? FALLBACK_ICON,
-            ...(tab.disabledReason ? { disabledReason: tab.disabledReason } : {}),
-            active: !extraTabActive && tab.key === activeTab,
-            select: () => onSelectTab(tab.key),
-        })),
-        ...(extraTabs ?? []).map(tab => ({
-            id: tab.id,
-            label: tab.label,
-            Icon: FALLBACK_ICON,
-            active: tab.active,
-            select: tab.select,
-        })),
-    ];
-    // 舞台是「去哪儿」，不是「在哪页」：排在最后，与页签之间隔一条细线。
-    const trailingItems: Grid3DNavItem[] = stageEnabled
-        ? [{
-            id: 'stage',
-            label: t('home.stage'),
-            Icon: STAGE_ICON,
-            active: false,
-            stageActive: stageIsActive,
-            select: () => onOpenStagePlayer?.(),
-        }]
-        : [];
-    const activeId = [...primaryItems, ...trailingItems].find(item => item.active)?.id ?? null;
-
-    // 选中项滚进可视区：横条是横着滚的、竖栏会超过 70vh，两边都可能把当前项留在视野外
-    // （宿主用 Tab 循环切页签时不会经过鼠标）。useLayoutEffect：切完这一帧就摆好，别让人先看到错位再修。
-    // block/inline 都用 nearest：默认的居中会把整个固定的导航条连同页面一起挪。
-    useLayoutEffect(() => {
-        if (activeId === null) return;
-        activeItemRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    }, [isCompact, activeId]);
-
-    // 横条用左右键、竖栏用上下键在可用项之间挪焦点（Home / End 到两头）。
-    // 只挪焦点、不直接切页签：Tab 到某一项再回车，和原生页签按钮的行为一致。
-    // 带修饰键的一律让出去（Alt+←/→ 是浏览器后退，Cmd+←/→ 也有自己的含义）。
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-        if (event.altKey || event.ctrlKey || event.metaKey) return;
-        const forward = isCompact ? 'ArrowRight' : 'ArrowDown';
-        const backward = isCompact ? 'ArrowLeft' : 'ArrowUp';
-        const nodes = Array.from(
-            navRef.current?.querySelectorAll<HTMLButtonElement>('[data-grid3d-nav-item]:not(:disabled)') ?? [],
-        );
-        if (nodes.length === 0) return;
-        const current = nodes.indexOf(document.activeElement as HTMLButtonElement);
-        let next: HTMLButtonElement | undefined;
-        if (event.key === forward) {
-            next = nodes[current < 0 ? 0 : (current + 1) % nodes.length];
-        } else if (event.key === backward) {
-            next = nodes[current < 0 ? nodes.length - 1 : (current - 1 + nodes.length) % nodes.length];
-        } else if (event.key === 'Home') {
-            next = nodes[0];
-        } else if (event.key === 'End') {
-            next = nodes[nodes.length - 1];
-        }
-        if (!next) return;
-        event.preventDefault();
-        // preventScroll 挡住浏览器的默认滚动，焦点挪出可视区时由这里自己补一下。
-        next.focus({ preventScroll: true });
-        next.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    };
-
-    // 选中块在横条与竖栏里各是一条 layoutId：换档时不做横条↔竖栏的位移动画，只在同一形态内跟手滑动。
-    const activeIndicatorProps = reduceMotion
-        ? {}
-        : { layoutId: `${instanceId}-grid3d-nav-active`, transition: { type: 'spring' as const, stiffness: 420, damping: 34 } };
-
-    const renderItem = (item: Grid3DNavItem) => (
-        <button
-            key={item.id}
-            ref={item.active ? activeItemRef : undefined}
-            type="button"
-            data-grid3d-nav-item={item.id}
-            data-stage-active={item.stageActive === undefined ? undefined : item.stageActive ? 'true' : 'false'}
-            disabled={Boolean(item.disabledReason)}
-            title={item.disabledReason || item.label}
-            aria-label={item.label}
-            aria-current={item.active ? 'page' : undefined}
-            onClick={item.select}
-            className={`relative flex shrink-0 flex-col items-center justify-center rounded-2xl font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--text-primary)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-35 ${isCompact
-                ? `min-w-[56px] gap-0.5 px-2 py-1.5 ${item.active ? chrome.strongText : chrome.softText}`
-                // 竖栏宽 104px，英文标签（Queue collage、Navidrome）放不下：允许折成两行，不靠省略号。
-                : `w-full gap-1 px-2 py-2 leading-snug break-words whitespace-normal ${item.active ? chrome.strongText : chrome.softText}`}`}
-        >
-            {item.active && (
-                <motion.span
-                    aria-hidden="true"
-                    className={`absolute inset-0 rounded-2xl ${chrome.activePill}`}
-                    {...activeIndicatorProps}
-                />
-            )}
-            <item.Icon size={18} className="relative z-10 shrink-0" aria-hidden="true" />
-            <span className={`relative z-10 min-w-0 text-center ${isCompact ? 'text-[10px] whitespace-nowrap' : 'text-[10px]'}`}>
-                {item.label}
-            </span>
-        </button>
+    // 摇杆需要的项与页头那排完全一致：不可用的页签带 disabled，拖动吸附时跳过它们。
+    const thumbItems = React.useMemo(
+        () => [
+            ...tabs.map(tab => ({ key: tab.key, disabled: Boolean(tab.disabledReason) })),
+            ...(extraTabs ?? []).map(tab => ({ key: tab.id, disabled: false })),
+            ...(stageEnabled ? [{ key: '__stage__', disabled: false }] : []),
+        ],
+        [tabs, extraTabs, stageEnabled],
     );
 
-    // 舞台与页签之间的分隔线：横条竖着画，竖栏横着画。
-    const divider = trailingItems.length > 0 && primaryItems.length > 0 ? (
-        <span
-            key="grid3d-nav-divider"
-            aria-hidden="true"
-            className={`shrink-0 ${chrome.divider} ${isCompact ? 'mx-0.5 h-6 w-px' : 'my-0.5 h-px w-full'}`}
-        />
-    ) : null;
+    const trackRef = useRef<HTMLDivElement>(null);
+    const {
+        thumbDragging,
+        thumbBoxLeft,
+        thumbBoxTop,
+        thumbBoxWidth,
+        thumbBoxHeight,
+        thumbReady,
+        thumbHandlers,
+    } = useNavTabThumb({
+        trackRef,
+        items: thumbItems,
+        activeKey: stageIsActive ? '__stage__' : (extraTabs?.find(tab => tab.active)?.id ?? activeTab),
+        onActivate: key => {
+            if (key === '__stage__') {
+                onOpenStagePlayer?.();
+                return;
+            }
+            const extra = extraTabs?.find(tab => tab.id === key);
+            if (extra) {
+                extra.select();
+                return;
+            }
+            onSelectTab(key as LibraryHomeTabKey);
+        },
+        axis: 'y',
+    });
 
-    // 两档共用同一个 <nav>：只换外层定位与自身朝向，换档时不重挂 DOM。
-    // 重挂会再挂一份玻璃（makeGlass 往 #filter-defs 里追加 filter，工具里没有回收路径），拖窗口跨断点会越积越多。
-    //
-    // 层级压在 z-20：比页头高一点没用，要的是比 GridMap 那层（z-[110] 的整屏地图）和底部播放胶囊（z-60）都低。
-    // Grid3D 的根节点带 backdrop-blur（自成层叠上下文），所以这里的 z 只在那一层内比较，不能再往上抬。
+    // 与页头那颗玻璃同一套底色、描边与阴影。
+    const glassStyle: React.CSSProperties = {
+        backgroundColor: isDaylight ? 'rgba(215,215,215,0.42)' : 'rgba(40, 40, 40, 0.42)',
+        borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+        borderBottom: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+        outline: '1px solid rgba(35,35,35,0.3)',
+        boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
+    };
+    // 悬停标签：贴在栏右侧浮出的小胶囊。挂了 data-glass（useGlass 会扫到），
+    // 所以底色留得透一点让背面透上来，边框与投影自己给，和页头那几颗玻璃观感一致。
+    const tooltipStyle: React.CSSProperties = {
+        backgroundColor: isDaylight ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+        borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+        borderBottom: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+        outline: '1px solid rgba(35,35,35,0.3)',
+        boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
+        color: isDaylight ? '#111' : '#fff',
+        userSelect: 'none',
+    };
+
+    // 摇杆里的霜面层：拖动时淡出、松手淡回（与页头同一套时序与时长）。
+    const frostFadeStyle = {
+        opacity: thumbDragging ? 1 : 0,
+        transition: 'opacity 260ms ease-out',
+    } as const;
+
+    // 悬停标签整根竖栏共用一颗：位置由被悬停那一项的盒子算出来，胶囊本身常驻（只挂一份 data-glass）。
+    // 原先每项一颗，等于常驻七份 backdrop-filter —— 滚动和拖摇杆时最费的就是这部分。
+    const [hovered, setHovered] = useState<{ label: string; top: number } | null>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const handleHover = React.useCallback((label: string, anchorElement: HTMLElement) => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper) return;
+        const anchorRect = anchorElement.getBoundingClientRect();
+        const wrapperRect = wrapper.getBoundingClientRect();
+        setHovered({ label, top: anchorRect.top - wrapperRect.top + anchorRect.height / 2 });
+    }, []);
+    const clearHover = React.useCallback(() => setHovered(null), []);
+
     return (
         <div
-            className={`pointer-events-none fixed z-20 ${isCompact ? 'inset-x-0 flex justify-center px-3' : 'top-1/2 -translate-y-1/2'} ${className}`}
-            style={isCompact
-                ? { bottom: bottomOffset, paddingBottom: 'env(safe-area-inset-bottom)' }
-                : { left: sideOffset }}
+            // 层级：压在页头（z-20）之上、GridMap（z-[110]）与底部播放胶囊（z-60）之下。
+            className={`pointer-events-none fixed z-30 ${className}`}
+            style={{ left: COLUMN_LEFT_PX, top: COLUMN_TOP_PX }}
+            data-testid="grid3d-nav"
         >
-            <nav
-                ref={navRef}
-                aria-label={t('home.navMenu')}
-                data-glass
-                data-glass-jelly
-                data-glass-light
-                data-testid="grid3d-nav"
-                onKeyDown={handleKeyDown}
-                className={`pointer-events-auto backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${isCompact
-                    ? 'flex max-w-full flex-row items-center gap-1 overflow-x-auto rounded-[22px] p-1.5'
-                    : 'flex max-h-[70vh] w-[104px] flex-col gap-1 overflow-y-auto rounded-[26px] p-1.5'}`}
-                style={navGlassSurface(isDaylight, !isCompact)}
-            >
-                {primaryItems.map(renderItem)}
-                {divider}
-                {trailingItems.map(renderItem)}
-            </nav>
+            <div ref={wrapperRef} className="relative flex flex-col items-start gap-2">
+                {/* 平台切换（没人登录时就是登录入口）：浮动容器里排第一颗，设置按钮与它换了位置。
+                    header 档就是页头那颗圆钮本身，尺寸 38，与竖栏 40 并排看着齐。 */}
+                {account && (
+                    <div className="pointer-events-auto flex w-10 justify-center" data-testid="grid3d-nav-account">
+                        <SwitcherPill variant="header" account={account} />
+                    </div>
+                )}
+
+                {/* 队列拼贴：紧跟在平台切换下面（同一套玻璃与悬停标签）。
+                尺寸与设置按钮、竖栏同宽（40），圆角拉满。 */}
+                {showLattice && onOpenLattice && (
+                    <button
+                        type="button"
+                        data-glass
+                        data-glass-jelly
+                        data-glass-light
+                        data-testid="home-lattice-pill"
+                        onClick={onOpenLattice}
+                        title={t('home.lattice')}
+                        aria-label={t('home.lattice')}
+                        onPointerEnter={event => handleHover(t('home.lattice'), event.currentTarget)}
+                        onPointerLeave={clearHover}
+                        onFocus={event => handleHover(t('home.lattice'), event.currentTarget)}
+                        onBlur={clearHover}
+                        className="group pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300"
+                        style={glassStyle}
+                    >
+                        <LayoutDashboard size={18} style={{ color: 'var(--text-primary)' }} />
+                    </button>
+                )}
+
+                <div
+                    aria-label={t('home.navMenu')}
+                    role="navigation"
+                    className="pointer-events-auto relative flex w-10 flex-col rounded-[20px]"
+                >
+                    {/* 玻璃底色：与摇杆、页签同为兄弟层级（页头那颗胶囊也是这么分的）。 */}
+                    <div
+                        data-glass
+                        data-glass-jelly
+                        data-glass-light
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-[20px]"
+                        style={glassStyle}
+                    />
+
+                    {/* 色散滤镜定义：竖栏的色散只落在上下两端，所以通道往上下错开、横向不动。 */}
+                    <svg
+                        aria-hidden="true"
+                        width="0"
+                        height="0"
+                        style={{ position: 'absolute', left: 0, top: 0 }}
+                    >
+                        <filter
+                            id={NAV_DISPERSION_FILTER_ID}
+                            x="-20%"
+                            y="-20%"
+                            width="140%"
+                            height="140%"
+                            colorInterpolationFilters="sRGB"
+                        >
+                            <feColorMatrix
+                                in="SourceGraphic"
+                                type="matrix"
+                                values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                                result="dispR"
+                            />
+                            <feColorMatrix
+                                in="SourceGraphic"
+                                type="matrix"
+                                values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                                result="dispG"
+                            />
+                            <feColorMatrix
+                                in="SourceGraphic"
+                                type="matrix"
+                                values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+                                result="dispB"
+                            />
+                            <feOffset in="dispR" dx="0" dy="-2.6" result="dispRShift" />
+                            <feOffset in="dispB" dx="0" dy="2.6" result="dispBShift" />
+                            <feBlend in="dispRShift" in2="dispG" mode="screen" result="dispRG" />
+                            <feBlend in="dispRG" in2="dispBShift" mode="screen" />
+                        </filter>
+                    </svg>
+
+                    {/* 摇杆：常驻单块（每项一块会让每挂一次都往 #filter-defs 塞一份 filter）。
+                    层级压在日常项之上、拖起来时再抬高；文字自己 z-20，静止时不被透镜糊掉。 */}
+                    <motion.div
+                        aria-hidden="true"
+                        data-testid="grid3d-nav-thumb"
+                        className={`absolute rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow,opacity] duration-200 ease-out outline outline-1 outline-[rgba(35,35,35,0.3)] ${thumbDragging ? 'z-[60] bg-transparent' : 'z-10 bg-[var(--text-accent)]/40 shadow-[0px_8px_16px_rgba(40,40,40,0.2)]'}`}
+                        style={{
+                            left: thumbBoxLeft,
+                            top: thumbBoxTop,
+                            width: thumbBoxWidth,
+                            height: thumbBoxHeight,
+                            borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+                            borderBottom: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+                            pointerEvents: 'none',
+                            // 不按就不画：display: none 让这四层渐进模糊 + 色散滤镜整块不参与合成，
+                            // 空闲时一点 GPU 都不占（只写 opacity: 0 的话 backdrop-filter 仍然要算）。
+                            // 按下（含纯点击）立刻回到正常显示，液态玻璃就在这一刻出现。
+                            display: thumbDragging && thumbReady ? undefined : 'none',
+                            boxShadow: thumbDragging ? '0 0 20px #0006' : '',
+                        }}
+                    >
+                        {/* 摇杆自身的流体玻璃：参数与页头那颗一字不差。 */}
+                        <div
+                            data-glass
+                            data-glass-len="0.95"
+                            data-glass-strength="10"
+                            data-glass-blur="0"
+                            data-glass-bend="80"
+                            data-glass-gamma="15"
+                            data-glass-sat="1.2"
+                            className="rounded-full relative top-0 left-0"
+                            style={{ width: '100%', height: '100%' }}
+                        />
+
+                        {/* 色散：只留上下两端那一圈，铺满整块会把文字染出彩边。 */}
+                        <div
+                            className="rounded-full relative top-[-100%] left-0"
+                            style={{
+                                ...frostFadeStyle,
+                                backdropFilter: isChromiumRenderer() ? `url(#${NAV_DISPERSION_FILTER_ID})` : undefined,
+                                maskImage: 'linear-gradient(to bottom, #000 0, #0000 14px, #0000 calc(100% - 14px), #000 100%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, #000 0, #0000 14px, #0000 calc(100% - 14px), #000 100%)',
+                                width: '100%',
+                                height: '100%',
+                            }}
+                        />
+
+                        {/* 与页头同一组渐进模糊，只是 mask 收在上下两端。 */}
+                        <div
+                            className="rounded-full relative top-[-200%] left-0"
+                            style={{
+                                ...frostFadeStyle,
+                                backdropFilter: 'blur(1px)',
+                                maskImage: 'linear-gradient(to bottom, #000 0, #0000 13px, #0000 calc(100% - 13px), #000 100%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, #000 0, #0000 13px, #0000 calc(100% - 13px), #000 100%)',
+                                width: '100%',
+                                height: '100%',
+                            }}
+                        />
+                        <div
+                            className="rounded-full relative top-[-300%] left-0"
+                            style={{
+                                ...frostFadeStyle,
+                                backdropFilter: 'blur(2px)',
+                                maskImage: 'linear-gradient(to bottom, #000 0, #0000 9px, #0000 calc(100% - 9px), #000 100%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, #000 0, #0000 9px, #0000 calc(100% - 9px), #000 100%)',
+                                width: '100%',
+                                height: '100%',
+                            }}
+                        />
+                        <div
+                            className="rounded-full relative top-[-400%] left-0"
+                            style={{
+                                ...frostFadeStyle,
+                                backdropFilter: 'blur(5px)',
+                                maskImage: 'linear-gradient(to bottom, #000 0, #0000 6px, #0000 calc(100% - 6px), #000 100%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, #000 0, #0000 6px, #0000 calc(100% - 6px), #000 100%)',
+                                width: '100%',
+                                height: '100%',
+                            }}
+                        />
+                    </motion.div>
+
+                    {/* 页签轨道：竖排。滚动挂在这里，摇杆的滚动补偿才量得到。 */}
+                    <div
+                        ref={trackRef}
+                        {...thumbHandlers}
+                        className="relative flex flex-col items-stretch gap-[7px] p-1 cursor-grab active:cursor-grabbing touch-none"
+                    >
+                        {tabs.map(tab => (
+                            <NavTabButton
+                                key={tab.key}
+                                label={tab.label}
+                                title={tab.disabledReason || tab.label}
+                                active={!stageIsActive && !extraTabs?.some(item => item.active) && activeTab === tab.key}
+                                disabled={Boolean(tab.disabledReason)}
+                                icon={<TabIcon tabKey={tab.key} />}
+                                onClick={() => onSelectTab(tab.key)}
+                                onHover={handleHover}
+                                onHoverEnd={clearHover}
+                            />
+                        ))}
+
+                        {extraTabs?.map(tab => (
+                            <NavTabButton
+                                key={tab.id}
+                                label={tab.label}
+                                title={tab.label}
+                                active={tab.active}
+                                icon={<Layers size={18} className="relative z-20 shrink-0" />}
+                                onClick={tab.select}
+                                onHover={handleHover}
+                                onHoverEnd={clearHover}
+                            />
+                        ))}
+
+                        {stageEnabled && (
+                            <NavTabButton
+                                label={t('home.stage')}
+                                title={t('home.stage')}
+                                active={Boolean(stageIsActive)}
+                                icon={<Theater size={18} className="relative z-20 shrink-0" />}
+                                onClick={() => onOpenStagePlayer?.()}
+                                onHover={handleHover}
+                                onHoverEnd={clearHover}
+                                dataStageActive={stageIsActive ? 'true' : 'false'}
+                            />
+                        )}
+                    </div>
+                </div>
+
+                {/* 设置：原来页头左侧那颗，搬进这个浮动容器里、排在最后（与平台切换换了位置）。
+                    尺寸与队列拼贴、竖栏同宽（40），圆角拉满；有新版本时右上角点一个强调色圆点。 */}
+                {onOpenSettings && (
+                    <button
+                        type="button"
+                        data-glass
+                        data-glass-jelly
+                        data-glass-light
+                        data-grid3d-settings
+                        onClick={onOpenSettings}
+                        title={t('ui.options')}
+                        aria-label={t('ui.options')}
+                        onPointerEnter={event => handleHover(t('ui.options'), event.currentTarget)}
+                        onPointerLeave={clearHover}
+                        onFocus={event => handleHover(t('ui.options'), event.currentTarget)}
+                        onBlur={clearHover}
+                        className="pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300"
+                        style={glassStyle}
+                    >
+                        <Settings size={18} style={{ color: 'var(--text-primary)' }} />
+                        {updateAvailable && (
+                            <span
+                                aria-hidden="true"
+                                className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
+                                style={{ backgroundColor: 'var(--text-accent)' }}
+                            />
+                        )}
+                    </button>
+                )}
+
+                {/* 共用的悬停标签：常驻一份（一份 data-glass），只是没悬停时不可见。
+                    贴着竖栏右侧浮出，纵向位置跟着被悬停的那一项走。 */}
+                <span
+                    aria-hidden="true"
+                    data-glass
+                    className="pointer-events-none absolute left-12 z-30 -translate-y-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity duration-150"
+                    style={{
+                        ...tooltipStyle,
+                        top: hovered?.top ?? 0,
+                        opacity: hovered ? 1 : 0,
+                        visibility: hovered ? 'visible' : 'hidden',
+                    }}
+                >
+                    {hovered?.label ?? ''}
+                </span>
+            </div>
         </div>
     );
 };

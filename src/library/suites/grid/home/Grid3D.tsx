@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Loader2, Settings, LayoutDashboard, X } from 'lucide-react';
+import { Search, Loader2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../../stores/useSearchNavigationStore';
 import { useShallow } from 'zustand/react/shallow';
-import { SongResult, LocalSong, LocalPlaylist, LocalLibraryGroup, Theme, type StatusMessage } from '../../../../types';
+import { type SongResult, type LocalSong, type LocalPlaylist, type LocalLibraryGroup, type Theme, type StatusMessage } from '../../../../types';
 import LocalGrid3DView from './LocalGrid3DView';
 import NavidromeGrid3DView from './NavidromeGrid3DView';
 import { useGrid3DTabKeys } from './useGrid3DTabKeys';
 import DesktopGrid3DSurface from './DesktopGrid3DSurface';
 import OnlineProviderAccountlessPanel from '../account/OnlineProviderAccountlessPanel';
 import HomeLoginPanel from '../../../../components/login/HomeLoginPanel';
-import SwitcherPill from '../../../../components/login/SwitcherPill';
 import ExploreSurface from '../../../../components/app/home/explore/ExploreSurface';
 import { createOnlineGridViewCollection } from '../../../../components/app/home/gridViewCollectionAdapters';
 import { welfareCollectionOfCard, welfareGroupCards } from '../../../app/welfareHome';
@@ -51,10 +50,13 @@ import { Grid3DNav } from './Grid3DNav';
 // 摇杆边缘的色散滤镜 id：滤镜定义在本组件的 <svg> 里，用 backdrop-filter: url(#…) 引用。
 const DISPERSION_FILTER_ID = 'grid3d-dispersion';
 
-// 试装 Grid3DNav：true 时页头那排页签让位（保留 DOM，只藏起来——摇杆的测量还挂在它上面），
-// 页签改由浮层导航承担：紧凑档是底部横条，宽松档是左侧竖栏。
-// 改回 false 就完全回到原来的页头胶囊，浮层导航也不会渲染。
-const USE_GRID3D_NAV = true;
+// 浮层导航开关：true 时额外渲染 Grid3DNav（紧凑档底部横条、宽松档左侧竖栏）。
+// 页头那排页签胶囊照旧显示，作为对照；false 就只剩页头那排。
+const USE_GRID3D_NAV = { on: true }.on;
+
+// 页头那排页签胶囊（含它自己的摇杆与色散定义）的开关。导航已经改由 Grid3DNav 竖栏承担，
+// 这里关掉只留一份；整块 JSX 原样保留，改回 true 即可与竖栏并排对照。
+const USE_HEADER_PILL = { on: false }.on;
 
 interface Grid3DProps {
     /** 在线账户 controller（宿主创建，见 LibraryHomeSurfaceProps）：登录按钮与右下角的切换器读它，换平台、登录、退出都在登录窗口里。 */
@@ -226,6 +228,14 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
     // 进出方向按页签在一级页签里的先后定：向后面的页签走，新视图从右侧进（direction=1）。
     const shownTabIndex = homeTabs.findIndex(tab => tab.key === shownTab);
+
+    // 页头左侧那行标题：跟着浮层导航的高亮项走（舞台播放、扩展页签都会接管）。
+    const activeNavLabel = (() => {
+        if (stageIsActive) return t('home.stage');
+        const extraTab = props.extraTabs?.find(tab => tab.active);
+        if (extraTab) return extraTab.label;
+        return homeTabs.find(tab => tab.key === homeViewTab)?.label ?? '';
+    })();
     const prevTabIndexRef = useRef(shownTabIndex);
     const tabDirection = shownTabIndex === prevTabIndexRef.current
         ? 0
@@ -662,17 +672,17 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     /** 页头这几颗玻璃共用的一套底色、描边与文字色：搜索钮、桌面档的搜索框、紧凑档占满页头的搜索框。 */
     const headerGlassStyle: React.CSSProperties = {
         backgroundColor: isDaylight
-            ? "rgba(215,215,215,0.42)"
-            : "rgba(40, 40, 40, 0.42)",
+            ? 'rgba(215,215,215,0.42)'
+            : 'rgba(40, 40, 40, 0.42)',
         borderTop: isDaylight
-            ? "1px solid #fff6"
-            : "1px solid #fff5",
+            ? '1px solid #fff6'
+            : '1px solid #fff5',
         borderBottom: isDaylight
-            ? "1px solid #fff6"
-            : "1px solid #fff5",
-        outline: "1px solid rgba(35,35,35,0.3)",
-        boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
-        color: isDaylight ? "#000" : "#fff",
+            ? '1px solid #fff6'
+            : '1px solid #fff5',
+        outline: '1px solid rgba(35,35,35,0.3)',
+        boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
+        color: isDaylight ? '#000' : '#fff',
     };
 
     return (
@@ -688,422 +698,441 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 inert={isGridMapOpen}
                 className={`z-[20] select-none ${isGridMapOpen ? 'pointer-events-none' : ''}`}
             >
-            {/* 页头是道推拉门：紧凑档点开搜索时，整排按钮向左滑出，搜索框从右边滑进来占满整条页头；
+                {/* 页头是道推拉门：紧凑档点开搜索时，整排按钮向左滑出，搜索框从右边滑进来占满整条页头；
                 收起时两边各自滑回。进出都只做 transform——不给祖先加 opacity 或 filter，那会把
                 backdrop-filter 的取样根截断在容器里，玻璃在动画期间就会消失；元素自己的 opacity 不参与
                 那个判定，所以页头因地图淡出仍按原来的逐个淡。这一层不裁切：扫库进度气泡是往下弹的，
                 要留它出去；滑出去的两层由页面自己的 overflow-hidden 收掉。 */}
-            <div className="relative">
-                <div
-                    className="transition-transform duration-300 ease-out"
-                    style={{ transform: isCompact && isCompactSearchOpen ? 'translateX(-100%)' : 'translateX(0)' }}
-                >
-                    <div className="relative grid grid-cols-2 items-center w-full py-10 px-4 gap-y-0">
-                    {/* Left title and settings */}
-                    <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
-                        {/* 左侧按钮组 */}
-                        <button
-                            data-glass
-                            data-glass-jelly
-                            data-glass-light
-                            onClick={() => onOpenSettings?.('help')}
-                            className={`relative flex items-center gap-1.5 p-2.5 rounded-full hover:bg-white/10 transition-all ml-2 w-[40px] h-[40px]`}
-                            style={{
-                                backgroundColor: isDaylight
-                                ? "rgba(215,215,215,0.42)"
-                                : "rgba(40, 40, 40, 0.42)",
-                                borderTop: isDaylight
-                                ? "1px solid #fff6"
-                                : "1px solid #fff5",
-                                borderBottom: isDaylight
-                                ? "1px solid #fff6"
-                                : "1px solid #fff5",
-                                outline: "1px solid rgba(35,35,35,0.3)",
-                                boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
-                                ...headerFadeStyle,
-                            }}
-                            title={t('ui.options')}
-                        >
-                            <Settings size={20} style={{ color: 'var(--text-primary)' }} />
-                            {showUpdateIndicator && (
-                                <span className="text-[10px] font-medium text-zinc-800 dark:text-zinc-200 opacity-80 whitespace-nowrap bg-zinc-200/50 dark:bg-white/10 px-2 py-0.5 rounded-md">
-                                    {t('options.updateAvailable')}
-                                </span>
-                            )}
-                        </button>
-                        {onOpenLattice && currentTrack && (
-                        <button
-                            data-glass
-                            data-glass-jelly
-                            data-glass-light
-                            onClick={() => onOpenLattice(opensExploreWall ? 'explore' : 'queue')}
-                            data-testid="home-lattice-pill"
-                            title={t("home.lattice")}
-                            aria-label={t("home.lattice")}
-                            className={`group relative inline-flex items-center justify-center p-2.5 rounded-full text-xs md:text-sm font-medium transition-colors duration-300 whitespace-nowrap ${navPillInactiveText} min-w-[40px] h-[40px]`}
-                            style={{
-                            backgroundColor: isDaylight
-                                ? "rgba(215,215,215,0.42)"
-                                : "rgba(40, 40, 40, 0.42)",
-                            borderTop: isDaylight
-                                ? "1px solid #fff6"
-                                : "1px solid #fff5",
-                            borderBottom: isDaylight
-                                ? "1px solid #fff6"
-                                : "1px solid #fff5",
-                            outline: "1px solid rgba(35,35,35,0.3)",
-                            boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
-                            ...headerFadeStyle,
-                            }}
-                        >
-                            <LayoutDashboard size={18} className="relative shrink-0" />
-                            {/* <span
-                            aria-hidden="true"
-                            className="relative z-10 max-w-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-2.5 group-hover:max-w-28 group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:max-w-28 group-focus-visible:opacity-100"
-                            >
-                            {t("home.latticeLabel")}
-                            </span> */}
-                        </button>
-                        )}
-                        {scanProgress?.active && (
-                            <div
-                                className="relative ml-3"
-                                style={headerFadeStyle}
-                                onMouseEnter={() => setScanDetailsExpanded(true)}
-                                onMouseLeave={() => setScanDetailsExpanded(false)}
-                            >
-                                <button
-                                    onClick={() => setScanDetailsExpanded(prev => !prev)}
-                                    className="relative rounded-full p-px transition-all"
-                                    style={{
-                                        background: `conic-gradient(from -90deg, ${isDaylight ? (theme?.accentColor || 'rgba(17,24,39,0.92)') : 'rgba(255,255,255,0.98)'} 0deg ${scanProgressPercent * 3.6}deg, ${isDaylight ? 'rgba(24,24,27,0.16)' : 'rgba(255,255,255,0.14)'} ${scanProgressPercent * 3.6}deg 360deg)`,
-                                        borderRadius: '999px'
-                                    }}
-                                    title={t('options.scanProgress')}
-                                >
-                                    <div
-                                        className={`relative flex items-center justify-center min-w-[56px] h-7 px-2.5 rounded-full backdrop-blur-md ${isDaylight ? 'bg-white/95 text-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]' : 'bg-zinc-950/92 text-zinc-100'
-                                            }`}
+                <div className="relative">
+                    <div
+                        className="transition-transform duration-300 ease-out"
+                        style={{ transform: isCompact && isCompactSearchOpen ? 'translateX(-100%)' : 'translateX(0)' }}
+                    >
+                        <div className="relative grid grid-cols-2 items-center w-full py-10 pl-[80px] pr-4 gap-y-0">
+                            {/* Left title and settings */}
+                            <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
+                                {/* 左侧高亮导航标题：显示浮层导航当前高亮那一项的名字。
+                            页头左边留了 pl-[80px]，正好落在浮层竖栏右边。 */}
+                                <div className="flex min-w-0 items-center" style={headerFadeStyle}>
+                                    <span
+                                        className="truncate text-base md:text-lg font-light tracking-wide"
+                                        style={{
+                                            color: 'var(--text-color)',
+                                            fontFamily: '"Microsoft YaHei Light", "Microsoft YaHei", "PingFang SC", sans-serif',
+                                        }}
                                     >
-                                        <span className="relative z-10 text-[10px] font-semibold tabular-nums leading-none">
-                                            {scanProgressPercent}%
-                                        </span>
-                                    </div>
-                                </button>
-                                <AnimatePresence>
-                                    {scanDetailsExpanded && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -6 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -6 }}
-                                            className={`absolute left-0 top-full mt-2 w-72 p-4 rounded-2xl border backdrop-blur-xl shadow-xl ${isDaylight ? 'bg-white/85 border-black/10 text-zinc-800' : 'bg-black/60 border-white/10 text-zinc-100'
-                                                }`}
+                                        {activeNavLabel}
+                                    </span>
+                                </div>
+                                {/* 队列拼贴那颗钮已挪到浮层导航（Grid3DNav）竖栏下面，页头这边不再重复一颗。 */}
+                                {scanProgress?.active && (
+                                    <div
+                                        className="relative ml-3"
+                                        style={headerFadeStyle}
+                                        onMouseEnter={() => setScanDetailsExpanded(true)}
+                                        onMouseLeave={() => setScanDetailsExpanded(false)}
+                                    >
+                                        <button
+                                            onClick={() => setScanDetailsExpanded(prev => !prev)}
+                                            className="relative rounded-full p-px transition-all"
+                                            style={{
+                                                background: `conic-gradient(from -90deg, ${isDaylight ? (theme?.accentColor || 'rgba(17,24,39,0.92)') : 'rgba(255,255,255,0.98)'} 0deg ${scanProgressPercent * 3.6}deg, ${isDaylight ? 'rgba(24,24,27,0.16)' : 'rgba(255,255,255,0.14)'} ${scanProgressPercent * 3.6}deg 360deg)`,
+                                                borderRadius: '999px'
+                                            }}
+                                            title={t('options.scanProgress')}
                                         >
-                                            <div className="text-sm font-semibold truncate">
-                                                {t('options.scanningFolder', { folderName: scanProgress.folderName })}
+                                            <div
+                                                className={`relative flex items-center justify-center min-w-[56px] h-7 px-2.5 rounded-full backdrop-blur-md ${isDaylight ? 'bg-white/95 text-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]' : 'bg-zinc-950/92 text-zinc-100'
+                                                }`}
+                                            >
+                                                <span className="relative z-10 text-[10px] font-semibold tabular-nums leading-none">
+                                                    {scanProgressPercent}%
+                                                </span>
                                             </div>
-                                            <div className={`text-xs mt-1 ${isDaylight ? 'text-zinc-600' : 'text-zinc-300/70'}`}>
-                                                {t('options.scanProgressDesc')}
-                                            </div>
-                                            <div className="mt-3 flex items-center justify-between text-xs font-mono">
-                                                <span>{t('ui.progress')}</span>
-                                                <span>{Math.min(scanProgress.completedSongs, scanProgress.totalSongs)} / {scanProgress.totalSongs}</span>
-                                            </div>
-                                            <div className={`mt-2 w-full h-2 rounded-full overflow-hidden ${isDaylight ? 'bg-black/10' : 'bg-white/10'}`}>
-                                                <div
-                                                    className="h-full rounded-full transition-[width] duration-300 ease-out"
-                                                    style={{
-                                                        width: `${scanProgress.totalSongs > 0 ? (scanProgress.completedSongs / scanProgress.totalSongs) * 100 : 0}%`,
-                                                        backgroundColor: theme?.accentColor || 'var(--text-primary)'
-                                                    }}
-                                                />
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        )}
+                                        </button>
+                                        <AnimatePresence>
+                                            {scanDetailsExpanded && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -6 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -6 }}
+                                                    className={`absolute left-0 top-full mt-2 w-72 p-4 rounded-2xl border backdrop-blur-xl shadow-xl ${isDaylight ? 'bg-white/85 border-black/10 text-zinc-800' : 'bg-black/60 border-white/10 text-zinc-100'
+                                                    }`}
+                                                >
+                                                    <div className="text-sm font-semibold truncate">
+                                                        {t('options.scanningFolder', { folderName: scanProgress.folderName })}
+                                                    </div>
+                                                    <div className={`text-xs mt-1 ${isDaylight ? 'text-zinc-600' : 'text-zinc-300/70'}`}>
+                                                        {t('options.scanProgressDesc')}
+                                                    </div>
+                                                    <div className="mt-3 flex items-center justify-between text-xs font-mono">
+                                                        <span>{t('ui.progress')}</span>
+                                                        <span>{Math.min(scanProgress.completedSongs, scanProgress.totalSongs)} / {scanProgress.totalSongs}</span>
+                                                    </div>
+                                                    <div className={`mt-2 w-full h-2 rounded-full overflow-hidden ${isDaylight ? 'bg-black/10' : 'bg-white/10'}`}>
+                                                        <div
+                                                            className="h-full rounded-full transition-[width] duration-300 ease-out"
+                                                            style={{
+                                                                width: `${scanProgress.totalSongs > 0 ? (scanProgress.completedSongs / scanProgress.totalSongs) * 100 : 0}%`,
+                                                                backgroundColor: theme?.accentColor || 'var(--text-primary)'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
                         
-                        <div
-                            // 紧凑档里页签胶囊脱离左边那一组、居到整条页头中间（左右两组按钮仍各贴一边）：
-                            // 按自身宽度居中，换页签、加页签时都不会偏。尺寸与桌面档一致（不做 scale-90 的缩小）。
-                            // 试装浮层导航（USE_GRID3D_NAV）时只藏起来、不卸载：摇杆的 trackRef 还要量它。
-                            className={`origin-center rounded-full ${isCompact
-                                ? 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
-                                : 'relative scale-90 md:scale-100 mt-[5px] ml-[10px] -inset-1'}${USE_GRID3D_NAV ? ' hidden' : ''}`}
-                            style={{ overflow: 'visible' }}
-                        >
-                            {/* 玻璃底色单独做绝对定位层，与摇杆、页签同为兄弟层级：摇杆不再嵌在玻璃元素里，
+                                {/* 页头那排页签胶囊已停用（USE_HEADER_PILL = false）：导航改由下方 Grid3DNav 竖栏承担。
+                            整块代码保留，把开关改回 true 就能和竖栏并排对照。 */}
+                                {USE_HEADER_PILL && (
+                                    <div
+                                        // 紧凑档里页签胶囊脱离左边那一组、居到整条页头中间（左右两组按钮仍各贴一边）：
+                                        // 按自身宽度居中，换页签、加页签时都不会偏。尺寸与桌面档一致（不做 scale-90 的缩小）。
+                                        className={`origin-center rounded-full ${isCompact
+                                            ? 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
+                                            : 'relative scale-90 md:scale-100 mt-[5px] ml-[10px] -inset-1'}`}
+                                        style={{ overflow: 'visible' }}
+                                    >
+                                        {/* 玻璃底色单独做绝对定位层，与摇杆、页签同为兄弟层级：摇杆不再嵌在玻璃元素里，
                                 否则它自己的流体玻璃 backdrop 只能采到父级已经模糊过的背景，被削弱。 */}
-                            <div
-                                data-glass-light
-                                data-glass
-                                aria-hidden="true"
-                                className="absolute -inset-1 rounded-full"
-                                style={{
-                                    backgroundColor: isDaylight ? 'rgba(215,215,215,0.42)' : 'rgba(40, 40, 40, 0.42)',
-                                    borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
-                                    borderBottom: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
-                                    outline: '1px solid rgba(35,35,35,0.3)',
-                                    boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
-                                    ...headerFadeStyle,
-                                }}
-                            />
-                            {/* 色散滤镜定义（不占位、不显示）：给下面的 #distort 层当 backdrop-filter 用。
+                                        <div
+                                            data-glass-light
+                                            data-glass
+                                            aria-hidden="true"
+                                            className="absolute -inset-1 rounded-full"
+                                            style={{
+                                                backgroundColor: isDaylight ? 'rgba(215,215,215,0.42)' : 'rgba(40, 40, 40, 0.42)',
+                                                borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+                                                borderBottom: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+                                                outline: '1px solid rgba(35,35,35,0.3)',
+                                                boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
+                                                ...headerFadeStyle,
+                                            }}
+                                        />
+                                        {/* 色散滤镜定义（不占位、不显示）：给下面的 #distort 层当 backdrop-filter 用。
                                 做法是把背景拆成 R / G / B 三个通道，红往左上、蓝往右下各错开一点、绿不动，再合回去：
                                 平的地方三个通道重合、颜色不变，只有边缘因为错位才泛出彩色毛边——就是棱镜边上那种色散。
                                 dx / dy 就是错开的像素量，想更明显就调大（超过 2px 文字边缘会开始发脏、像故障风）；
                                 想只在一个方向散就把另一项改成 0。 */}
-                            <svg
-                                aria-hidden="true"
-                                width="0"
-                                height="0"
-                                style={{ position: 'absolute', left: 0, top: 0 }}
-                            >
-                                <filter
-                                    id={DISPERSION_FILTER_ID}
-                                    // 区域放宽一圈，错位后的通道才不会被边界提前切掉、在边上留下缺色的硬边。
-                                    x="-20%"
-                                    y="-20%"
-                                    width="140%"
-                                    height="140%"
-                                    colorInterpolationFilters="sRGB"
-                                >
-                                    <feColorMatrix
-                                        in="SourceGraphic"
-                                        type="matrix"
-                                        values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                                        result="dispR"
-                                    />
-                                    <feColorMatrix
-                                        in="SourceGraphic"
-                                        type="matrix"
-                                        values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                                        result="dispG"
-                                    />
-                                    <feColorMatrix
-                                        in="SourceGraphic"
-                                        type="matrix"
-                                        values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-                                        result="dispB"
-                                    />
-                                    <feOffset in="dispR" dx="-2.6" dy="-2.6" result="dispRShift" />
-                                    <feOffset in="dispB" dx="2.6" dy="2.6" result="dispBShift" />
-                                    {/* 三通道必须用 screen 相加，不能用 feMerge：feMerge 是「盖上去」，
+                                        <svg
+                                            aria-hidden="true"
+                                            width="0"
+                                            height="0"
+                                            style={{ position: 'absolute', left: 0, top: 0 }}
+                                        >
+                                            <filter
+                                                id={DISPERSION_FILTER_ID}
+                                                // 区域放宽一圈，错位后的通道才不会被边界提前切掉、在边上留下缺色的硬边。
+                                                x="-20%"
+                                                y="-20%"
+                                                width="140%"
+                                                height="140%"
+                                                colorInterpolationFilters="sRGB"
+                                            >
+                                                <feColorMatrix
+                                                    in="SourceGraphic"
+                                                    type="matrix"
+                                                    values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                                                    result="dispR"
+                                                />
+                                                <feColorMatrix
+                                                    in="SourceGraphic"
+                                                    type="matrix"
+                                                    values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                                                    result="dispG"
+                                                />
+                                                <feColorMatrix
+                                                    in="SourceGraphic"
+                                                    type="matrix"
+                                                    values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+                                                    result="dispB"
+                                                />
+                                                <feOffset in="dispR" dx="-2.6" dy="-2.6" result="dispRShift" />
+                                                <feOffset in="dispB" dx="2.6" dy="2.6" result="dispBShift" />
+                                                {/* 三通道必须用 screen 相加，不能用 feMerge：feMerge 是「盖上去」，
                                         每个通道都是不透明的，后画的会把先画的整个盖掉，最后只剩蓝色一层。
                                         screen 在两个不透明图层上就是逐通道相加（交叠项为 0），
                                         于是三个通道重合的地方还原成原色，只有错开的那 1px 露出彩边。 */}
-                                    <feBlend in="dispRShift" in2="dispG" mode="screen" result="dispRG" />
-                                    <feBlend in="dispRG" in2="dispBShift" mode="screen" />
-                                </filter>
-                            </svg>
-                            {/* 摇杆：按住切换器任意处即吸附到鼠标并跟手，松手按最近页签吸附。层级与玻璃层平级，
+                                                <feBlend in="dispRShift" in2="dispG" mode="screen" result="dispRG" />
+                                                <feBlend in="dispRG" in2="dispBShift" mode="screen" />
+                                            </filter>
+                                        </svg>
+                                        {/* 摇杆：按住切换器任意处即吸附到鼠标并跟手，松手按最近页签吸附。层级与玻璃层平级，
                                 pointer-events-none 让按下穿透到下面的页签轨道，不挡拖动与点击。 */}
-                            <motion.div
-                                aria-hidden="true"
-                                className={`absolute z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(35,35,35,0.3)] ${thumbDragging ? 'bg-transparent z-888 shadow-[0px_8px_16px_rgba(40,40,40,0.2)]' : 'bg-[var(--text-accent)]/40 shadow-[0px_8px_16px_rgba(40,40,40,0.2)]'}`}
-                                style={{
-                                    // 摇杆的放大与速度形变全部用 width / height 表达、锚点是中心（useHomeTabThumb
-                                    // 里补偿好的 left / top），不再用 transform: scale：这样圆角、边框、玻璃
-                                    // 位移图都按真实尺寸来，不会被非等比缩放拉歪。
-                                    left: thumbBoxLeft,
-                                    top: thumbBoxTop,
-                                    width: thumbBoxWidth,
-                                    height: thumbBoxHeight,
-                                    borderTop: isDaylight
-                                        ? "1px solid #fff6"
-                                        : "1px solid #fff5",
-                                    borderBottom: isDaylight
-                                        ? "1px solid #fff6"
-                                        : "1px solid #fff5",
-                                    pointerEvents: 'none',
-                                    // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的流体玻璃；底色与阴影的进出
-                                    // 由上面的 transition 补间，松手复原时不再瞬间跳变。
-                                    boxShadow: thumbDragging ? '0 0 20px #0006' : '',
-                                }}
-                                // 摇杆的 opacity 交给 framer-motion，不写 CSS transition，
-                                // 免得覆盖上面底色与阴影的补间；元素自己的 opacity 不影响 backdrop-filter。
-                                animate={{ opacity: isGridMapOpen ? 0 : 1 }}
-                                transition={{ opacity: { duration: 0.3, ease: 'easeInOut' } }}
-                            >
+                                        <motion.div
+                                            aria-hidden="true"
+                                            className={`absolute z-10 rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(35,35,35,0.3)] ${thumbDragging ? 'bg-transparent z-888 shadow-[0px_8px_16px_rgba(40,40,40,0.2)]' : 'bg-[var(--text-accent)]/40 shadow-[0px_8px_16px_rgba(40,40,40,0.2)]'}`}
+                                            style={{
+                                                // 摇杆的放大与速度形变全部用 width / height 表达、锚点是中心（useHomeTabThumb
+                                                // 里补偿好的 left / top），不再用 transform: scale：这样圆角、边框、玻璃
+                                                // 位移图都按真实尺寸来，不会被非等比缩放拉歪。
+                                                left: thumbBoxLeft,
+                                                top: thumbBoxTop,
+                                                width: thumbBoxWidth,
+                                                height: thumbBoxHeight,
+                                                borderTop: isDaylight
+                                                    ? '1px solid #fff6'
+                                                    : '1px solid #fff5',
+                                                borderBottom: isDaylight
+                                                    ? '1px solid #fff6'
+                                                    : '1px solid #fff5',
+                                                pointerEvents: 'none',
+                                                // 按住摇杆（拖动中）时去掉底色，只留摇杆自身的流体玻璃；底色与阴影的进出
+                                                // 由上面的 transition 补间，松手复原时不再瞬间跳变。
+                                                boxShadow: thumbDragging ? '0 0 20px #0006' : '',
+                                            }}
+                                            // 摇杆的 opacity 交给 framer-motion，不写 CSS transition，
+                                            // 免得覆盖上面底色与阴影的补间；元素自己的 opacity 不影响 backdrop-filter。
+                                            animate={{ opacity: isGridMapOpen ? 0 : 1 }}
+                                            transition={{ opacity: { duration: 0.3, ease: 'easeInOut' } }}
+                                        >
                                 
-                                <div 
-                                    data-glass
-                                    data-glass-len="0.95"
-                                    data-glass-strength="10"
-                                    data-glass-blur="0"
-                                    data-glass-bend="80"
-                                    data-glass-gamma="15"
-                                    data-glass-sat="1.2"
-                                    className="rounded-full relative top-0 left-0"
-                                    style={{
-                                        width: "100%",
-                                        height: "100%",
-                                    }}
-                                ></div>
-                                {/* 色散：最外那一圈玻璃边缘的彩色分离。滤镜见上面的 #grid3d-dispersion，
+                                            <div 
+                                                data-glass
+                                                data-glass-len="0.95"
+                                                data-glass-strength="10"
+                                                data-glass-blur="0"
+                                                data-glass-bend="80"
+                                                data-glass-gamma="15"
+                                                data-glass-sat="1.2"
+                                                className="rounded-full relative top-0 left-0"
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                }}
+                                            ></div>
+                                            {/* 色散：最外那一圈玻璃边缘的彩色分离。滤镜见上面的 #grid3d-dispersion，
                                     用 backdrop-filter 引进来——它只改「身后的画面」，所以这层自己不画任何东西。
                                     WebKit 不支持 backdrop-filter 引 SVG 滤镜（见 utils/platform），那里直接不挂，
                                     这一层就成了空 div，什么也不影响。 */}
-                                <div 
-                                    id={"distort"}
-                                    className="rounded-full relative top-[-100%] left-0"
-                                    style={{
-                                        // 只留边缘那一圈：色散放在边缘才像玻璃棱边，铺满整块会把页签文字也染出彩边。
-                                        // 透明度渐变照前面的渐进模糊那样由内向外收紧，外面那条实线就是这层的边界。
-                                        ...frostFadeStyle,
-                                        backdropFilter: isChromiumRenderer() ? `url(#${DISPERSION_FILTER_ID})` : undefined,
-                                        maskImage: "radial-gradient(ellipse at center, #0000 60%, #000 80%)",
-                                        width: "100%",
-                                        height: "100%",
-                                    }}
-                                ></div>
-                                {/* 渐进模糊滤镜 */}
-                                <div 
-                                    className="rounded-full relative top-[-200%] left-0"
-                                    style={{
-                                        ...frostFadeStyle,
-                                        backdropFilter: "blur(1px)",
-                                        maskImage: "radial-gradient(ellipse at center, #0000 calc(100% - 50px), #000 calc(100% - 25px))",
-                                        width: "100%",
-                                        height: "100%",
-                                    }}
-                                ></div>
-                                <div 
-                                    className="rounded-full relative top-[-300%] left-0"
-                                    style={{
-                                        ...frostFadeStyle,
-                                        backdropFilter: "blur(2px)",
-                                        maskImage: "radial-gradient(ellipse at center, #0000 calc(100% - 30px), #000 calc(100% - 15px))",
-                                        width: "100%",
-                                        height: "100%",
-                                    }}
-                                ></div>
-                                <div 
-                                    className="rounded-full relative top-[-400%] left-0"
-                                    style={{
-                                        ...frostFadeStyle,
-                                        backdropFilter: "blur(5px)",
-                                        maskImage: "radial-gradient(ellipse at center, #0000 calc(100% - 20px), #000 calc(100% - 10px))",
-                                        width: "100%",
-                                        height: "100%",
-                                    }}
-                                ></div>
-                            </motion.div>
-                            <div
-                                ref={pillTrackRef}
-                                {...thumbHandlers}
-                                style={headerFadeStyle}
-                                className="relative flex items-center gap-0 cursor-grab active:cursor-grabbing touch-none pointer-none"
-                            >
-                                {homeTabs.map((tab) => {
-                                    const isActive = homeViewTab === tab.key;
-                                    return (
-                                        <span
-                                            key={tab.key}
-                                            title={tab.disabledReason || tab.label}
-                                            className="inline-flex"
-                                        >
-                                            <button
-                                                data-home-tab
-                                                disabled={Boolean(tab.disabledReason)}
-                                                aria-label={tab.disabledReason || tab.label}
-                                                onClick={() => {
-                                                    setHomeViewTab(tab.key);
-                                                    focusActiveSlider();
+                                            <div 
+                                                id={'distort'}
+                                                className="rounded-full relative top-[-100%] left-0"
+                                                style={{
+                                                    // 只留边缘那一圈：色散放在边缘才像玻璃棱边，铺满整块会把页签文字也染出彩边。
+                                                    // 透明度渐变照前面的渐进模糊那样由内向外收紧，外面那条实线就是这层的边界。
+                                                    ...frostFadeStyle,
+                                                    backdropFilter: isChromiumRenderer() ? `url(#${DISPERSION_FILTER_ID})` : undefined,
+                                                    maskImage: 'radial-gradient(ellipse at center, #0000 60%, #000 80%)',
+                                                    width: '100%',
+                                                    height: '100%',
                                                 }}
-                                                className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${isActive ? activeTabBg : navPillInactiveText}`}
-                                            >
-                                                {/* 福利页签原来不写字、用 BLG 队标；队标随 0.7.29 的素材一起下掉后
+                                            ></div>
+                                            {/* 渐进模糊滤镜 */}
+                                            <div 
+                                                className="rounded-full relative top-[-200%] left-0"
+                                                style={{
+                                                    ...frostFadeStyle,
+                                                    backdropFilter: 'blur(1px)',
+                                                    maskImage: 'radial-gradient(ellipse at center, #0000 calc(100% - 50px), #000 calc(100% - 25px))',
+                                                    width: '100%',
+                                                    height: '100%',
+                                                }}
+                                            ></div>
+                                            <div 
+                                                className="rounded-full relative top-[-300%] left-0"
+                                                style={{
+                                                    ...frostFadeStyle,
+                                                    backdropFilter: 'blur(2px)',
+                                                    maskImage: 'radial-gradient(ellipse at center, #0000 calc(100% - 30px), #000 calc(100% - 15px))',
+                                                    width: '100%',
+                                                    height: '100%',
+                                                }}
+                                            ></div>
+                                            <div 
+                                                className="rounded-full relative top-[-400%] left-0"
+                                                style={{
+                                                    ...frostFadeStyle,
+                                                    backdropFilter: 'blur(5px)',
+                                                    maskImage: 'radial-gradient(ellipse at center, #0000 calc(100% - 20px), #000 calc(100% - 10px))',
+                                                    width: '100%',
+                                                    height: '100%',
+                                                }}
+                                            ></div>
+                                        </motion.div>
+                                        <div
+                                            ref={pillTrackRef}
+                                            {...thumbHandlers}
+                                            style={headerFadeStyle}
+                                            className="relative flex items-center gap-0 cursor-grab active:cursor-grabbing touch-none pointer-none"
+                                        >
+                                            {homeTabs.map((tab) => {
+                                                const isActive = homeViewTab === tab.key;
+                                                return (
+                                                    <span
+                                                        key={tab.key}
+                                                        title={tab.disabledReason || tab.label}
+                                                        className="inline-flex"
+                                                    >
+                                                        <button
+                                                            data-home-tab
+                                                            disabled={Boolean(tab.disabledReason)}
+                                                            aria-label={tab.disabledReason || tab.label}
+                                                            onClick={() => {
+                                                                setHomeViewTab(tab.key);
+                                                                focusActiveSlider();
+                                                            }}
+                                                            className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${isActive ? activeTabBg : navPillInactiveText}`}
+                                                        >
+                                                            {/* 福利页签原来不写字、用 BLG 队标；队标随 0.7.29 的素材一起下掉后
                                                     回到普通文字页签，和其它页签同一套排版（宽度自然跟着文字走）。 */}
-                                                <span className="relative z-20">{tab.label}</span>
-                                            </button>
-                                        </span>
-                                    );
-                                })}
-                                {props.extraTabs?.map(tab => (
-                                    <button key={tab.id} type="button" onClick={tab.select}
-                                        className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}>
-                                        {tab.label}
-                                    </button>
-                                ))}
-                                {stageEnabled && (
-                                    <button
-                                        onClick={() => onOpenStagePlayer?.()}
-                                        data-stage-active={stageIsActive ? 'true' : 'false'}
-                                        className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}
-                                    >
-                                        <span className="relative z-10">{t('home.stage')}</span>
-                                    </button>
-                                )}
-                                {/* 播放队列的海报视图和 Stage 一样属于「去哪儿」，所以它在这一排，
+                                                            <span className="relative z-20">{tab.label}</span>
+                                                        </button>
+                                                    </span>
+                                                );
+                                            })}
+                                            {props.extraTabs?.map(tab => (
+                                                <button key={tab.id} type="button" onClick={tab.select}
+                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}>
+                                                    {tab.label}
+                                                </button>
+                                            ))}
+                                            {stageEnabled && (
+                                                <button
+                                                    onClick={() => onOpenStagePlayer?.()}
+                                                    data-stage-active={stageIsActive ? 'true' : 'false'}
+                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}
+                                                >
+                                                    <span className="relative z-10">{t('home.stage')}</span>
+                                                </button>
+                                            )}
+                                            {/* 播放队列的海报视图和 Stage 一样属于「去哪儿」，所以它在这一排，
                                     而不是标题旁的工具图标。没有在播歌曲时队列也是空的，直接不出现。
                                     平时只占一个图标的宽度，指针悬停或键盘聚焦时才展开文字——这一排
                                     已经有五个内容 tab，多一个常驻文字就把胶囊撑得太长。点击始终直达。
                                     在「探索」页签上它打开的是同一面墙，铺的是探索页的条目（探索拼贴）：
                                     探索页有条目可铺时出现，不看有没有在播歌曲。 */}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Center Tab Switcher */}
-                    {/* <div
+                            {/* Center Tab Switcher */}
+                            {/* <div
                         // data-glass-jelly
                         className="flex justify-left order-3 md:order-none col-span-2 md:col-span-1"
                     >
                     </div> */}
 
-                    {/* Right Search Bar（左边紧挨着平台切换与返回歌词画报两颗圆钮） */}
-                    <div className="flex items-center justify-end gap-3 order-2 md:order-none">
-                        {/* 平台切换（没人登录时就是登录入口）所有宽度都在页头里，窄屏也不再退到右下角的浮层：
-                            紧凑档页签胶囊已经居中、不再往这边顶，这一行放得下。 */}
-                        <div className="flex shrink-0">
-                            <SwitcherPill
-                                variant="header"
-                                account={account}
-                                surfaceStyle={headerFadeStyle}
-                            />
-                        </div>
-                        {isCompact ? (
-                            // 紧凑档收着的时候这里只有一颗圆钮：点开之后整条页头交给搜索层（见下面），
-                            // 页头这一排按钮一起向左滑出去。
-                            <button
-                                type="button"
-                                onClick={() => setIsCompactSearchOpen(true)}
-                                title={t('home.searchButton')}
-                                aria-label={t('home.searchButton')}
-                                aria-expanded={isCompactSearchOpen}
-                                data-testid="home-search-toggle"
-                                /* 「点外面收起」的白名单：这颗钮自己也带这个标记，点它等于先收起再打开。 */
-                                data-home-search-layer
-                                data-glass
-                                data-glass-jelly
-                                data-glass-light
-                                className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full"
-                                style={{ ...headerGlassStyle, ...headerFadeStyle }}
-                            >
-                                {isSearchingActive
-                                    ? <Loader2 className="h-4 w-4 animate-spin opacity-40" />
-                                    : <Search className="h-4 w-4 opacity-40 transition-opacity hover:opacity-100" />}
-                            </button>
-                        ) : (
-                            <form
-                                ref={searchFormRef}
-                                onSubmit={handleSearch}
-                                className="relative w-full rounded-full transition-all md:w-56 focus-within:md:w-72"
-                                /* 历史面板虽然挂在 body 上，但输入框、下拉箭头都在这张表单里：
+                            {/* Right Search Bar（左边紧挨着平台切换与返回歌词画报两颗圆钮） */}
+                            <div className="flex items-center justify-end gap-3 order-2 md:order-none">
+                                {/* 平台切换那颗圆钮已挪到浮层导航竖栏下面（Grid3DNav），页头不再放第二颗。 */}
+                                {isCompact ? (
+                                // 紧凑档收着的时候这里只有一颗圆钮：点开之后整条页头交给搜索层（见下面），
+                                // 页头这一排按钮一起向左滑出去。
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCompactSearchOpen(true)}
+                                        title={t('home.searchButton')}
+                                        aria-label={t('home.searchButton')}
+                                        aria-expanded={isCompactSearchOpen}
+                                        data-testid="home-search-toggle"
+                                        /* 「点外面收起」的白名单：这颗钮自己也带这个标记，点它等于先收起再打开。 */
+                                        data-home-search-layer
+                                        data-glass
+                                        data-glass-jelly
+                                        data-glass-light
+                                        className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full"
+                                        style={{ ...headerGlassStyle, ...headerFadeStyle }}
+                                    >
+                                        {isSearchingActive
+                                            ? <Loader2 className="h-4 w-4 animate-spin opacity-40" />
+                                            : <Search className="h-4 w-4 opacity-40 transition-opacity hover:opacity-100" />}
+                                    </button>
+                                ) : (
+                                    <form
+                                        ref={searchFormRef}
+                                        onSubmit={handleSearch}
+                                        className="relative w-full rounded-full transition-all md:w-56 focus-within:md:w-72"
+                                        /* 历史面板虽然挂在 body 上，但输入框、下拉箭头都在这张表单里：
                                     「点外面收起」按这个标记判断里面／外面。 */
+                                        data-home-search-layer
+                                        data-glass
+                                        data-glass-jelly
+                                        data-glass-light
+                                        style={{ ...headerGlassStyle, ...headerFadeStyle }}
+                                        onBlur={event => {
+                                            // 焦点离开整块（连历史面板一起）才收起，点到面板里的标签不算离开。
+                                            if (!event.currentTarget.contains(event.relatedTarget)) {
+                                                setIsSearchHistoryOpen(false);
+                                            }
+                                        }}
+                                    >
+                                        {isSearchingActive ? (
+                                            <Loader2 className="absolute left-3 top-1/2 w-4 h-4 animate-spin opacity-40 -mt-2" />
+                                        ) : (
+                                            <Search
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 w-4 h-4 cursor-pointer hover:opacity-100 transition-opacity"
+                                                onClick={() => handleSearch()}
+                                            />
+                                        )}
+                                        <input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            onFocus={() => setIsSearchHistoryOpen(true)}
+                                            onKeyDown={event => {
+                                                if (event.key === 'Escape' && isSearchHistoryOpen) {
+                                                    event.stopPropagation();
+                                                    setIsSearchHistoryOpen(false);
+                                                }
+                                            }}
+                                            aria-expanded={isSearchHistoryOpen && searchHistory.length > 0}
+                                            aria-controls="home-search-history"
+                                            className="w-full border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text placeholder:italic"
+                                            style={{ color: 'var(--text-primary)' }}
+                                        />
+                                        {/* 历史面板挂在 body 上（HomeSearchHistoryPopover）：搜索框自己带
+                                    backdrop-filter，面板做它的后代时玻璃取样根被截断，滤镜会整个失效。 */}
+                                        <HomeSearchHistoryPopover
+                                            open={isSearchHistoryOpen && searchHistory.length > 0}
+                                            anchorRef={searchFormRef}
+                                            align="end"
+                                        >
+                                            <HomeSearchHistory
+                                                items={searchHistory}
+                                                onPick={item => {
+                                                    setSearchQuery(item);
+                                                    void runSearch(item);
+                                                }}
+                                                onRemove={forgetSearchHistoryQuery}
+                                                onClear={clearSearchHistory}
+                                                isDaylight={isDaylight}
+                                            />
+                                        </HomeSearchHistoryPopover>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 紧凑档展开的搜索：从右边滑进来占满整条页头（左右 padding 与页头一致，所以贴齐两侧）。
+                    收起时滑回右边、同时断掉指针与焦点；输入框里的字留着，下次展开接着改。 */}
+                    {isCompact && (
+                        <div
+                            className="absolute inset-0 flex items-center px-4 transition-transform duration-300 ease-out"
+                            style={{
+                                transform: isCompactSearchOpen ? 'translateX(0)' : 'translateX(100%)',
+                                pointerEvents: isCompactSearchOpen ? 'auto' : 'none',
+                            }}
+                            aria-hidden={!isCompactSearchOpen}
+                            inert={!isCompactSearchOpen}
+                        >
+                            <form
+                                ref={compactSearchFormRef}
+                                onSubmit={handleSearch}
+                                className="relative h-10 w-full rounded-full"
+                                /* 「点外面收起」的白名单：这条搜索层整体算里面（输入框、× 都在其中），
+                                历史面板自己也带这个标记（它挂在 body 上，不在表单里）。 */
                                 data-home-search-layer
                                 data-glass
                                 data-glass-jelly
                                 data-glass-light
                                 style={{ ...headerGlassStyle, ...headerFadeStyle }}
-                                onBlur={event => {
-                                    // 焦点离开整块（连历史面板一起）才收起，点到面板里的标签不算离开。
-                                    if (!event.currentTarget.contains(event.relatedTarget)) {
-                                        setIsSearchHistoryOpen(false);
-                                    }
-                                }}
                             >
                                 {isSearchingActive ? (
                                     <Loader2 className="absolute left-3 top-1/2 w-4 h-4 animate-spin opacity-40 -mt-2" />
@@ -1119,24 +1148,41 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    onFocus={() => setIsSearchHistoryOpen(true)}
-                                    onKeyDown={event => {
-                                        if (event.key === 'Escape' && isSearchHistoryOpen) {
-                                            event.stopPropagation();
+                                    onKeyDown={e => {
+                                    // Esc 先收搜索历史；历史没开时才收起整条搜索层。输入框里的字留着（下次展开接着改）。
+                                        if (e.key !== 'Escape') return;
+                                        e.preventDefault();
+                                        if (isSearchHistoryOpen) {
                                             setIsSearchHistoryOpen(false);
+                                            return;
                                         }
+                                        collapseCompactSearch();
                                     }}
-                                    aria-expanded={isSearchHistoryOpen && searchHistory.length > 0}
-                                    aria-controls="home-search-history"
-                                    className="w-full border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/20 transition-all placeholder:text-current placeholder:opacity-40 select-text placeholder:italic"
+                                    onFocus={() => setIsSearchHistoryOpen(true)}
+                                    onBlur={e => {
+                                    // 没打字就离开这一块，自动收回圆钮；指针挪到同一块里的那几颗图标上不算离开。
+                                        if (searchQuery.trim()) return;
+                                        const next = e.relatedTarget;
+                                        if (next instanceof Node && e.currentTarget.parentElement?.contains(next)) return;
+                                        setIsCompactSearchOpen(false);
+                                    }}
+                                    className="h-10 w-full rounded-full border border-white/10 py-2 pl-10 pr-10 text-sm placeholder:italic placeholder:text-current placeholder:opacity-40 focus:border-white/20 focus:outline-none select-text"
                                     style={{ color: 'var(--text-primary)' }}
                                 />
-                                {/* 历史面板挂在 body 上（HomeSearchHistoryPopover）：搜索框自己带
-                                    backdrop-filter，面板做它的后代时玻璃取样根被截断，滤镜会整个失效。 */}
+                                {/* 收起：打完字（或改到一半）不想搜了就按这个，输入框跟着滑回右边。 */}
+                                <button
+                                    type="button"
+                                    onClick={collapseCompactSearch}
+                                    title={t('home.searchClose')}
+                                    aria-label={t('home.searchClose')}
+                                    className="absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full transition-colors hover:bg-white/15"
+                                >
+                                    <X className="h-3.5 w-3.5 opacity-50" />
+                                </button>
                                 <HomeSearchHistoryPopover
                                     open={isSearchHistoryOpen && searchHistory.length > 0}
-                                    anchorRef={searchFormRef}
-                                    align="end"
+                                    anchorRef={compactSearchFormRef}
+                                    align="stretch"
                                 >
                                     <HomeSearchHistory
                                         items={searchHistory}
@@ -1147,104 +1193,13 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                         onRemove={forgetSearchHistoryQuery}
                                         onClear={clearSearchHistory}
                                         isDaylight={isDaylight}
+                                        stretch
                                     />
                                 </HomeSearchHistoryPopover>
                             </form>
-                        )}
-                    </div>
-                    </div>
+                        </div>
+                    )}
                 </div>
-
-                {/* 紧凑档展开的搜索：从右边滑进来占满整条页头（左右 padding 与页头一致，所以贴齐两侧）。
-                    收起时滑回右边、同时断掉指针与焦点；输入框里的字留着，下次展开接着改。 */}
-                {isCompact && (
-                    <div
-                        className="absolute inset-0 flex items-center px-4 transition-transform duration-300 ease-out"
-                        style={{
-                            transform: isCompactSearchOpen ? 'translateX(0)' : 'translateX(100%)',
-                            pointerEvents: isCompactSearchOpen ? 'auto' : 'none',
-                        }}
-                        aria-hidden={!isCompactSearchOpen}
-                        inert={!isCompactSearchOpen}
-                    >
-                        <form
-                            ref={compactSearchFormRef}
-                            onSubmit={handleSearch}
-                            className="relative h-10 w-full rounded-full"
-                            /* 「点外面收起」的白名单：这条搜索层整体算里面（输入框、× 都在其中），
-                                历史面板自己也带这个标记（它挂在 body 上，不在表单里）。 */
-                            data-home-search-layer
-                            data-glass
-                            data-glass-jelly
-                            data-glass-light
-                            style={{ ...headerGlassStyle, ...headerFadeStyle }}
-                        >
-                            {isSearchingActive ? (
-                                <Loader2 className="absolute left-3 top-1/2 w-4 h-4 animate-spin opacity-40 -mt-2" />
-                            ) : (
-                                <Search
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 w-4 h-4 cursor-pointer hover:opacity-100 transition-opacity"
-                                    onClick={() => handleSearch()}
-                                />
-                            )}
-                            <input
-                                ref={searchInputRef}
-                                type="text"
-                                placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                onKeyDown={e => {
-                                    // Esc 先收搜索历史；历史没开时才收起整条搜索层。输入框里的字留着（下次展开接着改）。
-                                    if (e.key !== 'Escape') return;
-                                    e.preventDefault();
-                                    if (isSearchHistoryOpen) {
-                                        setIsSearchHistoryOpen(false);
-                                        return;
-                                    }
-                                    collapseCompactSearch();
-                                }}
-                                onFocus={() => setIsSearchHistoryOpen(true)}
-                                onBlur={e => {
-                                    // 没打字就离开这一块，自动收回圆钮；指针挪到同一块里的那几颗图标上不算离开。
-                                    if (searchQuery.trim()) return;
-                                    const next = e.relatedTarget;
-                                    if (next instanceof Node && e.currentTarget.parentElement?.contains(next)) return;
-                                    setIsCompactSearchOpen(false);
-                                }}
-                                className="h-10 w-full rounded-full border border-white/10 py-2 pl-10 pr-10 text-sm placeholder:italic placeholder:text-current placeholder:opacity-40 focus:border-white/20 focus:outline-none select-text"
-                                style={{ color: 'var(--text-primary)' }}
-                            />
-                            {/* 收起：打完字（或改到一半）不想搜了就按这个，输入框跟着滑回右边。 */}
-                            <button
-                                type="button"
-                                onClick={collapseCompactSearch}
-                                title={t('home.searchClose')}
-                                aria-label={t('home.searchClose')}
-                                className="absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full transition-colors hover:bg-white/15"
-                            >
-                                <X className="h-3.5 w-3.5 opacity-50" />
-                            </button>
-                            <HomeSearchHistoryPopover
-                                open={isSearchHistoryOpen && searchHistory.length > 0}
-                                anchorRef={compactSearchFormRef}
-                                align="stretch"
-                            >
-                                <HomeSearchHistory
-                                    items={searchHistory}
-                                    onPick={item => {
-                                        setSearchQuery(item);
-                                        void runSearch(item);
-                                    }}
-                                    onRemove={forgetSearchHistoryQuery}
-                                    onClear={clearSearchHistory}
-                                    isDaylight={isDaylight}
-                                    stretch
-                                />
-                            </HomeSearchHistoryPopover>
-                        </form>
-                    </div>
-                )}
-            </div>
             </div>
 
             {/* Desktop Canvas Surface。每个访问过的页签常驻一层（keep-alive）：切页签只切换可见性和横向位移，
@@ -1286,10 +1241,10 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             {/* 窄屏原本在这里挂一颗浮层版的平台切换，现在已经统一挪进页头（见上面的搜索栏那一行），
                 所以不再保留第二颗。返回歌词画报的箭头在播放条上，这里从来没有它。 */}
 
-            {/* 试装中的浮层导航（见文件顶部的 USE_GRID3D_NAV）：紧凑档底部横条、宽松档左侧竖栏。
-                只放页签、扩展页签与舞台；拼贴仍留在页头那颗图标上。它的层级压在 GridMap（z-[110]）与
-                底部播放胶囊（z-60）之下，地图铺开时更是整块藏起来（invisible）。
-                底部有播放胶囊（56 高、离底 16）时把横条抬到它上面，别叠在一起。 */}
+            {/* 浮层导航：两档都用左侧竖栏，挂在页头设置按钮下面 10px（位置由组件自己量）。
+                页头那排胶囊保留不动（对照用），两处页签指向同一份状态，点哪边都一样。
+                层级压在 GridMap（z-[110]）与底部播放胶囊（z-60）之下；地图铺开、紧凑档搜索层拉出来时
+                整块藏起来（invisible）。 */}
             {USE_GRID3D_NAV && (
                 <Grid3DNav
                     tabs={homeTabs}
@@ -1302,9 +1257,15 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     stageEnabled={stageEnabled}
                     stageIsActive={stageIsActive}
                     onOpenStagePlayer={onOpenStagePlayer}
+                    onOpenLattice={onOpenLattice
+                        ? () => onOpenLattice(opensExploreWall ? 'explore' : 'queue')
+                        : undefined}
+                    showLattice={Boolean(onOpenLattice && currentTrack)}
+                    account={account}
+                    onOpenSettings={() => onOpenSettings?.('help')}
+                    updateAvailable={showUpdateIndicator}
                     isDaylight={isDaylight}
-                    bottomOffset={currentTrack ? 76 : 0}
-                    className={isGridMapOpen ? 'invisible' : ''}
+                    className={isGridMapOpen || isCompactSearchOpen ? 'invisible' : ''}
                 />
             )}
 

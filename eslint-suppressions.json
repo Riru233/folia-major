@@ -1415,11 +1415,6 @@
       "count": 186
     }
   },
-  "shared/lyricSegmentationService.mjs": {
-    "@stylistic/indent": {
-      "count": 207
-    }
-  },
   "shared/networkErrorText.cjs": {
     "@stylistic/indent": {
       "count": 2
@@ -6942,9 +6937,6 @@
     "@typescript-eslint/no-misused-promises": {
       "count": 4
     },
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    },
     "@typescript-eslint/no-unnecessary-type-conversion": {
       "count": 2
     },
@@ -7902,12 +7894,6 @@
     }
   },
   "src/library/suites/grid/home/Grid3D.tsx": {
-    "@stylistic/indent": {
-      "count": 5
-    },
-    "@typescript-eslint/consistent-type-imports": {
-      "count": 1
-    },
     "@typescript-eslint/no-deprecated": {
       "count": 1
     },
@@ -10938,9 +10924,6 @@
     }
   },
   "src/stores/usePlayerChromeSettingsStore.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "dedicatus/restricted-apis": {
       "count": 5
     }

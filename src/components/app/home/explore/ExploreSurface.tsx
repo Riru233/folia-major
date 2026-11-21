@@ -197,7 +197,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                 }}
             >
                 <ExploreEdgeBlur edge="top" />
-                <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-2 md:px-8">
+                <div className="mx-auto w-full max-w-7xl pb-12 pt-2 pr-8 pl-[95px]">
                     {!ready ? (
                         // Just entered: the ring stands in until the sections are put on the page.
                         <div className="flex justify-center py-24" aria-busy="true"><LoadingRing /></div>
