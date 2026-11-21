@@ -83,6 +83,8 @@ interface NavTabButtonProps {
     label: string;
     title: string;
     active: boolean;
+    /** 高亮（强调色）：平时就是 active；拖动摇杆时改由「被摇杆盖住」决定。 */
+    highlighted?: boolean;
     icon: React.ReactNode;
     onClick: () => void;
     disabled?: boolean;
@@ -98,6 +100,7 @@ const NavTabButton: React.FC<NavTabButtonProps> = ({
     label,
     title,
     active,
+    highlighted = active,
     icon,
     onClick,
     disabled,
@@ -119,7 +122,7 @@ const NavTabButton: React.FC<NavTabButtonProps> = ({
         onFocus={onHover ? event => onHover(label, event.currentTarget) : undefined}
         onBlur={onHoverEnd}
         className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-35"
-        style={{ color: active ? 'var(--text-accent)' : 'var(--text-primary)' }}
+        style={{ color: highlighted ? 'var(--text-accent)' : 'var(--text-primary)' }}
     >
         {icon}
     </button>
@@ -162,6 +165,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     const trackRef = useRef<HTMLDivElement>(null);
     const {
         thumbDragging,
+        thumbCovered,
         thumbBoxLeft,
         thumbBoxTop,
         thumbBoxWidth,
@@ -186,6 +190,15 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
         },
         axis: 'y',
     });
+
+    // 高亮跟着摇杆走：放大后的透镜盖住哪几格就亮哪几格，没被盖住的（包括原来选中的那一项）都不亮。
+    // 松手后这份集合会钉在落点上，直到页签真的切过去才交还给「选中项」——所以不会先亮回原地。
+    // 索引与 thumbItems 同序（页签 → 扩展页签 → 舞台）。
+    const coveredSet = React.useMemo(() => new Set(thumbCovered), [thumbCovered]);
+    const highlightByThumb = thumbCovered.length > 0;
+    const lit = (index: number, active: boolean) => (highlightByThumb ? coveredSet.has(index) : active);
+    const extraOffset = tabs.length;
+    const stageIndex = extraOffset + (extraTabs?.length ?? 0);
 
     // 与页头那颗玻璃同一套底色、描边与阴影。
     const glassStyle: React.CSSProperties = {
@@ -410,26 +423,31 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                         {...thumbHandlers}
                         className="relative flex flex-col items-stretch gap-[7px] p-1 cursor-grab active:cursor-grabbing touch-none"
                     >
-                        {tabs.map(tab => (
-                            <NavTabButton
-                                key={tab.key}
-                                label={tab.label}
-                                title={tab.disabledReason || tab.label}
-                                active={!stageIsActive && !extraTabs?.some(item => item.active) && activeTab === tab.key}
-                                disabled={Boolean(tab.disabledReason)}
-                                icon={<TabIcon tabKey={tab.key} />}
-                                onClick={() => onSelectTab(tab.key)}
-                                onHover={handleHover}
-                                onHoverEnd={clearHover}
-                            />
-                        ))}
+                        {tabs.map((tab, index) => {
+                            const active = !stageIsActive && !extraTabs?.some(item => item.active) && activeTab === tab.key;
+                            return (
+                                <NavTabButton
+                                    key={tab.key}
+                                    label={tab.label}
+                                    title={tab.disabledReason || tab.label}
+                                    active={active}
+                                    highlighted={lit(index, active)}
+                                    disabled={Boolean(tab.disabledReason)}
+                                    icon={<TabIcon tabKey={tab.key} />}
+                                    onClick={() => onSelectTab(tab.key)}
+                                    onHover={handleHover}
+                                    onHoverEnd={clearHover}
+                                />
+                            );
+                        })}
 
-                        {extraTabs?.map(tab => (
+                        {extraTabs?.map((tab, index) => (
                             <NavTabButton
                                 key={tab.id}
                                 label={tab.label}
                                 title={tab.label}
                                 active={tab.active}
+                                highlighted={lit(extraOffset + index, tab.active)}
                                 icon={<Layers size={18} className="relative z-20 shrink-0" />}
                                 onClick={tab.select}
                                 onHover={handleHover}
@@ -442,6 +460,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                                 label={t('home.stage')}
                                 title={t('home.stage')}
                                 active={Boolean(stageIsActive)}
+                                highlighted={lit(stageIndex, Boolean(stageIsActive))}
                                 icon={<Theater size={18} className="relative z-20 shrink-0" />}
                                 onClick={() => onOpenStagePlayer?.()}
                                 onHover={handleHover}

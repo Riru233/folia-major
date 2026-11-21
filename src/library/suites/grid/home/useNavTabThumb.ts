@@ -53,6 +53,10 @@ const ACTIVATE_SETTLE_DELAY_MS = 150;
 /** 沿拖动轴拉长 / 次轴压扁的比例（未触底；触底时符号反过来）。 */
 const STRETCH_ALONG = 0.3;
 const STRETCH_CROSS = 0.24;
+/** 有效覆盖范围占摇杆面积的多少：透镜比它大一圈，边角蹭到的不算，只认压在它底下的那格。
+    按面积算，所以两个方向的线性尺寸乘的是它的平方根（√0.8 ≈ 0.894）。 */
+const COVER_AREA_RATIO = 0.8;
+const COVER_SCALE = Math.sqrt(COVER_AREA_RATIO);
 
 const prefersReducedMotion = () => (
     typeof window !== 'undefined'
@@ -104,6 +108,55 @@ export const useNavTabThumb = <K extends string>({
     const [dragging, setDragging] = useState(false);
     // 第一次量到尺寸之前不画摇杆：0 宽的方块在左上角闪一下很难看。
     const [ready, setReady] = useState(false);
+
+    // 拖动时被摇杆（放大到 DRAG_SCALE 的透镜）盖住的项。透镜常常同时压住两三格，所以是一组索引；
+    // 只在集合真的变了才 setState——拖动过程中指针每秒上百个事件，逐帧重渲染会把这一块拖卡。
+    // 松手不清空：高亮先钉在吸附到的落点，等页签真的切过去、高亮能交还给「选中项」时才清
+    // （否则会先亮回原地、再跳到落点，闪一下）。
+    const [covered, setCovered] = useState<number[]>([]);
+    const coveredRef = useRef<number[]>([]);
+    const commitCovered = useCallback((next: number[]) => {
+        const current = coveredRef.current;
+        if (current.length === next.length && current.every((value, index) => value === next[index])) return;
+        coveredRef.current = next;
+        setCovered(next);
+    }, []);
+    const updateCovered = useCallback((pos: number | null) => {
+        if (pos === null) {
+            commitCovered([]);
+            return;
+        }
+        const layout = layoutRef.current;
+        const base = thumbSize.get();
+        // 透镜沿轴的实际尺寸（按下放大、拖快时还会被拉长）：以基准盒为中心往两头摊开，
+        // 再按 COVER_SCALE 收一圈——只有落在这一圈里的项才算被摇杆盖住。
+        const box = Math.max(base, boxAlong.get()) * COVER_SCALE;
+        const from = pos - (box - base) / 2;
+        const to = from + box;
+        const next: number[] = [];
+        // 以「项的中心是否落进这一圈」为准，而不是蹭到一点就算：否则相邻那格会跟着一起亮。
+        // 两格之间过渡的那一瞬一圈里可能一个中心都没有，这时退回「重叠最多」的那一格，高亮不断档。
+        let nearestIndex = -1;
+        let nearestOverlap = 0;
+        for (let index = 0; index < layout.length; index += 1) {
+            const entry = layout[index];
+            const overlap = Math.min(to, entry.pos + entry.size) - Math.max(from, entry.pos);
+            const center = entry.pos + entry.size / 2;
+            if (center >= from && center <= to) next.push(index);
+            if (overlap > nearestOverlap) {
+                nearestOverlap = overlap;
+                nearestIndex = index;
+            }
+        }
+        if (next.length === 0 && nearestIndex >= 0) next.push(nearestIndex);
+        commitCovered(next);
+    }, [boxAlong, commitCovered, thumbSize]);
+
+    // 按下后透镜是弹到 2 倍大的：指针不动时也要跟着重算盖住了谁（只在集合变化时提交）。
+    useMotionValueEvent(dragScale, 'change', () => {
+        if (!draggingRef.current) return;
+        updateCovered(thumbPos.get());
+    });
 
     type Entry = { pos: number; size: number; cross: number };
     const layoutRef = useRef<Entry[]>([]);
@@ -233,9 +286,12 @@ export const useNavTabThumb = <K extends string>({
     // 用过期的盒子会从错误的位置起步。
     useLayoutEffect(() => {
         if (draggingRef.current) return;
+        // 页签真的切过去了：松手时钉在落点的高亮到此为止，后面由「选中项」自己亮。
+        // 两处指的是同一项，所以看上去是从落点一路亮着，不会先回原地。
+        commitCovered([]);
         measure();
         glideToIndex(activeIndex);
-    }, [activeIndex, measure, glideToIndex]);
+    }, [activeIndex, commitCovered, measure, glideToIndex]);
 
     const posBounds = useCallback((): { min: number; max: number } => {
         const layout = layoutRef.current;
@@ -325,8 +381,7 @@ export const useNavTabThumb = <K extends string>({
     }, []);
 
     // 按下：摇杆平滑滑到指针下面并放大。此刻不夺指针、不阻止默认，纯点击仍会走页签自己的 click。
-    const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
-        if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {        if (event.pointerType === 'mouse' && event.button !== 0) return;
         if (gestureRef.current) return;
         cancelPendingActivation();
         draggingRef.current = true;
@@ -341,14 +396,16 @@ export const useNavTabThumb = <K extends string>({
             : 1;
         const along = vertical ? event.clientY : event.clientX;
         gestureRef.current = { pointerId: event.pointerId, start: along, moved: false };
-        thumbPos.set(pointerTargetPos(along));
+        const target = pointerTargetPos(along);
+        thumbPos.set(target);
+        updateCovered(target);
         dragScale.set(DRAG_SCALE);
         stretchAllowedRef.current = !prefersReducedMotion();
         if (!stretchAllowedRef.current) return;
         clearStretchIdleTimer();
         stretchSpeedRef.current = 0;
         stretchSampleRef.current = { pos: along, t: event.timeStamp };
-    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, pointerTargetPos, thumbPos, trackRef, vertical]);
+    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, pointerTargetPos, thumbPos, trackRef, updateCovered, vertical]);
 
     // 越过阈值才算真正拖动：这时才夺指针并阻止默认（否则页签的 click 会被吞掉）。
     const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -363,10 +420,11 @@ export const useNavTabThumb = <K extends string>({
         // 跟手用 jump（即时响应、不引入弹簧滞后），松手吸附才交给弹簧。
         const target = pointerTarget(along);
         thumbPos.jump(target.pos);
+        updateCovered(target.pos);
         if (gesture.moved && stretchAllowedRef.current) {
             sampleStretchSpeed(along, event.timeStamp, isThumbAtEdge(target.pos, target.max));
         }
-    }, [pointerTarget, sampleStretchSpeed, thumbPos, vertical]);
+    }, [pointerTarget, sampleStretchSpeed, thumbPos, updateCovered, vertical]);
 
     const endDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         const gesture = gestureRef.current;
@@ -387,8 +445,14 @@ export const useNavTabThumb = <K extends string>({
         const target = nearestTabIndex(center);
         glideToIndex(target);
         const key = itemsRef.current[target]?.key;
-        if (key && key !== activeKeyRef.current) armActivationAfterSettle(key);
-    }, [armActivationAfterSettle, dragScale, glideToIndex, nearestTabIndex, pointerTargetPos, settleStretch, thumbSize, vertical]);
+        if (key && key !== activeKeyRef.current) {
+            // 落到别处：高亮直接钉在落点，别先亮回原地等切页——那一下就是两段高亮。
+            commitCovered([target]);
+            armActivationAfterSettle(key);
+        } else {
+            commitCovered([]);
+        }
+    }, [armActivationAfterSettle, commitCovered, dragScale, glideToIndex, nearestTabIndex, pointerTargetPos, settleStretch, thumbSize, vertical]);
 
     // 在导航外松手、拖出窗口、切走窗口：pointerup 不一定派发到这里，这里只负责收摊（不切页签）。
     useEffect(() => {
@@ -401,6 +465,8 @@ export const useNavTabThumb = <K extends string>({
             draggingRef.current = false;
             stretchSampleRef.current = null;
             setDragging(false);
+            // 在别处松手：没有落点可留，高亮直接交还给选中项。
+            commitCovered([]);
             dragScale.set(1);
             settleStretch();
         };
@@ -412,10 +478,12 @@ export const useNavTabThumb = <K extends string>({
             window.removeEventListener('pointercancel', release);
             window.removeEventListener('blur', release);
         };
-    }, [dragging, dragScale, settleStretch]);
+    }, [commitCovered, dragging, dragScale, settleStretch]);
 
     return {
         thumbDragging: dragging,
+        /** 被摇杆盖住的项（索引与 items 同序）：拖动中实时变，松手后钉在落点直到页签真的切过去。 */
+        thumbCovered: covered,
         thumbBoxLeft: boxLeft,
         thumbBoxTop: boxTop,
         thumbBoxWidth: boxWidth,
