@@ -4285,6 +4285,7 @@ export default {
     "linuxManualUpdateNotice": "Linux không hỗ trợ cập nhật tự động. Tải gói deb, rpm hoặc tar.gz hoàn chỉnh để nâng cấp thủ công; chỉ bản cài đặt AUR ổn định mới nên nâng cấp folia-major-bin qua trình quản lý gói.",
     "manualUpdateNotice": "Lưu ý: Nền tảng này chưa hỗ trợ cập nhật tự động. Tải gói cài đặt thủ công để nâng cấp.",
     "unofficialBuildNotice": "Bản dựng không chính thức: phiên bản này không được build từ CI của repo Folia cũng như không triển khai theo hướng dẫn (Docker, Vercel, Cloudflare), có thể đã bị chỉnh sửa hoặc thiếu dịch vụ backend. Vui lòng liên hệ người cung cấp trước; bản chính thức có tại GitHub Releases.",
+    "previewBuildNotice": "Đây là bản dùng thử sớm của Folia Shino 0.8.x: bố cục giao diện đã thay đổi nhiều so với bản trước và một số phần có thể còn chưa ổn định. Giao diện và tính năng cuối cùng theo bản phát hành chính thức.",
     "selfHostedBuildNotice": "Bản tự lưu trữ: do người triển khai tự build và quản lý, bao gồm cả backend nền tảng âm nhạc. Vui lòng liên hệ người triển khai trước; chỉ báo cáo lên GitHub khi xác định rõ là lỗi của Folia.",
     "nowPlayingStatusHint": "Kết nối tới ws://localhost:9863/api/ws/lyric. Khởi chạy dịch vụ now-playing trước.",
     "globalLyricTimelineOffset": "Độ lệch thời gian toàn cục",

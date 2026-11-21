@@ -4318,6 +4318,7 @@ export default {
     "linuxManualUpdateNotice": "Linux tidak mendukung pembaruan otomatis. Unduh paket deb, rpm, atau tar.gz lengkap untuk memperbarui secara manual; hanya instalasi AUR stabil yang boleh memperbarui folia-major-bin melalui pengelola paket.",
     "manualUpdateNotice": "Catatan: Pembaruan otomatis tidak didukung di platform ini. Silakan unduh paket secara manual.",
     "unofficialBuildNotice": "Build tidak resmi: versi ini tidak dibangun oleh CI repositori Folia maupun di-deploy lewat cara self-hosting yang terdokumentasi (Docker, Vercel, Cloudflare), dan mungkin telah dimodifikasi atau tidak memiliki layanan backend. Hubungi pihak yang menyediakannya terlebih dahulu; build resmi ada di GitHub Releases.",
+    "previewBuildNotice": "Versi ini adalah build pratinjau awal Folia Shino 0.8.x: tata letak antarmuka berubah cukup besar dibanding versi sebelumnya dan sebagian bagian mungkin masih tidak stabil. Antarmuka serta fitur final mengikuti versi resmi yang dirilis.",
     "selfHostedBuildNotice": "Self-hosted: dibangun dan di-hosting oleh pihak yang men-deploy, termasuk layanan backend platform musik. Hubungi pihak tersebut terlebih dahulu, dan laporkan di GitHub jika memang masalah Folia.",
     "nowPlayingStatusHint": "Terhubung ke ws://localhost:9863/api/ws/lyric. Jalankan layanan now-playing terlebih dahulu.",
     "globalLyricTimelineOffset": "Offset Waktu Global",

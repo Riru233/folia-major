@@ -4316,6 +4316,7 @@ export default {
     "linuxManualUpdateNotice": "Linux does not support automatic updates. Download the complete deb, rpm, or tar.gz package to upgrade manually; only stable AUR installations should upgrade folia-major-bin through the package manager.",
     "manualUpdateNotice": "Note: Automatic update is not supported on this platform. Please download the package manually.",
     "unofficialBuildNotice": "Unofficial build: this version was neither built by the Folia repository's CI nor deployed through a documented self-hosting setup (Docker, Vercel, Cloudflare), and may be modified or missing its backend services. Please contact whoever provided it first; official builds are on GitHub Releases.",
+    "previewBuildNotice": "This is an early-preview build of Folia Shino 0.8.x: the interface has changed substantially from the previous release and some parts may still be unstable. The final interface and features are those of the official release.",
     "selfHostedBuildNotice": "Self-hosted: built and hosted by whoever deployed it, including the music platform backends. Please contact the deployer first, and report on GitHub once it is clearly a Folia problem.",
     "nowPlayingStatusHint": "Connects to ws://localhost:9863/api/ws/lyric. Start the now-playing service first.",
     "globalLyricTimelineOffset": "Global Timing Offset",
