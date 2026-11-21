@@ -61,11 +61,12 @@
    加 is-covered 整个藏起来（useScratchpadStore.isCovered）。 */
 .scratchpad-root.is-covered { display: none; }
 
-/* —— 左缘：感应带与把手 ——
-   放在左缘上部（标题栏让出的 56px 之下），不放正中：Bravais 的信息条收起 / 折叠后是贴边、垂直居中的标签
-   （.bravais-seam-tab，最高占 60%，即 20%–80% 的高度），正中会和它叠在一起，感应带还会抢它的点击。 */
+/* —— 右缘：感应带与把手 ——
+   停在右缘上部（标题栏让出的 56px 之下），不放正中：Bravais 的信息条收起 / 折叠后是贴边、垂直居中的标签
+   （.bravais-seam-tab，最高占 60%，即 20%–80% 的高度），正中会和它叠在一起，感应带还会抢它的点击。
+   2026-11-21 用户要求速记簿停靠右侧：整套几何按右缘镜像（纸的裁切、常驻那一点、滑出方向），左侧留给浮层导航栏。 */
 
-/* 感应带比把手宽得多：指针贴着左缘往上部扫过去就能碰到。上边从 72px 起，让开播放页与两面墙左上角的返回钮
+/* 感应带比把手宽得多：指针贴着右缘往上部扫过去就能碰到。上边从 72px 起，让开播放页与两面墙右上角的返回钮
    （24–64px 见方）；高度跟着窗口：在 Bravais 信息条标签（窗口高度的 20% 起）之上收住。
    设置里的「悬浮标签高度」（--scratchpad-edge-position，0–1，宿主写在行内）把它在 72px 与离窗口底部 24px 之间挪动；
    默认 0 就是上面说的位置，挪到中段会和 Bravais 信息条的标签叠在一起，那是用户自己的取舍。 */
@@ -73,7 +74,7 @@
     --scratchpad-edge-height: clamp(96px, calc(20vh - 76px), 168px);
     position: fixed;
     top: calc(72px + var(--scratchpad-edge-position, 0) * (100vh - 72px - 24px - var(--scratchpad-edge-height)));
-    left: 0;
+    right: 0;
     z-index: 95;
     width: 46px;
     height: var(--scratchpad-edge-height);
@@ -85,7 +86,7 @@
 .scratchpad-edge-rest {
     position: absolute;
     top: 0;
-    left: 0;
+    right: 0;
     display: flex;
     height: 100%;
     align-items: center;
@@ -94,7 +95,8 @@
     transition: opacity 0s linear 0.2s;
 }
 
-/* 常驻那一点在左缘上的框（左边、宽、高；竖直居中）与它的透明度，完整的标签从这里长出来（见下一节）。 */
+/* 常驻那一点在右缘上的框（右边、宽、高；竖直居中）与它的透明度，完整的标签从这里长出来（见下一节）。
+   rest-x 是从哪一侧的边缘让开多少：右缘停靠时，它从纸的右边往左让。 */
 .scratchpad-edge { --scratchpad-rest-x: 0px; --scratchpad-rest-w: 6px; --scratchpad-rest-h: 56px; --scratchpad-rest-opacity: 0.4; }
 .scratchpad-edge.is-line { --scratchpad-rest-w: 3px; --scratchpad-rest-h: 72px; --scratchpad-rest-opacity: 0.28; }
 .scratchpad-edge.is-dot { --scratchpad-rest-w: 7px; --scratchpad-rest-h: 14px; --scratchpad-rest-opacity: 0.55; }
@@ -115,7 +117,7 @@
 .scratchpad-handle {
     position: absolute;
     top: 0;
-    left: 0;
+    right: 0;
     display: block;
     width: 42px;
     padding: 0;
@@ -143,7 +145,9 @@
 .scratchpad-handle-paper {
     --scratchpad-rest-top: calc(var(--scratchpad-edge-height) / 2 - var(--scratchpad-rest-h) / 2);
     --scratchpad-rest-bottom: calc(var(--scratchpad-edge-height) / 2 + var(--scratchpad-rest-h) / 2);
-    --scratchpad-rest-right: calc(var(--scratchpad-rest-x) + var(--scratchpad-rest-w));
+    /* 右缘停靠：常驻那一点贴着纸的右边（rest-x 是从右边让开多少）。 */
+    --scratchpad-rest-right: calc(100% - var(--scratchpad-rest-x));
+    --scratchpad-rest-left: calc(var(--scratchpad-rest-right) - var(--scratchpad-rest-w));
     position: relative;
     display: block;
     padding: 10px 0 16px;
@@ -151,10 +155,10 @@
     background: var(--scratchpad-paper);
     /* 四个角一一对应展开后的四个角（左上、右上、右下、左下），裁切框才能平滑地撑开。 */
     clip-path: polygon(
-        var(--scratchpad-rest-x) var(--scratchpad-rest-top),
+        var(--scratchpad-rest-left) var(--scratchpad-rest-top),
         var(--scratchpad-rest-right) var(--scratchpad-rest-top),
         var(--scratchpad-rest-right) var(--scratchpad-rest-bottom),
-        var(--scratchpad-rest-x) var(--scratchpad-rest-bottom)
+        var(--scratchpad-rest-left) var(--scratchpad-rest-bottom)
     );
     opacity: var(--scratchpad-rest-opacity);
     transition: clip-path 0.2s ease, opacity 0.2s ease;
@@ -224,21 +228,21 @@
 }
 
 /* 新东西收进来时，常驻的那一点闪一下（亮到不透明、放大一点再回去）。 */
-.scratchpad-edge.is-pulsing .scratchpad-edge-rest > * { animation: scratchpad-pulse 0.9s ease-out; transform-origin: 0 50%; }
+.scratchpad-edge.is-pulsing .scratchpad-edge-rest > * { animation: scratchpad-pulse 0.9s ease-out; transform-origin: 100% 50%; }
 
 @keyframes scratchpad-pulse {
     25% { opacity: 1; transform: scale(1.5); }
 }
 
-/* —— 抽屉：左缘的面板 ——
-   盖在墙上（不推开墙、不加遮罩），从窗口顶到底贴着左缘，一整块内容区的本色。三页各一条米白的纸：这一页的信息条在顶上，
+/* —— 抽屉：右缘的面板 ——
+   盖在墙上（不推开墙、不加遮罩），从窗口顶到底贴着右缘，一整块内容区的本色。三页各一条米白的纸：这一页的信息条在顶上，
    另外两页的细纸带压在底部（ScratchpadPanel；原来左边一列竖排页签，2026-11-07 用户嫌占地方，去掉）。
    顶上 32px 是窗口标题栏的拖动区（AppShell，z 9999，盖在一切之上），所以面板里的东西从 40px 起。 */
 .scratchpad-drawer {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: 0;
+    right: 0;
     z-index: 95;
     display: flex;
     width: var(--scratchpad-width);
@@ -259,6 +263,7 @@
     --scratchpad-text-soft: rgb(244 241 234 / 80%);
     --scratchpad-wall-shadow: 0 1px 3px rgb(0 0 0 / 70%);
     right: 0;
+    left: 0;
     display: block;
     width: auto;
     overflow: hidden;
@@ -982,14 +987,16 @@
     filter: drop-shadow(0 14px 28px rgb(0 0 0 / 38%));
 }
 
-/* 面板里顶上那条信息条的位子（纸本身在 .scratchpad-panel-paper 那一层里挪）：左端收起、右端「展开整页」两颗压在纸上。 */
-.scratchpad-panel-band { position: relative; z-index: 6; width: calc(100% + 36px); height: 64px; flex: none; pointer-events: none; }
+/* 面板里顶上那条信息条的位子（纸本身在 .scratchpad-panel-paper 那一层里挪）：右端收起、左端探出窗口那一截上「展开整页」。
+   纸往左探出 36px，所以这一层也往左让出 36px（宽度多出来的那一截在左边，右边与面板齐）。 */
+.scratchpad-panel-band { position: relative; z-index: 6; width: calc(100% + 36px); height: 64px; flex: none; margin-left: -36px; pointer-events: none; }
 .scratchpad-panel-band > button { pointer-events: auto; }
 
 /* 面板里的三条纸（ScratchpadPanel）：各自一层，换页时挪动、长高变矮（框由 framer 写）。纸画在这一层上，里面那一面透明，
    换样子时交叉淡入，中途不露出底下的面板；方正的长方形（原来右端斜切 7px，2026-11-07 用户要去掉）。投影画在外面那层：
    信息条朝下，细纸带朝上、压在列表上面。面板里细纸带的字挪到左边 26px（--scratchpad-slim-shift，见 scratchpadPaper.ts）。 */
-.scratchpad-drawer.is-panel { --scratchpad-slim-shift: 160px; }
+/* 面板里细纸带的字落在面板左边 26px：纸左端还探出窗口 36px，所以挪动的距离比展开整页少 36（160 → 124，见 scratchpadPaper.ts）。 */
+.scratchpad-drawer.is-panel { --scratchpad-slim-shift: 124px; }
 
 .scratchpad-panel-paper {
     position: absolute;
@@ -1020,11 +1027,11 @@
 .scratchpad-drawer.is-panel .scratchpad-slim-open { visibility: hidden; opacity: 0; }
 .scratchpad-drawer.is-panel .scratchpad-slim:hover .scratchpad-slim-title { text-decoration: underline 2px var(--scratchpad-mark); text-underline-offset: 5px; }
 
-/* 收起：墨色的方钮压在信息条左端，返回箭头（用户定，2026-11-07；与展开整页信息条左端的返回钮同一个样子、同一个位置关系），竖着居中在纸面里。 */
+/* 收起：墨色的方钮压在信息条右端（面板停靠右侧，收起是往回缩，箭头朝右，用户定 2026-11-21 镜像过来），竖着居中在纸面里。 */
 .scratchpad-band-fold {
     position: absolute;
     top: 17px;
-    left: 12px;
+    right: 12px;
     z-index: 7;
     display: grid;
     width: 32px;
@@ -1044,15 +1051,16 @@
 .scratchpad-band-fold:focus-visible { outline: 2px solid var(--scratchpad-mark); outline-offset: 2px; }
 .scratchpad-root.is-calm .scratchpad-band-fold { transition: background-color 0.14s ease; scale: none; }
 
-/* 面板那一条的字从收起钮右边起（展开整页开头那一下也是这一面，位置一样）。 */
-.scratchpad-band.is-panel .scratchpad-band-head { left: 56px; }
+/* 面板那一条的字从两端的钮之间起：左边让开探出窗口那一截上的「展开整页」，右边让开收起。
+   （纸往左探出 36px，所以这里的 left 比面板里的位置多 36。） */
+.scratchpad-band.is-panel .scratchpad-band-head { left: 92px; right: 56px; }
 
-/* 「展开整页」：墨色的方钮压在信息条右端探出面板的那一截上（离右边 18px），竖着居中在纸面里
-   （上边 4px 的点缀色、下边 3px 的墨色之间）。 */
+/* 「展开整页」：墨色的方钮压在信息条探出面板的那一截上（贴着窗口右缘往左 36px 的那一条，离纸左边 4px），
+   竖着居中在纸面里（上边 4px 的点缀色、下边 3px 的墨色之间）。 */
 .scratchpad-band-expand {
     position: absolute;
     top: 17px;
-    right: 18px;
+    left: 4px;
     /* 压在信息条（.scratchpad-band-wrap 自己是 z 6）上面。 */
     z-index: 7;
     display: grid;

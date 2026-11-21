@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Maximize2 } from 'lucide-react';
+import { ChevronRight, Maximize2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ScratchpadTab } from '../../../stores/useScratchpadStore';
 import ScratchpadBand, { ScratchpadSlim } from './ScratchpadBand';
@@ -11,12 +11,12 @@ import { PAPER_FACE_VARIANTS, panelPaperFrame, usePaperMotions, useViewSize } fr
 import { useReducedMotionFor } from '../../../hooks/useReducedMotionFor';
 
 // src/components/app/scratchpad/ScratchpadPanel.tsx
-// 左缘的面板（设计稿 A 按 F 定稿适配；盖在墙上，不推开墙）：三页各一条米白的纸——这一页是顶上的信息条（ScratchpadBand），
+// 右缘的面板（设计稿 A 按 F 定稿适配；盖在墙上，不推开墙）：三页各一条米白的纸——这一页是顶上的信息条（ScratchpadBand），
 // 另外两页是压在底部的两条细纸带（ScratchpadSlim），点一下换过去；与展开整页一一对应（scratchpadPaper.ts 的文件头）。
 // 原来左边一列竖排页签，用户嫌占地方（2026-11-07），换成这样，展开 / 收起时三条纸各自从原位长过去、缩回来。
 // 换页时三条纸照展开整页的走法挪：底部那条升到顶上、长高；顶上那条从上方出去，再从下面升回到底部。
 // 信息条下面是放大的问候和一道点缀色的短杠，再下面是这一页（宿主交进来的 children：说明、列表、底部按钮）。
-// 信息条左端是收起（返回箭头，用户定），右端探出面板的那一截上是「展开整页」。分区靠深浅不同的黑，不画描边与分割线。
+// 信息条右端是收起（返回箭头，用户定；2026-11-21 停靠右侧后镜像），左端探出窗口的那一截上是「展开整页」。分区靠深浅不同的黑，不画描边与分割线。
 // 展开整页时不用它，换成 ScratchpadSheet（倾斜的纸）。
 
 const TAB_TITLE_KEYS: Record<ScratchpadTab, string> = { notes: 'scratchpad.title', history: 'scratchpad.history', queue: 'scratchpad.queue' };
@@ -100,11 +100,11 @@ const ScratchpadPanel: React.FC<ScratchpadPanelProps> = ({
                 );
             })}
             <div className="scratchpad-sheet">
-                {/* 顶上那条信息条的位子（纸本身在上面那一层里挪）：左端收起，右端探出面板的那一截上是「展开整页」（用户定，2026-11-06）。
+                {/* 顶上那条信息条的位子（纸本身在上面那一层里挪）：右端收起，左端探出窗口的那一截上是「展开整页」（停靠右侧后镜像，2026-11-21）。
                     两颗都不放进纸里：换页时纸在挪，按钮要是跟着走，收回整页时焦点要落回的那一颗会被换掉。 */}
                 <div className="scratchpad-panel-band">
                     <button type="button" className="scratchpad-band-fold" title={t('scratchpad.close')} aria-label={t('scratchpad.close')} onClick={onClose}>
-                        <ChevronLeft aria-hidden="true" />
+                        <ChevronRight aria-hidden="true" />
                     </button>
                     <button
                         ref={expandRef}

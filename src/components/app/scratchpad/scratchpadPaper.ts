@@ -42,9 +42,10 @@ export const PAPER_FACE_VARIANTS = {
 export const SLIM_HEIGHT = 36;
 const PANEL_SLIM_HEIGHT = 28;
 
-/** 左缘面板：宽 min(368px, 窗口宽 − 24px)（与 scratchpad.css 的 --scratchpad-width 一致）。 */
+/** 右缘面板：宽 min(368px, 窗口宽 − 24px)（与 scratchpad.css 的 --scratchpad-width 一致）。 */
 export const panelWidthFor = (viewWidth: number) => Math.min(368, viewWidth - 24);
-/** 面板顶上那条信息条：离窗口顶 40px（让开标题栏），64px 高；纸都比面板宽 36px，探出面板。 */
+/** 面板顶上那条信息条：离窗口顶 40px（让开标题栏），64px 高；纸都比面板宽 36px，往左探出面板（2026-11-21 停靠右侧后由右探改左探，
+ *  探出的那一截上是「展开整页」钮）。 */
 export const PANEL_BAND_TOP = 40;
 export const PANEL_BAND_HEIGHT = 64;
 const PANEL_PROTRUDE = 36;
@@ -54,15 +55,17 @@ const PANEL_SLIM_FROM_BOTTOM = [78, 44] as const;
 export const PANEL_SLIM_ROOM = PANEL_SLIM_FROM_BOTTOM[0];
 /**
  * 细纸带上的字从左边多远起：展开整页里是纸上 186px（纸左边多出来 160px，转过之后约在窗口左边 26px），
- * 面板里挪到 26px——差的这 160px 写在 --scratchpad-slim-shift 上（装饰与纹理跟着挪），展开、收起时跟着纸一起变，字不跑。
+ * 面板里挪到 26px——展开整页里差的这 160px 写在 --scratchpad-slim-shift 上（装饰与纹理跟着挪），展开、收起时跟着纸一起变，字不跑；
+ * 面板停在右缘、纸又往左探出 36px，所以面板里那个值要再减 36（124 → 字落在面板左边 26px，scratchpad.css 的 .scratchpad-drawer.is-panel）。
  */
 export const PANEL_SLIM_SHIFT = 160;
 
-/** 面板里一条纸的框（窗口坐标）：slot 是 'band'（顶上那条）或细纸带的第几格（0 上、1 下）。 */
+/** 面板里一条纸的框（窗口坐标）：slot 是 'band'（顶上那条）或细纸带的第几格（0 上、1 下）。
+    左端往墙面上探出 PANEL_PROTRUDE，右边贴着窗口右缘。 */
 export const panelPaperFrame = (slot: 'band' | number, viewWidth: number, viewHeight: number): PaperFrame => {
     const width = panelWidthFor(viewWidth) + PANEL_PROTRUDE;
-    if (slot === 'band') return { top: PANEL_BAND_TOP, left: 0, width, height: PANEL_BAND_HEIGHT };
-    return { top: viewHeight - PANEL_SLIM_FROM_BOTTOM[Math.max(0, Math.min(1, slot))], left: 0, width, height: PANEL_SLIM_HEIGHT };
+    if (slot === 'band') return { top: PANEL_BAND_TOP, left: -PANEL_PROTRUDE, width, height: PANEL_BAND_HEIGHT };
+    return { top: viewHeight - PANEL_SLIM_FROM_BOTTOM[Math.max(0, Math.min(1, slot))], left: -PANEL_PROTRUDE, width, height: PANEL_SLIM_HEIGHT };
 };
 
 /** 窗口的宽高（跟着窗口变）。 */

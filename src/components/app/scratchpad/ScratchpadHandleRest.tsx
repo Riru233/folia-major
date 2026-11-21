@@ -28,11 +28,11 @@ const ScratchpadHandleRest: React.FC<ScratchpadHandleRestProps> = ({ handleStyle
         return <span className="scratchpad-rest-line" style={{ width: px(3), height: px(72), background: REST_INK, opacity }} />;
     }
     if (handleStyle === 'dot') {
-        return <span className="scratchpad-rest-dot" style={{ width: px(14), height: px(14), marginLeft: -px(7), background: MARK_ON_WALL, opacity }} />;
+        return <span className="scratchpad-rest-dot" style={{ width: px(14), height: px(14), marginRight: -px(7), background: MARK_ON_WALL, opacity }} />;
     }
     if (handleStyle === 'shapes') {
         return (
-            <span className="scratchpad-rest-shapes" style={{ gap: px(6), marginLeft: px(4), opacity }}>
+            <span className="scratchpad-rest-shapes" style={{ gap: px(6), marginRight: px(4), opacity }}>
                 <ScratchpadShape kind="circle" size={px(8)} fill={MARK_ON_WALL} />
                 <ScratchpadShape kind="tri" size={px(8)} fill={REST_INK} />
                 <ScratchpadShape kind="chev" size={px(8)} fill={REST_INK} />

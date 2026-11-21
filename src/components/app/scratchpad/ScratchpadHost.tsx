@@ -28,10 +28,10 @@ import { useGlass } from '@/shinoinject/useGlass';
 import './scratchpad.css';
 
 // src/components/app/scratchpad/ScratchpadHost.tsx
-// 速记簿的界面：左缘的把手和从左边滑出的抽屉（设计稿 plan/scratchpad-spec.md）。抽屉非模态——不加遮罩、不抢焦点，
+// 速记簿的界面：右缘的把手和从右边滑出的抽屉（设计稿 plan/scratchpad-spec.md；2026-11-21 用户要求停靠右侧，整套几何镜像）。抽屉非模态——不加遮罩、不抢焦点，
 // 开着时背后照常能逛、能往里收。内容与开合在 useScratchpadStore；播放动作由 App 交进来（和资料库同一个播放端口），
 // 这里只决定什么按钮做什么：单条的「播放」插进当前队列，不换队列；唯一会换掉队列的是底部明写了的「替换队列播放」。
-// 抽屉平时是左缘的面板（ScratchpadPanel：顶上这一页的米白信息条、底部另外两页的细纸带、放大的问候，Bravais 样式，计划见 plan/scratchpad-bravais-plan.md），
+// 抽屉平时是右缘的面板（ScratchpadPanel：顶上这一页的米白信息条、底部另外两页的细纸带、放大的问候，Bravais 样式，计划见 plan/scratchpad-bravais-plan.md），
 // 里面是按来源分组的列表（ScratchpadList）；展开整页（ScratchpadSheet，设计稿 F：倾斜的纸、横贯的信息条）后
 // 是卡片画布（ScratchpadCanvas），每首是一张能拖动整理、能框选的笔记本卡。
 // 另外两页：播放历史（ScratchpadHistory）与当前的播放队列（ScratchpadQueue）；展开后也是卡片画布（框选、多选），
@@ -115,7 +115,8 @@ const hasOpenModal = () => document.querySelector('[aria-modal="true"]') !== nul
 type PanelMotionCustom = { toSheet: boolean; returning?: boolean };
 const PANEL_EASE = [0.22, 1, 0.36, 1] as const;
 const PANEL_VARIANTS = {
-    away: { x: -32, opacity: 0 },
+    // 停靠在右缘：收起 / 出场是往右滑出去。
+    away: { x: 32, opacity: 0 },
     returning: { x: 0, opacity: 0 },
     shown: (custom: PanelMotionCustom) => ({
         x: 0,
@@ -124,7 +125,7 @@ const PANEL_VARIANTS = {
     }),
     gone: (custom: PanelMotionCustom) => (custom.toSheet
         ? { opacity: 0, transition: { duration: 0.16, delay: 0.04 } }
-        : { x: -32, opacity: 0, transition: { duration: 0.2, ease: PANEL_EASE } }),
+        : { x: 32, opacity: 0, transition: { duration: 0.2, ease: PANEL_EASE } }),
 };
 
 /**

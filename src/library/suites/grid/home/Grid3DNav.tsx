@@ -256,29 +256,6 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                     </div>
                 )}
 
-                {/* 队列拼贴：紧跟在平台切换下面（同一套玻璃与悬停标签）。
-                尺寸与设置按钮、竖栏同宽（40），圆角拉满。 */}
-                {showLattice && onOpenLattice && (
-                    <button
-                        type="button"
-                        data-glass
-                        data-glass-jelly
-                        data-glass-light
-                        data-testid="home-lattice-pill"
-                        onClick={onOpenLattice}
-                        title={t('home.lattice')}
-                        aria-label={t('home.lattice')}
-                        onPointerEnter={event => handleHover(t('home.lattice'), event.currentTarget)}
-                        onPointerLeave={clearHover}
-                        onFocus={event => handleHover(t('home.lattice'), event.currentTarget)}
-                        onBlur={clearHover}
-                        className="group pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300"
-                        style={glassStyle}
-                    >
-                        <LayoutDashboard size={18} style={{ color: 'var(--text-primary)' }} />
-                    </button>
-                )}
-
                 <div
                     aria-label={t('home.navMenu')}
                     role="navigation"
@@ -470,6 +447,29 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                         )}
                     </div>
                 </div>
+
+                {/* 队列拼贴：挂在竖栏下方（与竖栏、设置同一套玻璃与悬停标签）。
+                尺寸与设置按钮、竖栏同宽（40），圆角拉满。 */}
+                {showLattice && onOpenLattice && (
+                    <button
+                        type="button"
+                        data-glass
+                        data-glass-jelly
+                        data-glass-light
+                        data-testid="home-lattice-pill"
+                        onClick={onOpenLattice}
+                        title={t('home.lattice')}
+                        aria-label={t('home.lattice')}
+                        onPointerEnter={event => handleHover(t('home.lattice'), event.currentTarget)}
+                        onPointerLeave={clearHover}
+                        onFocus={event => handleHover(t('home.lattice'), event.currentTarget)}
+                        onBlur={clearHover}
+                        className="group pointer-events-auto relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-300"
+                        style={glassStyle}
+                    >
+                        <LayoutDashboard size={18} style={{ color: 'var(--text-primary)' }} />
+                    </button>
+                )}
 
                 {/* 设置：原来页头左侧那颗，搬进这个浮动容器里、钉在最底部（mt-auto 把间隔全吃掉）。
                     尺寸与队列拼贴、竖栏同宽（40），圆角拉满；有新版本时右上角点一个强调色圆点。
