@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
 import { Play, Pause, Pin, ChevronRight } from 'lucide-react';
 import { MotionValue } from 'framer-motion';
 import ProgressBar from './ProgressBar';
@@ -1121,6 +1121,12 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
 /** 展开视图里进度那一行在网格中的位置；HiFi 路线和 Web 路线共用。 */
 const PROGRESS_ROW_CLASS = 'col-span-3 row-start-3 w-full px-2 sm:col-start-2 sm:col-span-1 sm:row-start-2';
 
+/** 播放键的「陀螺」：鼠标在圆钮里走到边缘时图标歪到的角度 / 挪开的距离。 */
+const PLAY_ICON_TILT_DEG = 15;
+const PLAY_ICON_SHIFT_PX = 1.4;
+/** 弹簧松弛一点：指针滑动时图标是「荡」过去，不是硬跟。 */
+const PLAY_ICON_GYRO_SPRING = { stiffness: 260, damping: 22, mass: 0.5 };
+
 // 展开视图组件
 interface ExpandedViewProps {
     currentSong: { name: string; } | null;
@@ -1181,6 +1187,45 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
     const pinLabel = t(isPinned ? 'options.playerBarUnpin' : 'options.playerBarPin');
     const returnToPlayerLabel = t('home.backToPlayer');
     const isHifiRoute = useIsHifiRoute();
+
+    // 播放键的陀螺：图标朝指针在圆钮里的方位轻倾一点，指针移出就荡回正中。
+    // 只用鼠标跑——触屏没有 hover，歪着反而像图标没对齐。
+    const playIconTiltX = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconTiltY = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconShiftX = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconShiftY = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconGyroStyle = useMemo(
+        () => ({
+            rotateX: playIconTiltX,
+            rotateY: playIconTiltY,
+            x: playIconShiftX,
+            y: playIconShiftY,
+            transformPerspective: 200,
+        }),
+        [playIconShiftX, playIconShiftY, playIconTiltX, playIconTiltY],
+    );
+    const pointPlayIconGyro = useCallback(
+        (event: React.PointerEvent<HTMLButtonElement>) => {
+            if (event.pointerType !== 'mouse') return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            // -1 是左/上边，+1 是右/下边；指针越靠边，图标歪得越多。
+            const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+            playIconTiltY.set(nx * PLAY_ICON_TILT_DEG);
+            playIconTiltX.set(-ny * PLAY_ICON_TILT_DEG);
+            playIconShiftX.set(nx * PLAY_ICON_SHIFT_PX);
+            playIconShiftY.set(ny * PLAY_ICON_SHIFT_PX);
+        },
+        [playIconShiftX, playIconShiftY, playIconTiltX, playIconTiltY],
+    );
+    const restPlayIconGyro = useCallback(() => {
+        playIconTiltX.set(0);
+        playIconTiltY.set(0);
+        playIconShiftX.set(0);
+        playIconShiftY.set(0);
+    }, [playIconShiftX, playIconShiftY, playIconTiltX, playIconTiltY]);
+
     const progressBar = (
         <ProgressBar
             currentTime={currentTime}
@@ -1229,15 +1274,21 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                     e.stopPropagation();
                     onTogglePlay();
                 }}
+                onPointerMove={pointPlayIconGyro}
+                onPointerLeave={restPlayIconGyro}
+                onPointerCancel={restPlayIconGyro}
+                onBlur={restPlayIconGyro}
                 disabled={!canTogglePlay || controlsDisabled}
-                className={`col-start-2 row-start-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform sm:col-start-1 sm:row-start-1 sm:row-span-2 ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'hover:scale-105'}`}
+                className={`col-start-2 row-start-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform sm:col-start-1 sm:row-start-1 sm:row-span-2 ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'cursor-none hover:scale-105'}`}
                 style={{ backgroundColor: primaryColor, color: 'var(--bg-color)' }}
             >
-                {playerState === PlayerState.PLAYING ? (
-                    <Pause size={20} fill="currentColor" />
-                ) : (
-                    <Play size={20} fill="currentColor" className="ml-1" />
-                )}
+                <motion.span className="flex items-center justify-center" style={playIconGyroStyle}>
+                    {playerState === PlayerState.PLAYING ? (
+                        <Pause size={20} fill="currentColor" />
+                    ) : (
+                        <Play size={20} fill="currentColor" className="ml-1" />
+                    )}
+                </motion.span>
             </button>
 
             {/* 两个可自定义槽位。默认仍是循环模式 + 歌词时间轴，和改动前一致。 */}
