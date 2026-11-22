@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
     Compass,
     Disc3,
@@ -62,6 +62,21 @@ const COLUMN_TOP_PX = 40;
 /** 容器底边距：设置按钮钉在距窗口底部这个位置，与上方竖栏之间的间隔由窗口高度自动伸缩。 */
 const COLUMN_BOTTOM_PX = 24;
 
+/** 触屏长按展开时的尺寸（平时 → 展开）。只改宽高、圆角不动，所以形状不变、只是长开了。
+    容器左边缘是用固定定位钉住的，宽高都从左上角往右下长：看上去是从左侧放大，不是从中心撑开。 */
+const NAV_WIDTH_PX = 40;
+const NAV_WIDTH_MAGNIFIED_PX = 60;
+const TAB_SIZE_PX = 32;
+const TAB_WIDTH_MAGNIFIED_PX = 52;
+const TAB_HEIGHT_MAGNIFIED_PX = 54;
+const TAB_ICON_PX = 18;
+const TAB_ICON_MAGNIFIED_PX = 24;
+/** 展开 / 收起共用的一条时长与曲线：宽度、高度、图标、文字一起走，读起来是一个动作。 */
+const MAGNIFY_MS = 300;
+const MAGNIFY_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+/** 展开时整列再往右让 5px：栏是往右长的，让这一点位移把它和页头左边距错开，收起时回到原位。 */
+const MAGNIFY_SHIFT_PX = 5;
+
 const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
     playlist: ListMusic,
     radio: Radio,
@@ -89,13 +104,18 @@ interface NavTabButtonProps {
     onClick: () => void;
     disabled?: boolean;
     dataStageActive?: string;
+    /** 触屏长按展开态：图标变大、标签从图标下面露出来。 */
+    magnified?: boolean;
+    /** 系统开了「减少动态效果」时把过渡关掉，尺寸直接跳到位。 */
+    reduceMotion?: boolean;
     /** 悬停 / 聚焦时把「标签 + 锚元素」报上去，由整根竖栏共用的一颗标签胶囊去显示。 */
     onHover?: (label: string, anchor: HTMLElement) => void;
     onHoverEnd?: () => void;
 }
 
-// 一项：只有图标；标签由整根竖栏共用的一颗胶囊统一显示（见 Grid3DNav 里那颗）。
-// 不给每项各挂一颗：每颗都要 data-glass，等于常驻七份 backdrop-filter，滚动时最费的那部分。
+// 一项：平时只有图标；触屏长按展开后图标变大、下面露出文字（这时候没有悬停，标签只能直接摆在项里）。
+// 鼠标那套悬停标签仍然由整根竖栏共用的一颗胶囊显示——每项各挂一颗要常驻七份 backdrop-filter。
+// 放大只改 width / height：圆角、玻璃、阴影都不动，所以是从左上角往外长，不是整体 scale 出来的。
 const NavTabButton: React.FC<NavTabButtonProps> = ({
     label,
     title,
@@ -105,6 +125,8 @@ const NavTabButton: React.FC<NavTabButtonProps> = ({
     onClick,
     disabled,
     dataStageActive,
+    magnified = false,
+    reduceMotion = false,
     onHover,
     onHoverEnd,
 }) => (
@@ -112,19 +134,58 @@ const NavTabButton: React.FC<NavTabButtonProps> = ({
         type="button"
         data-home-tab
         data-stage-active={dataStageActive}
+        data-magnified={magnified ? 'true' : undefined}
         disabled={disabled}
         title={title}
         aria-label={title}
         aria-current={active ? 'page' : undefined}
         onClick={onClick}
-        onPointerEnter={onHover ? event => onHover(label, event.currentTarget) : undefined}
+        onPointerEnter={onHover
+            ? event => {
+                // 触屏没有悬停：手指按下也会派发 pointerenter，不挡掉的话长按展开时旁边还会多弹一颗胶囊。
+                if (event.pointerType === 'mouse') onHover(label, event.currentTarget);
+            }
+            : undefined}
         onPointerLeave={onHoverEnd}
         onFocus={onHover ? event => onHover(label, event.currentTarget) : undefined}
         onBlur={onHoverEnd}
-        className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-35"
-        style={{ color: highlighted ? 'var(--text-accent)' : 'var(--text-primary)' }}
+        className="group relative flex shrink-0 flex-col items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-35"
+        style={{
+            color: highlighted ? 'var(--text-accent)' : 'var(--text-primary)',
+            width: magnified ? TAB_WIDTH_MAGNIFIED_PX : TAB_SIZE_PX,
+            height: magnified ? TAB_HEIGHT_MAGNIFIED_PX : TAB_SIZE_PX,
+            transition: reduceMotion
+                ? undefined
+                : `width ${MAGNIFY_MS}ms ${MAGNIFY_EASE}, height ${MAGNIFY_MS}ms ${MAGNIFY_EASE}, color 300ms ease-out`,
+        }}
     >
-        {icon}
+        {/* 图标按宽高长：外层盒子的尺寸走过渡，里面的 svg 撑满，所以放大是连续的、不是换一档尺寸。 */}
+        <span
+            className="relative z-20 flex shrink-0 items-center justify-center [&>svg]:h-full [&>svg]:w-full"
+            style={{
+                width: magnified ? TAB_ICON_MAGNIFIED_PX : TAB_ICON_PX,
+                height: magnified ? TAB_ICON_MAGNIFIED_PX : TAB_ICON_PX,
+                transition: reduceMotion ? undefined : `width ${MAGNIFY_MS}ms ${MAGNIFY_EASE}, height ${MAGNIFY_MS}ms ${MAGNIFY_EASE}`,
+            }}
+        >
+            {icon}
+        </span>
+        {/* 标签：平时压成 0 高、透明；展开态从图标下面长出来。整根竖栏里的项一高，下面的项自然被挤下去。 */}
+        <span
+            aria-hidden="true"
+            className="pointer-events-none relative z-20 max-w-full overflow-hidden whitespace-nowrap text-[10px] font-medium leading-[12px]"
+            style={{
+                maxHeight: magnified ? 12 : 0,
+                marginTop: magnified ? 3 : 0,
+                opacity: magnified ? 1 : 0,
+                textOverflow: 'ellipsis',
+                transition: reduceMotion
+                    ? undefined
+                    : `max-height ${MAGNIFY_MS}ms ${MAGNIFY_EASE}, margin-top ${MAGNIFY_MS}ms ${MAGNIFY_EASE}, opacity ${magnified ? 220 : 120}ms ease-out`,
+            }}
+        >
+            {label}
+        </span>
     </button>
 );
 
@@ -163,8 +224,10 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     );
 
     const trackRef = useRef<HTMLDivElement>(null);
+    const reduceMotion = Boolean(useReducedMotion());
     const {
         thumbDragging,
+        thumbMagnified,
         thumbCovered,
         thumbBoxLeft,
         thumbBoxTop,
@@ -238,13 +301,28 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
         setHovered({ label, top: anchorRect.top - wrapperRect.top + anchorRect.height / 2 });
     }, []);
     const clearHover = React.useCallback(() => setHovered(null), []);
+    // 悬停标签只认鼠标：触屏按下也会派发 pointerenter，手指一碰就弹胶囊，展开态下还会跟项里的文字重样。
+    const hoverProps = (label: string) => ({
+        onPointerEnter: (event: React.PointerEvent<HTMLElement>) => {
+            if (event.pointerType === 'mouse') handleHover(label, event.currentTarget);
+        },
+        onPointerLeave: clearHover,
+        onFocus: (event: React.FocusEvent<HTMLElement>) => handleHover(label, event.currentTarget),
+        onBlur: clearHover,
+    });
 
     return (
         <div
             // 层级：压在页头（z-20）之上、GridMap（z-[110]）与底部播放胶囊（z-60）之下。
             // 高度撑满可视区：设置按钮用 mt-auto 钉到底部，中间那段间隔随窗口高度自己伸缩。
             className={`pointer-events-none fixed z-30 flex flex-col ${className}`}
-            style={{ left: COLUMN_LEFT_PX, top: COLUMN_TOP_PX, bottom: columnBottomPx }}
+            style={{
+                // 展开时整列往右让 5px（连同下面那颗设置钮一起），收起回到页头左边距。
+                left: COLUMN_LEFT_PX + (thumbMagnified ? MAGNIFY_SHIFT_PX : 0),
+                top: COLUMN_TOP_PX,
+                bottom: columnBottomPx,
+                transition: reduceMotion ? undefined : `left ${MAGNIFY_MS}ms ${MAGNIFY_EASE}`,
+            }}
             data-testid="grid3d-nav"
         >
             <div ref={wrapperRef} className="relative flex flex-1 flex-col items-start gap-2">
@@ -259,7 +337,12 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                 <div
                     aria-label={t('home.navMenu')}
                     role="navigation"
-                    className="pointer-events-auto relative flex w-10 flex-col rounded-[20px]"
+                    data-magnified={thumbMagnified ? 'true' : undefined}
+                    className="pointer-events-auto relative flex select-none flex-col rounded-[20px] [-webkit-touch-callout:none]"
+                    style={{
+                        width: thumbMagnified ? NAV_WIDTH_MAGNIFIED_PX : NAV_WIDTH_PX,
+                        transition: reduceMotion ? undefined : `width ${MAGNIFY_MS}ms ${MAGNIFY_EASE}`,
+                    }}
                 >
                     {/* 玻璃底色：与摇杆、页签同为兄弟层级（页头那颗胶囊也是这么分的）。 */}
                     <div
@@ -328,6 +411,8 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                             // 不按就不画：display: none 让这四层渐进模糊 + 色散滤镜整块不参与合成，
                             // 空闲时一点 GPU 都不占（只写 opacity: 0 的话 backdrop-filter 仍然要算）。
                             // 按下（含纯点击）立刻回到正常显示，液态玻璃就在这一刻出现。
+                            // 长按展开时照旧显示：摇杆跟着整栏重排重新落位、盒子换成展开后的尺寸，
+                            // 所以透镜会跟着栏一起长大，仍压在手指那一格上。
                             display: thumbDragging && thumbReady ? undefined : 'none',
                             boxShadow: thumbDragging ? '0 0 20px #0006' : '',
                         }}
@@ -394,10 +479,12 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                         />
                     </motion.div>
 
-                    {/* 页签轨道：竖排。滚动挂在这里，摇杆的滚动补偿才量得到。 */}
+                    {/* 页签轨道：竖排。滚动挂在这里，摇杆的滚动补偿才量得到。
+                    长按是这排页签自己的手势，别让系统在上面弹「复制 / 在浏览器里打开」那套菜单。 */}
                     <div
                         ref={trackRef}
                         {...thumbHandlers}
+                        onContextMenu={event => event.preventDefault()}
                         className="relative flex flex-col items-stretch gap-[7px] p-1 cursor-grab active:cursor-grabbing touch-none"
                     >
                         {tabs.map((tab, index) => {
@@ -411,6 +498,8 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                                     highlighted={lit(index, active)}
                                     disabled={Boolean(tab.disabledReason)}
                                     icon={<TabIcon tabKey={tab.key} />}
+                                    magnified={thumbMagnified}
+                                    reduceMotion={reduceMotion}
                                     onClick={() => onSelectTab(tab.key)}
                                     onHover={handleHover}
                                     onHoverEnd={clearHover}
@@ -426,6 +515,8 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                                 active={tab.active}
                                 highlighted={lit(extraOffset + index, tab.active)}
                                 icon={<Layers size={18} className="relative z-20 shrink-0" />}
+                                magnified={thumbMagnified}
+                                reduceMotion={reduceMotion}
                                 onClick={tab.select}
                                 onHover={handleHover}
                                 onHoverEnd={clearHover}
@@ -439,6 +530,8 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                                 active={Boolean(stageIsActive)}
                                 highlighted={lit(stageIndex, Boolean(stageIsActive))}
                                 icon={<Theater size={18} className="relative z-20 shrink-0" />}
+                                magnified={thumbMagnified}
+                                reduceMotion={reduceMotion}
                                 onClick={() => onOpenStagePlayer?.()}
                                 onHover={handleHover}
                                 onHoverEnd={clearHover}
@@ -460,10 +553,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                         onClick={onOpenLattice}
                         title={t('home.lattice')}
                         aria-label={t('home.lattice')}
-                        onPointerEnter={event => handleHover(t('home.lattice'), event.currentTarget)}
-                        onPointerLeave={clearHover}
-                        onFocus={event => handleHover(t('home.lattice'), event.currentTarget)}
-                        onBlur={clearHover}
+                        {...hoverProps(t('home.lattice'))}
                         className="group pointer-events-auto relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-300"
                         style={glassStyle}
                     >
@@ -490,10 +580,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                             onClick={onOpenSettings}
                             title={t('ui.options')}
                             aria-label={t('ui.options')}
-                            onPointerEnter={event => handleHover(t('ui.options'), event.currentTarget)}
-                            onPointerLeave={clearHover}
-                            onFocus={event => handleHover(t('ui.options'), event.currentTarget)}
-                            onBlur={clearHover}
+                            {...hoverProps(t('ui.options'))}
                             className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300"
                             style={glassStyle}
                         >
@@ -518,8 +605,9 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                     style={{
                         ...tooltipStyle,
                         top: hovered?.top ?? 0,
-                        opacity: hovered ? 1 : 0,
-                        visibility: hovered ? 'visible' : 'hidden',
+                        // 展开态每项下面已经有文字了，这颗浮出的胶囊就收起来。
+                        opacity: hovered && !thumbMagnified ? 1 : 0,
+                        visibility: hovered && !thumbMagnified ? 'visible' : 'hidden',
                     }}
                 >
                     {hovered?.label ?? ''}

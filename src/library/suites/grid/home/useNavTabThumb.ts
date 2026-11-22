@@ -57,6 +57,11 @@ const STRETCH_CROSS = 0.24;
     按面积算，所以两个方向的线性尺寸乘的是它的平方根（√0.8 ≈ 0.894）。 */
 const COVER_AREA_RATIO = 0.8;
 const COVER_SCALE = Math.sqrt(COVER_AREA_RATIO);
+/** 触屏上按住不动这么久，整根竖栏展开：图标变大、每项下面露出文字，下面的东西跟着往下让。
+    鼠标不参与——它本来就有悬停标签，按住不动不该把栏撑开。 */
+const MAGNIFY_HOLD_MS = 420;
+/** 手指挪动超过这个距离就算在滑，不展开；展开之后手指再动也不再收起（松手才收）。 */
+const MAGNIFY_SLOP_PX = 6;
 
 const prefersReducedMotion = () => (
     typeof window !== 'undefined'
@@ -106,6 +111,23 @@ export const useNavTabThumb = <K extends string>({
     const boxHeight = vertical ? boxAlong : boxCross;
 
     const [dragging, setDragging] = useState(false);
+    // 触屏长按展开态：按住不动一小会儿整根竖栏变宽变高、每项露出文字，松手才收起。
+    // 与 dragging 是两件事：点一下就走 dragging 的摇杆，按住不动才走到这里。
+    const [magnified, setMagnified] = useState(false);
+    const magnifiedRef = useRef(false);
+    const magnifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const clearMagnifyTimer = useCallback(() => {
+        if (magnifyTimerRef.current !== null) {
+            clearTimeout(magnifyTimerRef.current);
+            magnifyTimerRef.current = null;
+        }
+    }, []);
+    const collapseMagnified = useCallback(() => {
+        clearMagnifyTimer();
+        if (!magnifiedRef.current) return;
+        magnifiedRef.current = false;
+        setMagnified(false);
+    }, [clearMagnifyTimer]);
     // 第一次量到尺寸之前不画摇杆：0 宽的方块在左上角闪一下很难看。
     const [ready, setReady] = useState(false);
 
@@ -153,8 +175,9 @@ export const useNavTabThumb = <K extends string>({
     }, [boxAlong, commitCovered, thumbSize]);
 
     // 按下后透镜是弹到 2 倍大的：指针不动时也要跟着重算盖住了谁（只在集合变化时提交）。
+    // 展开态里高亮只认手指压着的那一项（由 ResizeObserver 那边提交），这里不掺。
     useMotionValueEvent(dragScale, 'change', () => {
-        if (!draggingRef.current) return;
+        if (!draggingRef.current || magnifiedRef.current) return;
         updateCovered(thumbPos.get());
     });
 
@@ -164,7 +187,9 @@ export const useNavTabThumb = <K extends string>({
     const positionedRef = useRef(false);
     const trackStartRef = useRef(0);
     const trackScaleRef = useRef(1);
-    const gestureRef = useRef<{ pointerId: number; start: number; moved: boolean } | null>(null);
+    const gestureRef = useRef<{ pointerId: number; start: number; x: number; y: number; moved: boolean } | null>(null);
+    /** 手指沿轴的位置：展开 / 收起时整栏在长，摇杆得照它重新落到手指下面那一项。 */
+    const pointerAlongRef = useRef<number | null>(null);
     const stretchSampleRef = useRef<{ pos: number; t: number } | null>(null);
     const stretchSpeedRef = useRef(0);
     const stretchIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -268,19 +293,49 @@ export const useNavTabThumb = <K extends string>({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- itemsSignature 已经把 items 的 key / disabled 变化算进来，依赖数组里不需要 items 本体
     }, [measure, itemsSignature, vertical]);
 
+    /** 手指沿轴位置落在哪一项上（中心最近）：长按展开后整栏重排，摇杆要按这个重新落位。 */
+    const indexAtClient = useCallback((clientAlong: number) => {
+        const layout = layoutRef.current;
+        if (layout.length === 0) return -1;
+        const scale = trackScaleRef.current || 1;
+        const local = (clientAlong - trackStartRef.current) / scale;
+        let best = -1;
+        let bestDistance = Number.POSITIVE_INFINITY;
+        for (let index = 0; index < layout.length; index += 1) {
+            const center = layout[index].pos + layout[index].size / 2;
+            const distance = Math.abs(center - local);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = index;
+            }
+        }
+        return best;
+    }, []);
+
     // 字号、标签宽度、折行变化都要重量（当前项切粗体会改变宽度，直接 set 会打断吸附弹簧）。
     useEffect(() => {
         const track = trackRef.current;
         if (!track || typeof ResizeObserver === 'undefined') return undefined;
         const observer = new ResizeObserver(() => {
             measure();
+            // 长按展开 / 收起时整栏在长：摇杆跟着重新落回手指下面那一项，盒子也换成新的尺寸，
+            // 透镜于是跟着栏一起长大（还在原来那一格上），不会停在旧盒子上盖错项。
+            if (magnifiedRef.current) {
+                const along = pointerAlongRef.current;
+                const index = along === null ? -1 : indexAtClient(along);
+                if (index >= 0) {
+                    glideToIndex(index);
+                    commitCovered([index]);
+                }
+                return;
+            }
             if (draggingRef.current) return;
             glideToIndex(Math.max(0, itemsRef.current.findIndex(item => item.key === activeKeyRef.current)));
         });
         observer.observe(track);
         track.querySelectorAll('[data-home-tab]').forEach(button => observer.observe(button));
         return () => observer.disconnect();
-    }, [glideToIndex, measure, itemsSignature, trackRef]);
+    }, [commitCovered, glideToIndex, indexAtClient, measure, itemsSignature, trackRef]);
 
     // 选中项变了（点击、键盘、宿主切页签）：先重量再滑——当前项切粗体会让整行重排，
     // 用过期的盒子会从错误的位置起步。
@@ -378,6 +433,7 @@ export const useNavTabThumb = <K extends string>({
         stretchReturnRef.current?.stop();
         stretchReturnRef.current = null;
         if (stretchIdleTimerRef.current !== null) clearTimeout(stretchIdleTimerRef.current);
+        if (magnifyTimerRef.current !== null) clearTimeout(magnifyTimerRef.current);
     }, []);
 
     // 按下：摇杆平滑滑到指针下面并放大。此刻不夺指针、不阻止默认，纯点击仍会走页签自己的 click。
@@ -395,27 +451,46 @@ export const useNavTabThumb = <K extends string>({
                 : (track.offsetWidth > 0 ? rect.width / track.offsetWidth : 1))
             : 1;
         const along = vertical ? event.clientY : event.clientX;
-        gestureRef.current = { pointerId: event.pointerId, start: along, moved: false };
+        gestureRef.current = { pointerId: event.pointerId, start: along, x: event.clientX, y: event.clientY, moved: false };
+        pointerAlongRef.current = along;
         const target = pointerTargetPos(along);
         thumbPos.set(target);
         updateCovered(target);
         dragScale.set(DRAG_SCALE);
+        // 触屏（含笔）：按住不动一小会儿就展开整根竖栏。手指一挪就取消，交给下面的拖动。
+        if (event.pointerType !== 'mouse') {
+            clearMagnifyTimer();
+            magnifyTimerRef.current = setTimeout(() => {
+                magnifyTimerRef.current = null;
+                if (!draggingRef.current || !gestureRef.current || gestureRef.current.moved) return;
+                magnifiedRef.current = true;
+                setMagnified(true);
+            }, MAGNIFY_HOLD_MS);
+        }
         stretchAllowedRef.current = !prefersReducedMotion();
         if (!stretchAllowedRef.current) return;
         clearStretchIdleTimer();
         stretchSpeedRef.current = 0;
         stretchSampleRef.current = { pos: along, t: event.timeStamp };
-    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, pointerTargetPos, thumbPos, trackRef, updateCovered, vertical]);
+    }, [cancelPendingActivation, clearMagnifyTimer, clearStretchIdleTimer, dragScale, pointerTargetPos, thumbPos, trackRef, updateCovered, vertical]);
 
     // 越过阈值才算真正拖动：这时才夺指针并阻止默认（否则页签的 click 会被吞掉）。
     const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
         const gesture = gestureRef.current;
         if (!gesture || gesture.pointerId !== event.pointerId) return;
         const along = vertical ? event.clientY : event.clientX;
-        if (!gesture.moved && Math.abs(along - gesture.start) > TAP_MOVE_THRESHOLD_PX) {
-            gesture.moved = true;
-            event.currentTarget.setPointerCapture(event.pointerId);
-            event.preventDefault();
+        pointerAlongRef.current = along;
+        if (!gesture.moved) {
+            // 手指在挪就不算长按，展开取消，后面照常走摇杆拖动。
+            if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > MAGNIFY_SLOP_PX) {
+                clearMagnifyTimer();
+            }
+            if (Math.abs(along - gesture.start) > TAP_MOVE_THRESHOLD_PX) {
+                gesture.moved = true;
+                clearMagnifyTimer();
+                event.currentTarget.setPointerCapture(event.pointerId);
+                event.preventDefault();
+            }
         }
         // 跟手用 jump（即时响应、不引入弹簧滞后），松手吸附才交给弹簧。
         const target = pointerTarget(along);
@@ -424,14 +499,18 @@ export const useNavTabThumb = <K extends string>({
         if (gesture.moved && stretchAllowedRef.current) {
             sampleStretchSpeed(along, event.timeStamp, isThumbAtEdge(target.pos, target.max));
         }
-    }, [pointerTarget, sampleStretchSpeed, thumbPos, updateCovered, vertical]);
+    }, [clearMagnifyTimer, pointerTarget, sampleStretchSpeed, thumbPos, updateCovered, vertical]);
 
     const endDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         const gesture = gestureRef.current;
         if (!gesture || gesture.pointerId !== event.pointerId) return;
+        const magnifiedAtRelease = magnifiedRef.current;
+        const along = vertical ? event.clientY : event.clientX;
         gestureRef.current = null;
+        pointerAlongRef.current = null;
         draggingRef.current = false;
         setDragging(false);
+        clearMagnifyTimer();
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
@@ -439,8 +518,11 @@ export const useNavTabThumb = <K extends string>({
         settleStretch();
         stretchSampleRef.current = null;
 
+        // 长按展开过：先按落点取整（展开态里手指也可能一路滑到别的项上，跟手那套一直有效），
+        // 再收起整栏——缩回去之后由 ResizeObserver 重新量一遍，摇杆自己滑回选中项。
+        if (magnifiedAtRelease) collapseMagnified();
+
         // 用松手时的指针位置取最近项：纯点击时吸附动画才刚开始，用当前 thumbPos 取整会选错。
-        const along = vertical ? event.clientY : event.clientX;
         const center = pointerTargetPos(along) + thumbSize.get() / 2;
         const target = nearestTabIndex(center);
         glideToIndex(target);
@@ -452,7 +534,7 @@ export const useNavTabThumb = <K extends string>({
         } else {
             commitCovered([]);
         }
-    }, [armActivationAfterSettle, commitCovered, dragScale, glideToIndex, nearestTabIndex, pointerTargetPos, settleStretch, thumbSize, vertical]);
+    }, [armActivationAfterSettle, clearMagnifyTimer, collapseMagnified, commitCovered, dragScale, glideToIndex, nearestTabIndex, pointerTargetPos, settleStretch, thumbSize, vertical]);
 
     // 在导航外松手、拖出窗口、切走窗口：pointerup 不一定派发到这里，这里只负责收摊（不切页签）。
     useEffect(() => {
@@ -462,10 +544,12 @@ export const useNavTabThumb = <K extends string>({
             if (!gesture) return;
             if (event instanceof PointerEvent && event.pointerId !== gesture.pointerId) return;
             gestureRef.current = null;
+            pointerAlongRef.current = null;
             draggingRef.current = false;
             stretchSampleRef.current = null;
             setDragging(false);
-            // 在别处松手：没有落点可留，高亮直接交还给选中项。
+            // 在别处松手：展开态也一起收起，没有落点可留，高亮直接交还给选中项。
+            collapseMagnified();
             commitCovered([]);
             dragScale.set(1);
             settleStretch();
@@ -478,10 +562,12 @@ export const useNavTabThumb = <K extends string>({
             window.removeEventListener('pointercancel', release);
             window.removeEventListener('blur', release);
         };
-    }, [commitCovered, dragging, dragScale, settleStretch]);
+    }, [collapseMagnified, commitCovered, dragging, dragScale, settleStretch]);
 
     return {
         thumbDragging: dragging,
+        /** 触屏长按展开态：整根竖栏变宽变高、每项露出文字；放下之前一直是 true。 */
+        thumbMagnified: magnified,
         /** 被摇杆盖住的项（索引与 items 同序）：拖动中实时变，松手后钉在落点直到页签真的切过去。 */
         thumbCovered: covered,
         thumbBoxLeft: boxLeft,
