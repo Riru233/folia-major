@@ -1260,9 +1260,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             closeLabel={t('ui.close')}
                         />
                     )}
-                    {/* 正文区不再铺一整块不透明底：那会把窗口的玻璃整片盖住。卡片自己带 --st-card 的
-                        半透明底，正文落在玻璃上，窗口边缘那一圈才看得见折射。 */}
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                    {/* 正文区铺一层实底（--st-win），页面内容不跟窗口玻璃一起透；玻璃只留给左侧栏和
+                        窗口边缘那圈，所以这层只盖右侧列，不遮侧栏。 */}
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--st-win)]">
                         <PageHeader
                             title={isSearching
                                 ? t('options.settingsSearchTitle')
