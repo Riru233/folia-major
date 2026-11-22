@@ -77,7 +77,7 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
             )}
             {/* 侧栏里不画滚动条：13px 的小字列表旁边挂一条滚动槽会显得很窄，用滚轮/触控板滚就行
                 （键盘聚焦到某一项时浏览器仍会把它滚进视野）。 */}
-            <nav className="mt-1 flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <nav className="mt-[-32px] pt-[32px] flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {groups.map(group => (
                     <div key={group.id} className="flex flex-col gap-px">
                         <div className="block px-2.5 pb-1 pt-3.5 text-xs leading-[18px] text-[color:var(--st-t3)]">
@@ -88,7 +88,7 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
                 ))}
             </nav>
             {/* 「帮助」不跟着分类列表滚：它钉在侧栏底部，列表再长也只在自己那块里滚。 */}
-            <div className="mt-2 shrink-0 border-t border-[var(--st-line)] pt-2">
+            <div className="shrink-0 border-t border-[var(--st-line)] pt-2">
                 {renderItem('help', CircleHelp, t('help.title'), onSelectHelp, HELP_ICON_COLOR)}
             </div>
         </aside>

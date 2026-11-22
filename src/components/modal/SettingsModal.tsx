@@ -873,16 +873,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     // const isDaylight = theme?.name === 'Daylight Default'; // Deprecated, passed as prop
     const overlayBackground = isDaylight ? 'rgba(0,0,0,0.32)' : 'rgba(0,0,0,0.5)';
     const shellTransition = { duration: 0.24, ease: 'easeOut' as const };
-    // The move is one transform rather than y and scale. motion hands opacity and transform to the
-    // browser's compositor but steps y and scale itself on the page's frames, so when the page was
-    // busy while the window opened (opening on the options tab counts the cache, a 125-175 ms task
-    // on a used install), the window faded in standing still and then jumped into place. The rest
-    // value is written out: motion reads a 'none' target as the start with every number set to 0,
-    // which is scale(0).
+    // 压暗与薄雾各自单独一层做透明度：它们不是窗口的祖先，淡入淡出不会把窗口的玻璃一起关掉。
+    const shadeTransition = { duration: 0.24, ease: [0.4, 0, 0.2, 1] as const };
+    // The move is one transform rather than y and scale. motion hands transform to the browser's
+    // compositor, so when the page was busy while the window opened (opening on the options tab
+    // counts the cache, a 125-175 ms task on a used install) it still slides in one piece instead
+    // of fading in standing still and then jumping into place. The rest value is written out:
+    // motion reads a 'none' target as the start with every number set to 0, which is scale(0).
+    // 窗口进场不做 opacity 淡入：祖先 opacity < 1 会成为 backdrop root，窗口里那层流体玻璃
+    // 在淡入整段时间里都只能采样到这个半透明的组，看起来就是「玻璃没了、只剩一块纯色」。
+    // 所以进场只走 transform；收尾的淡出交给外壳（见下），前 100ms 玻璃还是满不透明的。
     const panelMotion = {
-        initial: { opacity: 0, transform: 'translateY(20px) scale(0.98)' },
-        animate: { opacity: 1, transform: 'translateY(0px) scale(1)' },
-        exit: { opacity: 0, transform: 'translateY(16px) scale(0.985)' },
+        initial: { transform: 'translateY(20px) scale(0.98)' },
+        animate: { transform: 'translateY(0px) scale(1)' },
+        exit: { transform: 'translateY(16px) scale(0.985)' },
     };
 
     const handleOverlayMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -1177,58 +1181,82 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     useGlass();
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={shellTransition}
+            /* 这一层刻意不做 opacity 动画：它是窗口与薄雾的祖先，带透明度动画时会成为 backdrop root，
+               窗口那层流体玻璃的 backdrop 就只剩这块纯色遮罩，折射与模糊全看不见（表现为「动画期间
+               玻璃消失，动画结束才出现」）。所以压暗、薄雾、玻璃、内容各自拆成子层去淡，谁也不当谁的
+               祖先；这一层只做「在不在场」，进退场时长由子层的 exit 决定。 */
             data-folia-keyboard-window="true"
             data-ponder-page-scope={activeTab === 'help' ? 'help-page' : 'settings-page'}
             className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 sm:px-5 sm:py-12"
-            /* 遮罩只管压暗。1px 薄雾不能挂在这一层上：带 backdrop-filter 的元素会成为 backdrop root，
-               窗口那层流体玻璃的 backdrop 就只剩这块纯色遮罩，折射与模糊全都看不出来。 */
-            style={{ backgroundColor: overlayBackground }}
             onMouseDown={handleOverlayMouseDown}
             onClick={(event) => handleBackdropClose(event, onClose)}
         >
+            {/* 压暗层：单独一层、只做透明度。纯色层的 opacity 由合成器直接跑，整段淡入淡出不会有
+                什么逐帧重绘的活；pointer-events 关掉，点击照旧落到外面这层上（点击判定用的是
+                event.target === currentTarget）。 */}
+            <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{ backgroundColor: overlayBackground }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={shadeTransition}
+            />
             {/* 窗口之下、遮罩之上的一层薄雾：整屏 1px 模糊，先把身后的页面轻轻糊掉，窗口再压上去。
-                放在窗口外面（兄弟层，而不是窗口的祖先）才不影响窗口自己的玻璃。 */}
-            <div
+                放在窗口外面（兄弟层，而不是窗口的祖先）才不影响窗口自己的玻璃；自己也只做透明度，
+                淡出时是「模糊渐渐退掉」而不是一瞬间变清晰。 */}
+            <motion.div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0"
                 style={{ backdropFilter: 'blur(1px)', WebkitBackdropFilter: 'blur(1px)' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={shadeTransition}
             />
-            <motion.div
-                {...panelMotion}
-                transition={shellTransition}
-                role="dialog"
-                aria-modal="true"
-                aria-label={t('options.settingsWindowName')}
-                /* 窗口自己是透明的一层壳，玻璃另外铺一层垫在内容下面（见下面那个 data-glass 的 div）。
-                   不把 data-glass 挂在窗口身上：带 backdrop-filter 的元素会成为 backdrop root，
-                   里面再想挂玻璃（搜索框）就只能采样到窗口这层，滤镜彼此打架。 */
-                className="st-window relative isolate flex h-[90vh] w-full flex-col overflow-hidden rounded-2xl text-[color:var(--st-t1)] shadow-[0_36px_90px_rgba(0,0,0,0.5)] md:grid md:h-[86vh] md:w-[960px] md:grid-cols-[232px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
-                style={{
-                    ...settingsTokens(isDaylight, theme),
-                    ...kitMotionTokens(reducedKitMotion),
-                    borderTop: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
-                    borderBottom: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
-                    outline: '1px solid rgba(35,35,35,0.28)',
-                }}
-                onClick={(event) => event.stopPropagation()}
-            >
-                {/* 窗口的玻璃本体：铺满、压在内容下面（-z-10 + 窗口 isolate 关在自己的层叠上下文里，
-                    不会跑到遮罩底下去）。边缘折射靠 data-glass 的位移图，bend 60 让折射带只在内侧一圈，
-                    窗口有 960px 宽，不会把中间的正文扯歪；strength 比默认小一点，大面板折射过强会像哈哈镜。 */}
-                <div
+            {/* 窗口外壳：只负责位移与缩放（transform 不进 backdrop root，玻璃照样能采样到遮罩背后的页面）。
+                玻璃和内容各是一条子层，淡入淡出各做各的——见下面两段注释。 */}
+            <motion.div {...panelMotion} transition={shellTransition} className="relative w-full md:w-[960px]">
+                {/* 窗口的玻璃本体：铺满、压在内容下面。它必须是内容层（下面那个外壳）的兄弟而不是祖先：
+                    带 opacity 动画的元素会成为 backdrop root，一旦包住玻璃，玻璃在整段淡入淡出里就只能
+                    采样到这个半透明的组，看起来是「一块纯色、没有折射」。挂在自己身上就没这问题——
+                    自身 opacity 只是把「已经滤过的结果」整体调透明，滤镜照旧生效（实测 0.5 时仍是糊的，
+                    只是与背后清晰画面各占一半，正好就是淡入淡出的观感）。
+                    边缘折射靠 data-glass 的位移图，bend 20 让折射带只在内侧一圈，窗口有 960px 宽，
+                    不会把中间的正文扯歪；strength 比默认小一点，大面板折射过强会像哈哈镜。 */}
+                <motion.div
                     aria-hidden="true"
                     data-glass
                     data-glass-light
                     data-glass-strength="1.1"
                     data-glass-bend="20"
                     data-glass-blur="8"
-                    className="pointer-events-none absolute inset-0 -z-10 rounded-2xl"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={shellTransition}
+                    className="pointer-events-none absolute inset-0 rounded-2xl"
                     style={{ backgroundColor: isDaylight ? 'rgba(255,255,255,0.52)' : 'rgba(22,22,25,0.52)' }}
                 />
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={shellTransition}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={t('options.settingsWindowName')}
+                    className="st-window relative isolate z-10 flex h-[90vh] w-full flex-col overflow-hidden rounded-2xl text-[color:var(--st-t1)] shadow-[0_36px_90px_rgba(0,0,0,0.5)] md:grid md:h-[86vh] md:grid-cols-[232px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
+                    style={{
+                        ...settingsTokens(isDaylight, theme),
+                        ...kitMotionTokens(reducedKitMotion),
+                        borderTop: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
+                        borderBottom: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
+                        outline: '1px solid rgba(35,35,35,0.28)',
+                    }}
+                    onClick={(event) => event.stopPropagation()}
+                >
                 <SettingsKitThemeContext.Provider value={kitTheme}>
                     {/* 宽屏：左侧栏（搜索框 + 分类）常在。紧凑档：顶上只有菜单按钮和搜索框，
                         分类收进菜单按钮打开的抽屉里——抽屉就是同一个侧栏，不带搜索框。 */}
@@ -1330,6 +1358,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         />
                     )}
                 </AnimatePresence>
+                </motion.div>
             </motion.div>
             <AnimatePresence>
                 {showVisPlayground && (

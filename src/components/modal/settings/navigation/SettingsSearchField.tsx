@@ -44,9 +44,7 @@ export const SettingsSearchField: React.FC<SettingsSearchFieldProps> = ({
         <div
             data-glass
             data-glass-light
-            data-glass-strength="4"
-            data-glass-bend="10"
-            data-glass-blur="2"
+            data-glass-jelly
             className={`flex h-8 items-center gap-2 rounded-full border border-transparent bg-[var(--st-fill)] px-3 text-[color:var(--st-t3)] shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] transition-colors focus-within:border-[var(--st-line2)] ${className}`}
             style={{
                 borderTop: '1px solid #fff6',
