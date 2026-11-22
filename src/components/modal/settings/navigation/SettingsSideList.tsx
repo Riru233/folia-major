@@ -49,7 +49,7 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
                 type="button"
                 aria-current={isActive ? 'page' : undefined}
                 onClick={onSelect}
-                className={`flex h-[35px] w-full shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-2 text-left text-[13px] transition-colors ${isActive ? 'bg-[var(--st-fill2)] text-[color:var(--st-t1)]' : 'text-[color:var(--st-t2)] hover:bg-[var(--st-fill)]'}`}
+                className={`flex h-[35px] w-full shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-2 text-left text-[13px] transition-colors ${isActive ? 'bg-[color-mix(in_srgb,var(--text-accent),#000_40%)] text-[#fff]' : 'text-[color:var(--st-t2)] hover:bg-[var(--st-fill)]'}`}
             >
                 <span
                     aria-hidden="true"
