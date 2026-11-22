@@ -1184,20 +1184,51 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             data-folia-keyboard-window="true"
             data-ponder-page-scope={activeTab === 'help' ? 'help-page' : 'settings-page'}
             className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 sm:px-5 sm:py-12"
+            /* 遮罩只管压暗。1px 薄雾不能挂在这一层上：带 backdrop-filter 的元素会成为 backdrop root，
+               窗口那层流体玻璃的 backdrop 就只剩这块纯色遮罩，折射与模糊全都看不出来。 */
             style={{ backgroundColor: overlayBackground }}
             onMouseDown={handleOverlayMouseDown}
             onClick={(event) => handleBackdropClose(event, onClose)}
         >
+            {/* 窗口之下、遮罩之上的一层薄雾：整屏 1px 模糊，先把身后的页面轻轻糊掉，窗口再压上去。
+                放在窗口外面（兄弟层，而不是窗口的祖先）才不影响窗口自己的玻璃。 */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{ backdropFilter: 'blur(1px)', WebkitBackdropFilter: 'blur(1px)' }}
+            />
             <motion.div
                 {...panelMotion}
                 transition={shellTransition}
                 role="dialog"
                 aria-modal="true"
                 aria-label={t('options.settingsWindowName')}
-                className="st-window backdrop-blur-[40px] relative flex h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-[var(--st-win)]/60 text-[color:var(--st-t1)] shadow-[0_36px_90px_rgba(0,0,0,0.5),0_0_0_1px_var(--st-line2)] md:grid md:h-[86vh] md:w-[960px] md:grid-cols-[212px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
-                style={{ ...settingsTokens(isDaylight, theme), ...kitMotionTokens(reducedKitMotion) }}
+                /* 窗口自己是透明的一层壳，玻璃另外铺一层垫在内容下面（见下面那个 data-glass 的 div）。
+                   不把 data-glass 挂在窗口身上：带 backdrop-filter 的元素会成为 backdrop root，
+                   里面再想挂玻璃（搜索框）就只能采样到窗口这层，滤镜彼此打架。 */
+                className="st-window relative isolate flex h-[90vh] w-full flex-col overflow-hidden rounded-2xl text-[color:var(--st-t1)] shadow-[0_36px_90px_rgba(0,0,0,0.5)] md:grid md:h-[86vh] md:w-[960px] md:grid-cols-[232px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
+                style={{
+                    ...settingsTokens(isDaylight, theme),
+                    ...kitMotionTokens(reducedKitMotion),
+                    borderTop: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
+                    borderBottom: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
+                    outline: '1px solid rgba(35,35,35,0.28)',
+                }}
                 onClick={(event) => event.stopPropagation()}
             >
+                {/* 窗口的玻璃本体：铺满、压在内容下面（-z-10 + 窗口 isolate 关在自己的层叠上下文里，
+                    不会跑到遮罩底下去）。边缘折射靠 data-glass 的位移图，bend 60 让折射带只在内侧一圈，
+                    窗口有 960px 宽，不会把中间的正文扯歪；strength 比默认小一点，大面板折射过强会像哈哈镜。 */}
+                <div
+                    aria-hidden="true"
+                    data-glass
+                    data-glass-light
+                    data-glass-strength="1.1"
+                    data-glass-bend="60"
+                    data-glass-blur="3"
+                    className="pointer-events-none absolute inset-0 -z-10 rounded-2xl"
+                    style={{ backgroundColor: isDaylight ? 'rgba(255,255,255,0.52)' : 'rgba(22,22,25,0.52)' }}
+                />
                 <SettingsKitThemeContext.Provider value={kitTheme}>
                     {/* 宽屏：左侧栏（搜索框 + 分类）常在。紧凑档：顶上只有菜单按钮和搜索框，
                         分类收进菜单按钮打开的抽屉里——抽屉就是同一个侧栏，不带搜索框。 */}
@@ -1229,7 +1260,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             closeLabel={t('ui.close')}
                         />
                     )}
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col  bg-[var(--bg-color)]">
+                    {/* 正文区不再铺一整块不透明底：那会把窗口的玻璃整片盖住。卡片自己带 --st-card 的
+                        半透明底，正文落在玻璃上，窗口边缘那一圈才看得见折射。 */}
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                         <PageHeader
                             title={isSearching
                                 ? t('options.settingsSearchTitle')

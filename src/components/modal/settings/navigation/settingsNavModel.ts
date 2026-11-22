@@ -25,6 +25,8 @@ export type SettingsSectionId =
 export interface SettingsNavItem {
     id: SettingsSectionId;
     icon: LucideIcon;
+    /** 侧栏里这一项的图标色：每类一个色相，图标和它下面那块淡色底都用它。 */
+    color: string;
     label: string;
 }
 
@@ -39,6 +41,7 @@ type Translate = (key: string) => string;
 interface SectionSpec {
     id: SettingsSectionId;
     icon: LucideIcon;
+    color: string;
     labelKey: string;
     /** Sections that only exist on the desktop build. */
     electronOnly?: boolean;
@@ -55,34 +58,34 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
         id: 'interface',
         labelKey: 'options.settingsGroupInterface',
         sections: [
-            { id: 'appearance', icon: Contrast, labelKey: 'options.settingsPageAppearance' },
-            { id: 'player', icon: MonitorPlay, labelKey: 'options.settingsPagePlayer' },
-            { id: 'home', icon: LayoutGrid, labelKey: 'options.settingsPageHome' },
-            { id: 'graphics', icon: Gauge, labelKey: 'options.settingsPageGraphics' },
+            { id: 'appearance', color: '#8b7cf6', icon: Contrast, labelKey: 'options.settingsPageAppearance' },
+            { id: 'player', color: '#e07a3f', icon: MonitorPlay, labelKey: 'options.settingsPagePlayer' },
+            { id: 'home', color: '#3b9ae1', icon: LayoutGrid, labelKey: 'options.settingsPageHome' },
+            { id: 'graphics', color: '#18a67c', icon: Gauge, labelKey: 'options.settingsPageGraphics' },
         ],
     },
     {
         id: 'music',
         labelKey: 'options.settingsGroupMusic',
         sections: [
-            { id: 'playback', icon: PlayCircle, labelKey: 'options.settingsPagePlayback' },
-            { id: 'lyrics', icon: TextAlignStart, labelKey: 'options.settingsPageLyrics' },
+            { id: 'playback', color: '#e2568f', icon: PlayCircle, labelKey: 'options.settingsPagePlayback' },
+            { id: 'lyrics', color: '#9b5cf0', icon: TextAlignStart, labelKey: 'options.settingsPageLyrics' },
         ],
     },
     {
         id: 'app',
         labelKey: 'options.settingsGroupApp',
         sections: [
-            { id: 'general', icon: SlidersHorizontal, labelKey: 'options.settingsPageGeneral' },
-            { id: 'interaction', icon: Keyboard, labelKey: 'options.settingsPageInteraction' },
-            { id: 'integration', icon: Link2, labelKey: 'options.settingsPageIntegration' },
+            { id: 'general', color: '#6b7c93', icon: SlidersHorizontal, labelKey: 'options.settingsPageGeneral' },
+            { id: 'interaction', color: '#c9932a', icon: Keyboard, labelKey: 'options.settingsPageInteraction' },
+            { id: 'integration', color: '#2fa7a7', icon: Link2, labelKey: 'options.settingsPageIntegration' },
             // 所有 AI 功能共用的接口与密钥：主题生成以及之后用到 AI 的地方都读这一份。
             // 网页版没有用户侧的密钥（部署自己配），所以只在桌面端出现。
-            { id: 'ai', icon: Sparkles, labelKey: 'options.settingsPageAi', electronOnly: true },
-            { id: 'storage', icon: Database, labelKey: 'options.settingsPageStorage' },
-            { id: 'desktop', icon: Monitor, labelKey: 'options.settingsPageDesktop', electronOnly: true },
+            { id: 'ai', color: '#a855f7', icon: Sparkles, labelKey: 'options.settingsPageAi', electronOnly: true },
+            { id: 'storage', color: '#4f7df3', icon: Database, labelKey: 'options.settingsPageStorage' },
+            { id: 'desktop', color: '#4e8fe6', icon: Monitor, labelKey: 'options.settingsPageDesktop', electronOnly: true },
             // The Remote Control window is a desktop-app window; its settings key opens this page.
-            { id: 'remote', icon: PictureInPicture2, labelKey: 'options.settingsPageRemote', electronOnly: true },
+            { id: 'remote', color: '#e05353', icon: PictureInPicture2, labelKey: 'options.settingsPageRemote', electronOnly: true },
         ],
     },
     {
@@ -91,10 +94,10 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
         sections: [
             // 实验室：还带着「实验」标签的功能。视频播放与 bilibili 的视频背景都在这里，关掉开关
             // 它们带来的设置、背景类型和面板入口就一起消失。
-            { id: 'lab', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab' },
+            { id: 'lab', color: '#38a169', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab' },
             // The loader only exists in the desktop main process; on web there is nothing to switch on.
-            { id: 'mods', icon: Boxes, labelKey: 'options.settingsPageMods', electronOnly: true },
-            { id: 'developer', icon: Terminal, labelKey: 'options.settingsPageDeveloper' },
+            { id: 'mods', color: '#a1743c', icon: Boxes, labelKey: 'options.settingsPageMods', electronOnly: true },
+            { id: 'developer', color: '#5a6472', icon: Terminal, labelKey: 'options.settingsPageDeveloper' },
         ],
     },
 ];
@@ -110,6 +113,7 @@ export const buildSettingsNavGroups = (t: Translate, options: { isElectron: bool
                 .map(section => ({
                     id: section.id,
                     icon: section.icon,
+                    color: section.color,
                     label: t(section.labelKey),
                 })),
         }))
