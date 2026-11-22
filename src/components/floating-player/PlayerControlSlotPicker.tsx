@@ -80,6 +80,10 @@ const PlayerControlSlotPicker: React.FC<PlayerControlSlotPickerProps> = ({
     );
     const bottom = viewportHeight - anchorRect.top + ANCHOR_GAP_PX;
 
+    // 墨色自己定，不跟着 --text-primary 走：浮层是 portal 到 body 的，body 那一层拿到的
+    // 是歌曲主题色（深色封面取出来的白），而底色按 isDaylight 是白玻璃——浅色模式下就成了白字白底。
+    const ink = isDaylight ? '#18181b' : '#f4f4f5';
+
     if (typeof document === 'undefined') {
         return null;
     }
