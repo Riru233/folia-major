@@ -1124,6 +1124,8 @@ const PROGRESS_ROW_CLASS = 'col-span-3 row-start-3 w-full px-2 sm:col-start-2 sm
 /** 播放键的「陀螺」：鼠标在圆钮里走到边缘时图标歪到的角度 / 挪开的距离。 */
 const PLAY_ICON_TILT_DEG = 15;
 const PLAY_ICON_SHIFT_PX = 1.4;
+/** 隐藏鼠标、图标跟随鼠标的范围：按钮的 1.2 倍，直角矩形（见按钮上的 before 层）。 */
+const PLAY_ICON_HIT_SCALE = 1.2;
 /** 弹簧松弛一点：指针滑动时图标是「荡」过去，不是硬跟。 */
 const PLAY_ICON_GYRO_SPRING = { stiffness: 260, damping: 22, mass: 0.5 };
 
@@ -1209,9 +1211,14 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
             if (event.pointerType !== 'mouse') return;
             const rect = event.currentTarget.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return;
-            // -1 是左/上边，+1 是右/下边；指针越靠边，图标歪得越多。
-            const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+            // 归一化按「按钮外扩 10% 的直角矩形」算，和隐藏光标 / 跟随的那块区域对齐：
+            // -1 是左/上边，+1 是右/下边；指针越靠边，图标歪得越多，出了这块区域就夹到边上。
+            const halfWidth = (rect.width * PLAY_ICON_HIT_SCALE) / 2;
+            const halfHeight = (rect.height * PLAY_ICON_HIT_SCALE) / 2;
+            const rawX = (event.clientX - (rect.left + rect.width / 2)) / halfWidth;
+            const rawY = (event.clientY - (rect.top + rect.height / 2)) / halfHeight;
+            const nx = Math.min(1, Math.max(-1, rawX));
+            const ny = Math.min(1, Math.max(-1, rawY));
             playIconTiltY.set(nx * PLAY_ICON_TILT_DEG);
             playIconTiltX.set(-ny * PLAY_ICON_TILT_DEG);
             playIconShiftX.set(nx * PLAY_ICON_SHIFT_PX);
@@ -1279,7 +1286,7 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                 onPointerCancel={restPlayIconGyro}
                 onBlur={restPlayIconGyro}
                 disabled={!canTogglePlay || controlsDisabled}
-                className={`col-start-2 row-start-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform sm:col-start-1 sm:row-start-1 sm:row-span-2 ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'cursor-none hover:scale-105'}`}
+                className={`col-start-2 row-start-2 relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform before:absolute before:-inset-[10%] before:content-[''] sm:col-start-1 sm:row-start-1 sm:row-span-2 ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'cursor-none hover:scale-105'}`}
                 style={{ backgroundColor: primaryColor, color: 'var(--bg-color)' }}
             >
                 <motion.span className="flex items-center justify-center" style={playIconGyroStyle}>
