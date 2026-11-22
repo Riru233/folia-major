@@ -9,6 +9,7 @@ import { hasBlockingWindow } from '../../../../utils/keyboardTargets';
 import { GridViewTabs, gridChromeClassesFor } from './GridViewTabs';
 import { Map as MapIcon } from 'lucide-react';
 import { CARD_TITLE_ATTR, MORPH_FRAME_ATTR } from '../transitions/gridMorphContract';
+import { useCollectionMorphStore } from '../transitions/collectionMorphStore';
 import { LoadingRing } from '@/components/shared/LoadingRing';
 import type { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 
@@ -727,20 +728,42 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
         return () => cancelAnimationFrame(frameId);
     }, [centerIndex, focusedIndex, isLoading, items.length, itemsSignature, reduceMicroMotion, updateCardTransforms]);
 
+    // 集合页正在退场（封面沿飞行动画回原位）时，morph 层把 exit 挂着，飞行结束才收掉。
+    // 这段时间里不能抢着把焦点卡拉回中心：那会先把卡片放回它原来的位置，再被瞬间拽到中间。
+    const morphExitActive = useCollectionMorphStore(state => state.exit !== null);
+
+    const realignFocusedCard = useCallback((behavior: ScrollBehavior) => {
+        const frameId = requestAnimationFrame(() => {
+            centerIndex(clampFocusedIndex(focusedIndex, items.length), behavior);
+            updateCardTransforms();
+        });
+        return () => cancelAnimationFrame(frameId);
+    }, [centerIndex, focusedIndex, items.length, updateCardTransforms]);
+
     // 切回这个页签（被 keep-alive 保持但不活动，现在重新激活）时把焦点卡重新对正：不活动期间可能有一次
     // 没跑完的平滑滚动被打断、或容器尺寸变过，滚动位置会停在半路，而上面那个居中 effect 因为焦点和列表
     // 都没变不会重跑。只在 false → true 这一下动，不干扰活动中的正常滚动。
+    // 从集合页退回来时先等退场飞完（exit 还在）再动，且一律用 smooth 滑过去，不再瞬间跳位。
     const wasInteractiveRef = useRef(isInteractive);
+    const realignPendingRef = useRef(false);
     useEffect(() => {
         const wasInteractive = wasInteractiveRef.current;
         wasInteractiveRef.current = isInteractive;
         if (wasInteractive || !isInteractive || isLoading || items.length === 0) return;
-        const frameId = requestAnimationFrame(() => {
-            centerIndex(clampFocusedIndex(focusedIndex, items.length), 'auto');
-            updateCardTransforms();
-        });
-        return () => cancelAnimationFrame(frameId);
-    }, [centerIndex, focusedIndex, isLoading, isInteractive, items.length, updateCardTransforms]);
+        if (useCollectionMorphStore.getState().exit) {
+            realignPendingRef.current = true;
+            return;
+        }
+        return realignFocusedCard('smooth');
+    }, [isLoading, isInteractive, items.length, realignFocusedCard]);
+
+    // 退场飞行结束（exit 收掉）之后补上这次对正：用户先看到卡片落回原位，再看到整排顺着滑到中心，
+    // 而不是落位的那一帧被拽走。
+    useEffect(() => {
+        if (morphExitActive || !realignPendingRef.current) return;
+        realignPendingRef.current = false;
+        return realignFocusedCard('smooth');
+    }, [morphExitActive, realignFocusedCard]);
 
     const handleScroll = useCallback(() => {
         if (!isInteractive) {
