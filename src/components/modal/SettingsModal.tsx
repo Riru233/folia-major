@@ -1224,8 +1224,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     data-glass
                     data-glass-light
                     data-glass-strength="1.1"
-                    data-glass-bend="60"
-                    data-glass-blur="3"
+                    data-glass-bend="20"
+                    data-glass-blur="8"
                     className="pointer-events-none absolute inset-0 -z-10 rounded-2xl"
                     style={{ backgroundColor: isDaylight ? 'rgba(255,255,255,0.52)' : 'rgba(22,22,25,0.52)' }}
                 />
@@ -1260,9 +1260,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             closeLabel={t('ui.close')}
                         />
                     )}
-                    {/* 正文区铺一层实底（--st-win），页面内容不跟窗口玻璃一起透；玻璃只留给左侧栏和
-                        窗口边缘那圈，所以这层只盖右侧列，不遮侧栏。 */}
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--st-win)]">
+                    {/* 正文区铺一层实底（浅色纯白 / 深色纯黑），页面内容不跟窗口玻璃一起透；玻璃只留给
+                        左侧栏和窗口边缘那圈，所以这层只盖右侧列，不遮侧栏。 */}
+                    <div
+                        className="flex min-h-0 min-w-0 flex-1 flex-col"
+                        style={{ backgroundColor: isDaylight ? '#fff' : '#000' }}
+                    >
                         <PageHeader
                             title={isSearching
                                 ? t('options.settingsSearchTitle')

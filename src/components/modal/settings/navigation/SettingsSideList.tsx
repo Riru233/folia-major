@@ -75,7 +75,9 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
                     className="shrink-0"
                 />
             )}
-            <nav className="mt-1 flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden">
+            {/* 侧栏里不画滚动条：13px 的小字列表旁边挂一条滚动槽会显得很窄，用滚轮/触控板滚就行
+                （键盘聚焦到某一项时浏览器仍会把它滚进视野）。 */}
+            <nav className="mt-1 flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {groups.map(group => (
                     <div key={group.id} className="flex flex-col gap-px">
                         <div className="block px-2.5 pb-1 pt-3.5 text-xs leading-[18px] text-[color:var(--st-t3)]">
