@@ -2271,6 +2271,7 @@ export default {
     "stage": "Sân khấu",
     "foliaTab": "Folia",
     "onlineGroup": "Trực tuyến",
+    "onlineMusic": "Âm nhạc trực tuyến",
     "onlineTabsLabel": "Các trang của {{source}}",
     "noSourcesTitle": "Chưa bật nguồn trực tuyến nào",
     "noSourcesBody": "Bật một nguồn trong Cài đặt → Nguồn, danh sách phát, gợi ý và album của nó sẽ hiện ở đây.",

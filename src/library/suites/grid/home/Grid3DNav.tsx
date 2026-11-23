@@ -35,6 +35,8 @@ interface Grid3DNavProps {
     tabs: readonly { key: LibraryHomeTabKey; label: string; disabledReason?: string }[];
     activeTab: LibraryHomeTabKey;
     onSelectTab: (tab: LibraryHomeTabKey) => void;
+    /** 「在线音乐」入口点进去的页（宿主记住的在线页）；不传时取第一个可用的在线页。 */
+    onlineTarget?: LibraryHomeTabKey;
     extraTabs?: readonly LibraryHomeExtraTab[];
     stageEnabled?: boolean;
     stageIsActive?: boolean;
@@ -77,9 +79,14 @@ const MAGNIFY_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 /** 展开时整列再往右让 5px：栏是往右长的，让这一点位移把它和页头左边距错开，收起时回到原位。 */
 const MAGNIFY_SHIFT_PX = 5;
 
+/** 左侧栏只留一个在线入口：这四张页在竖栏里折叠成一项，二级页签仍按页切。 */
+const ONLINE_NAV_KEY = '__online__';
+const ONLINE_TAB_KEYS: ReadonlySet<string> = new Set(['playlist', 'radio', 'explore', 'albums']);
+
 const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
     // Folia 组是聚合歌单（各音源 + 本地歌单并在一起），用「叠层」表示聚合。
     folia: Layers,
+    [ONLINE_NAV_KEY]: ListMusic,
     playlist: ListMusic,
     radio: Radio,
     explore: Compass,
@@ -195,6 +202,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     tabs,
     activeTab,
     onSelectTab,
+    onlineTarget,
     extraTabs,
     stageEnabled,
     stageIsActive,
@@ -215,14 +223,51 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     const playerBarStyle = usePlayerChromeSettingsStore(state => state.playerBarStyle);
     const columnBottomPx = COLUMN_BOTTOM_PX + (playerBarStyle === 'docked' ? DOCKED_PLAYER_BAR_HEIGHT_PX - 40 : 0);
 
-    // 摇杆需要的项与页头那排完全一致：不可用的页签带 disabled，拖动吸附时跳过它们。
+    // 左侧栏一页一项太碎：歌单 / 推荐 / 探索 / 专辑折叠成一项「在线音乐」，占第一个在线页的位置。
+    // 二级页签（小胶囊）不受影响，照旧按页切；竖栏这里连摇杆的落点一起少四格。
+    const navTabs = React.useMemo<readonly { key: string; label: string; disabledReason?: string }[]>(() => {
+        const firstOnline = tabs.findIndex(tab => ONLINE_TAB_KEYS.has(tab.key));
+        if (firstOnline < 0) return tabs;
+        const online = tabs.filter(tab => ONLINE_TAB_KEYS.has(tab.key));
+        const landing = online.find(tab => !tab.disabledReason) ?? online[0];
+        const merged = {
+            key: ONLINE_NAV_KEY,
+            label: t('home.onlineMusic'),
+            ...(landing.disabledReason ? { disabledReason: landing.disabledReason } : {}),
+        };
+        return tabs.flatMap((tab, index) => {
+            if (!ONLINE_TAB_KEYS.has(tab.key)) return [tab];
+            return index === firstOnline ? [merged] : [];
+        });
+    }, [tabs, t]);
+
+    // 竖栏的落点：在线那一项交给宿主记住的在线页（group.target），其余按 key 原样切。
+    const activateNavItem = (key: string) => {
+        if (key === '__stage__') {
+            onOpenStagePlayer?.();
+            return;
+        }
+        if (key === ONLINE_NAV_KEY) {
+            const target = onlineTarget ?? tabs.find(tab => ONLINE_TAB_KEYS.has(tab.key) && !tab.disabledReason)?.key;
+            if (target) onSelectTab(target);
+            return;
+        }
+        const extra = extraTabs?.find(tab => tab.id === key);
+        if (extra) {
+            extra.select();
+            return;
+        }
+        onSelectTab(key as LibraryHomeTabKey);
+    };
+
+    // 摇杆需要的项与竖栏显示的项一致：不可用的页签带 disabled，拖动吸附时跳过它们。
     const thumbItems = React.useMemo(
         () => [
-            ...tabs.map(tab => ({ key: tab.key, disabled: Boolean(tab.disabledReason) })),
+            ...navTabs.map(tab => ({ key: tab.key, disabled: Boolean(tab.disabledReason) })),
             ...(extraTabs ?? []).map(tab => ({ key: tab.id, disabled: false })),
             ...(stageEnabled ? [{ key: '__stage__', disabled: false }] : []),
         ],
-        [tabs, extraTabs, stageEnabled],
+        [navTabs, extraTabs, stageEnabled],
     );
 
     const trackRef = useRef<HTMLDivElement>(null);
@@ -240,19 +285,8 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     } = useNavTabThumb({
         trackRef,
         items: thumbItems,
-        activeKey: stageIsActive ? '__stage__' : (extraTabs?.find(tab => tab.active)?.id ?? activeTab),
-        onActivate: key => {
-            if (key === '__stage__') {
-                onOpenStagePlayer?.();
-                return;
-            }
-            const extra = extraTabs?.find(tab => tab.id === key);
-            if (extra) {
-                extra.select();
-                return;
-            }
-            onSelectTab(key as LibraryHomeTabKey);
-        },
+        activeKey: stageIsActive ? '__stage__' : (extraTabs?.find(tab => tab.active)?.id ?? (ONLINE_TAB_KEYS.has(activeTab) ? ONLINE_NAV_KEY : activeTab)),
+        onActivate: activateNavItem,
         axis: 'y',
     });
 
@@ -262,7 +296,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     const coveredSet = React.useMemo(() => new Set(thumbCovered), [thumbCovered]);
     const highlightByThumb = thumbCovered.length > 0;
     const lit = (index: number, active: boolean) => (highlightByThumb ? coveredSet.has(index) : active);
-    const extraOffset = tabs.length;
+    const extraOffset = navTabs.length;
     const stageIndex = extraOffset + (extraTabs?.length ?? 0);
 
     // 与页头那颗玻璃同一套底色、描边与阴影。
@@ -489,8 +523,9 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                         onContextMenu={event => event.preventDefault()}
                         className="relative flex flex-col items-stretch gap-[7px] p-1 cursor-grab active:cursor-grabbing touch-none"
                     >
-                        {tabs.map((tab, index) => {
-                            const active = !stageIsActive && !extraTabs?.some(item => item.active) && activeTab === tab.key;
+                        {navTabs.map((tab, index) => {
+                            const active = !stageIsActive && !extraTabs?.some(item => item.active)
+                                && (tab.key === ONLINE_NAV_KEY ? ONLINE_TAB_KEYS.has(activeTab) : activeTab === tab.key);
                             return (
                                 <NavTabButton
                                     key={tab.key}
@@ -502,7 +537,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                                     icon={<TabIcon tabKey={tab.key} />}
                                     magnified={thumbMagnified}
                                     reduceMotion={reduceMotion}
-                                    onClick={() => onSelectTab(tab.key)}
+                                    onClick={() => activateNavItem(tab.key)}
                                     onHover={handleHover}
                                     onHoverEnd={clearHover}
                                 />

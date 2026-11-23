@@ -2272,6 +2272,7 @@ export default {
     "stage": "Stage",
     "foliaTab": "Folia",
     "onlineGroup": "Daring",
+    "onlineMusic": "Musik Daring",
     "onlineTabsLabel": "Halaman {{source}}",
     "noSourcesTitle": "Belum ada sumber daring yang aktif",
     "noSourcesBody": "Aktifkan satu di Pengaturan → Sumber, lalu playlist, rekomendasi, dan albumnya muncul di sini.",

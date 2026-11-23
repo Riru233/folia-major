@@ -2272,6 +2272,7 @@ export default {
     "stage": "舞台",
     "foliaTab": "Folia",
     "onlineGroup": "在线",
+    "onlineMusic": "在线音乐",
     "onlineTabsLabel": "{{source}} 的页签",
     "noSourcesTitle": "还没有启用在线音源",
     "noSourcesBody": "在「设置 → 音源」里启用一个，它的歌单、推荐和专辑就会出现在这里。",

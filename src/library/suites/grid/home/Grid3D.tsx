@@ -10,6 +10,7 @@ import LocalGrid3DView from './LocalGrid3DView';
 import NavidromeGrid3DView from './NavidromeGrid3DView';
 import { useGrid3DTabKeys } from './useGrid3DTabKeys';
 import DesktopGrid3DSurface from './DesktopGrid3DSurface';
+import type { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 import OnlineProviderAccountlessPanel from '../account/OnlineProviderAccountlessPanel';
 import HomeLoginPanel from '../../../../components/login/HomeLoginPanel';
 import ExploreSurface from '../../../../components/app/home/explore/ExploreSurface';
@@ -36,10 +37,11 @@ import { useLibraryHomeListRegistration, useLibraryHomeTabsRegistration } from '
 import { useGridMapVisibilityStore } from './gridMapVisibilityStore';
 import HomeNoticePanel from './HomeNoticePanel';
 import FoliaGrid3DView from './FoliaGrid3DView';
-import { buildOnlineGridTabs, OnlineGridTabsRow } from './OnlineGridTabs';
+import { buildOnlineGridTabs } from './OnlineGridTabs';
 import { openSettings } from '../../../../stores/useSettingsModalStore';
 import { useIsBottomLayoutCompact } from '../../../../stores/useBottomDockStore';
-import { cycleIndex, isOnlineHomeTab } from '../../../core/home/homeSources';
+import { cycleIndex, homeGroupOfTab, isOnlineHomeTab } from '../../../core/home/homeSources';
+import { LOCAL_HOME_SECTIONS, localHomeSectionOfRow } from '../../../core/home/localHomeModel';
 import HomeSearchHistory, { HomeSearchHistoryPopover } from './HomeSearchHistory';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
 import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
@@ -59,9 +61,9 @@ const DISPERSION_FILTER_ID = 'grid3d-dispersion';
 // 页头那排页签胶囊照旧显示，作为对照；false 就只剩页头那排。
 const USE_GRID3D_NAV = { on: true }.on;
 
-// 页头那排页签胶囊（含它自己的摇杆与色散定义）的开关。导航已经改由 Grid3DNav 竖栏承担，
-// 这里关掉只留一份；整块 JSX 原样保留，改回 true 即可与竖栏并排对照。
-const USE_HEADER_PILL = { on: false }.on;
+// 页头那排胶囊（含它自己的摇杆与色散定义）现在复用为「当前一级组的二级页签」：
+// 在线音乐画歌单 / 推荐 / 探索 / 专辑，本地画文件夹 / 专辑 / 艺术家；一级组切换仍走左侧竖栏。
+const USE_HEADER_PILL = { on: true }.on;
 
 interface Grid3DProps {
     /** 在线账户 controller（宿主创建，见 LibraryHomeSurfaceProps）：登录按钮与右下角的切换器读它，换平台、登录、退出都在登录窗口里。 */
@@ -429,6 +431,21 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const onlineTabs = noOnlineSources ? [] : buildOnlineGridTabs(onlineGroup, homeViewTab, selectHomeTab);
     const onlineTabsLabel = t('home.onlineTabsLabel', { source: onlineGroup?.label ?? '' });
 
+    // 页头胶囊复用为「当前一级组的二级页签」：在线音乐画四页，本地画三个 section；
+    // 其它组没有二级页签，胶囊不出现。本地的标签与行号和 LocalGrid3DView 共用 core 定义，切的是同一份 activeRow。
+    const headerPillGroup = homeGroupOfTab(homeViewTab);
+    const headerPillTabs: DesktopGrid3DAction[] = headerPillGroup === 'online'
+        ? onlineTabs
+        : headerPillGroup === 'local'
+            ? LOCAL_HOME_SECTIONS.map(section => ({
+                id: section.key,
+                label: t(section.labelKey) || (section.fallbackLabelKey ? t(section.fallbackLabelKey) : ''),
+                active: localHomeSectionOfRow(localMusicState.activeRow).key === section.key,
+                onClick: () => setLocalMusicState(prev => ({ ...prev, activeRow: section.row })),
+            }))
+            : [];
+    const headerPillActiveKey = headerPillTabs.find(tab => tab.active)?.id ?? headerPillTabs[0]?.id ?? '';
+
     // 白色摇杆：脱离 button 的独立元素，可拖动、拖动时放大、按所在页签激活；点击页签时自动吸附。
     const pillTrackRef = useRef<HTMLDivElement>(null);
     const {
@@ -441,12 +458,12 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     } =
         useHomeTabThumb({
             trackRef: pillTrackRef,
-            items: homeTabs.map(tab => ({
-                key: tab.key,
-                disabled: Boolean(tab.disabledReason),
+            items: headerPillTabs.map(tab => ({
+                key: tab.id,
+                disabled: Boolean(tab.disabled),
             })),
-            activeKey: homeViewTab,
-            onActivate: setHomeViewTab,
+            activeKey: headerPillActiveKey,
+            onActivate: key => headerPillTabs.find(tab => tab.id === key)?.onClick(),
             onTapActive: focusActiveSlider,
         });
 
@@ -776,19 +793,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         <div className="relative grid grid-cols-2 items-center w-full py-10 pl-[80px] pr-4 gap-y-0">
                             {/* Left title and settings */}
                             <div className="flex items-center justify-start order-1 md:order-none gap-[10px]">
-                                {/* 左侧高亮导航标题：显示浮层导航当前高亮那一项的名字。
-                            页头左边留了 pl-[80px]，正好落在浮层竖栏右边。 */}
-                                <div className="flex min-w-0 items-center" style={headerFadeStyle}>
-                                    <span
-                                        className="truncate text-base md:text-lg font-light tracking-wide"
-                                        style={{
-                                            color: 'var(--text-color)',
-                                            fontFamily: '"Microsoft YaHei Light", "Microsoft YaHei", "PingFang SC", sans-serif',
-                                        }}
-                                    >
-                                        {activeNavLabel}
-                                    </span>
-                                </div>
+
                                 {/* 队列拼贴那颗钮已挪到浮层导航（Grid3DNav）竖栏下面，页头这边不再重复一颗。 */}
                                 {scanProgress?.active && (
                                     <div
@@ -1320,6 +1325,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 <Grid3DNav
                     tabs={homeTabs}
                     activeTab={homeViewTab}
+                    onlineTarget={onlineGroup?.target ?? undefined}
                     onSelectTab={tab => {
                         selectHomeTab(tab);
                     }}

@@ -2273,6 +2273,7 @@ export default {
     "stage": "Stage",
     "foliaTab": "Folia",
     "onlineGroup": "Online",
+    "onlineMusic": "Online Music",
     "onlineTabsLabel": "Pages of {{source}}",
     "noSourcesTitle": "No online source is enabled",
     "noSourcesBody": "Enable one under Settings → Sources and its playlists, picks and albums show up here.",
