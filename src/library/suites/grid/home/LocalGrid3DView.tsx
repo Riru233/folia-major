@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FolderOpen, Loader2, Music, User, Disc3, RefreshCw } from 'lucide-react';
+import { FolderOpen, Loader2, Music, RefreshCw } from 'lucide-react';
 import DesktopGrid3DSurface, { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 import { LocalSong, Theme } from '../../../../types';
 import type { GridViewCollectionDescriptor } from '../../../../components/app/home/gridViewCollectionAdapters';
@@ -22,12 +22,6 @@ import { useGlass } from '@/shinoinject/useGlass';
 // Desktop-only local music Grid3D overview that opens GridView instead of legacy carousel details.
 // 分组、section、卡片、导入动作与文件夹树都来自 Library Core 的首页模型（core/home/localHomeModel、
 // core/home/useLibraryHomeLocal、首页动作控制器）；这里只剩网格的展示：图标、焦点记忆、文件选择框。
-
-const SECTION_ICONS: Record<LocalHomeSectionKey, React.ReactNode> = {
-    folders: <FolderOpen size={13} />,
-    albums: <Disc3 size={13} />,
-    artists: <User size={13} />,
-};
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
     'import-folder': <FolderOpen size={13} />,
@@ -115,14 +109,6 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
         reloadTrees: directoryTrees.reload,
         reloadAllTrees: directoryTrees.reloadAll,
     });
-
-    const tabs: DesktopGrid3DAction[] = local.sections.map(section => ({
-        id: section.key,
-        label: section.label,
-        icon: SECTION_ICONS[section.key],
-        active: activeSection.row === section.row,
-        onClick: () => setActiveRow(section.row),
-    }));
 
     const runAction = (id: string) => {
         if (id === 'import-folder') void homeActions.importFolder();
@@ -217,7 +203,6 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
                         homeActions.openLocalGroup(group, collection => onOpenGridView?.(collection));
                     }
                 }}
-                tabs={tabs}
                 actions={actions}
                 emptyMessage={activeSection.emptyMessage}
                 theme={theme}

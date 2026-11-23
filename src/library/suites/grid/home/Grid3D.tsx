@@ -429,7 +429,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const openSourceSettings = window.electron ? () => openSettings('options', 'sources', null, 'sourceList') : undefined;
     // 一个音源都没启用时没有二级页签可言（页都是空的），只留「去启用音源」那块提示。
     const onlineTabs = noOnlineSources ? [] : buildOnlineGridTabs(onlineGroup, homeViewTab, selectHomeTab);
-    const onlineTabsLabel = t('home.onlineTabsLabel', { source: onlineGroup?.label ?? '' });
 
     // 页头胶囊复用为「当前一级组的二级页签」：在线音乐画四页，本地画三个 section；
     // 其它组没有二级页签，胶囊不出现。本地的标签与行号和 LocalGrid3DView 共用 core 定义，切的是同一份 activeRow。
@@ -444,7 +443,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 onClick: () => setLocalMusicState(prev => ({ ...prev, activeRow: section.row })),
             }))
             : [];
-    const headerPillActiveKey = headerPillTabs.find(tab => tab.active)?.id ?? headerPillTabs[0]?.id ?? '';
+    const headerPillActiveKey = headerPillTabs.find(tab => tab.active)?.id
+        ?? (headerPillTabs.length > 0 ? headerPillTabs[0].id : '');
 
     // 白色摇杆：脱离 button 的独立元素，可拖动、拖动时放大、按所在页签激活；点击页签时自动吸附。
     const pillTrackRef = useRef<HTMLDivElement>(null);
@@ -549,22 +549,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             : tabSnapshotRef.current.get(key) ?? { onlineList, directoryKey, hiddenScope };
         const { onlineList: list, directoryKey: dirKey, hiddenScope: scope } = snap;
         const interactive = isInteractive && isActive;
-        // 这一层有没有卡片列表：没有的（探索、无音源、无账户、解析中、未登录）二级页签单独画在同一个位置。
-        const layerShowOnlineList = isOnlineHomeTab(key)
-            && !noOnlineSources
-            && activeAccountView !== 'accountless'
-            && activeAccountView !== 'resolving'
-            && activeAccountView !== 'guest'
-            && key !== 'explore';
-        /** 在线组没有卡片列表的页：把二级页签（歌单 / 电台 / 探索 / 专辑）单独画一只小胶囊。 */
-        const withOnlineTabsRow = (content: React.ReactNode) => (
-            <div className="relative flex h-full w-full flex-1 flex-col">
-                {!layerShowOnlineList && (
-                    <OnlineGridTabsRow tabs={onlineTabs} isDaylight={isDaylight} label={onlineTabsLabel} />
-                )}
-                {content}
-            </div>
-        );
+        // 二级页签已挪到页头胶囊；没有卡片列表的页这里只留内容本身，不再另画一只小胶囊。
+        const withOnlineTabsRow = (content: React.ReactNode) => content;
         if (key === 'folia') {
             // Folia 组：聚合歌单的卡片（不设二级页签）；新建、排序、导入、打开速记簿在右上角。
             return (
@@ -652,8 +638,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     playlistVisibilityScope={scope}
                     directoryKey={dirKey}
                     declaredHomeActions={declaredActions}
-                    tabs={onlineTabs}
-                    tabsLabel={onlineTabsLabel}
                 />
             );
         }
@@ -854,9 +838,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     </div>
                                 )}
                         
-                                {/* 页头那排页签胶囊已停用（USE_HEADER_PILL = false）：导航改由下方 Grid3DNav 竖栏承担。
-                            整块代码保留，把开关改回 true 就能和竖栏并排对照。 */}
-                                {USE_HEADER_PILL && (
+                                {/* 页头胶囊复用为当前一级组的二级页签（在线四页 / 本地三个 section）；
+                            一级组仍由左侧竖栏切换，两边不重复。没有二级页签的组整块不画。 */}
+                                {USE_HEADER_PILL && headerPillTabs.length > 0 && (
                                     <div
                                         // 紧凑档里页签胶囊脱离左边那一组、居到整条页头中间（左右两组按钮仍各贴一边）：
                                         // 按自身宽度居中，换页签、加页签时都不会偏。尺寸与桌面档一致（不做 scale-90 的缩小）。
@@ -1028,52 +1012,29 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                             style={headerFadeStyle}
                                             className="relative flex items-center gap-0 cursor-grab active:cursor-grabbing touch-none pointer-none"
                                         >
-                                            {homeTabs.map((tab) => {
-                                                const isActive = homeViewTab === tab.key;
+                                            {headerPillTabs.map(tab => {
+                                                const label = typeof tab.label === 'string' ? tab.label : '';
                                                 return (
-                                                    <span
-                                                        key={tab.key}
-                                                        title={tab.disabledReason || tab.label}
-                                                        className="inline-flex"
-                                                    >
+                                                    <span key={tab.id} title={tab.title || label} className="inline-flex">
                                                         <button
+                                                            type="button"
                                                             data-home-tab
-                                                            disabled={Boolean(tab.disabledReason)}
-                                                            aria-label={tab.disabledReason || tab.label}
+                                                            data-grid-view-tab={tab.id}
+                                                            aria-current={tab.active ? 'page' : undefined}
+                                                            aria-label={label || tab.title}
+                                                            disabled={tab.disabled}
                                                             onClick={() => {
-                                                                setHomeViewTab(tab.key);
+                                                                tab.onClick();
                                                                 focusActiveSlider();
                                                             }}
-                                                            className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${isActive ? activeTabBg : navPillInactiveText}`}
+                                                            className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${tab.active ? activeTabBg : navPillInactiveText}`}
                                                         >
-                                                            {/* 福利页签原来不写字、用 BLG 队标；队标随 0.7.29 的素材一起下掉后
-                                                    回到普通文字页签，和其它页签同一套排版（宽度自然跟着文字走）。 */}
                                                             <span className="relative z-20">{tab.label}</span>
                                                         </button>
                                                     </span>
                                                 );
                                             })}
-                                            {props.extraTabs?.map(tab => (
-                                                <button key={tab.id} type="button" onClick={tab.select}
-                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}>
-                                                    {tab.label}
-                                                </button>
-                                            ))}
-                                            {stageEnabled && (
-                                                <button
-                                                    onClick={() => onOpenStagePlayer?.()}
-                                                    data-stage-active={stageIsActive ? 'true' : 'false'}
-                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${navPillInactiveText}`}
-                                                >
-                                                    <span className="relative z-10">{t('home.stage')}</span>
-                                                </button>
-                                            )}
-                                            {/* 播放队列的海报视图和 Stage 一样属于「去哪儿」，所以它在这一排，
-                                    而不是标题旁的工具图标。没有在播歌曲时队列也是空的，直接不出现。
-                                    平时只占一个图标的宽度，指针悬停或键盘聚焦时才展开文字——这一排
-                                    已经有五个内容 tab，多一个常驻文字就把胶囊撑得太长。点击始终直达。
-                                    在「探索」页签上它打开的是同一面墙，铺的是探索页的条目（探索拼贴）：
-                                    探索页有条目可铺时出现，不看有没有在播歌曲。 */}
+                                            {/* 模组扩展页签与舞台入口只留在左侧竖栏；这一排只放当前组的二级页签。 */}
                                         </div>
                                     </div>
                                 )}
