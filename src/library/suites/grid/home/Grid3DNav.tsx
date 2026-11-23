@@ -15,8 +15,6 @@ import {
     Theater,
 } from 'lucide-react';
 import { useGlass } from '@/shinoinject/useGlass';
-import SwitcherPill from '../../../../components/login/SwitcherPill';
-import type { LibraryAccountController } from '../../../core/account/account.contract';
 import { isChromiumRenderer } from '../../../../utils/platform';
 import type { LibraryHomeTabKey } from '../../../core/home/homeModel.contract';
 import type { LibraryHomeExtraTab } from '../../../core/suite/suite.contract';
@@ -44,9 +42,7 @@ interface Grid3DNavProps {
     /** 队列拼贴：有可铺的墙时宿主传这个，按钮挂在竖栏下面。 */
     onOpenLattice?: () => void;
     showLattice?: boolean;
-    /** 平台切换 / 登录入口：同样挂在竖栏下面，排在队列拼贴之后。 */
-    account?: LibraryAccountController;
-    /** 设置入口：从页头搬进来，放在竖栏最上面一行。 */
+    /** 设置入口：占据竖栏最上面一行（原来的平台切换位）。 */
     onOpenSettings?: () => void;
     /** 有新版本时在设置钮右上角点一个强调色圆点（页头原先是一段文字，竖栏只有 40px 放不下）。 */
     updateAvailable?: boolean;
@@ -209,7 +205,6 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     onOpenStagePlayer,
     onOpenLattice,
     showLattice,
-    account,
     onOpenSettings,
     updateAvailable = false,
     isDaylight = false,
@@ -362,12 +357,31 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
             data-testid="grid3d-nav"
         >
             <div ref={wrapperRef} className="relative flex flex-1 flex-col items-start gap-2">
-                {/* 平台切换（没人登录时就是登录入口）：浮动容器里排第一颗，设置按钮与它换了位置。
-                    header 档就是页头那颗圆钮本身，尺寸 38，与竖栏 40 并排看着齐。 */}
-                {account && (
-                    <div className="pointer-events-auto flex w-10 justify-center" data-testid="grid3d-nav-account">
-                        <SwitcherPill variant="header" account={account} />
-                    </div>
+                {/* 设置：占竖栏最上面那一行（原来的平台切换位）。尺寸与竖栏同宽（40），圆角拉满；
+                    有新版本时右上角点一个强调色圆点。平台切换已挪回页头搜索栏左边（只在线音乐时显示）。 */}
+                {onOpenSettings && (
+                    <button
+                        type="button"
+                        data-glass
+                        data-glass-jelly
+                        data-glass-light
+                        data-grid3d-settings
+                        onClick={onOpenSettings}
+                        title={t('ui.options')}
+                        aria-label={t('ui.options')}
+                        {...hoverProps(t('ui.options'))}
+                        className="pointer-events-auto relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-300"
+                        style={glassStyle}
+                    >
+                        <Settings size={18} style={{ color: 'var(--text-primary)' }} />
+                        {updateAvailable && (
+                            <span
+                                aria-hidden="true"
+                                className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
+                                style={{ backgroundColor: 'var(--text-accent)' }}
+                            />
+                        )}
+                    </button>
                 )}
 
                 <div
@@ -596,41 +610,6 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                     >
                         <LayoutDashboard size={18} style={{ color: 'var(--text-primary)' }} />
                     </button>
-                )}
-
-                {/* 设置：原来页头左侧那颗，搬进这个浮动容器里、钉在最底部（mt-auto 把间隔全吃掉）。
-                    尺寸与队列拼贴、竖栏同宽（40），圆角拉满；有新版本时右上角点一个强调色圆点。
-                    外层 layout + spring：窗口高度变化时它不是瞬间跳过去，而是带一点回弹滑到新位置；
-                    layout 只能挂在外层——里面那颗带 data-glass-jelly，transform 归果冻形变用。 */}
-                {onOpenSettings && (
-                    <motion.div
-                        layout
-                        transition={{ type: 'spring', stiffness: 260, damping: 26, mass: 0.9 }}
-                        className="pointer-events-auto mt-auto"
-                    >
-                        <button
-                            type="button"
-                            data-glass
-                            data-glass-jelly
-                            data-glass-light
-                            data-grid3d-settings
-                            onClick={onOpenSettings}
-                            title={t('ui.options')}
-                            aria-label={t('ui.options')}
-                            {...hoverProps(t('ui.options'))}
-                            className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300"
-                            style={glassStyle}
-                        >
-                            <Settings size={18} style={{ color: 'var(--text-primary)' }} />
-                            {updateAvailable && (
-                                <span
-                                    aria-hidden="true"
-                                    className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
-                                    style={{ backgroundColor: 'var(--text-accent)' }}
-                                />
-                            )}
-                        </button>
-                    </motion.div>
                 )}
 
                 {/* 共用的悬停标签：常驻一份（一份 data-glass），只是没悬停时不可见。

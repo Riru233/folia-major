@@ -14,6 +14,7 @@ import DesktopGrid3DSurface from './DesktopGrid3DSurface';
 import type { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 import OnlineProviderAccountlessPanel from '../account/OnlineProviderAccountlessPanel';
 import HomeLoginPanel from '../../../../components/login/HomeLoginPanel';
+import SwitcherPill from '../../../../components/login/SwitcherPill';
 import ExploreSurface from '../../../../components/app/home/explore/ExploreSurface';
 import { createOnlineGridViewCollection } from '../../../../components/app/home/gridViewCollectionAdapters';
 import { welfareCollectionOfCard, welfareGroupCards } from '../../../app/welfareHome';
@@ -1030,9 +1031,13 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     >
                     </div> */}
 
-                            {/* Right Search Bar（左边紧挨着平台切换与返回歌词画报两颗圆钮） */}
+                            {/* Right Search Bar（左边紧挨着切换在线媒体库那颗圆钮） */}
                             <div className="flex items-center justify-end gap-3 order-2 md:order-none">
-                                {/* 平台切换那颗圆钮已挪到浮层导航竖栏下面（Grid3DNav），页头不再放第二颗。 */}
+                                {/* 切换在线媒体库：只在「在线音乐」页签时露出来，紧挨搜索栏左边。
+                                    其它页签（Folia / 本地 / Navidrome）没有在线平台可切，就不占这一格。 */}
+                                {isOnlineHomeTab(homeViewTab) && (
+                                    <SwitcherPill variant="header" account={account} surfaceStyle={headerFadeStyle} />
+                                )}
                                 {isCompact ? (
                                 // 紧凑档收着的时候这里只有一颗圆钮：点开之后整条页头交给搜索层（见下面），
                                 // 页头这一排按钮一起向左滑出去。
@@ -1258,10 +1263,10 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 })}
             </div>
 
-            {/* 窄屏原本在这里挂一颗浮层版的平台切换，现在已经统一挪进页头（见上面的搜索栏那一行），
-                所以不再保留第二颗。返回歌词画报的箭头在播放条上，这里从来没有它。 */}
+            {/* 平台切换统一挂在页头搜索栏左边（只在线音乐页签显示），这里不再放第二颗。
+                返回歌词画报的箭头在播放条上，这里从来没有它。 */}
 
-            {/* 浮层导航：两档都用左侧竖栏，挂在页头设置按钮下面 10px（位置由组件自己量）。
+            {/* 浮层导航：两档都用左侧竖栏，顶部第一颗是设置（位置由组件自己量）。
                 页头那排胶囊保留不动（对照用），两处页签指向同一份状态，点哪边都一样。
                 层级压在 GridMap（z-[110]）与底部播放胶囊（z-60）之下；地图铺开、紧凑档搜索层拉出来时
                 整块藏起来（invisible）。 */}
@@ -1281,7 +1286,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         ? () => onOpenLattice(opensExploreWall ? 'explore' : 'queue')
                         : undefined}
                     showLattice={Boolean(onOpenLattice && currentTrack)}
-                    account={account}
                     onOpenSettings={() => onOpenSettings?.('help')}
                     updateAvailable={showUpdateIndicator}
                     isDaylight={isDaylight}
