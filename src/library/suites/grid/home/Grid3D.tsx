@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { type SongResult, type LocalSong, type LocalLibraryGroup, type Theme, type StatusMessage } from '../../../../types';
 import type { FoliaPlaylistSummary } from '../../../../types/foliaPlaylist';
 import LocalGrid3DView from './LocalGrid3DView';
+import { HOME_SURFACE_HIDDEN_SCALE, HOME_SURFACE_TRANSITION, homeSurfaceLayerMotion } from './homeSurfaceMotion';
 import NavidromeGrid3DView from './NavidromeGrid3DView';
 import { useGrid3DTabKeys } from './useGrid3DTabKeys';
 import DesktopGrid3DSurface from './DesktopGrid3DSurface';
@@ -124,20 +125,6 @@ interface Grid3DProps {
     /** 网格 suite 在 entry 里声明的首页动作（宿主经 registry 传入）：GridMap 的目录 surface 只发布声明 ∩ core 判定。 */
     declaredActions?: LibraryDeclaredActions;
 }
-
-// 一级页签切换：整块视图做「放大 / 消散」的接力，而不是左右滑动。
-// - 旧页：scale 1 → 1.1 同时淡出（消散）；
-// - 新页：scale 0.9 → 1（放大到原位），与旧页同时进行，两段共用同一条弹簧，像同一次镜头推进。
-// 隐身层（既非活动、也没在退场）停在 0.9 / 透明——下次被激活时就是从 0.9 长到 1，而不是从 1.1 缩回来。
-const HOME_SURFACE_HIDDEN_SCALE = 0.9;
-const HOME_SURFACE_EXIT_SCALE = 1.1;
-
-// 弹簧而不是定时曲线：中途换页签时目标值一变，动画从当前值接着走，天然可打断、不会跳帧。
-// 透明度单给一条短 tween——弹簧回弹时透明度跟着抖会显得脏。
-const HOME_SURFACE_TRANSITION = {
-    scale: { type: 'spring' as const, stiffness: 280, damping: 30, mass: 0.9 },
-    opacity: { duration: 0.26, ease: [0.22, 1, 0.36, 1] as const },
-};
 
 // 页签层内容包装：非活动层跳过重渲染（视图已常驻，父级的输入框、焦点等 state 变化不该再牵动它），
 // 活动层每次都重渲染以拿到最新 props。切换时 isActive 变化，比较器放行，自然重渲染。
@@ -535,12 +522,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const orderedLayerKeys = Array.from(new Set([...visitedTabs, ...exitingTabs, shownTab]))
         .filter(key => tabKeySet.has(key))
         .sort((a, b) => Number(a === shownTab) - Number(b === shownTab));
-    // 某层的动画状态：活动层停在原位，退场层放大消散，隐身层停在缩小位（下次激活就从这个尺寸长出来）。
-    const layerMotion = (isActive: boolean, isExiting: boolean) => {
-        if (isActive) return { scale: 1, opacity: 1 };
-        if (isExiting) return { scale: HOME_SURFACE_EXIT_SCALE, opacity: 0 };
-        return { scale: HOME_SURFACE_HIDDEN_SCALE, opacity: 0 };
-    };
+    // 某层的动画状态与一级/本地两级页签共用同一套接力缩放参数。
+    const layerMotion = homeSurfaceLayerMotion;
 
     // 单个页签层的内容：活动层用实时数据，非活动层用切走时的快照。活动层才可交互。
     const renderTabSurface = (key: LibraryHomeTabKey, isActive: boolean): React.ReactNode => {

@@ -133,7 +133,7 @@ export type BravaisHomeAccount = {
     guest: boolean;
     /** fb3：未登录时的入口按钮文案（「连接在线平台」）。 */
     connectLabel: string;
-    /** 入口按钮的标题（「切换在线音乐平台」）。 */
+    /** 入口按钮的标题（「切换在线媒体库」）。 */
     toggleLabel: string;
     /** 打开共用的登录窗口，从按下去的那个按钮那一边出来（已登录时开在正在用的平台上）。 */
     onOpen: (pressed: Element | null) => void;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { AnimatePresence, motion } from 'framer-motion';
 import { FolderOpen, Loader2, Music, RefreshCw } from 'lucide-react';
 import DesktopGrid3DSurface, { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 import { LocalSong, Theme } from '../../../../types';
@@ -17,6 +18,8 @@ import { useLibraryHomeLocal, useLocalDirectoryTrees, useLocalHomeBatchConfig } 
 import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions';
 import { useLibraryHomeListRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
 import { useGlass } from '@/shinoinject/useGlass';
+import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
+import { HOME_SURFACE_EXIT_SCALE, HOME_SURFACE_HIDDEN_SCALE, HOME_SURFACE_TRANSITION } from './homeSurfaceMotion';
 
 // src/library/suites/grid/home/LocalGrid3DView.tsx
 // Desktop-only local music Grid3D overview that opens GridView instead of legacy carousel details.
@@ -98,6 +101,7 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
 
     const activeSection = local.activeSection;
     const [activeFocusedIndex, setActiveFocusedIndex] = focus[activeSection.key];
+    const reduceMotion = useReducedMotionFor('uiMicroMotion');
 
     // 批量配置只装配 section 与目录树；动作的规则（路径规则、刷新顺序、pending 与重复提交）在 core 的控制器里。
     // 删除与恢复忽略目录之后重读目录树（core 的 useLocalHomeBatchConfig，TUI 的目录列表用同一个）。
@@ -167,19 +171,18 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
                 <button
                     data-glass data-glass-light data-glass-jelly
                     style={{
-                        background: "linear-gradient(to bottom,#9dafd722,#19309566,#48cbfa77)",
                         borderTop: isDaylight
-                            ? "1px solid #fff6"
-                            : "1px solid #fff5",
+                            ? '1px solid rgba(0,0,0,0.08)'
+                            : '1px solid rgba(255,255,255,0.12)',
                         borderBottom: isDaylight
-                            ? "1px solid #fff6"
-                            : "1px solid #fff5",
-                        outline: "1px solid rgba(35,35,35,0.3)",
-                        color: '#fffa',
+                            ? '1px solid rgba(0,0,0,0.08)'
+                            : '1px solid rgba(255,255,255,0.12)',
+                        outline: '1px solid rgba(35,35,35,0.3)',
+                        color: isDaylight ? '#111' : '#fffa',
                     }}
                     onClick={() => void homeActions.importFolder()}
                     disabled={importBusy}
-                    className="px-6 py-3 rounded-full transition-colors text-sm flex items-center gap-2 bg-white/10 hover:bg-white/20 disabled:bg-gray disabled:cursor-not-allowed"
+                    className={`px-6 py-3 rounded-full transition-colors text-sm flex items-center gap-2 disabled:bg-gray disabled:cursor-not-allowed ${isDaylight ? 'bg-[#fff4] hover:bg-[#fff8]' : 'bg-[#0004] hover:bg-[#0008]'}`}
                 >
                     {importBusy ? <Loader2 size={16} className="animate-spin" /> : <FolderOpen size={16} />}
                     {scanning ? t('options.scanning') : actionState.importingFolder ? t('localMusic.importing') : t('localMusic.importFolder')}
@@ -188,35 +191,54 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
         );
     }
 
+    // 切 section 加和一级页签同款的接力缩放：旧层放大到 1.1 淡出、新层从 0.9 长回 1，同一条弹簧、
+    // 中途可打断。用 AnimatePresence 让退场层带着切走那一刻的 props 快照淡出，动画结束再卸载——
+    // 这样它的 GridMap 会话与目录 key 都是当时的旧值，不会拿到新 section 的数据。原本切 section
+    // 就会换 surface 实例（Grid3DSlider 的 key 跟着 focusMemoryScope 变），所以这里并不多一次重挂。
+    // 焦点三个 section 各自记忆（见上面的 focus），切回来仍停在原来的卡片。
     return (
         <>
-            <DesktopGrid3DSurface
-                focusMemoryScope={JSON.stringify(['local', activeSection.key])}
-                title={String(activeSection.label)}
-                mapButtonLabel={t('home.allAlbums')}
-                items={activeSection.cards}
-                focusedIndex={activeFocusedIndex}
-                onFocusedIndexChange={setActiveFocusedIndex}
-                onSelect={(_, index) => {
-                    const group = activeSection.groups[index];
-                    if (group) {
-                        homeActions.openLocalGroup(group, collection => onOpenGridView?.(collection));
-                    }
-                }}
-                actions={actions}
-                emptyMessage={activeSection.emptyMessage}
-                theme={theme}
-                isDaylight={isDaylight}
-                isInteractive={isInteractive}
-                hasFloatingPlayer={hasFloatingPlayer}
-                playlistVisibilityScope="local"
-                directoryKey={directoryKey}
-                declaredHomeActions={declaredHomeActions}
-                batchConfig={localBatchConfig}
-                ponderControls="local-grid-controls"
-                gridMapPonderScope="local-grid-map-page"
-                onFolderContextMenu={onFolderContextMenu}
-            />
+            <div className="relative h-full w-full overflow-hidden">
+                <AnimatePresence initial={false} mode="popLayout">
+                    <motion.div
+                        key={activeSection.key}
+                        initial={{ scale: HOME_SURFACE_HIDDEN_SCALE, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: HOME_SURFACE_EXIT_SCALE, opacity: 0 }}
+                        transition={reduceMotion ? { duration: 0 } : HOME_SURFACE_TRANSITION}
+                        className="absolute inset-0 flex flex-col"
+                        style={{ transformOrigin: 'center center' }}
+                    >
+                        <DesktopGrid3DSurface
+                            focusMemoryScope={JSON.stringify(['local', activeSection.key])}
+                            title={String(activeSection.label)}
+                            mapButtonLabel={t('home.allAlbums')}
+                            items={activeSection.cards}
+                            focusedIndex={activeFocusedIndex}
+                            onFocusedIndexChange={setActiveFocusedIndex}
+                            onSelect={(_, index) => {
+                                const group = activeSection.groups[index];
+                                if (group) {
+                                    homeActions.openLocalGroup(group, collection => onOpenGridView?.(collection));
+                                }
+                            }}
+                            actions={actions}
+                            emptyMessage={activeSection.emptyMessage}
+                            theme={theme}
+                            isDaylight={isDaylight}
+                            isInteractive={isInteractive}
+                            hasFloatingPlayer={hasFloatingPlayer}
+                            playlistVisibilityScope="local"
+                            directoryKey={directoryKey}
+                            declaredHomeActions={declaredHomeActions}
+                            batchConfig={localBatchConfig}
+                            ponderControls="local-grid-controls"
+                            gridMapPonderScope="local-grid-map-page"
+                            onFolderContextMenu={onFolderContextMenu}
+                        />
+                    </motion.div>
+                </AnimatePresence>
+            </div>
             {menu}
         </>
     );
