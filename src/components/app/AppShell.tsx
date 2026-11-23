@@ -262,7 +262,7 @@ const AppShell: React.FC<AppShellProps> = ({
                         className={`pt-1 tracking-tight flex items-center gap-3 ${nativeTrafficLights ? '' : 'pl-3'} ${isDaylight?'[text-shadow:_0_0px_2px_#fff] [text-shadow:_0_0px_4px_#fff] [text-shadow:_0_0px_6px_#fff]' : '[text-shadow:_0_0px_2px_#000] [text-shadow:_0_0px_4px_#000] [text-shadow:_0_0px_6px_#000]'}`}
                         // mac 窗口用系统红绿灯时左上角被红黄绿三个圆点占住，标题整体让开这段宽度，
                         // 和自绘按钮靠左时让出的距离用同一个常量，两边不会各写一套。
-                        style={nativeTrafficLights ? { paddingLeft: NATIVE_TRAFFIC_LIGHTS_RESERVED_WIDTH } : undefined}
+                        style={nativeTrafficLights ? { paddingLeft: nativeTrafficLightsReservedWidth(uiZoom) } : undefined}
                         >
                           Folia Shino Preview
                         </motion.div>

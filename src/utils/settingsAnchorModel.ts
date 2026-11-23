@@ -93,6 +93,7 @@ export const SETTINGS_ANCHOR_DEFINITIONS = {
     // pages/RemotePage (desktop app only)
     remoteControl: { section: 'remote' },
     remoteLyrics: { section: 'remote' },
+    alphaVideoExport: { section: 'remote' },
 
     // pages/GraphicsPage; the render GPU row only in the Windows desktop app.
     graphicsPerformance: { section: 'graphics' },
@@ -100,6 +101,11 @@ export const SETTINGS_ANCHOR_DEFINITIONS = {
     liquidGlass: { section: 'graphics' },
     gpuPreference: { section: 'graphics' },
     lyricRenderScale: { section: 'graphics' },
+
+    // pages/SourcesPage (desktop app only)
+    sourceList: { section: 'sources' },
+    sourceInstall: { section: 'sources' },
+    sourceOther: { section: 'sources' },
 
     // pages/ModsPage
     modSystem: { section: 'mods' },

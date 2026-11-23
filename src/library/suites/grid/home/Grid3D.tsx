@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Loader2, X } from 'lucide-react';
+import { Search, Loader2, Cable, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../../stores/useSearchNavigationStore';
 import { useShallow } from 'zustand/react/shallow';
-import { type SongResult, type LocalSong, type LocalPlaylist, type LocalLibraryGroup, type Theme, type StatusMessage } from '../../../../types';
+import { type SongResult, type LocalSong, type LocalLibraryGroup, type Theme, type StatusMessage } from '../../../../types';
+import type { FoliaPlaylistSummary } from '../../../../types/foliaPlaylist';
 import LocalGrid3DView from './LocalGrid3DView';
 import NavidromeGrid3DView from './NavidromeGrid3DView';
 import { useGrid3DTabKeys } from './useGrid3DTabKeys';
@@ -33,6 +34,10 @@ import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions'
 import { useLibraryHomeDirectory } from '../../../core/home/useLibraryHomeDirectory';
 import { useLibraryHomeListRegistration, useLibraryHomeTabsRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
 import { useGridMapVisibilityStore } from './gridMapVisibilityStore';
+import HomeNoticePanel from './HomeNoticePanel';
+import FoliaGrid3DView from './FoliaGrid3DView';
+import { buildOnlineGridTabs, OnlineGridTabsRow } from './OnlineGridTabs';
+import { openSettings } from '../../../../stores/useSettingsModalStore';
 import { useIsBottomLayoutCompact } from '../../../../stores/useBottomDockStore';
 import { cycleIndex, isOnlineHomeTab } from '../../../core/home/homeSources';
 import HomeSearchHistory, { HomeSearchHistoryPopover } from './HomeSearchHistory';
@@ -70,10 +75,10 @@ interface Grid3DProps {
     currentTrack?: SongResult | null;
     localSongs: LocalSong[];
     localLibraryCatalog: LibraryLocalCatalogSnapshot;
-    localPlaylists: LocalPlaylist[];
+    localPlaylists: FoliaPlaylistSummary[];
     onRefreshLocalSongs: () => Promise<void> | void;
     localMusicState: {
-        activeRow: 0 | 1 | 2 | 3;
+        activeRow: 0 | 1 | 2;
         selectedGroup: LocalLibraryGroup | null;
         detailStack: LocalLibraryGroup[];
         detailOriginView: 'home' | 'player' | null;
@@ -83,7 +88,7 @@ interface Grid3DProps {
         focusedPlaylistIndex: number;
     };
     setLocalMusicState: React.Dispatch<React.SetStateAction<{
-        activeRow: 0 | 1 | 2 | 3;
+        activeRow: 0 | 1 | 2;
         selectedGroup: LocalLibraryGroup | null;
         detailStack: LocalLibraryGroup[];
         detailOriginView: 'home' | 'player' | null;
@@ -209,10 +214,12 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         playlists,
         cloudPlaylist,
         navidromeEnabled,
+        folia: true,
         // 福利页签只在福利目录读得到时出现（assets/music 是闭源素材，这份构建里可能整个不在，见 services/welfareSongs）。
         includeWelfare: isWelfareCatalogAvailable(),
     });
-    const { tab: homeViewTab, setTab: setHomeViewTab, isOnlineTab, online, tabs: homeTabs } = homeSources;
+    const { tab: homeViewTab, setTab: setHomeViewTab, isOnlineTab, online, tabs: homeTabs, groups: homeGroups, noOnlineSources } = homeSources;
+    const onlineGroup = homeGroups.find(group => group.key === 'online');
     const activeProviderId = online.providerId;
     const activeProviderLabel = online.providerLabel;
     const activeUser = online.user;
@@ -224,6 +231,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const shownTab = homeViewTab;
     const shownIsOnlineTab = isOnlineHomeTab(shownTab);
     const shownShowOnlineList = shownIsOnlineTab
+        && !noOnlineSources
         && shownTab !== 'explore'
         && activeAccountView !== 'accountless'
         && activeAccountView !== 'resolving'
@@ -327,10 +335,11 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
 
     // 首页模型交给 core 的首页 surface 句柄：页签条，以及在线页签的列表（本地与 Navidrome 由各自的视图注册）。
     useLibraryHomeTabsRegistration({
-        getState: () => ({ active: homeViewTab, tabs: homeTabs }),
+        getState: () => ({ active: homeViewTab, tabs: homeTabs, groups: homeGroups }),
         setTab: tab => {
             const target = homeTabs.find(candidate => candidate.key === tab);
-            if (!target || target.disabledReason) return false;
+            // 不可用的页不让选，除非它是某个组的落点（在线组一页都不可用时仍要进得去，见 resolveHomeGroups）。
+            if (!target || (target.disabledReason && !homeGroups.some(group => group.target === tab))) return false;
             props.onNativeTabSelected?.();
             setHomeViewTab(tab);
             return true;
@@ -405,6 +414,21 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         });
     };
 
+    // 切页签的唯一入口：不可用的页不让选，除非它是某个组的落点（在线组一页都不可用时仍要进得去，
+    // 那一页说的正是为什么不可用、去哪里启用，见 resolveHomeGroups）。
+    const selectHomeTab = (tab: LibraryHomeTabKey) => {
+        const target = homeTabs.find(candidate => candidate.key === tab);
+        if (!target || (target.disabledReason && !homeGroups.some(group => group.target === tab))) return false;
+        setHomeViewTab(tab);
+        focusActiveSlider();
+        return true;
+    };
+    // 「设置 → 音源」只在桌面版有。
+    const openSourceSettings = window.electron ? () => openSettings('options', 'sources', null, 'sourceList') : undefined;
+    // 一个音源都没启用时没有二级页签可言（页都是空的），只留「去启用音源」那块提示。
+    const onlineTabs = noOnlineSources ? [] : buildOnlineGridTabs(onlineGroup, homeViewTab, selectHomeTab);
+    const onlineTabsLabel = t('home.onlineTabsLabel', { source: onlineGroup?.label ?? '' });
+
     // 白色摇杆：脱离 button 的独立元素，可拖动、拖动时放大、按所在页签激活；点击页签时自动吸附。
     const pillTrackRef = useRef<HTMLDivElement>(null);
     const {
@@ -441,8 +465,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     // Its host disables this native surface while the page is open, so subsequent Tab stays inside the page.
     const navigationTabs = [
         ...homeTabs.map(tab => ({ id: tab.key, enabled: !tab.disabledReason, select: () => {
-            setHomeViewTab(tab.key);
-            focusActiveSlider();
+            selectHomeTab(tab.key);
         } })),
         ...(props.extraTabs ?? []).map(tab => ({ ...tab, enabled: true })),
     ];
@@ -509,29 +532,79 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             : tabSnapshotRef.current.get(key) ?? { onlineList, directoryKey, hiddenScope };
         const { onlineList: list, directoryKey: dirKey, hiddenScope: scope } = snap;
         const interactive = isInteractive && isActive;
-        if (isOnlineHomeTab(key) && activeAccountView === 'accountless') {
+        // 这一层有没有卡片列表：没有的（探索、无音源、无账户、解析中、未登录）二级页签单独画在同一个位置。
+        const layerShowOnlineList = isOnlineHomeTab(key)
+            && !noOnlineSources
+            && activeAccountView !== 'accountless'
+            && activeAccountView !== 'resolving'
+            && activeAccountView !== 'guest'
+            && key !== 'explore';
+        /** 在线组没有卡片列表的页：把二级页签（歌单 / 电台 / 探索 / 专辑）单独画一只小胶囊。 */
+        const withOnlineTabsRow = (content: React.ReactNode) => (
+            <div className="relative flex h-full w-full flex-1 flex-col">
+                {!layerShowOnlineList && (
+                    <OnlineGridTabsRow tabs={onlineTabs} isDaylight={isDaylight} label={onlineTabsLabel} />
+                )}
+                {content}
+            </div>
+        );
+        if (key === 'folia') {
+            // Folia 组：聚合歌单的卡片（不设二级页签）；新建、排序、导入、打开速记簿在右上角。
             return (
+                <div className="w-full h-full flex-1" data-testid="home-folia">
+                    <FoliaGrid3DView
+                        playlists={localPlaylists}
+                        localSongs={localSongs}
+                        focusedIndex={localMusicState.focusedPlaylistIndex}
+                        setFocusedIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedPlaylistIndex: index }))}
+                        homeActions={homeActions}
+                        directoryKey={dirKey}
+                        theme={theme}
+                        isDaylight={isDaylight}
+                        isInteractive={interactive}
+                        hasFloatingPlayer={Boolean(currentTrack)}
+                        onOpenGridView={onOpenGridView}
+                        declaredHomeActions={declaredActions}
+                    />
+                </div>
+            );
+        }
+        if (isOnlineHomeTab(key) && noOnlineSources) {
+            // 一个音源都没启用：页都是空的，只说清为什么、去哪里启用（二级页签只剩「去启用音源」那块提示）。
+            return withOnlineTabsRow(
+                <HomeNoticePanel
+                    testId="home-no-sources"
+                    icon={Cable}
+                    title={t('home.noSourcesTitle')}
+                    body={t('home.noSourcesBody')}
+                    isDaylight={isDaylight}
+                    action={openSourceSettings ? { label: t('home.noSourcesAction'), icon: Cable, run: openSourceSettings } : undefined}
+                />,
+            );
+        }
+        if (isOnlineHomeTab(key) && activeAccountView === 'accountless') {
+            return withOnlineTabsRow(
                 <OnlineProviderAccountlessPanel
                     providerLabel={activeProviderLabel}
                     isDaylight={isDaylight}
                     onSearch={() => searchInputRef.current?.focus()}
-                />
+                />,
             );
         }
         if (isOnlineHomeTab(key) && activeAccountView === 'resolving') {
-            return (
+            return withOnlineTabsRow(
                 <div className="flex flex-1 w-full items-center justify-center" aria-busy="true">
                     <Loader2 className="animate-spin opacity-30" size={28} />
-                </div>
+                </div>,
             );
         }
         if (isOnlineHomeTab(key) && activeAccountView === 'guest') {
             // One button: it opens the sign-in window, where the platform is chosen.
-            return <HomeLoginPanel account={account} />;
+            return withOnlineTabsRow(<HomeLoginPanel account={account} />);
         }
         if (key === 'explore') {
             if (!online.canUseExplore) return null;
-            return (
+            return withOnlineTabsRow(
                 <ExploreSurface
                     // Another platform or account starts from its own: how far a section was opened is not carried over.
                     key={`${activeProviderId}:${activeUser?.id ?? ''}`}
@@ -540,7 +613,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     scope={`${activeUser?.id ?? ''}:${i18n.language}`}
                     onPlaySong={(song, queue) => onPlaySong(song, queue, false)}
                     onOpenCollection={collection => onOpenGridView?.(createOnlineGridViewCollection(collection, activeProviderId))}
-                />
+                />,
             );
         }
         if (isOnlineHomeTab(key)) {
@@ -562,6 +635,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     playlistVisibilityScope={scope}
                     directoryKey={dirKey}
                     declaredHomeActions={declaredActions}
+                    tabs={onlineTabs}
+                    tabsLabel={onlineTabsLabel}
                 />
             );
         }
@@ -570,7 +645,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 <div className="w-full h-full flex-1">
                     <LocalGrid3DView
                         localSongs={localSongs}
-                        localPlaylists={localPlaylists}
                         localLibraryCatalog={localLibraryCatalog}
                         activeRow={localMusicState.activeRow}
                         setActiveRow={(row) => setLocalMusicState(prev => ({ ...prev, activeRow: row }))}
@@ -580,8 +654,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         setFocusedAlbumIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedAlbumIndex: index }))}
                         focusedArtistIndex={localMusicState.focusedArtistIndex}
                         setFocusedArtistIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedArtistIndex: index }))}
-                        focusedPlaylistIndex={localMusicState.focusedPlaylistIndex}
-                        setFocusedPlaylistIndex={(index) => setLocalMusicState(prev => ({ ...prev, focusedPlaylistIndex: index }))}
                         homeActions={homeActions}
                         directoryTreesResource={homeResources.localDirectoryTrees}
                         directoryKey={dirKey}
@@ -1249,8 +1321,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     tabs={homeTabs}
                     activeTab={homeViewTab}
                     onSelectTab={tab => {
-                        setHomeViewTab(tab);
-                        focusActiveSlider();
+                        selectHomeTab(tab);
                     }}
                     extraTabs={props.extraTabs}
                     stageEnabled={stageEnabled}

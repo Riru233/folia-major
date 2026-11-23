@@ -248,11 +248,10 @@ const VerticalHome: React.FC<LibraryHomeSurfaceProps> = (props) => {
     // ---------- 本地：四组 ----------
     const localGroups = useMemo(() => buildLocalHomeGroups(
         localSongs,
-        localPlaylists,
         t,
         localLibraryCatalog ? { entities: localLibraryCatalog.entities, assignments: localLibraryCatalog.assignments } : undefined,
         getLocalCoverAssetUrl,
-    ), [localLibraryCatalog, localPlaylists, localSongs, t]);
+    ), [localLibraryCatalog, localSongs, t]);
     const [localSectionKey, setLocalSectionKey] = useState<typeof LOCAL_HOME_SECTIONS[number]['key']>('folders');
     const localSection = LOCAL_HOME_SECTIONS.find(section => section.key === localSectionKey) ?? LOCAL_HOME_SECTIONS[0];
     const localCards = useMemo(() => buildLocalHomeCards(localGroups[localSection.key] ?? []), [localGroups, localSection.key]);

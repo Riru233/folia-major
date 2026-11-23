@@ -95,7 +95,7 @@ export const useLocalFolderContextMenu = (
         const subCount = collectDescendantFolderPaths(allPaths, normalized).length;
         return (
             <div className="space-y-1 text-sm">
-                <p>{t('localMusic.deletePlaylistMessage', { name: normalized, count })}</p>
+                <p>{t('localMusic.deleteFolderCollectionMessage', { name: normalized, count })}</p>
                 {subCount > 0 && <p>{t('localMusic.deletePlaylistSubPlaylists', { count: subCount })}</p>}
                 <p className="opacity-70">{t('localMusic.deletePlaylistNote')}</p>
             </div>

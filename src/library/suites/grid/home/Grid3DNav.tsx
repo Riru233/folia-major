@@ -78,6 +78,8 @@ const MAGNIFY_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 const MAGNIFY_SHIFT_PX = 5;
 
 const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+    // Folia 组是聚合歌单（各音源 + 本地歌单并在一起），用「叠层」表示聚合。
+    folia: Layers,
     playlist: ListMusic,
     radio: Radio,
     explore: Compass,

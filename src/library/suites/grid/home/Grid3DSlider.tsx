@@ -39,6 +39,8 @@ interface Grid3DSliderProps {
     isDaylight: boolean;
     hasFloatingPlayer?: boolean;
     tabs: DesktopGrid3DAction[];
+    /** 二级页签那一组的读屏名（在线组是「在线音源：xx」）。 */
+    tabsLabel?: string;
     mapButtonLabel: string;
     openGridMap: ()=> void;
     ponderControls?: 'local-grid-controls'
@@ -257,6 +259,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     isDaylight,
     hasFloatingPlayer = false,
     tabs,
+    tabsLabel,
     mapButtonLabel,
     openGridMap,
     ponderControls,
@@ -963,6 +966,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                         mapLabel={mapButtonLabel}
                                         mapIcon={<MapIcon size={13} />}
                                         ponderId={ponderControls}
+                                        label={tabsLabel}
                                     />
                                 )}
                                 {actions.length > 0 && (

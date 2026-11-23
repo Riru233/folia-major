@@ -38,6 +38,8 @@ interface DesktopGrid3DSurfaceProps {
     onFocusedIndexChange: (index: number) => void;
     onSelect: (item: Grid3DSliderItem, index: number) => void;
     tabs?: DesktopGrid3DAction[];
+    /** 二级页签那一组的读屏名。 */
+    tabsLabel?: string;
     actions?: DesktopGrid3DAction[];
     isInteractive?: boolean;
     isLoading?: boolean;
@@ -68,6 +70,7 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
     onFocusedIndexChange: onLegacyFocusedIndexChange,
     onSelect,
     tabs = [],
+    tabsLabel,
     actions = [],
     isInteractive = true,
     isLoading = false,
@@ -171,7 +174,6 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                 under the search box. The row itself lets clicks through to the grid; only the
                 controls take them. */}
 
-
             <Grid3DSlider
                 key={focusMemoryScope}
                 items={visibleItems}
@@ -184,6 +186,7 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                 isDaylight={isDaylight}
                 hasFloatingPlayer={hasFloatingPlayer}
                 tabs={tabs}
+                tabsLabel={tabsLabel}
                 mapButtonLabel={mapButtonLabel}
                 openGridMap={openGridMap}
                 actions={actions}
