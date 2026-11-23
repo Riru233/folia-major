@@ -30,6 +30,7 @@ const BILIBILI: SettingsGroupDef = { id: 'shinoLabBilibili', titleKey: 'options.
 
 const O = {
     videoPlayback: option(VIDEO, 'shinoLabVideoPlayback', 'options.shinoLabVideoPlayback'),
+    onlineVideo: option(VIDEO, 'shinoLabOnlineVideo', 'options.shinoLabOnlineVideo'),
     hideLyrics: option(VIDEO, 'shinoLabHideLyrics', 'options.shinoLabHideLyrics', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
     videoEnabled: option(VIDEO, 'videoLayerEnabled', 'options.videoLayerEnabled', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
     videoFile: option(VIDEO, 'videoLayerLocalFile', 'options.videoLayerLocalFile', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
@@ -54,11 +55,13 @@ const LabPage: React.FC = () => {
     const { isElectron } = useSettingsPage();
     const lab = useShinoLabStore(useShallow(state => ({
         videoPlayback: state.videoPlaybackEnabled,
+        onlineVideo: state.onlineVideoEnabled,
         hideLyrics: state.hideLyricStyleDuringVideo,
         bilibiliMv: state.bilibiliMvEnabled,
         autoMatch: state.bilibiliAutoMatch,
         quality: state.bilibiliMvQuality,
         setVideoPlayback: state.handleToggleVideoPlayback,
+        setOnlineVideo: state.handleToggleOnlineVideo,
         setHideLyrics: state.handleToggleHideLyricStyleDuringVideo,
         setBilibiliMv: state.handleToggleBilibiliMv,
         setAutoMatch: state.handleToggleBilibiliAutoMatch,
@@ -179,6 +182,10 @@ const LabPage: React.FC = () => {
                     )}
                 >
                     <Toggle checked={lab.videoPlayback} onChange={lab.setVideoPlayback} />
+                </Row>
+                {/* 在线视频：独立的实验开关，不挂在视频播放下面。打开后首页多一组、设置里多一页。 */}
+                <Row option={O.onlineVideo} note={t('options.shinoLabOnlineVideoDesc')}>
+                    <Toggle checked={lab.onlineVideo} onChange={lab.setOnlineVideo} />
                 </Row>
                 <Reveal when={lab.videoPlayback}>
                     <Row option={O.hideLyrics} note={t('options.shinoLabHideLyricsDesc')}>

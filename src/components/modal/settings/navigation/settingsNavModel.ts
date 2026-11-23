@@ -1,4 +1,4 @@
-import { Boxes, Cable, Contrast, Database, FlaskConical, Gauge, Keyboard, LayoutGrid, Link2, Monitor, MonitorPlay, PictureInPicture2, PlayCircle, SlidersHorizontal, Sparkles, Terminal, TextAlignStart, type LucideIcon } from 'lucide-react';
+import { Boxes, Cable, Clapperboard, Contrast, Database, FlaskConical, Gauge, Keyboard, LayoutGrid, Link2, Monitor, MonitorPlay, PictureInPicture2, PlayCircle, SlidersHorizontal, Sparkles, Terminal, TextAlignStart, type LucideIcon } from 'lucide-react';
 // src/components/modal/settings/navigation/settingsNavModel.ts
 // Single source of truth for the settings categories: their order in the side list, their grouping,
 // icons and names. A category is cut by what the listener is looking at or doing, so each page holds
@@ -20,6 +20,7 @@ export type SettingsSectionId =
     | 'desktop'
     | 'lab'
     | 'remote'
+    | 'video'
     | 'mods'
     | 'developer';
 
@@ -46,6 +47,8 @@ interface SectionSpec {
     labelKey: string;
     /** Sections that only exist on the desktop build. */
     electronOnly?: boolean;
+    /** 只在 Shino 实验室打开「在线视频」时才出现。 */
+    onlineVideoOnly?: boolean;
 }
 
 interface GroupSpec {
@@ -98,6 +101,8 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
             // 实验室：还带着「实验」标签的功能。视频播放与 bilibili 的视频背景都在这里，关掉开关
             // 它们带来的设置、背景类型和面板入口就一起消失。
             { id: 'lab', color: '#38a169', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab' },
+            // 视频分区跟着实验室里的「在线视频」开关走：关掉时连侧栏项一起消失。
+            { id: 'video', color: '#d98f3c', icon: Clapperboard, labelKey: 'options.settingsPageVideo', onlineVideoOnly: true },
             // The loader only exists in the desktop main process; on web there is nothing to switch on.
             { id: 'mods', color: '#a1743c', icon: Boxes, labelKey: 'options.settingsPageMods', electronOnly: true },
             { id: 'developer', color: '#5a6472', icon: Terminal, labelKey: 'options.settingsPageDeveloper' },
@@ -106,13 +111,17 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
 ];
 
 /** Resolves the grouping into translated nav items, dropping desktop-only sections (and groups left empty) on web. */
-export const buildSettingsNavGroups = (t: Translate, options: { isElectron: boolean }): SettingsNavGroup[] => (
+export const buildSettingsNavGroups = (
+    t: Translate,
+    options: { isElectron: boolean; onlineVideoEnabled?: boolean },
+): SettingsNavGroup[] => (
     SETTINGS_NAV_GROUP_SPECS
         .map(group => ({
             id: group.id,
             label: t(group.labelKey),
             items: group.sections
-                .filter(section => !section.electronOnly || options.isElectron)
+                .filter(section => (!section.electronOnly || options.isElectron)
+                    && (!section.onlineVideoOnly || options.onlineVideoEnabled === true))
                 .map(section => ({
                     id: section.id,
                     icon: section.icon,

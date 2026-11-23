@@ -60,6 +60,7 @@ import { selectDesktopSettingsSnapshot, useDesktopSettingsStore } from '../../st
 import { useSettingsModalStore } from '../../stores/useSettingsModalStore';
 import { setNavidromeEnabledState, useLibraryStore } from '../../stores/useLibraryStore';
 import { useGlass } from '@/shinoinject/useGlass';
+import { useShinoLabStore } from '../../shinoinject/lab/useShinoLabStore';
 
 const DEFAULT_OPENAI_TEMPERATURE = '0.7';
 
@@ -1004,9 +1005,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     );
     const canEnableAutoUpdate = Boolean(electronSettings.ENABLE_UPDATE_CHECK && updateStatus?.autoUpdateSupported);
 
+    // 视频分区跟着实验室开关走：关掉时侧栏里连这一项都没有，页面也就不可能被选中。
+    const onlineVideoEnabled = useShinoLabStore(state => state.onlineVideoEnabled);
     const settingsNavGroups = useMemo(
-        () => buildSettingsNavGroups(t, { isElectron }),
-        [t, isElectron],
+        () => buildSettingsNavGroups(t, { isElectron, onlineVideoEnabled }),
+        [t, isElectron, onlineVideoEnabled],
     );
     const activeSettingsNavItem = findSettingsNavItem(settingsNavGroups, activeSettingsSection);
     // A category this build does not list (a desktop-only one on web) has no page to show.

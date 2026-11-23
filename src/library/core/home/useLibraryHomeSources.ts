@@ -10,7 +10,7 @@ import type {
     LibraryHomeTabView,
 } from './homeModel.contract';
 import type { LibraryAccountController } from '../account/account.contract';
-import { homeGroupOfTab, isOnlineHomeTab, resolveHomeGroups, resolveHomeOnlineSource, resolveHomeTabs, translateHomeTabs } from './homeSources';
+import { homeGroupOfTab, isOnlineHomeTab, isVideoHomeTab, resolveHomeGroups, resolveHomeOnlineSource, resolveHomeTabs, translateHomeTabs } from './homeSources';
 import { resolveActiveProviderSummary } from '../account/accountRules';
 import { readOnlineProviderCapabilities, readOnlineProviderLabel } from './online/onlineHomeProvider.service';
 import { useSearchNavigationStore } from '../../../stores/useSearchNavigationStore';
@@ -21,6 +21,7 @@ import { getLocalLibraryAvailability } from '../../../services/localLibraryAvail
 import { getPersonalFmSelectionLabel } from '../../../services/onlineMusic/fmModes';
 import { builtinSourcesSettled } from '../../../services/onlineMusic/sourceReadiness';
 import { useLibraryAccountProviders } from '../account/useLibraryAccount';
+import { useShinoLabStore } from '../../../shinoinject/lab/useShinoLabStore';
 
 // src/library/core/home/useLibraryHomeSources.ts
 // 首页的来源与页签：当前页（搜索导航 store 持有）、当前在线来源（provider、账户、能力）、
@@ -33,6 +34,8 @@ export type LibraryHomeSources = {
     tab: HomeViewTab;
     setTab: (tab: HomeViewTab) => void;
     isOnlineTab: boolean;
+    /** 当前页是不是在线视频（实验室开关打开时才有）。 */
+    isVideoTab: boolean;
     online: LibraryHomeOnlineSource;
     /** 全部的页，按页签条的顺序（各组的页挨着）。 */
     tabs: LibraryHomeTabView[];
@@ -83,8 +86,11 @@ export const useLibraryHomeSources = ({
         radio: state.showHomeTabRadio,
         explore: state.showHomeTabExplore,
         albums: state.showHomeTabAlbums,
+        // 视频组没有独立的首页开关：它就是实验室里的那一个，关掉整组连同设置分区一起消失。
+        video: true,
         local: state.showHomeTabLocal,
     })));
+    const onlineVideoEnabled = useShinoLabStore(state => state.onlineVideoEnabled);
     // The FM card doubles as the mode readout: the card is the only place the current mode shows
     // up outside the player, and the picker can change it while this grid stays mounted.
     const { providers, activeProviderId: providerId } = useLibraryAccountProviders(account);
@@ -117,14 +123,20 @@ export const useLibraryHomeSources = ({
         if (tab === 'welfare' && !includeWelfare) setTab('playlist');
     }, [includeWelfare, setTab, tab]);
 
+    // 实验室里关掉在线视频时，停在那四页里的当前页回到歌单（页签本身也一起消失）。
+    useEffect(() => {
+        if (isVideoHomeTab(tab) && !onlineVideoEnabled) setTab('playlist');
+    }, [onlineVideoEnabled, setTab, tab]);
+
     const localAvailability = getLocalLibraryAvailability();
     const tabs = useMemo(() => translateHomeTabs(resolveHomeTabs({
         visibility,
         navidromeEnabled,
         online,
         includeWelfare,
+        videoEnabled: onlineVideoEnabled,
         localAvailability: { supported: localAvailability.supported, reason: localAvailability.reason },
-    }), t), [includeWelfare, localAvailability.reason, localAvailability.supported, navidromeEnabled, online, t, visibility]);
+    }), t), [includeWelfare, localAvailability.reason, localAvailability.supported, navidromeEnabled, online, onlineVideoEnabled, t, visibility]);
 
     // 一个音源都没启用：在线组的名字是通用的词。启动时音源模组还在注册的那一会儿列表也是空的，等它们都有过机会
     // 注册（builtinSourcesSettled）再下这个结论，免得「没有启用音源」闪一下。
@@ -151,6 +163,7 @@ export const useLibraryHomeSources = ({
         tab,
         setTab,
         isOnlineTab: isOnlineHomeTab(tab),
+        isVideoTab: isVideoHomeTab(tab),
         online,
         tabs,
         groups,

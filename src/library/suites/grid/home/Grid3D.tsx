@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Loader2, Cable, X } from 'lucide-react';
+import { Search, Loader2, Cable, X, Clapperboard } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../../stores/useSearchNavigationStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -42,7 +42,7 @@ import FoliaGrid3DView from './FoliaGrid3DView';
 import { buildOnlineGridTabs } from './OnlineGridTabs';
 import { openSettings } from '../../../../stores/useSettingsModalStore';
 import { useIsBottomLayoutCompact } from '../../../../stores/useBottomDockStore';
-import { cycleIndex, homeGroupOfTab, isOnlineHomeTab } from '../../../core/home/homeSources';
+import { cycleIndex, homeGroupOfTab, isOnlineHomeTab, isVideoHomeTab } from '../../../core/home/homeSources';
 import { LOCAL_HOME_SECTIONS, localHomeSectionOfRow } from '../../../core/home/localHomeModel';
 import HomeSearchHistory, { HomeSearchHistoryPopover } from './HomeSearchHistory';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
@@ -51,10 +51,20 @@ import { useGlass } from '@/shinoinject/useGlass';
 import { isChromiumRenderer } from '../../../../utils/platform';
 import { useHomeTabThumb } from './useHomeTabThumb';
 import { Grid3DNav } from './Grid3DNav';
+import OnlineVideoView from './OnlineVideoView';
+import VideoProviderDialog from './VideoProviderDialog';
 
 // src/library/suites/grid/home/Grid3D.tsx
 // Glassmorphic interactive desktop home view replacing the legacy 3D carousel.
 // Supports cover sliding with auto-fading header controls and delegates GridView opening upward.
+
+// 在线视频的页头胶囊：四页固定，顺序与首页分组一致；标签文案与页签解析共用同一批 key。
+const VIDEO_HEADER_TABS = [
+    { key: 'videoRecommend', labelKey: 'home.videoRecommend' },
+    { key: 'videoExplore', labelKey: 'home.videoExplore' },
+    { key: 'videoCategory', labelKey: 'home.videoCategory' },
+    { key: 'videoFavorites', labelKey: 'home.videoFavorites' },
+] as const;
 
 // 摇杆边缘的色散滤镜 id：滤镜定义在本组件的 <svg> 里，用 backdrop-filter: url(#…) 引用。
 const DISPERSION_FILTER_ID = 'grid3d-dispersion';
@@ -210,6 +220,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     });
     const { tab: homeViewTab, setTab: setHomeViewTab, isOnlineTab, online, tabs: homeTabs, groups: homeGroups, noOnlineSources } = homeSources;
     const onlineGroup = homeGroups.find(group => group.key === 'online');
+    const videoGroup = homeGroups.find(group => group.key === 'video');
     const activeProviderId = online.providerId;
     const activeProviderLabel = online.providerLabel;
     const activeUser = online.user;
@@ -266,6 +277,8 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const [isSearchHistoryOpen, setIsSearchHistoryOpen] = useState(false);
     /** 紧凑档的搜索框是不是已经展开；桌面档一直是展开的，不看这个。 */
     const [isCompactSearchOpen, setIsCompactSearchOpen] = useState(false);
+    /** 视频平台弹窗：只有在线视频页搜索栏左边那颗圆钮能打开。 */
+    const [isVideoProviderDialogOpen, setIsVideoProviderDialogOpen] = useState(false);
 
     const showUpdateIndicator = useUpdateIndicator();
 
@@ -423,14 +436,21 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const headerPillGroup = homeGroupOfTab(homeViewTab);
     const headerPillTabs: DesktopGrid3DAction[] = headerPillGroup === 'online'
         ? onlineTabs
-        : headerPillGroup === 'local'
-            ? LOCAL_HOME_SECTIONS.map(section => ({
-                id: section.key,
-                label: t(section.labelKey) || (section.fallbackLabelKey ? t(section.fallbackLabelKey) : ''),
-                active: localHomeSectionOfRow(localMusicState.activeRow).key === section.key,
-                onClick: () => setLocalMusicState(prev => ({ ...prev, activeRow: section.row })),
+        : headerPillGroup === 'video'
+            ? VIDEO_HEADER_TABS.map(tab => ({
+                id: tab.key,
+                label: t(tab.labelKey),
+                active: homeViewTab === tab.key,
+                onClick: () => selectHomeTab(tab.key),
             }))
-            : [];
+            : headerPillGroup === 'local'
+                ? LOCAL_HOME_SECTIONS.map(section => ({
+                    id: section.key,
+                    label: t(section.labelKey) || (section.fallbackLabelKey ? t(section.fallbackLabelKey) : ''),
+                    active: localHomeSectionOfRow(localMusicState.activeRow).key === section.key,
+                    onClick: () => setLocalMusicState(prev => ({ ...prev, activeRow: section.row })),
+                }))
+                : [];
     const headerPillActiveKey = headerPillTabs.find(tab => tab.active)?.id
         ?? (headerPillTabs.length > 0 ? headerPillTabs[0].id : '');
 
@@ -553,6 +573,14 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         onOpenGridView={onOpenGridView}
                         declaredHomeActions={declaredActions}
                     />
+                </div>
+            );
+        }
+        if (isVideoHomeTab(key)) {
+            // 在线视频：四页共用一块空壳视图，二级页签由页头胶囊画。不读任何平台数据。
+            return (
+                <div className="w-full h-full flex-1" data-testid="home-online-video">
+                    <OnlineVideoView tab={key} isDaylight={isDaylight} isCompact={isCompact} />
                 </div>
             );
         }
@@ -1038,6 +1066,23 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 {isOnlineHomeTab(homeViewTab) && (
                                     <SwitcherPill variant="header" account={account} surfaceStyle={headerFadeStyle} />
                                 )}
+                                {/* 在线视频：同一位置放视频平台入口，打开的是视频平台弹窗（当前只有 bilibili 占位）。 */}
+                                {isVideoHomeTab(homeViewTab) && (
+                                    <button
+                                        type="button"
+                                        data-glass
+                                        data-glass-jelly
+                                        data-glass-light
+                                        data-testid="home-video-provider-switch"
+                                        onClick={() => setIsVideoProviderDialogOpen(true)}
+                                        title={t('home.videoSwitchPlatform')}
+                                        aria-label={t('home.videoSwitchPlatform')}
+                                        className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full"
+                                        style={{ ...headerGlassStyle, ...headerFadeStyle }}
+                                    >
+                                        <Clapperboard className="h-4 w-4 opacity-60" />
+                                    </button>
+                                )}
                                 {isCompact ? (
                                 // 紧凑档收着的时候这里只有一颗圆钮：点开之后整条页头交给搜索层（见下面），
                                 // 页头这一排按钮一起向左滑出去。
@@ -1090,7 +1135,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                         <input
                                             ref={searchInputRef}
                                             type="text"
-                                            placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
+                                            placeholder={isVideoHomeTab(homeViewTab) ? t('home.searchVideo') : homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             onFocus={() => setIsSearchHistoryOpen(true)}
@@ -1164,7 +1209,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 <input
                                     ref={searchInputRef}
                                     type="text"
-                                    placeholder={homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
+                                    placeholder={isVideoHomeTab(homeViewTab) ? t('home.searchVideo') : homeViewTab === 'local' ? t('home.searchLocal') : homeViewTab === 'navidrome' ? t('home.searchNavidrome') : t('home.searchDatabase')}
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                     onKeyDown={e => {
@@ -1275,6 +1320,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     tabs={homeTabs}
                     activeTab={homeViewTab}
                     onlineTarget={onlineGroup?.target ?? undefined}
+                    videoTarget={videoGroup?.target ?? undefined}
                     onSelectTab={tab => {
                         selectHomeTab(tab);
                     }}
@@ -1292,6 +1338,12 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     className={isGridMapOpen || isCompactSearchOpen ? 'invisible' : ''}
                 />
             )}
+
+            <VideoProviderDialog
+                open={isVideoProviderDialogOpen && isVideoHomeTab(homeViewTab)}
+                onClose={() => setIsVideoProviderDialogOpen(false)}
+                isDaylight={isDaylight}
+            />
 
         </div>
     );

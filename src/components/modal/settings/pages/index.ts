@@ -18,6 +18,7 @@ import * as player from './PlayerPage';
 import * as remote from './RemotePage';
 import * as sources from './SourcesPage';
 import * as storage from './StoragePage';
+import * as video from './VideoPage';
 
 // src/components/modal/settings/pages/index.ts
 // The page of every settings category. A category in settingsNavModel without an entry here does
@@ -42,6 +43,7 @@ const PAGE_MODULES: Record<SettingsSectionId, PageModule> = {
     remote,
     graphics,
     lab,
+    video,
     mods,
     developer,
 };

@@ -1,5 +1,5 @@
 import type { PersonalFmLaunch } from '../../../types/personalFm';
-import type { HomeOnlineViewTab, HomeViewTab, LocalLibraryGroup, LocalSong, SongResult } from '../../../types';
+import type { HomeOnlineViewTab, HomeVideoViewTab, HomeViewTab, LocalLibraryGroup, LocalSong, SongResult } from '../../../types';
 import type { MediaId, ProviderAccountSummary, ProviderCollection, ProviderUser } from '../../../types/onlineMusic';
 import type { NavidromeConfig, SubsonicAlbum, SubsonicArtist, SubsonicPlaylist, SubsonicSong } from '../../../types/navidrome';
 import type { LibraryCollectionDescriptor, NavidromeGridViewCollectionType } from '../collection/collection.contract';
@@ -18,8 +18,10 @@ import type { LibraryDirectoryNode, LibraryDirectorySelectionType, LibraryHidden
 export type LibraryHomeTabKey = HomeViewTab;
 /** 在线来源的页签。探索（explore）是平台自己的推荐页：没有卡片列表，由 suite 自己画（网格挂 ExploreSurface）。 */
 export type LibraryHomeOnlineTab = HomeOnlineViewTab;
-/** 首页的一级组：Folia（聚合歌单）、当前在线音源、本地、Navidrome。模组的首页页面也在一级，由宿主另外交来（extraTabs）。 */
-export type LibraryHomeGroupKey = 'folia' | 'online' | 'local' | 'navidrome' | 'welfare';
+/** 在线视频组的页（实验室开关打开时才出现）。 */
+export type LibraryHomeVideoTab = HomeVideoViewTab;
+/** 首页的一级组：Folia（聚合歌单）、当前在线音源、在线视频、本地、Navidrome。模组的首页页面也在一级，由宿主另外交来（extraTabs）。 */
+export type LibraryHomeGroupKey = 'folia' | 'online' | 'video' | 'local' | 'navidrome' | 'welfare';
 
 /** 待翻译的文案：core 只给 i18n key 与插值，翻译在绑定 / 端口里做（fallback 是翻译为空时的兜底）。 */
 export type LibraryHomeMessage = {

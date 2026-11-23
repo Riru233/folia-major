@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+    Clapperboard,
     Compass,
     Disc3,
     FolderOpen,
@@ -35,6 +36,8 @@ interface Grid3DNavProps {
     onSelectTab: (tab: LibraryHomeTabKey) => void;
     /** 「在线音乐」入口点进去的页（宿主记住的在线页）；不传时取第一个可用的在线页。 */
     onlineTarget?: LibraryHomeTabKey;
+    /** 「在线视频」入口点进去的页；不传时取第一个可用的视频页。 */
+    videoTarget?: LibraryHomeTabKey;
     extraTabs?: readonly LibraryHomeExtraTab[];
     stageEnabled?: boolean;
     stageIsActive?: boolean;
@@ -78,11 +81,15 @@ const MAGNIFY_SHIFT_PX = 5;
 /** 左侧栏只留一个在线入口：这四张页在竖栏里折叠成一项，二级页签仍按页切。 */
 const ONLINE_NAV_KEY = '__online__';
 const ONLINE_TAB_KEYS: ReadonlySet<string> = new Set(['playlist', 'radio', 'explore', 'albums']);
+/** 在线视频同理：四页折叠成一项，二级页签由页头胶囊画。 */
+const VIDEO_NAV_KEY = '__video__';
+const VIDEO_TAB_KEYS: ReadonlySet<string> = new Set(['videoRecommend', 'videoExplore', 'videoCategory', 'videoFavorites']);
 
 const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
     // Folia 组是聚合歌单（各音源 + 本地歌单并在一起），用「叠层」表示聚合。
     folia: Layers,
     [ONLINE_NAV_KEY]: ListMusic,
+    [VIDEO_NAV_KEY]: Clapperboard,
     playlist: ListMusic,
     radio: Radio,
     explore: Compass,
@@ -199,6 +206,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     activeTab,
     onSelectTab,
     onlineTarget,
+    videoTarget,
     extraTabs,
     stageEnabled,
     stageIsActive,
@@ -221,18 +229,33 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     // 左侧栏一页一项太碎：歌单 / 推荐 / 探索 / 专辑折叠成一项「在线音乐」，占第一个在线页的位置。
     // 二级页签（小胶囊）不受影响，照旧按页切；竖栏这里连摇杆的落点一起少四格。
     const navTabs = React.useMemo<readonly { key: string; label: string; disabledReason?: string }[]>(() => {
-        const firstOnline = tabs.findIndex(tab => ONLINE_TAB_KEYS.has(tab.key));
-        if (firstOnline < 0) return tabs;
-        const online = tabs.filter(tab => ONLINE_TAB_KEYS.has(tab.key));
-        const landing = online.find(tab => !tab.disabledReason) ?? online[0];
-        const merged = {
-            key: ONLINE_NAV_KEY,
-            label: t('home.onlineMusic'),
-            ...(landing.disabledReason ? { disabledReason: landing.disabledReason } : {}),
+        // 两组折叠规则相同：在原列表第一次出现的位置放一项，同组其余页省略。
+        const collapse = (keys: ReadonlySet<string>, navKey: string, label: string) => {
+            const index = tabs.findIndex(tab => keys.has(tab.key));
+            if (index < 0) return null;
+            const members = tabs.filter(tab => keys.has(tab.key));
+            const landing = members.find(tab => !tab.disabledReason) ?? members[0];
+            return {
+                index,
+                item: {
+                    key: navKey,
+                    label,
+                    ...(landing.disabledReason ? { disabledReason: landing.disabledReason } : {}),
+                },
+            };
         };
+        const merged = [
+            collapse(ONLINE_TAB_KEYS, ONLINE_NAV_KEY, t('home.onlineMusic')),
+            collapse(VIDEO_TAB_KEYS, VIDEO_NAV_KEY, t('home.videoGroup')),
+        ].filter((group): group is { index: number; item: { key: string; label: string; disabledReason?: string } } => Boolean(group));
+        if (merged.length === 0) return tabs;
+        const byIndex = new Map(merged.map(group => [group.index, group.item]));
         return tabs.flatMap((tab, index) => {
-            if (!ONLINE_TAB_KEYS.has(tab.key)) return [tab];
-            return index === firstOnline ? [merged] : [];
+            if (ONLINE_TAB_KEYS.has(tab.key) || VIDEO_TAB_KEYS.has(tab.key)) {
+                const item = byIndex.get(index);
+                return item ? [item] : [];
+            }
+            return [tab];
         });
     }, [tabs, t]);
 
@@ -244,6 +267,11 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
         }
         if (key === ONLINE_NAV_KEY) {
             const target = onlineTarget ?? tabs.find(tab => ONLINE_TAB_KEYS.has(tab.key) && !tab.disabledReason)?.key;
+            if (target) onSelectTab(target);
+            return;
+        }
+        if (key === VIDEO_NAV_KEY) {
+            const target = videoTarget ?? tabs.find(tab => VIDEO_TAB_KEYS.has(tab.key) && !tab.disabledReason)?.key;
             if (target) onSelectTab(target);
             return;
         }
@@ -280,7 +308,8 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
     } = useNavTabThumb({
         trackRef,
         items: thumbItems,
-        activeKey: stageIsActive ? '__stage__' : (extraTabs?.find(tab => tab.active)?.id ?? (ONLINE_TAB_KEYS.has(activeTab) ? ONLINE_NAV_KEY : activeTab)),
+        activeKey: stageIsActive ? '__stage__' : (extraTabs?.find(tab => tab.active)?.id
+            ?? (ONLINE_TAB_KEYS.has(activeTab) ? ONLINE_NAV_KEY : VIDEO_TAB_KEYS.has(activeTab) ? VIDEO_NAV_KEY : activeTab)),
         onActivate: activateNavItem,
         axis: 'y',
     });
@@ -539,7 +568,9 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                     >
                         {navTabs.map((tab, index) => {
                             const active = !stageIsActive && !extraTabs?.some(item => item.active)
-                                && (tab.key === ONLINE_NAV_KEY ? ONLINE_TAB_KEYS.has(activeTab) : activeTab === tab.key);
+                                && (tab.key === ONLINE_NAV_KEY ? ONLINE_TAB_KEYS.has(activeTab)
+                                    : tab.key === VIDEO_NAV_KEY ? VIDEO_TAB_KEYS.has(activeTab)
+                                        : activeTab === tab.key);
                             return (
                                 <NavTabButton
                                     key={tab.key}

@@ -6,12 +6,21 @@
 import { getStoredBoolean } from '../../stores/storagePrimitives';
 
 export const LAB_VIDEO_PLAYBACK_KEY = 'shino_lab_video_playback';
+/** 在线视频（首页分组 + 设置分区）的总开关，默认关闭：打开实验室里的这一项才露出入口。 */
+export const LAB_ONLINE_VIDEO_KEY = 'shino_lab_online_video';
 
 /** 与 store 的默认值一致：从没存过就是打开。没有 localStorage 的环境（单测、SSR 式渲染）也按打开。 */
 export const isLabVideoPlaybackEnabled = (): boolean => (
     typeof window === 'undefined' || typeof localStorage === 'undefined'
         ? true
         : getStoredBoolean(LAB_VIDEO_PLAYBACK_KEY, true)
+);
+
+/** 在线视频入口是否打开。UI 骨架阶段默认显示，方便先看到左侧栏分组；实验室里仍可关掉。 */
+export const isLabOnlineVideoEnabled = (): boolean => (
+    typeof window === 'undefined'
+        ? true
+        : getStoredBoolean(LAB_ONLINE_VIDEO_KEY, true)
 );
 
 /**

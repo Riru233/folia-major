@@ -12,6 +12,7 @@ import type {
     LibraryHomeTab,
     LibraryHomeTabKey,
     LibraryHomeTabView,
+    LibraryHomeVideoTab,
 } from './homeModel.contract';
 import type { LibraryHiddenScope } from '../directory/directory.contract';
 import { resolveOnlineProviderAccountView } from '../account/onlineProviderAccountView';
@@ -26,18 +27,25 @@ import { onlineHiddenScope } from '../directory/directoryVisibility';
 // （homeGroupOfTab）；resolveHomeTabs 给全部的页，resolveHomeGroups 把它们分进组、定每个组点了去哪一页。
 
 const ONLINE_TABS: readonly LibraryHomeOnlineTab[] = ['playlist', 'radio', 'albums', 'explore'];
+/** 在线视频的四页（Shino 实验室开关打开时才加入首页）。 */
+const VIDEO_TABS: readonly LibraryHomeVideoTab[] = ['videoRecommend', 'videoExplore', 'videoCategory', 'videoFavorites'];
 
 export const isOnlineHomeTab = (tab: LibraryHomeTabKey): tab is LibraryHomeOnlineTab => (
     (ONLINE_TABS as readonly string[]).includes(tab)
 );
 
+export const isVideoHomeTab = (tab: LibraryHomeTabKey): tab is LibraryHomeVideoTab => (
+    (VIDEO_TABS as readonly string[]).includes(tab)
+);
+
 /** 这一页在哪个一级组里。 */
 export const homeGroupOfTab = (tab: LibraryHomeTabKey): LibraryHomeGroupKey => (
     tab === 'folia' ? 'folia'
-        : tab === 'local' ? 'local'
-            : tab === 'navidrome' ? 'navidrome'
-                : tab === 'welfare' ? 'welfare'
-                    : 'online'
+        : isVideoHomeTab(tab) ? 'video'
+            : tab === 'local' ? 'local'
+                : tab === 'navidrome' ? 'navidrome'
+                    : tab === 'welfare' ? 'welfare'
+                        : 'online'
 );
 
 /** 翻译一条首页文案；翻译为空时用 fallback。 */
@@ -107,6 +115,8 @@ export type LibraryHomeTabVisibility = {
     radio: boolean;
     explore: boolean;
     albums: boolean;
+    /** 在线视频组：只有实验室开关打开时才是 true（缺省按关闭，老调用方不用改）。 */
+    video?: boolean;
     local: boolean;
 };
 
@@ -123,6 +133,7 @@ export const resolveHomeTabs = ({
     online,
     localAvailability,
     includeWelfare = false,
+    videoEnabled = false,
 }: {
     visibility: LibraryHomeTabVisibility;
     navidromeEnabled: boolean;
@@ -130,12 +141,21 @@ export const resolveHomeTabs = ({
     localAvailability: LibraryHomeLocalAvailability;
     /** 这套 suite 的首页画不画「福利」页签。 */
     includeWelfare?: boolean;
+    /** Shino 实验室的在线视频开关：关着时四个视频页都不出现。 */
+    videoEnabled?: boolean;
 }): LibraryHomeTab[] => [
     ...(visibility.folia ? [{ key: 'folia' as const, label: { key: 'home.foliaTab', fallback: 'Folia' } }] : []),
     ...(visibility.playlist ? [{ key: 'playlist' as const, label: { key: 'home.playlists' }, disabledReason: resolveOnlineTabUnavailableReason(online, 'playlist') }] : []),
     ...(visibility.radio ? [{ key: 'radio' as const, label: { key: 'home.radioTab' }, disabledReason: resolveOnlineTabUnavailableReason(online, 'radio') }] : []),
     ...(visibility.explore && online.canUseExplore ? [{ key: 'explore' as const, label: { key: 'home.explore' } }] : []),
     ...(visibility.albums ? [{ key: 'albums' as const, label: { key: 'home.albums' }, disabledReason: resolveOnlineTabUnavailableReason(online, 'albums') }] : []),
+    // 在线视频：实验室开关关着时不出现；开着时四页都是空壳 UI，不依赖在线账户与音源。
+    ...(visibility.video && videoEnabled ? [
+        { key: 'videoRecommend' as const, label: { key: 'home.videoRecommend' } },
+        { key: 'videoExplore' as const, label: { key: 'home.videoExplore' } },
+        { key: 'videoCategory' as const, label: { key: 'home.videoCategory' } },
+        { key: 'videoFavorites' as const, label: { key: 'home.videoFavorites' } },
+    ] : []),
     ...(visibility.local ? [{ key: 'local' as const, label: { key: 'localMusic.folder' }, disabledReason: resolveLocalUnavailableReason(localAvailability) }] : []),
     ...(navidromeEnabled ? [{ key: 'navidrome' as const, label: { key: 'navidrome.title', fallback: 'Navidrome' } }] : []),
     ...(includeWelfare ? [{ key: 'welfare' as const, label: { key: 'home.welfare' } }] : []),
@@ -231,7 +251,7 @@ export const resolveHomeHiddenScope = (tab: LibraryHomeTabKey, providerId: strin
     tab === 'local' || tab === 'folia' ? 'local' : tab === 'navidrome' ? 'navidrome' : onlineHiddenScope(providerId)
 );
 
-const GROUP_ORDER: readonly LibraryHomeGroupKey[] = ['folia', 'online', 'local', 'navidrome', 'welfare'];
+const GROUP_ORDER: readonly LibraryHomeGroupKey[] = ['folia', 'online', 'video', 'local', 'navidrome', 'welfare'];
 
 /**
  * 把全部的页分进一级组（两级页签的首页——网格与 Bravais——按它画一级那一排）。一页都没有的组不出现。

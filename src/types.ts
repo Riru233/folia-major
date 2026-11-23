@@ -168,9 +168,12 @@ export interface LyricRenderOverride {
  * 组由页推出（library/core/home/homeSources 的 homeGroupOfTab）：在线组有四页（playlist / radio / albums / explore），
  * 其余各组只有一页（本地与 Navidrome 的二级页签是各自的 section，不在这里）。旧版本存下的值都还是其中一页。
  */
-export type HomeViewTab = 'folia' | 'playlist' | 'local' | 'albums' | 'navidrome' | 'radio' | 'explore' | 'welfare';
+export type HomeViewTab = 'folia' | 'playlist' | 'local' | 'albums' | 'navidrome' | 'radio' | 'explore' | 'welfare'
+    | 'videoRecommend' | 'videoExplore' | 'videoCategory' | 'videoFavorites';
 /** 在线组里的页。 */
 export type HomeOnlineViewTab = 'playlist' | 'radio' | 'albums' | 'explore';
+/** 在线视频组里的页（Shino 实验室开关打开时才出现）。 */
+export type HomeVideoViewTab = 'videoRecommend' | 'videoExplore' | 'videoCategory' | 'videoFavorites';
 
 export type PlaybackContext = 'main' | 'stage';
 export type StageSource = 'stage-api' | 'now-playing' | 'playercap';

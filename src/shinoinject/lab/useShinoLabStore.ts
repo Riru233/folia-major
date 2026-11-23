@@ -4,7 +4,7 @@ import { DEFAULT_VISUALIZER_BACKGROUND_MODE } from '../../types/visualizerModes'
 import { getStoredBoolean, setStoredBoolean } from '../../stores/storagePrimitives';
 import { setStatusMessage } from '../../stores/useStatusMessageStore';
 import { useVisualizerSettingsStore } from '../../stores/useVisualizerSettingsStore';
-import { isLabVideoPlaybackEnabled, LAB_VIDEO_PLAYBACK_KEY, notifyLabVideoGateChanged } from './labVideoGate';
+import { isLabOnlineVideoEnabled, isLabVideoPlaybackEnabled, LAB_ONLINE_VIDEO_KEY, LAB_VIDEO_PLAYBACK_KEY, notifyLabVideoGateChanged } from './labVideoGate';
 
 // src/shinoinject/lab/useShinoLabStore.ts
 // 「Shino 实验室」的两个实验：视频播放（曲目自带的画面、设置里那条视频层），以及把 bilibili 上
@@ -30,6 +30,8 @@ const readStoredQuality = (): BilibiliMvQuality => {
 export type ShinoLabState = {
     /** 视频播放：曲目自带的 MV 与设置里那条装饰视频层的总开关。 */
     videoPlaybackEnabled: boolean;
+    /** 在线视频：首页分组、四个页签与设置里的视频分区。默认关闭，在实验室里打开才显示。 */
+    onlineVideoEnabled: boolean;
     /** 视频在放的时候不要歌词样式，让画面自己说话。 */
     hideLyricStyleDuringVideo: boolean;
     /** 实验性背景：视频 —— 背景类型里多出一个「视频」，从 bilibili 找这首歌的 MV 画面。 */
@@ -38,6 +40,7 @@ export type ShinoLabState = {
     bilibiliAutoMatch: boolean;
     bilibiliMvQuality: BilibiliMvQuality;
     handleToggleVideoPlayback: (enabled: boolean) => void;
+    handleToggleOnlineVideo: (enabled: boolean) => void;
     handleToggleHideLyricStyleDuringVideo: (enabled: boolean) => void;
     handleToggleBilibiliMv: (enabled: boolean) => void;
     handleToggleBilibiliAutoMatch: (enabled: boolean) => void;
@@ -46,10 +49,20 @@ export type ShinoLabState = {
 
 export const useShinoLabStore = create<ShinoLabState>((set, get) => ({
     videoPlaybackEnabled: isLabVideoPlaybackEnabled(),
+    onlineVideoEnabled: isLabOnlineVideoEnabled(),
     hideLyricStyleDuringVideo: getStoredBoolean(LAB_HIDE_LYRICS_ON_VIDEO_KEY, false),
     bilibiliMvEnabled: getStoredBoolean(LAB_BILIBILI_MV_KEY, false),
     bilibiliAutoMatch: getStoredBoolean(LAB_BILIBILI_AUTO_MATCH_KEY, true),
     bilibiliMvQuality: readStoredQuality(),
+    handleToggleOnlineVideo: (enabled) => {
+        setStoredBoolean(LAB_ONLINE_VIDEO_KEY, enabled);
+        set({ onlineVideoEnabled: enabled });
+        notifyLabVideoGateChanged();
+        setStatusMessage({
+            type: 'info',
+            text: i18n.t(enabled ? 'notifications.shinoLabOnlineVideoOn' : 'notifications.shinoLabOnlineVideoOff'),
+        });
+    },
     handleToggleVideoPlayback: (enabled) => {
         setStoredBoolean(LAB_VIDEO_PLAYBACK_KEY, enabled);
         set({ videoPlaybackEnabled: enabled });

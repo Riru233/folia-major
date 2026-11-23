@@ -39,9 +39,14 @@ type SegmentsProps<T extends string> = {
     size?: keyof typeof SIZE;
     /** Takes the width of its row; the options share it. */
     fill?: boolean;
+    /**
+     * 这一组分段是什么：音质或画质。同一个位置按当前播放类型换 options，
+     * 这里把类型写到 DOM 上，界面验证与样式都能据此区分，不必从选项文字去猜。
+     */
+    kind?: 'audio' | 'video';
 };
 
-export const Segments = <T extends string>({ value, options, onChange, size = 'm', fill }: SegmentsProps<T>): React.ReactElement => {
+export const Segments = <T extends string>({ value, options, onChange, size = 'm', fill, kind }: SegmentsProps<T>): React.ReactElement => {
     const markId = useId();
     const reduced = useKitReducedMotion();
     const look = SIZE[size];
@@ -49,7 +54,11 @@ export const Segments = <T extends string>({ value, options, onChange, size = 'm
     const hasIconOnly = options.some(option => option.iconOnly);
 
     return (
-        <div role="group" className={`${fill ? 'flex w-full' : 'inline-flex'} bg-[var(--st-fill)] p-0.5 ${look.box}`}>
+        <div
+            role="group"
+            data-segments-kind={kind}
+            className={`${fill ? 'flex w-full' : 'inline-flex'} bg-[var(--st-fill)] p-0.5 ${look.box}`}
+        >
             {options.map((option) => {
                 const selected = option.value === value;
                 const share = !fill

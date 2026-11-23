@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LogOut, RefreshCw, Crown, User as UserIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { AudioQualityPreference } from '../../types/onlineMusic';
@@ -9,8 +9,9 @@ import { omni } from '../../services/onlineMusic/omni';
 import { providerDisplayName } from '../../i18n/providerName';
 import { openLoginWindow } from '../login/loginWindowStore';
 import { PlatformMark } from '../login/PlatformMark';
-import { Select } from '../modal/settings/kit';
 import { useKitReducedMotion } from '../modal/settings/kit/motion';
+import { Segments } from './shell/Segments';
+import { selectDisplaySong, usePlaybackStore } from '../../stores/usePlaybackStore';
 import { GroupLine } from './shell/GroupLine';
 import { PanelButton } from './shell/PanelButton';
 import { PanelIconButton } from './shell/PanelIconButton';
@@ -45,6 +46,14 @@ const AUDIO_QUALITY_OPTIONS: Array<{
     { value: 'hires', labelKey: 'account.qualityHires' },
 ];
 
+/** 画质档：UI 骨架阶段先放三档占位，和 bilibili 的 360/720/1080 对齐，不接真实画质切换。 */
+const VIDEO_QUALITY_OPTIONS = [
+    { value: '360', label: '360P' },
+    { value: '720', label: '720P' },
+    { value: '1080', label: '1080P' },
+] as const;
+type VideoQualityValue = typeof VIDEO_QUALITY_OPTIONS[number]['value'];
+
 const selectLogoutPending = (snapshot: LibraryAccountSnapshot) => snapshot.logout.status === 'pending';
 
 const AccountTab: React.FC<AccountTabProps> = ({
@@ -57,6 +66,10 @@ const AccountTab: React.FC<AccountTabProps> = ({
 }) => {
     const { t } = useTranslation();
     const reduced = useKitReducedMotion();
+    // 同一行按当前播放类型切换：音频是音质档，视频是画质档。画质先只留本地选中态。
+    const song = usePlaybackStore(selectDisplaySong);
+    const isVideoPlaying = song?.isVideo === true;
+    const [videoQuality, setVideoQuality] = useState<VideoQualityValue>('720');
     // 当前平台取 controller 快照里回落过的那个，账号是它自己的（不拿别的平台的账号顶上）。
     const { providers, activeProviderId } = useLibraryAccountProviders(accountController);
     const activeSummary = providers.find(provider => provider.providerId === activeProviderId);
@@ -125,20 +138,27 @@ const AccountTab: React.FC<AccountTabProps> = ({
 
             <GroupLine />
 
-            {/* Provider-independent audio quality preference; each online provider maps these semantic presets. */}
-            <PanelRow label={t('account.audioQuality')}>
-                {qualityNoticeKey ? (
+            {/* 同一个位置按播放类型切换：音频是音质、视频是画质。都走 Segments 的分段布局，
+                选中块在同一组里滑动；画质档目前只是界面骨架，不写回播放链路。 */}
+            <PanelRow label={isVideoPlaying ? t('home.videoQuality') : t('account.audioQuality')}>
+                {isVideoPlaying ? (
+                    <Segments
+                        kind="video"
+                        value={videoQuality}
+                        options={VIDEO_QUALITY_OPTIONS.map(option => ({ value: option.value, label: option.label }))}
+                        onChange={setVideoQuality}
+                        size="s"
+                    />
+                ) : qualityNoticeKey ? (
                     <span className="text-right text-xs leading-[18px] text-[color:var(--st-t2)]">{t(qualityNoticeKey)}</span>
                 ) : (
-                    <Select
-                        name={t('account.audioQuality')}
-                        // The panel sits at the bottom of the window: a list that opens down covers the tab row.
-                        preferAbove
+                    <Segments
+                        kind="audio"
                         value={litQuality}
                         options={qualityOptions.map(option => ({ value: option.value, label: t(option.labelKey) }))}
-                        // (The lit level is where the stored preference already stands on this provider: choosing it
-                        // changes nothing here, and must not lower what is stored for the other providers.)
+                        // 亮着的档就是当前平台已经存着的偏好：选它不改变任何东西，也不能拉低别的平台存的值。
                         onChange={(quality) => { if (quality !== litQuality) onAudioQualityChange(quality); }}
+                        size="s"
                     />
                 )}
             </PanelRow>
