@@ -18,6 +18,7 @@ import {
     useOnlineVideoStore,
 } from '@/stores/useOnlineVideoStore';
 import type { LibraryHomeVideoTab } from '../../../core/home/homeModel.contract';
+import OnlineVideoExplore from './OnlineVideoExplore';
 
 // src/library/suites/grid/home/OnlineVideoView.tsx
 // 在线视频四页：推荐 / 探索 / 分类 / 收藏夹，数据来自 bilibili（经主进程代理，仅桌面版）。
@@ -156,6 +157,8 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
     const clearSearch = useOnlineVideoStore(state => state.clearSearch);
 
     useEffect(() => {
+        // 探索页暂时不接数据（照着音乐探索页摆占位），不必去拉排行榜。
+        if (page === 'videoExplore') return;
         void loadFeed(page);
     }, [page, loadFeed]);
 
@@ -171,6 +174,10 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
     const items = searchQuery ? searchItems : feed.items;
     const errorKey = searchQuery ? searchErrorKey : feed.errorKey;
     const loading = searchQuery ? searchLoading : feed.loading;
+
+    // 探索页照搬在线音乐探索页的版式，视频数据暂缓：整页交给占位视图，不走下面的取数与空态分支。
+    // （有搜索词时仍按搜索结果显示，和其余三页一致。）
+    if (page === 'videoExplore' && !searchQuery) return <OnlineVideoExplore />;
 
     const refresh = () => {
         if (searchQuery) {
