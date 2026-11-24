@@ -237,69 +237,101 @@ export const getPlayStream = async (bvid: string, cid: number, maxQuality: numbe
 // 三个入口都沿用同一条主进程代理（带 cookies / Referer），网页版依旧会被 CORS 拒掉。
 // ---------------------------------------------------------------------------
 
-interface PopularPayload {
-    list?: Array<{
-        bvid?: string;
-        title?: string;
-        pic?: string;
-        duration?: number;
-        owner?: { name?: string };
-        stat?: { view?: number };
-    }>;
+/** bilibili 各处的列表条目长得一样：热门、排行榜、每周必看、入站必刷都套这一个。 */
+interface VideoRow {
+    bvid?: string;
+    title?: string;
+    pic?: string;
+    duration?: number;
+    owner?: { name?: string };
+    stat?: { view?: number };
 }
 
-/** 推荐页的数据源：bilibili 官方热门视频流，不需要 wbi 签名。 */
-export const getPopularVideos = async (page = 1): Promise<BilibiliSearchHit[]> => {
-    const envelope = await fetchJson<PopularPayload>(
-        `${API_BASE}/x/web-interface/popular?pn=${page}&ps=20`,
-    );
-    const list = unwrap(envelope).list ?? [];
-    return list.flatMap((row): BilibiliSearchHit[] => {
-        const bvid = typeof row.bvid === 'string' ? row.bvid : '';
-        if (!bvid) return [];
-        return [{
-            bvid,
-            title: stripSearchHighlight(typeof row.title === 'string' ? row.title : ''),
-            author: row.owner?.name ?? '',
-            durationSec: typeof row.duration === 'number' ? row.duration : 0,
-            coverUrl: row.pic ? normalizeCoverUrl(row.pic) : '',
-            playCount: typeof row.stat?.view === 'number' ? row.stat.view : 0,
-        }];
-    });
+interface VideoListPayload {
+    list?: VideoRow[];
+}
+
+const videoRowToHit = (row: VideoRow): BilibiliSearchHit[] => {
+    const bvid = typeof row.bvid === 'string' ? row.bvid : '';
+    if (!bvid) return [];
+    return [{
+        bvid,
+        title: stripSearchHighlight(typeof row.title === 'string' ? row.title : ''),
+        author: row.owner?.name ?? '',
+        durationSec: typeof row.duration === 'number' ? row.duration : 0,
+        coverUrl: row.pic ? normalizeCoverUrl(row.pic) : '',
+        playCount: typeof row.stat?.view === 'number' ? row.stat.view : 0,
+    }];
 };
 
-interface RankingPayload {
-    list?: Array<{
-        bvid?: string;
-        title?: string;
-        pic?: string;
-        duration?: number;
-        owner?: { name?: string };
-        stat?: { view?: number };
-    }>;
-}
+const rowsToHits = (rows: VideoRow[] | undefined): BilibiliSearchHit[] => (rows ?? []).flatMap(videoRowToHit);
+
+/** 带签名的 GET：密钥过期（-403）或被换掉（-352）时换一份再试一次。 */
+const fetchSigned = async <T>(path: string, params: Record<string, string | number>): Promise<T> => {
+    try {
+        return unwrap(await fetchJson<T>(await signedUrl(path, params)));
+    } catch (error) {
+        if (error instanceof BilibiliApiError && (error.code === -403 || error.code === -352)) {
+            await readWbiKeys(true);
+            return unwrap(await fetchJson<T>(await signedUrl(path, params)));
+        }
+        throw error;
+    }
+};
+
+/** 推荐页的数据源：bilibili 官方热门视频流，不需要 wbi 签名。 */
+export const getPopularVideos = async (page = 1, pageSize = 20): Promise<BilibiliSearchHit[]> => {
+    const envelope = await fetchJson<VideoListPayload>(
+        `${API_BASE}/x/web-interface/popular?pn=${page}&ps=${pageSize}`,
+    );
+    return rowsToHits(unwrap(envelope).list);
+};
 
 /**
  * 探索页的数据源：分区排行榜。rid 是 bilibili 的分区号（0 = 全站）。
  * 排行榜同样不需要 wbi 签名。
  */
 export const getRankedVideos = async (rid = 0): Promise<BilibiliSearchHit[]> => {
-    const envelope = await fetchJson<RankingPayload>(
+    const envelope = await fetchJson<VideoListPayload>(
         `${API_BASE}/x/web-interface/ranking/v2?rid=${rid}&type=all`,
     );
-    const list = unwrap(envelope).list ?? [];
-    return list.flatMap((row): BilibiliSearchHit[] => {
-        const bvid = typeof row.bvid === 'string' ? row.bvid : '';
-        if (!bvid) return [];
-        return [{
-            bvid,
-            title: stripSearchHighlight(typeof row.title === 'string' ? row.title : ''),
-            author: row.owner?.name ?? '',
-            durationSec: typeof row.duration === 'number' ? row.duration : 0,
-            coverUrl: row.pic ? normalizeCoverUrl(row.pic) : '',
-            playCount: typeof row.stat?.view === 'number' ? row.stat.view : 0,
-        }];
-    });
+    return rowsToHits(unwrap(envelope).list);
+};
+
+/** 入站必刷（popular/history）：bilibili 自己挑的一份「没看过就亏了」的片单，分页给。 */
+export const getPreciousVideos = async (page = 1, pageSize = 20): Promise<BilibiliSearchHit[]> => {
+    const envelope = await fetchJson<VideoListPayload>(
+        `${API_BASE}/x/web-interface/popular/precious?page_size=${pageSize}&page=${page}`,
+    );
+    return rowsToHits(unwrap(envelope).list);
+};
+
+/** 每周必看的一期。接口只给期号、主题和一句标题，封面得自己画。 */
+export interface BilibiliWeeklyIssue {
+    number: number;
+    subject: string;
+    /** 形如「2026第400期 11.13 - 11.19」。 */
+    name: string;
+}
+
+interface WeeklySeriesPayload {
+    list?: Array<{ number?: number; subject?: string; name?: string }>;
+}
+
+/** 每周必看的期号列表，最新一期在前。列表本身不校验 wbi；只有某一期的视频要签名。 */
+export const getWeeklyIssues = async (): Promise<BilibiliWeeklyIssue[]> => {
+    const envelope = await fetchJson<WeeklySeriesPayload>(`${API_BASE}/x/web-interface/popular/series/list`);
+    return (unwrap(envelope).list ?? []).flatMap((row): BilibiliWeeklyIssue[] => (
+        typeof row.number === 'number' && row.number > 0
+            ? [{ number: row.number, subject: row.subject ?? '', name: row.name ?? '' }]
+            : []
+    ));
+};
+
+/** 某一期的视频。 */
+export const getWeeklyIssueVideos = async (number: number): Promise<BilibiliSearchHit[]> => {
+    const data = await fetchSigned<VideoListPayload>('/x/web-interface/popular/series/one', { number });
+    return rowsToHits(data.list);
 };
 
 /** 画质档位：和界面上的 360P / 720P / 1080P 对齐。 */

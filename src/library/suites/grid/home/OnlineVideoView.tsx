@@ -157,7 +157,7 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
     const clearSearch = useOnlineVideoStore(state => state.clearSearch);
 
     useEffect(() => {
-        // 探索页暂时不接数据（照着音乐探索页摆占位），不必去拉排行榜。
+        // 探索页自带数据（useVideoExploreStore），不走这里按页签取的 feed。
         if (page === 'videoExplore') return;
         void loadFeed(page);
     }, [page, loadFeed]);
@@ -175,9 +175,9 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
     const errorKey = searchQuery ? searchErrorKey : feed.errorKey;
     const loading = searchQuery ? searchLoading : feed.loading;
 
-    // 探索页照搬在线音乐探索页的版式，视频数据暂缓：整页交给占位视图，不走下面的取数与空态分支。
-    // （有搜索词时仍按搜索结果显示，和其余三页一致。）
-    if (page === 'videoExplore' && !searchQuery) return <OnlineVideoExplore />;
+    // 探索页是 bilibili 的几段内容（最近播放、热门、每周必看、入站必刷、排行榜），自带取数，
+    // 不走下面按页签取 feed 的那一套。（有搜索词时仍按搜索结果显示，和其余三页一致。）
+    if (page === 'videoExplore' && !searchQuery) return <OnlineVideoExplore onPlaySong={onPlaySong} />;
 
     const refresh = () => {
         if (searchQuery) {

@@ -13,6 +13,7 @@ import {
 } from '../shinoinject/lab/bilibili/api';
 import { isBilibiliAvailable } from '../shinoinject/lab/bilibili/transport';
 import { prepareBilibiliVideo } from '../services/bilibiliPlayback';
+import { noteVideoPlayed } from '../services/bilibiliVideoHistory';
 import { setStatusMessage } from './useStatusMessageStore';
 
 // src/stores/useOnlineVideoStore.ts
@@ -238,6 +239,8 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
             try {
                 const song = await prepareBilibiliVideo(video, get().quality);
                 playSong(song, [song]);
+                // 视频有自己的一份播放记录（探索页开头的「最近播放 / 再看一次」），和音乐的互不写入。
+                noteVideoPlayed(video);
             } catch (error) {
                 console.warn('[OnlineVideo] Could not prepare the video:', error);
                 setStatusMessage({ type: 'error', text: i18n.t(errorMessageKey(error)) });
