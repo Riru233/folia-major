@@ -55,6 +55,8 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused, staticMode = false }) =
     // 当前这首歌是不是一条视频曲目：是就把它自己的画面取来，设置里那条视频层让位。
     const displaySong = usePlaybackStore(selectDisplaySong);
     const songVideoId = displaySong && isLocalPlaybackSong(displaySong) ? displaySong.localRef.songId : null;
+    // 在线视频（bilibili）：画面就是这条本机流地址，和 <audio> 读的是同一条，进度天然对齐。
+    const onlineVideoUrl = displaySong?.onlineVideoUrl ?? null;
     const [songVideo, setSongVideo] = useState<LocalSongVideoSource | null>(null);
     // 这个运行时不认识的容器（MKV）：报过一次就退回设置里的背景，不再每帧重试。
     const [unplayableUrl, setUnplayableUrl] = useState<string | null>(null);
@@ -80,14 +82,16 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ paused, staticMode = false }) =
         return () => {
             cancelled = true;
         };
-    }, [songVideoId]);
+    }, [songVideoId, onlineVideoUrl]);
 
     // 只认当前这首的地址：解析过程中换过一次歌的话，旧结果不能被拿来画。
     const songVideoSource = songVideo && songVideo.songId === songVideoId && songVideo.url !== unplayableUrl
         ? songVideo
         : null;
-    const isSongVideo = Boolean(songVideoSource);
-    const source = songVideoSource ? songVideoSource.url : settingsSource;
+    // 在线视频的地址就是这首歌的画面；放不出来时同样退回设置里的背景。
+    const onlineVideoSource = onlineVideoUrl && onlineVideoUrl !== unplayableUrl ? onlineVideoUrl : null;
+    const isSongVideo = Boolean(songVideoSource) || Boolean(onlineVideoSource);
+    const source = songVideoSource ? songVideoSource.url : (onlineVideoSource ?? settingsSource);
     const active = videoPlaybackEnabled && (isSongVideo || (!staticMode && enabled && Boolean(settingsSource)));
 
     /**

@@ -4316,7 +4316,7 @@ export default {
     "videoLayerNotInExport": "不参与视觉配置导入导出，也不在 OBS 源中显示：OBS 使用独立浏览器，无法读取这里选择的本地视频。",
     "settingsPageVideo": "视频",
     "shinoLabOnlineVideo": "在线视频（实验）",
-    "shinoLabOnlineVideoDesc": "在首页加入「在线视频」分组，并在设置里加入视频分区。视频以本地视频的方式在播放层播放。",
+    "shinoLabOnlineVideoDesc": "在首页加入「在线视频」分组，并在设置里加入视频分区。视频边收边播（流式传输），播过的字节同时缓存到本地。",
     "videoAddPlatform": "添加在线视频平台",
     "videoAddPlatformDesc": "选择要启用的视频平台。当前已接入 bilibili，可登录查看收藏夹。",
     "videoPlatformBilibili": "bilibili",

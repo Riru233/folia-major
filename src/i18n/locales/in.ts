@@ -4315,7 +4315,7 @@ export default {
     "videoLayerNotInExport": "Tidak ikut impor/ekspor konfigurasi visual dan tidak tampil di sumber OBS: OBS memakai browser sendiri dan tidak dapat membuka video lokal yang dipilih di sini.",
     "settingsPageVideo": "Video",
     "shinoLabOnlineVideo": "Video Daring (Eksperimen)",
-    "shinoLabOnlineVideoDesc": "Menambahkan grup Video Daring di beranda dan bagian Video di pengaturan. Video diputar seperti video lokal.",
+    "shinoLabOnlineVideoDesc": "Menambahkan grup Video Daring di beranda dan bagian Video di pengaturan. Video dialirkan saat diputar, dan bagian yang sudah diputar disimpan di cache lokal.",
     "videoAddPlatform": "Tambahkan platform video daring",
     "videoAddPlatformDesc": "Pilih platform video yang diaktifkan. bilibili sudah terhubung - masuk untuk melihat favorit.",
     "videoPlatformBilibili": "bilibili",

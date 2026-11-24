@@ -112,7 +112,9 @@ contextBridge.exposeInMainWorld('electron', {
         openLogin: () => ipcRenderer.invoke('bilibili-auth-login'),
         signOut: () => ipcRenderer.invoke('bilibili-auth-logout'),
         request: (request) => ipcRenderer.invoke('bilibili-request', request),
-        downloadVideo: (request) => ipcRenderer.invoke('bilibili-download-video', request),
+        // 在线视频：把带签名的直链交给主进程，换回一条 folia-bili:// 的地址。播放器读它就是一条
+        // 边读边播的流，主进程按 Range 转发 CDN 的字节并顺路缓存，不再先整段下完。
+        openVideoStream: (request) => ipcRenderer.invoke('bilibili-video-open', request),
     },
     // 本地曲库的目录卡片只存相对路径（A/B）：第一次调用会请用户在磁盘上指出导入根，之后按根名记住，
     // 用系统文件管理器打开目标目录本身（不是父目录）。网页版没有这个 API，见 services/localFolderSystemOpen.ts。

@@ -191,6 +191,8 @@ interface PlayUrlPayload {
 
 export interface BilibiliPlayStream {
     videoUrl: string;
+    /** durl 常给多个备用 CDN，主地址被拒时按顺序换。 */
+    backupUrls?: string[];
     quality: number;
     durationSec: number;
 }
@@ -311,34 +313,56 @@ export const VIDEO_QUALITY_QN: Readonly<Record<VideoQuality, number>> = {
 };
 
 interface AudioPlayUrlPayload extends PlayUrlPayload {
-    durl?: Array<{ url?: string; size?: number }>;
+    durl?: Array<{ url?: string; backup_url?: string[]; size?: number }>;
 }
 
 /**
- * 拿一条能直接塞进 <video> 的地址：fnval=0 走老格式 durl，音视频合一的 mp4/flv。
+ * 拿一条能直接塞进 <video> 的地址：fnval=1 走 durl 的 mp4（音视频合一）。
  * 和 getPlayStream 的区别是这里要声音（在线视频是真的在播视频，不是拿画面做背景）。
+ *
+ * fnval 必须是 1 而不是 0：0 是 FLV，Chromium 的媒体栈解不了，写成本地文件也放不出来。
  */
 export const getVideoStreamWithAudio = async (
     bvid: string,
     cid: number,
     quality: 360 | 720 | 1080,
 ): Promise<BilibiliPlayStream> => {
-    const qn = VIDEO_QUALITY_QN[quality];
-    const url = await signedUrl('/x/player/wbi/playurl', {
-        bvid,
-        cid,
-        qn,
-        fnval: 0,
-        fnver: 0,
-        fourk: 0,
-    });
-    const data = unwrap(await fetchJson<AudioPlayUrlPayload>(url));
-    const direct = data.durl?.[0]?.url;
-    if (!direct) throw new BilibiliApiError(-1, 'no playable stream');
+    const ask = async (qn: number): Promise<AudioPlayUrlPayload> => {
+        const url = await signedUrl('/x/player/wbi/playurl', {
+            bvid,
+            cid,
+            qn,
+            fnval: 1,
+            fnver: 0,
+            fourk: 0,
+            platform: 'pc',
+            high_quality: 1,
+        });
+        return unwrap(await fetchJson<AudioPlayUrlPayload>(url));
+    };
+
+    // 未登录时高画质不一定报错，而是安静地给一个空 durl。逐档降下来，直到真的拿到一条流。
+    const requested = VIDEO_QUALITY_QN[quality];
+    const ladder = [requested, 64, 32].filter((qn, index, list) => qn <= requested && list.indexOf(qn) === index);
+    let data: AudioPlayUrlPayload | null = null;
+    let usedQn = requested;
+    for (const qn of ladder) {
+        const candidate = await ask(qn);
+        if (candidate.durl?.[0]?.url) {
+            data = candidate;
+            usedQn = qn;
+            break;
+        }
+    }
+    const first = data?.durl?.[0];
+    if (!data || !first?.url) throw new BilibiliApiError(-1, 'no playable stream');
+    // 极老的视频只给 FLV，Chromium 的媒体栈解不了；早点说清楚，别等写进 OPFS 才失败。
+    if (/\.flv(\?|$)/i.test(first.url)) throw new BilibiliApiError(-1, 'only an flv stream is available');
     return {
-        videoUrl: direct,
+        videoUrl: first.url,
+        backupUrls: (first.backup_url ?? []).filter((item): item is string => typeof item === 'string' && item.length > 0),
         // 未登录时 1080 会被降到 480，把接口实际给的档位带回去给界面显示。
-        quality: data.quality ?? qn,
+        quality: data.quality ?? usedQn,
         durationSec: Math.round((data.timelength ?? 0) / 1000),
     };
 };

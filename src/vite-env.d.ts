@@ -740,8 +740,15 @@ declare global {
         openLogin: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
         signOut: () => Promise<import('./types/bilibili').BilibiliAuthStatus>;
         request: (request: import('./types/bilibili').BilibiliBridgeRequest) => Promise<import('./types/bilibili').BilibiliBridgeResponse>;
-        /** 在线视频：下载带签名的视频直链，返回 base64；渲染进程写进 OPFS 后当本地视频播。 */
-        downloadVideo: (request: { url: string }) => Promise<{ base64: string; mimeType: string; bytes: number }>;
+        /**
+         * 在线视频：把带签名的直链交给主进程，换回一条 `folia-bili://` 地址。播放器直接读它，就是
+         * 一条边读边播的流（主进程按 Range 转发 CDN 的字节，并把同一批字节抄进缓存）。
+         */
+        openVideoStream: (request: {
+          urls: string[];
+          bvid?: string;
+          quality?: string;
+        }) => Promise<{ id: string; url: string }>;
       };
       webUtils?: {
         /** Resolves the OS path of a dropped File (File.path was removed in modern Electron). */

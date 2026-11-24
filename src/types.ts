@@ -1462,6 +1462,11 @@ export interface SongResult {
   // Its audio is a music video's, which may hold an intro, a scene or another mix: rows tag it MV.
   isVideo?: boolean;
   /**
+   * 在线视频（bilibili）的播放地址：一条 `folia-bili://` 的本机流。声音由播放链的 <audio> 读它，
+   * 画面由 VideoLayer 读同一条地址——两边读的是同一份字节流，所以进度天然对得上。
+   */
+  onlineVideoUrl?: string;
+  /**
    * The kind of item it is, one its provider declares (`OnlineMusicProvider.itemKinds`, Folium 2 plan §4.4);
    * a song when left out. What the host does with it is itemTraits.ts's.
    */

@@ -53,8 +53,9 @@ interface OnlineVideoState {
     searchGeneration: number;
     /** 画质是「下次点开视频时按哪一档下载」的偏好，和本地视频（画质由文件决定）一致。 */
     quality: VideoQuality;
-    /** 正在下载/准备本地视频条目。 */
+    /** 正在取流/写盘的视频（bvid），空表示空闲。 */
     preparingBvid: string | null;
+    /** 已收字节数，给卡片显示进度；流式取回，播放在写完之后开始。 */
     auth: BilibiliAuthStatus;
 
     loadFeed: (page: OnlineVideoPage) => Promise<void>;
@@ -231,6 +232,8 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
         clearSearch: () => set({ searchQuery: '', searchItems: [], searchErrorKey: null, searchLoading: false }),
         playVideo: async (video, playSong) => {
             if (get().preparingBvid) return;
+            // 只等「地址解析出来」这一下：拿到流地址就交给播放层，字节由播放器自己按需取，
+            // 连缓存也是一边播一边长出来的。
             set({ preparingBvid: video.bvid });
             try {
                 const song = await prepareBilibiliVideo(video, get().quality);

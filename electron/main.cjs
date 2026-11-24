@@ -85,7 +85,7 @@ const { finalizeVideoExportFile } = require('./videoExportMp4.cjs');
 const { createExportFfmpegResolver } = require('./alphaExport/exportFfmpeg.cjs');
 const { registerAlphaExportIpc } = require('./alphaExport/alphaExportIpc.cjs');
 const { createLyricApi } = require('./lyricApi.cjs');
-const { createBilibiliApi, setupBilibiliMediaAccess } = require('./bilibili.cjs');
+const { createBilibiliApi, setupBilibiliMediaAccess, BILIBILI_STREAM_SCHEME } = require('./bilibili.cjs');
 const { createLocalCoverAssetStore, getLocalCoverAssetDirectory } = require('./localCoverAssets.cjs');
 const {
   compareVersions,
@@ -179,6 +179,17 @@ protocol.registerSchemesAsPrivileged([
   },
   {
     scheme: TRANSCODE_PROTOCOL_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+  // 在线视频的播放地址（bilibili 取流的本机代理）：`stream: true` 让媒体元素按 Range 连续地读。
+  {
+    scheme: BILIBILI_STREAM_SCHEME,
     privileges: {
       standard: true,
       secure: true,
@@ -2910,9 +2921,12 @@ const lyricApi = createLyricApi({
   port: DEFAULT_LYRIC_API_PORT,
 });
 
-// 实验性「视频」背景：bilibili 的账号与请求（见 electron/bilibili.cjs）。登录用的是它自己那个
-// session 分区，和主窗口的 cookies 分开，退出登录也只清那一份。
-const bilibiliApi = createBilibiliApi();
+// 实验性「视频」背景：bilibili 的账号、请求与视频取流（见 electron/bilibili.cjs）。登录用的是它自己
+// 那个 session 分区，和主窗口的 cookies 分开，退出登录也只清那一份。视频缓存落在 userData 里，
+// 和播放中的流是同一条：攒满一个完整文件就能离线重看。
+const bilibiliApi = createBilibiliApi({
+  streamCacheDir: path.join(app.getPath('userData'), 'bilibili-video-cache'),
+});
 
 const discordPresence = createDiscordPresenceController({
   getApplicationId: () => DEFAULT_DISCORD_APPLICATION_ID,
@@ -6363,6 +6377,8 @@ app.whenReady().then(async () => {
   setupVideoExportDisplayMediaHandler();
   setupCorsBypassHandlers();
   localCoverAssetStore.registerProtocolHandler(protocol, electronNet);
+  // 在线视频：媒体元素读 folia-bili:// 时由这里作答，字节从 CDN 边取边给，顺路攒缓存。
+  protocol.handle(BILIBILI_STREAM_SCHEME, request => bilibiliApi.handleStreamRequest(request));
   // Transcode fallback is an optional degradation path; a failure preparing it must never keep
   // the rest of this handler, createWindow() included, from running.
   try {
@@ -8287,12 +8303,13 @@ ipcMain.handle('bilibili-request', async (event, request) => {
   return bilibiliApi.request(request);
 });
 
-// 在线视频：把带签名的视频直链下载成 base64，交给渲染进程写进 OPFS 当本地视频播。
-ipcMain.handle('bilibili-download-video', async (event, request) => {
+// 在线视频：把带签名的直链交给主进程，换回一条 folia-bili:// 的本机地址。地址给了播放器就是一条
+// 可以边读边播的流（主进程按 Range 转发 CDN 的字节，并把同一批字节抄进缓存），不再有「先下完再播」。
+ipcMain.handle('bilibili-video-open', async (event, request) => {
   if (!isTrustedMainWindowContents(event.sender)) {
-    throw new Error('Untrusted renderer attempted to download a bilibili video.');
+    throw new Error('Untrusted renderer attempted to open a bilibili video stream.');
   }
-  return bilibiliApi.downloadVideo(request);
+  return bilibiliApi.openVideoStream(request);
 });
 
 // Integrate AI logic locally into Electron

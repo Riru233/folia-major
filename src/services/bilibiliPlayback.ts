@@ -3,90 +3,68 @@ import type { SongResult } from '../types';
 import { getVideoInfo, getVideoStreamWithAudio, type VideoQuality } from '../shinoinject/lab/bilibili/api';
 export type { VideoQuality } from '../shinoinject/lab/bilibili/api';
 import { isBilibiliAvailable } from '../shinoinject/lab/bilibili/transport';
-import { importDirectoryHandle } from './localMusicService';
-import { buildUnifiedLocalSong } from './playbackAdapters';
+import { updatePrefetchedAudioUrl } from './prefetchService';
+import { useAudioSettingsStore } from '../stores/useAudioSettingsStore';
 
 // src/services/bilibiliPlayback.ts
-// 把一条 bilibili 视频变成「本地视频」交给 folia 播放层。
+// 把一条 bilibili 视频交给 folia 播放层，而且是「边读边播」，不是先下完再播。
 //
-// 为什么先下载：本地视频的播放链（声音 getAudioFromLocalSong、画面 resolveLocalSongVideoSource）
-// 只认 FileSystemFileHandle.getFile() 拿到的 blob，不接受 http 直链。所以这里把带签名的直链经主进程
-// （带 cookies/Referer，绕开 CORS）下载成 blob，写进 OPFS 的专用目录，再走正常的本地导入流程：
-// 得到的 LocalSong 带可用的 fileHandle，mediaKind 按扩展名判为 video，buildUnifiedLocalSong 给它
-// 打上 isVideo:true。之后声音、画面、进度同步、画质档都和普通本地 MV 一模一样。
+// 链路：这里只换地址，不搬字节。带签名的直链交给主进程（electron/bilibili.cjs 的 openVideoStream），
+// 换回一条 `folia-bili://media/<id>/video.mp4`；播放器的 <audio> 与画面都读同一条地址。Chromium 的
+// 媒体栈按 Range 去要字节，主进程把请求转发给 CDN（带 Referer / Range / UA），收到的字节一边回给
+// 播放器、一边抄进缓存文件。所以听到第一秒的时候，缓存已经在同一条流上长出来了；攒满一个完整文件
+// 之后，这条地址直接从盘上读，不再出网。
 //
-// 同一 bvid + 同一画质只下一次：OPFS 文件名带这两样，重复点开直接复用已有的导入记录。
+// CDN 只认播放器发出来的请求，主进程此前用 Chromium 的 net 发会触发 ERR_BLOCKED_BY_CLIENT，
+// 所以取流改走 Node 的 http/https；这也顺带解决了「远端直链能不能播」这个反复出问题的地方。
+//
+// 播放身份：这首歌不是本地文件、也不是任何一个在线音源（bilibili 只做画面与消遣，不做曲库），
+// 所以挂一个 stage 源引用——播放链就不会去问平台要地址，也不会把整段视频塞进音频媒体缓存。
+// 地址通过预取条目交给播放链：那是「已经拿到地址」的正规入口。
 
-const VIDEO_DIR_NAME = 'Folia Online Video';
-
-const sanitizeFileName = (value: string): string => (
-    value.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 60) || 'video'
-);
-
-const fileNameOf = (hit: BilibiliSearchHit, quality: VideoQuality): string => (
-    `${sanitizeFileName(hit.title)}-${hit.bvid}-${quality}.mp4`
-);
-
-const base64ToBlob = (base64: string, mimeType: string): Blob => {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-    return new Blob([bytes], { type: mimeType || 'video/mp4' });
-};
-
-/** 找到（或创建）OPFS 里专放在线视频的目录。 */
-const videoDirectory = async (): Promise<FileSystemDirectoryHandle> => {
-    const root = await navigator.storage.getDirectory();
-    return root.getDirectoryHandle(VIDEO_DIR_NAME, { create: true });
-};
-
-/** 下载并写入 OPFS，返回文件名。同一个文件已经在盘上就跳过下载。 */
-const ensureVideoFile = async (hit: BilibiliSearchHit, quality: VideoQuality): Promise<string> => {
-    const dir = await videoDirectory();
-    const fileName = fileNameOf(hit, quality);
-    try {
-        await dir.getFileHandle(fileName);
-        return fileName;
-    } catch {
-        // 文件不在：下面下载。
-    }
-
-    const bridge = typeof window === 'undefined' ? undefined : window.electron?.bilibili;
-    if (!bridge?.downloadVideo) throw new Error('online video download needs the desktop app');
-
-    const info = await getVideoInfo(hit.bvid);
-    const stream = await getVideoStreamWithAudio(info.bvid, info.cid, quality);
-    const downloaded = await bridge.downloadVideo({ url: stream.videoUrl });
-    const blob = base64ToBlob(downloaded.base64, downloaded.mimeType);
-    const handle = await dir.getFileHandle(fileName, { create: true });
-    const writable = await handle.createWritable();
-    try {
-        await writable.write(blob);
-    } finally {
-        await writable.close();
-    }
-    return fileName;
-};
+/** 这首歌的播放身份：同一集视频永远是同一首歌，进度、收藏、队列都按它认。 */
+const songIdOf = (bvid: string): string => `bilibili:${bvid}`;
 
 /**
- * 点开一条 bilibili 视频：下载（必要时）→ 导入 OPFS 目录 → 找到对应的本地视频曲目 → 构造 song。
- * 返回的 song 可以直接交给 folia 的 playSong(song, [song]) 在播放层播放。
+ * 点开一条 bilibili 视频：解析播放地址 → 交给主进程开一条流 → 交回一首可以直接 playSong 的歌。
+ * 返回即可播放，不必等到文件下完。
  */
 export const prepareBilibiliVideo = async (
     hit: BilibiliSearchHit,
     quality: VideoQuality,
 ): Promise<SongResult> => {
     if (!isBilibiliAvailable()) throw new Error('online video needs the desktop app');
-    const fileName = await ensureVideoFile(hit, quality);
-    const imported = await importDirectoryHandle(await videoDirectory());
-    const localSong = imported.find(song => song.fileName === fileName);
-    if (!localSong) throw new Error(`downloaded video was not imported: ${fileName}`);
-    // ensureVideoFile 用 .mp4 命名，导入时按扩展名已经判为 video；这里再钉一次，防止个别环境识别差异。
-    const videoSong = localSong.mediaKind === 'video' ? localSong : { ...localSong, mediaKind: 'video' as const };
-    return buildUnifiedLocalSong({
-        localSong: videoSong,
-        matchedSong: null,
-        coverUrl: hit.coverUrl || null,
-        preferOnlineMetadata: false,
+    const bridge = window.electron?.bilibili;
+    if (!bridge || typeof bridge.openVideoStream !== 'function') {
+        throw new Error('online video streaming needs the desktop app');
+    }
+
+    const info = await getVideoInfo(hit.bvid);
+    const stream = await getVideoStreamWithAudio(info.bvid, info.cid, quality);
+    // 主地址 + backup_url 一起交给主进程：被 CDN 拒掉时它会换下一个再试。
+    const opened = await bridge.openVideoStream({
+        urls: [stream.videoUrl, ...(stream.backupUrls ?? [])],
+        bvid: info.bvid,
+        quality: String(stream.quality || quality),
     });
+
+    const song: SongResult = {
+        id: songIdOf(info.bvid),
+        name: hit.title || info.title,
+        artists: [{ id: info.author || 'bilibili', name: hit.author || info.author || 'bilibili' }],
+        album: {
+            id: songIdOf(info.bvid),
+            name: hit.title || info.title,
+            coverUrl: hit.coverUrl || info.coverUrl || undefined,
+        },
+        durationMs: Math.max(0, Math.round((hit.durationSec || info.durationSec || 0) * 1000)),
+        isVideo: true,
+        sourceRef: { kind: 'stage', mediaId: songIdOf(info.bvid) },
+        // 画面读的是同一条地址：VideoLayer 见到它就当曲目自带的画面来放。
+        onlineVideoUrl: opened.url,
+    };
+
+    // 播放链只认「已经拿到的地址」：写进预取条目，playSong 就会直接拿它当音源，不再问任何平台。
+    updatePrefetchedAudioUrl(song, opened.url, useAudioSettingsStore.getState().audioQuality);
+    return song;
 };

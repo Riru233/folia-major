@@ -4316,7 +4316,7 @@ export default {
     "videoLayerNotInExport": "Not included in visual config import/export, and not shown in OBS sources: OBS runs its own browser and cannot open the local video picked here.",
     "settingsPageVideo": "Video",
     "shinoLabOnlineVideo": "Online Video (Experimental)",
-    "shinoLabOnlineVideoDesc": "Adds an Online Video group to the home screen and a Video section to settings. Videos play in the player like local videos.",
+    "shinoLabOnlineVideoDesc": "Adds an Online Video group to the home screen and a Video section to settings. Videos stream as they play, and what has streamed is cached locally.",
     "videoAddPlatform": "Add an online video platform",
     "videoAddPlatformDesc": "Choose which video platforms to enable. bilibili is connected - sign in to see favorites.",
     "videoPlatformBilibili": "bilibili",

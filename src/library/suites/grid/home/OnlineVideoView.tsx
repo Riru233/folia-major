@@ -104,8 +104,13 @@ const VideoCard: React.FC<{
                 ) : (
                     <div className="h-full w-full animate-pulse" style={skeletonStyle(isDaylight)} />
                 )}
-                <span className={`absolute inset-0 grid place-items-center bg-black/25 transition-opacity ${preparing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                    {preparing ? <Loader2 size={28} className="animate-spin text-white" /> : <Play size={28} className="text-white" fill="currentColor" />}
+                <span className={`absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/35 transition-opacity ${preparing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    {preparing ? (
+                        <>
+                            <Loader2 size={26} className="animate-spin text-white" />
+                            <span className="text-[11px] text-white/90">{t('home.videoLoadingStream')}</span>
+                        </>
+                    ) : <Play size={28} className="text-white" fill="currentColor" />}
                 </span>
                 {duration && (
                     <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] leading-none text-white">

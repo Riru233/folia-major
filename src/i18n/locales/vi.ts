@@ -4285,7 +4285,7 @@ export default {
     "videoLayerNotInExport": "Không kèm trong nhập/xuất giao diện và không hiện trên nguồn OBS: OBS dùng trình duyệt riêng nên không thể đọc video nội bộ tại đây.",
     "settingsPageVideo": "Video",
     "shinoLabOnlineVideo": "Video trực tuyến (Thử nghiệm)",
-    "shinoLabOnlineVideoDesc": "Thêm nhóm Video trực tuyến vào trang chủ và mục Video vào cài đặt. Video được phát như video cục bộ.",
+    "shinoLabOnlineVideoDesc": "Thêm nhóm Video trực tuyến vào trang chủ và mục Video vào cài đặt. Video được phát trực tuyến trong khi tải, phần đã phát được lưu đệm cục bộ.",
     "videoAddPlatform": "Thêm nền tảng video trực tuyến",
     "videoAddPlatformDesc": "Chọn nền tảng video để bật. bilibili đã được kết nối - đăng nhập để xem mục yêu thích.",
     "videoPlatformBilibili": "bilibili",
