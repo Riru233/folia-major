@@ -289,16 +289,20 @@ interface RecommendPayload {
     item?: RecommendRow[];
 }
 
-/**
- * 推荐页：和 www.bilibili.com 首页同一口数据，也就是「换一换」按钮背后那个接口。
- *
- * 它不是翻页，而是「第几批」：每点一次换一换，fresh_idx / fresh_idx_1h 各 +1，服务端就给一批新的；
- * brush 是这一轮已经换过几次。第一次进来用 fresh_type=3（首页首屏），之后用 4（换一换），
- * 这样拿到的才是网页版看到的那条流，而不是热门榜。
- *
- * ps 只是一批要几条，里面必有广告和登录卡，所以真正的视频总比 ps 少几条。
- */
-export const getRecommendedVideos = async (freshIdx = 1, pageSize = 18): Promise<BilibiliSearchHit[]> => {
+/** 首页推荐流一批要凑够几条视频（广告、登录卡不算）。 */
+export const RECOMMEND_BATCH_SIZE = 25;
+/** 一次向接口要几条：比 25 多要几条，好把必夹的广告和登录卡抵掉。 */
+const RECOMMEND_PAGE_SIZE = 30;
+/** 一批凑不够 25 条时，最多再往后要几批补上。 */
+const RECOMMEND_MAX_ROUNDS = 3;
+
+export interface RecommendBatch {
+    items: BilibiliSearchHit[];
+    /** 这一批之后该从第几批接着换：凑数可能多吃了不止一页，游标得跟着走。 */
+    nextIdx: number;
+}
+
+const readRecommendPage = async (freshIdx: number): Promise<BilibiliSearchHit[]> => {
     const data = await fetchSigned<RecommendPayload>('/x/web-interface/wbi/index/top/feed/rcmd', {
         web_location: 1430650,
         y_num: 5,
@@ -307,7 +311,7 @@ export const getRecommendedVideos = async (freshIdx = 1, pageSize = 18): Promise
         fresh_idx: freshIdx,
         fresh_idx_1h: freshIdx,
         fetch_row: 1,
-        ps: pageSize,
+        ps: RECOMMEND_PAGE_SIZE,
         homepage_ver: 1,
         brush: Math.max(0, freshIdx - 1),
     });
@@ -318,6 +322,41 @@ export const getRecommendedVideos = async (freshIdx = 1, pageSize = 18): Promise
         const reason = row.rcmd_reason?.content ?? '';
         return reason ? hits.map(hit => ({ ...hit, reason })) : hits;
     });
+};
+
+/**
+ * 推荐页：和 www.bilibili.com 首页同一口数据，也就是「换一换」按钮背后那个接口。
+ *
+ * 它不是翻页，而是「第几批」：每点一次换一换，fresh_idx / fresh_idx_1h 各 +1，服务端就给一批新的；
+ * brush 是这一轮已经换过几次。第一次进来用 fresh_type=3（首页首屏），之后用 4（换一换），
+ * 这样拿到的才是网页版看到的那条流，而不是热门榜。
+ *
+ * 一批要凑够 `count` 条视频（默认 25）：ps 里必夹广告和登录卡，一页通常只有二十几条能播的，
+ * 不够就带着下一个游标再要一批补上。`exclude` 是屏幕上已经有的 bvid——换一换不该把刚看过的原样摆回来。
+ */
+export const getRecommendedVideos = async (
+    freshIdx = 1,
+    count = RECOMMEND_BATCH_SIZE,
+    exclude: Iterable<string> = [],
+): Promise<RecommendBatch> => {
+    const wanted = Math.max(1, count);
+    const seen = new Set<string>(exclude);
+    const items: BilibiliSearchHit[] = [];
+    let cursor = Math.max(1, freshIdx);
+
+    for (let round = 0; round < RECOMMEND_MAX_ROUNDS && items.length < wanted; round += 1) {
+        const page = await readRecommendPage(cursor);
+        cursor += 1;
+        for (const hit of page) {
+            if (items.length >= wanted) break;
+            if (seen.has(hit.bvid)) continue;
+            seen.add(hit.bvid);
+            items.push(hit);
+        }
+        if (page.length === 0) break;
+    }
+
+    return { items, nextIdx: cursor };
 };
 
 /** 热门榜：探索页拿它当「综合热门」的来源，不需要 wbi 签名。 */

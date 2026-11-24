@@ -5,6 +5,7 @@ import type { SongResult } from '../types';
 import {
     type BilibiliFavoriteFolder,
     type VideoQuality,
+    RECOMMEND_BATCH_SIZE,
     getFavoriteFolders,
     getFavoriteVideos,
     getRankedVideos,
@@ -114,10 +115,18 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
         try {
             let items: BilibiliSearchHit[];
             switch (page) {
-                case 'videoRecommend':
-                    // 推荐页跟着首页那条流走：取的是「第 freshIdx 批」，换一换就换下一批。
-                    items = await getRecommendedVideos(get().freshIdx);
+                case 'videoRecommend': {
+                    // 推荐页跟着首页那条流走：一次取一批（凑够 25 条），并把游标推到下一批。
+                    // 换一换是「换掉现在屏幕上这一批」，所以把屏幕上现有的 bvid 排除掉，不原样摆回来。
+                    const batch = await getRecommendedVideos(
+                        get().freshIdx,
+                        RECOMMEND_BATCH_SIZE,
+                        get().feeds.videoRecommend.items.map(item => item.bvid),
+                    );
+                    items = batch.items;
+                    if (get().feeds[page].generation === generation) set({ freshIdx: batch.nextIdx });
                     break;
+                }
                 case 'videoExplore':
                     items = await getRankedVideos(0);
                     break;
@@ -193,9 +202,9 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
             await runFeed(page);
         },
         refreshFeed: async page => {
-            // 推荐页的「刷新」就是首页的「换一换」：先把游标推到下一批，再照新游标取。
-            // 其余三页没有批次的概念，重取当前那一份即可。
-            if (page === 'videoRecommend') set(state => ({ freshIdx: state.freshIdx + 1 }));
+            // 推荐页那颗按钮就是首页的「换一换」：再要一批新的 25 条，游标在 runFeed 里跟着批次走。
+            // 正在换的时候不再接一次，两个请求抢同一个游标只会换出重复内容。
+            if (page === 'videoRecommend' && get().feeds.videoRecommend.loading) return;
             await runFeed(page);
         },
         setCategoryRid: async rid => {
