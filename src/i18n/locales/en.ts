@@ -2283,6 +2283,7 @@ export default {
     "videoFavorites": "Favorites",
     "searchVideo": "Search videos",
     "videoRefresh": "Refresh",
+    "videoShuffle": "Shuffle",
     "videoPlaceholder": "Content coming soon",
     "videoSwitchPlatform": "Switch online video platform",
     "videoClose": "Close",

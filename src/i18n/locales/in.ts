@@ -2282,6 +2282,7 @@ export default {
     "videoFavorites": "Favorit",
     "searchVideo": "Cari video",
     "videoRefresh": "Segarkan",
+    "videoShuffle": "Ganti",
     "videoPlaceholder": "Konten segera hadir",
     "videoSwitchPlatform": "Ganti platform video daring",
     "videoClose": "Tutup",

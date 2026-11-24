@@ -1,14 +1,15 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Play, Plus, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Play, Plus, User } from 'lucide-react';
 import type { BilibiliSearchHit } from '../../../../types/bilibili';
 import type { BilibiliWeeklyIssue } from '../../../../shinoinject/lab/bilibili/api';
-import type { SongResult } from '../../../../types';
+import type { SongResult, Theme } from '../../../../types';
 import { useOnlineVideoStore } from '../../../../stores/useOnlineVideoStore';
 import { useVideoExploreStore } from '../../../../stores/useVideoExploreStore';
 import { recentVideos, replayedVideos, watchVideoPlays } from '../../../../services/bilibiliVideoHistory';
 import { EXPLORE_PILL, EXPLORE_SERIF, EXPLORE_TOKENS } from '../../../../components/app/home/explore/ExploreParts';
+import VideoIssueGridView from './VideoIssueGridView';
 
 // src/library/suites/grid/home/OnlineVideoExplore.tsx
 // 在线视频的「探索」页：版式照搬在线音乐探索页（衬线大字标题 + 一条横线、横向排开的卡片行），
@@ -320,9 +321,12 @@ const pageStyle: CSSProperties = { ...EXPLORE_TOKENS, color: 'var(--text-primary
 interface OnlineVideoExploreProps {
     /** 交给 folia 播放层：和推荐页、本地视频同一条播放链。 */
     onPlaySong: (song: SongResult, queue: SongResult[]) => void;
+    /** 打开一期的详情页时，网格要跟首页同一份主题。 */
+    theme: Theme;
+    isDaylight: boolean;
 }
 
-const OnlineVideoExplore: React.FC<OnlineVideoExploreProps> = ({ onPlaySong }) => {
+const OnlineVideoExplore: React.FC<OnlineVideoExploreProps> = ({ onPlaySong, theme, isDaylight }) => {
     const { t } = useTranslation();
     const playVideo = useOnlineVideoStore(state => state.playVideo);
     const preparingBvid = useOnlineVideoStore(state => state.preparingBvid);
@@ -502,47 +506,20 @@ const OnlineVideoExplore: React.FC<OnlineVideoExploreProps> = ({ onPlaySong }) =
                 </div>
             </div>
 
-            {/* 一期自己的视频：盖在整页上，左上角返回。 */}
+            {/* 一期自己的视频：用在线音乐集合详情页的 GridView 画（同一套卡片网格与返回键）。 */}
             {openIssueNumber !== null && (
-                <div
-                    className="absolute inset-0 z-20 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--bg-color) 96%, transparent)', backdropFilter: 'blur(20px)' }}
-                    data-testid="video-explore-issue"
-                >
-                    <div className="mx-auto w-full max-w-7xl pb-16 pr-8 pt-3 pl-[95px]">
-                        <div className="mb-6 flex items-center gap-3">
-                            <button type="button" onClick={closeIssue} className={`flex h-9 shrink-0 items-center gap-1.5 px-3.5 ${EXPLORE_PILL}`}>
-                                <ArrowLeft size={14} />
-                                {t('home.videoExploreBack')}
-                            </button>
-                            <div className="min-w-0">
-                                <div className="truncate text-lg font-medium">{t('home.videoWeeklyIssueNumber', { number: openIssueNumber })}</div>
-                                {issue && (
-                                    <div className="truncate text-xs text-[color:var(--ex-soft)]">
-                                        {[issue.subject, issue.name].filter(Boolean).join(' · ')}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        {issueStatus === 'loading' || issueStatus === 'idle'
-                            ? <TileSkeletons count={8} />
-                            : issueStatus === 'error'
-                                ? <ShelfError text={t(issueErrorKey ?? 'home.videoLoadFailed')} onRetry={() => { if (issue) void openIssue(issue); }} />
-                                : (
-                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-5 gap-y-7">
-                                        {issueVideos.map(video => (
-                                            <VideoTile
-                                                key={video.bvid}
-                                                video={video}
-                                                preparing={preparingBvid === video.bvid}
-                                                onOpen={() => open(video)}
-                                                className="w-full min-w-0"
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                    </div>
-                </div>
+                <VideoIssueGridView
+                    issueNumber={openIssueNumber}
+                    issue={issue}
+                    videos={issueVideos}
+                    status={issueStatus}
+                    errorKey={issueErrorKey}
+                    onRetry={() => { if (issue) void openIssue(issue); }}
+                    onBack={closeIssue}
+                    onPlay={open}
+                    theme={theme}
+                    isDaylight={isDaylight}
+                />
             )}
         </div>
     );

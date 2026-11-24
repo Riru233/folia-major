@@ -2282,6 +2282,7 @@ export default {
     "videoFavorites": "收藏夹",
     "searchVideo": "搜索视频",
     "videoRefresh": "刷新",
+    "videoShuffle": "换一换",
     "videoPlaceholder": "内容即将上线",
     "videoSwitchPlatform": "切换在线视频平台",
     "videoClose": "关闭",

@@ -7,8 +7,8 @@ import {
     type VideoQuality,
     getFavoriteFolders,
     getFavoriteVideos,
-    getPopularVideos,
     getRankedVideos,
+    getRecommendedVideos,
     searchVideos,
 } from '../shinoinject/lab/bilibili/api';
 import { isBilibiliAvailable } from '../shinoinject/lab/bilibili/transport';
@@ -20,7 +20,7 @@ import { setStatusMessage } from './useStatusMessageStore';
 // 在线视频四页的唯一数据源。视频源目前只有 bilibili，但页面只认「一组视频条目」，
 // 以后接第二家时在这里换实现即可，组件不用动。
 //
-// 播放不在这个 store 里：点开视频时把条目准备好（下载成 OPFS 里的本地视频曲目），
+// 播放不在这个 store 里：点开视频时只把播放地址解析出来（带签名的直链留在主进程），
 // 再通过调用方给的 playSong 交给 folia 的播放层——声音、画面、进度同步都走本地视频那条链。
 // 这里只管「准备好了没有、有没有出错、记着用户选的画质」。
 //
@@ -42,6 +42,8 @@ const emptyFeed = (): VideoFeed => ({ items: [], loading: false, errorKey: null,
 
 interface OnlineVideoState {
     feeds: Record<OnlineVideoPage, VideoFeed>;
+    /** 推荐流换到第几批了：就是 bilibili 的 fresh_idx，点一次换一换 +1。 */
+    freshIdx: number;
     /** 分类页选中的 bilibili 分区号，0 = 全站。 */
     categoryRid: number;
     favoriteFolders: BilibiliFavoriteFolder[];
@@ -113,7 +115,8 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
             let items: BilibiliSearchHit[];
             switch (page) {
                 case 'videoRecommend':
-                    items = await getPopularVideos(1);
+                    // 推荐页跟着首页那条流走：取的是「第 freshIdx 批」，换一换就换下一批。
+                    items = await getRecommendedVideos(get().freshIdx);
                     break;
                 case 'videoExplore':
                     items = await getRankedVideos(0);
@@ -168,6 +171,7 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
             videoCategory: emptyFeed(),
             videoFavorites: emptyFeed(),
         },
+        freshIdx: 1,
         categoryRid: 0,
         favoriteFolders: [],
         activeFolderId: null,
@@ -189,6 +193,9 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
             await runFeed(page);
         },
         refreshFeed: async page => {
+            // 推荐页的「刷新」就是首页的「换一换」：先把游标推到下一批，再照新游标取。
+            // 其余三页没有批次的概念，重取当前那一份即可。
+            if (page === 'videoRecommend') set(state => ({ freshIdx: state.freshIdx + 1 }));
             await runFeed(page);
         },
         setCategoryRid: async rid => {

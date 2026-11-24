@@ -601,6 +601,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                         tab={key}
                         isDaylight={isDaylight}
                         isCompact={isCompact}
+                        theme={theme}
                         onPlaySong={(song, queue) => onPlaySong(song, queue, false)}
                     />
                 </div>

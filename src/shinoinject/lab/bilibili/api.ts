@@ -279,7 +279,48 @@ const fetchSigned = async <T>(path: string, params: Record<string, string | numb
     }
 };
 
-/** 推荐页的数据源：bilibili 官方热门视频流，不需要 wbi 签名。 */
+/** 首页推荐流的条目：比别处多一个 `goto`（夹着广告和登录卡）和推荐理由。 */
+interface RecommendRow extends VideoRow {
+    goto?: string;
+    rcmd_reason?: { content?: string };
+}
+
+interface RecommendPayload {
+    item?: RecommendRow[];
+}
+
+/**
+ * 推荐页：和 www.bilibili.com 首页同一口数据，也就是「换一换」按钮背后那个接口。
+ *
+ * 它不是翻页，而是「第几批」：每点一次换一换，fresh_idx / fresh_idx_1h 各 +1，服务端就给一批新的；
+ * brush 是这一轮已经换过几次。第一次进来用 fresh_type=3（首页首屏），之后用 4（换一换），
+ * 这样拿到的才是网页版看到的那条流，而不是热门榜。
+ *
+ * ps 只是一批要几条，里面必有广告和登录卡，所以真正的视频总比 ps 少几条。
+ */
+export const getRecommendedVideos = async (freshIdx = 1, pageSize = 18): Promise<BilibiliSearchHit[]> => {
+    const data = await fetchSigned<RecommendPayload>('/x/web-interface/wbi/index/top/feed/rcmd', {
+        web_location: 1430650,
+        y_num: 5,
+        fresh_type: freshIdx > 1 ? 4 : 3,
+        feed_version: 'V8',
+        fresh_idx: freshIdx,
+        fresh_idx_1h: freshIdx,
+        fetch_row: 1,
+        ps: pageSize,
+        homepage_ver: 1,
+        brush: Math.max(0, freshIdx - 1),
+    });
+    return (data.item ?? []).flatMap(row => {
+        // 广告、登录卡、直播卡都没有 bvid；只留能当视频播的那一种。
+        if (row.goto !== undefined && row.goto !== 'av') return [];
+        const hits = videoRowToHit(row);
+        const reason = row.rcmd_reason?.content ?? '';
+        return reason ? hits.map(hit => ({ ...hit, reason })) : hits;
+    });
+};
+
+/** 热门榜：探索页拿它当「综合热门」的来源，不需要 wbi 签名。 */
 export const getPopularVideos = async (page = 1, pageSize = 20): Promise<BilibiliSearchHit[]> => {
     const envelope = await fetchJson<VideoListPayload>(
         `${API_BASE}/x/web-interface/popular?pn=${page}&ps=${pageSize}`,

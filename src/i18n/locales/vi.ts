@@ -2281,6 +2281,7 @@ export default {
     "videoFavorites": "Yêu thích",
     "searchVideo": "Tìm video",
     "videoRefresh": "Làm mới",
+    "videoShuffle": "Đổi lượt",
     "videoPlaceholder": "Nội dung sắp ra mắt",
     "videoSwitchPlatform": "Đổi nền tảng video trực tuyến",
     "videoClose": "Đóng",
