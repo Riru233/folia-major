@@ -291,9 +291,11 @@ interface RecommendPayload {
 
 /** 首页推荐流一批要凑够几条视频（广告、登录卡不算）。 */
 export const RECOMMEND_BATCH_SIZE = 25;
-/** 一次向接口要几条：比 25 多要几条，好把必夹的广告和登录卡抵掉。 */
-const RECOMMEND_PAGE_SIZE = 30;
-/** 一批凑不够 25 条时，最多再往后要几批补上。 */
+/** 下拉到底时一次追加几条。 */
+export const RECOMMEND_APPEND_SIZE = 10;
+/** 一次向接口要几条：比目标条数多要几条，好把必夹的广告和登录卡抵掉。 */
+const RECOMMEND_EXTRA_ROWS = 4;
+/** 一批凑不够时，最多再往后要几批补上。 */
 const RECOMMEND_MAX_ROUNDS = 3;
 
 export interface RecommendBatch {
@@ -302,7 +304,7 @@ export interface RecommendBatch {
     nextIdx: number;
 }
 
-const readRecommendPage = async (freshIdx: number): Promise<BilibiliSearchHit[]> => {
+const readRecommendPage = async (freshIdx: number, pageSize: number): Promise<BilibiliSearchHit[]> => {
     const data = await fetchSigned<RecommendPayload>('/x/web-interface/wbi/index/top/feed/rcmd', {
         web_location: 1430650,
         y_num: 5,
@@ -311,7 +313,7 @@ const readRecommendPage = async (freshIdx: number): Promise<BilibiliSearchHit[]>
         fresh_idx: freshIdx,
         fresh_idx_1h: freshIdx,
         fetch_row: 1,
-        ps: RECOMMEND_PAGE_SIZE,
+        ps: pageSize,
         homepage_ver: 1,
         brush: Math.max(0, freshIdx - 1),
     });
@@ -331,8 +333,9 @@ const readRecommendPage = async (freshIdx: number): Promise<BilibiliSearchHit[]>
  * brush 是这一轮已经换过几次。第一次进来用 fresh_type=3（首页首屏），之后用 4（换一换），
  * 这样拿到的才是网页版看到的那条流，而不是热门榜。
  *
- * 一批要凑够 `count` 条视频（默认 25）：ps 里必夹广告和登录卡，一页通常只有二十几条能播的，
- * 不够就带着下一个游标再要一批补上。`exclude` 是屏幕上已经有的 bvid——换一换不该把刚看过的原样摆回来。
+ * 一批要凑够 `count` 条视频（首批 25、下拉追加 10）：ps 里必夹广告和登录卡，一页通常只有二十几条
+ * 能播的，不够就带着下一个游标再要一批补上。`exclude` 是屏幕上已经有的 bvid——换一换或追加都不该
+ * 把刚看过的原样摆回来。
  */
 export const getRecommendedVideos = async (
     freshIdx = 1,
@@ -340,12 +343,14 @@ export const getRecommendedVideos = async (
     exclude: Iterable<string> = [],
 ): Promise<RecommendBatch> => {
     const wanted = Math.max(1, count);
+    // ps 只要比目标多几条就够：多要的会被浪费（游标已经推过去了），少要又得再来一轮。
+    const pageSize = Math.min(30, wanted + RECOMMEND_EXTRA_ROWS);
     const seen = new Set<string>(exclude);
     const items: BilibiliSearchHit[] = [];
     let cursor = Math.max(1, freshIdx);
 
     for (let round = 0; round < RECOMMEND_MAX_ROUNDS && items.length < wanted; round += 1) {
-        const page = await readRecommendPage(cursor);
+        const page = await readRecommendPage(cursor, pageSize);
         cursor += 1;
         for (const hit of page) {
             if (items.length >= wanted) break;

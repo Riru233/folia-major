@@ -5,6 +5,7 @@ import type { SongResult } from '../types';
 import {
     type BilibiliFavoriteFolder,
     type VideoQuality,
+    RECOMMEND_APPEND_SIZE,
     RECOMMEND_BATCH_SIZE,
     getFavoriteFolders,
     getFavoriteVideos,
@@ -43,8 +44,12 @@ const emptyFeed = (): VideoFeed => ({ items: [], loading: false, errorKey: null,
 
 interface OnlineVideoState {
     feeds: Record<OnlineVideoPage, VideoFeed>;
-    /** 推荐流换到第几批了：就是 bilibili 的 fresh_idx，点一次换一换 +1。 */
+    /** 推荐流换到第几批了：就是 bilibili 的 fresh_idx，每换一批（含下拉追加）往前推。 */
     freshIdx: number;
+    /** 正在往后追加推荐（下拉到底时的 10 条），给页尾那颗小转圈用。 */
+    recommendAppending: boolean;
+    /** 追加失败或服务端不再给新东西：这一轮就停在这里，换一换时才重新开。 */
+    recommendEnd: boolean;
     /** 分类页选中的 bilibili 分区号，0 = 全站。 */
     categoryRid: number;
     favoriteFolders: BilibiliFavoriteFolder[];
@@ -64,6 +69,8 @@ interface OnlineVideoState {
 
     loadFeed: (page: OnlineVideoPage) => Promise<void>;
     refreshFeed: (page: OnlineVideoPage) => Promise<void>;
+    /** 推荐页下拉到底：再追加一批（默认 10 条）。 */
+    appendRecommend: () => Promise<void>;
     setCategoryRid: (rid: number) => Promise<void>;
     setActiveFolder: (id: number) => Promise<void>;
     search: (keyword: string) => Promise<void>;
@@ -155,6 +162,8 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
                     ...state.feeds,
                     [page]: { ...state.feeds[page], items, loading: false, errorKey: null },
                 },
+                // 换了一整批：追加的闸门重新打开。
+                ...(page === 'videoRecommend' ? { recommendEnd: false } : {}),
             }));
         } catch (error) {
             const latest = get().feeds[page].generation;
@@ -181,6 +190,8 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
             videoFavorites: emptyFeed(),
         },
         freshIdx: 1,
+        recommendAppending: false,
+        recommendEnd: false,
         categoryRid: 0,
         favoriteFolders: [],
         activeFolderId: null,
@@ -206,6 +217,40 @@ export const useOnlineVideoStore = create<OnlineVideoState>((set, get) => {
             // 正在换的时候不再接一次，两个请求抢同一个游标只会换出重复内容。
             if (page === 'videoRecommend' && get().feeds.videoRecommend.loading) return;
             await runFeed(page);
+        },
+        appendRecommend: async () => {
+            const page = 'videoRecommend';
+            const feed = get().feeds[page];
+            // 首屏还在取、已经有一批在路上、或者这一轮到头了，都不再要。
+            if (feed.loading || feed.errorKey || get().recommendAppending || get().recommendEnd) return;
+            if (!isBilibiliAvailable()) return;
+
+            set({ recommendAppending: true });
+            const generation = feed.generation;
+            try {
+                const batch = await getRecommendedVideos(
+                    get().freshIdx,
+                    RECOMMEND_APPEND_SIZE,
+                    feed.items.map(item => item.bvid),
+                );
+                // 期间点了换一换：这一批属于上一轮，丢掉。
+                if (get().feeds[page].generation !== generation) return;
+                set(state => ({
+                    freshIdx: batch.nextIdx,
+                    // 一条新的都没拿到，说明这一轮推荐到头了，别一直往下戳。
+                    recommendEnd: batch.items.length === 0,
+                    feeds: {
+                        ...state.feeds,
+                        [page]: { ...state.feeds[page], items: [...state.feeds[page].items, ...batch.items] },
+                    },
+                }));
+            } catch (error) {
+                // 追加失败只是「这次没接上」：停在当前这一屏，不把已经看过的内容收走。
+                console.warn('[OnlineVideo] Could not append more recommendations:', error);
+                if (get().feeds[page].generation === generation) set({ recommendEnd: true });
+            } finally {
+                set({ recommendAppending: false });
+            }
         },
         setCategoryRid: async rid => {
             set(state => ({

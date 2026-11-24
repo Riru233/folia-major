@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Clapperboard,
@@ -148,9 +148,13 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
     useGlass();
 
     const page: OnlineVideoPage = tab;
+    // 推荐页是无限流：滚到底就往后接 10 条，所以要知道这个滚动容器。
+    const scrollRef = useRef<HTMLDivElement | null>(null);
     const feed = useOnlineVideoStore(state => state.feeds[page]);
     const loadFeed = useOnlineVideoStore(state => state.loadFeed);
     const refreshFeed = useOnlineVideoStore(state => state.refreshFeed);
+    const appendRecommend = useOnlineVideoStore(state => state.appendRecommend);
+    const recommendAppending = useOnlineVideoStore(state => state.recommendAppending);
     const categoryRid = useOnlineVideoStore(state => state.categoryRid);
     const setCategoryRid = useOnlineVideoStore(state => state.setCategoryRid);
     const folders = useOnlineVideoStore(state => state.favoriteFolders);
@@ -195,6 +199,8 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
             return;
         }
         if (refreshing) return;
+        // 换一换是把这一屏整个换掉，视线跟着回到顶部；否则换完还停在第 40 条的位置上。
+        if (page === 'videoRecommend') scrollRef.current?.scrollTo({ top: 0 });
         void refreshFeed(page);
     };
 
@@ -283,9 +289,20 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
     // 它不在页头，做成右下角的圆形浮动按钮，只留一个图标；搜索时让位给页头那颗普通刷新。
     const showShuffle = page === 'videoRecommend' && !searchQuery;
 
+    // 只有推荐页会往下长：贴到底（留 160px 的提前量，滚动中就能接上）就要下一批。
+    // 是否真发请求由 store 判断：正在取、正在追加、这一轮到头了都会直接返回，滚动事件多来几次没关系。
+    const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+        if (!showShuffle) return;
+        const el = event.currentTarget;
+        if (el.scrollHeight - el.scrollTop - el.clientHeight > 160) return;
+        void appendRecommend();
+    };
+
     return (
         <div className="relative h-full w-full" data-testid="online-video-view">
             <div
+                ref={scrollRef}
+                onScroll={handleScroll}
                 className={`h-full w-full overflow-y-auto pl-[72px] pr-4 pt-2 ${showShuffle ? 'pb-24' : 'pb-8'}`}
                 data-testid="online-video-scroll"
             >
@@ -367,6 +384,13 @@ const OnlineVideoView: React.FC<OnlineVideoViewProps> = ({ tab, isDaylight, isCo
                 )}
 
                 {body}
+
+                {/* 下拉到底正在接下一批：一行小转圈就够了，不遮住已经看过的内容。 */}
+                {showShuffle && recommendAppending && !errorKey && items.length > 0 && (
+                    <div className="flex items-center justify-center py-5" data-testid="video-recommend-appending">
+                        <Loader2 size={16} className="animate-spin" style={{ color: 'var(--text-secondary)' }} />
+                    </div>
+                )}
             </div>
 
             {showShuffle && (

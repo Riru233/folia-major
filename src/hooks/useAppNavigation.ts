@@ -23,7 +23,7 @@ import {
 } from './navigationHistoryJournal';
 import { useAppViewStore } from '../stores/useAppViewStore';
 import type { AppView, LatticeSource } from '../stores/useAppViewStore';
-import { usePlaybackStore } from '../stores/usePlaybackStore';
+import { usePlaybackStore, selectDisplaySong } from '../stores/usePlaybackStore';
 import { resolvePlaybackSurface, usePlaybackEntryViewStore, type PlaybackEntryView } from '../stores/usePlaybackEntryViewStore';
 
 // src/hooks/useAppNavigation.ts
@@ -81,6 +81,18 @@ export const resolvePlayerCapsuleNavigationTarget = (
     // fb3：「留在原处」没有自己的视图，显式要求进入播放视图（胶囊、启动、bravais 的「进入」）时去播放页。
     // 私人 FM 也去 Lattice：那里换成电台墙（lattice/radio/）。
     return resolvePlaybackSurface(playbackEntryView) === 'lattice' ? 'lattice' : 'player';
+};
+
+/**
+ * 正在放的东西是不是一集在线视频（bilibili：SongResult.onlineVideoUrl，只有在线视频才带）。
+ *
+ * 不能用 isVideo 判断：那个标记是「音频来自 MV」的意思，歌还是歌，队列拼贴照常该铺。
+ * 队列拼贴是「把这一队歌铺成一面墙」，一集视频没有这样的队列，所以视频在播时一律留在播放页：
+ * 打开拼贴的动作改去播放页，开始播视频也不按「播放进入视图」那条偏好走。
+ */
+const isVideoPlayback = (): boolean => {
+    const song = selectDisplaySong(usePlaybackStore.getState());
+    return Boolean(song?.onlineVideoUrl);
 };
 
 const getSearchHistorySnapshot = (): NavigationHistoryState['search'] => {
@@ -366,6 +378,11 @@ export function useAppNavigation() {
     // hand over the event: whatever is not 'explore' is the queue.)
     const navigateToLattice = useCallback((source?: LatticeSource) => {
         const latticeSource: LatticeSource = source === 'explore' ? 'explore' : 'queue';
+        // 视频在播时不铺墙：拼贴是给音乐队列看的，视频只有它自己那一集。改去播放页。
+        if (isVideoPlayback()) {
+            navigateToPlayer();
+            return;
+        }
         // In Personal FM the queue wall is drawn as the radio wall (Lattice.tsx).
         if (useAppViewStore.getState().view === 'lattice') return;
         useSearchNavigationStore.getState().hideSearchOverlay();
@@ -376,7 +393,7 @@ export function useAppNavigation() {
             hash: '#lattice',
             latticeSource,
         });
-    }, [pushNavigationState]);
+    }, [navigateToPlayer, pushNavigationState]);
 
     /**
      * Where starting a song lands. Reads the stored preference rather than each caller deciding,
@@ -388,6 +405,12 @@ export function useAppNavigation() {
      * Personal FM goes to Lattice too, which shows it as the radio wall.
      */
     const navigateToPlaybackView = useCallback(() => {
+        // 视频只有播放页一种去处：不按「播放进入视图」的偏好走（留在原处 / 队列拼贴都不适用），
+        // 也不管此刻是不是已经在拼贴上——点开视频就该看到画面在播。
+        if (isVideoPlayback()) {
+            navigateToPlayer();
+            return;
+        }
         const view = useAppViewStore.getState().view;
         if (view === 'lattice') return;
         const entryView = usePlaybackEntryViewStore.getState().playbackEntryView;
