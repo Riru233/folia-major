@@ -53,6 +53,7 @@ import { useHomeTabThumb } from './useHomeTabThumb';
 import { Grid3DNav } from './Grid3DNav';
 import OnlineVideoView from './OnlineVideoView';
 import VideoProviderDialog from './VideoProviderDialog';
+import { useOnlineVideoStore } from '../../../../stores/useOnlineVideoStore';
 
 // src/library/suites/grid/home/Grid3D.tsx
 // Glassmorphic interactive desktop home view replacing the legacy 3D carousel.
@@ -301,6 +302,13 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         setFocusedIndex(0);
     }, [homeViewTab]);
 
+    // 离开在线视频就收掉视频自己的搜索结果，下次回来从干净的列表开始。
+    useEffect(() => {
+        if (isVideoHomeTab(homeViewTab)) return;
+        const video = useOnlineVideoStore.getState();
+        if (video.searchQuery) video.clearSearch();
+    }, [homeViewTab]);
+
     // 点搜索框与历史面板以外的地方就把搜索层收回去（和点那颗 × 一样）。用 pointerdown 而不是 click：
     // 指针落在别处（例如海报、页签）时先收起，那一下不会同时被当成「先点搜索框、再点别处」。
     // 历史面板挂在 body 上（HomeSearchHistoryPopover），所以白名单按 data-home-search-layer 认：
@@ -377,6 +385,14 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         const query = rawQuery.trim();
         setIsSearchHistoryOpen(false);
         if (!query) return;
+
+        // 在线视频的搜索走视频源（bilibili），结果就在四页上方那块信息流里显示，
+        // 不进全局搜索页——全局搜索是按「歌曲」组织的，装不下视频条目。
+        if (isVideoHomeTab(homeViewTab)) {
+            await useOnlineVideoStore.getState().search(query);
+            collapseCompactSearch();
+            return;
+        }
 
         const searchSource = isOnlineTab ? activeProviderId : resolveSearchSource(homeViewTab);
         const didSearch = await submitSearch({
@@ -577,10 +593,16 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             );
         }
         if (isVideoHomeTab(key)) {
-            // 在线视频：四页共用一块空壳视图，二级页签由页头胶囊画。不读任何平台数据。
+            // 在线视频：四页共用一块视图，二级页签由页头胶囊画。数据由 OnlineVideoView 从视频源读；
+            // 点开视频后走本地视频那条播放链，交给 folia 播放层（不弹窗）。
             return (
                 <div className="w-full h-full flex-1" data-testid="home-online-video">
-                    <OnlineVideoView tab={key} isDaylight={isDaylight} isCompact={isCompact} />
+                    <OnlineVideoView
+                        tab={key}
+                        isDaylight={isDaylight}
+                        isCompact={isCompact}
+                        onPlaySong={(song, queue) => onPlaySong(song, queue, false)}
+                    />
                 </div>
             );
         }

@@ -230,6 +230,173 @@ export const getPlayStream = async (bvid: string, cid: number, maxQuality: numbe
     throw new BilibiliApiError(-1, 'no video track');
 };
 
+// ---------------------------------------------------------------------------
+// 在线视频页用的只读接口。上面那套只取画面流，是给 MV 背景用的；这里要的是能直接播的视频条目。
+// 三个入口都沿用同一条主进程代理（带 cookies / Referer），网页版依旧会被 CORS 拒掉。
+// ---------------------------------------------------------------------------
+
+interface PopularPayload {
+    list?: Array<{
+        bvid?: string;
+        title?: string;
+        pic?: string;
+        duration?: number;
+        owner?: { name?: string };
+        stat?: { view?: number };
+    }>;
+}
+
+/** 推荐页的数据源：bilibili 官方热门视频流，不需要 wbi 签名。 */
+export const getPopularVideos = async (page = 1): Promise<BilibiliSearchHit[]> => {
+    const envelope = await fetchJson<PopularPayload>(
+        `${API_BASE}/x/web-interface/popular?pn=${page}&ps=20`,
+    );
+    const list = unwrap(envelope).list ?? [];
+    return list.flatMap((row): BilibiliSearchHit[] => {
+        const bvid = typeof row.bvid === 'string' ? row.bvid : '';
+        if (!bvid) return [];
+        return [{
+            bvid,
+            title: stripSearchHighlight(typeof row.title === 'string' ? row.title : ''),
+            author: row.owner?.name ?? '',
+            durationSec: typeof row.duration === 'number' ? row.duration : 0,
+            coverUrl: row.pic ? normalizeCoverUrl(row.pic) : '',
+            playCount: typeof row.stat?.view === 'number' ? row.stat.view : 0,
+        }];
+    });
+};
+
+interface RankingPayload {
+    list?: Array<{
+        bvid?: string;
+        title?: string;
+        pic?: string;
+        duration?: number;
+        owner?: { name?: string };
+        stat?: { view?: number };
+    }>;
+}
+
+/**
+ * 探索页的数据源：分区排行榜。rid 是 bilibili 的分区号（0 = 全站）。
+ * 排行榜同样不需要 wbi 签名。
+ */
+export const getRankedVideos = async (rid = 0): Promise<BilibiliSearchHit[]> => {
+    const envelope = await fetchJson<RankingPayload>(
+        `${API_BASE}/x/web-interface/ranking/v2?rid=${rid}&type=all`,
+    );
+    const list = unwrap(envelope).list ?? [];
+    return list.flatMap((row): BilibiliSearchHit[] => {
+        const bvid = typeof row.bvid === 'string' ? row.bvid : '';
+        if (!bvid) return [];
+        return [{
+            bvid,
+            title: stripSearchHighlight(typeof row.title === 'string' ? row.title : ''),
+            author: row.owner?.name ?? '',
+            durationSec: typeof row.duration === 'number' ? row.duration : 0,
+            coverUrl: row.pic ? normalizeCoverUrl(row.pic) : '',
+            playCount: typeof row.stat?.view === 'number' ? row.stat.view : 0,
+        }];
+    });
+};
+
+/** 画质档位：和界面上的 360P / 720P / 1080P 对齐。 */
+export type VideoQuality = 360 | 720 | 1080;
+
+/** 画质档位 → bilibili 的 qn 参数。qn 只是上限，接口会按登录态降档返回。 */
+export const VIDEO_QUALITY_QN: Readonly<Record<VideoQuality, number>> = {
+    360: 16,
+    720: 64,
+    1080: 80,
+};
+
+interface AudioPlayUrlPayload extends PlayUrlPayload {
+    durl?: Array<{ url?: string; size?: number }>;
+}
+
+/**
+ * 拿一条能直接塞进 <video> 的地址：fnval=0 走老格式 durl，音视频合一的 mp4/flv。
+ * 和 getPlayStream 的区别是这里要声音（在线视频是真的在播视频，不是拿画面做背景）。
+ */
+export const getVideoStreamWithAudio = async (
+    bvid: string,
+    cid: number,
+    quality: 360 | 720 | 1080,
+): Promise<BilibiliPlayStream> => {
+    const qn = VIDEO_QUALITY_QN[quality];
+    const url = await signedUrl('/x/player/wbi/playurl', {
+        bvid,
+        cid,
+        qn,
+        fnval: 0,
+        fnver: 0,
+        fourk: 0,
+    });
+    const data = unwrap(await fetchJson<AudioPlayUrlPayload>(url));
+    const direct = data.durl?.[0]?.url;
+    if (!direct) throw new BilibiliApiError(-1, 'no playable stream');
+    return {
+        videoUrl: direct,
+        // 未登录时 1080 会被降到 480，把接口实际给的档位带回去给界面显示。
+        quality: data.quality ?? qn,
+        durationSec: Math.round((data.timelength ?? 0) / 1000),
+    };
+};
+
+export interface BilibiliFavoriteFolder {
+    id: number;
+    title: string;
+    count: number;
+}
+
+interface FavFolderPayload {
+    list?: Array<{ id?: number; title?: string; media_count?: number }>;
+}
+
+/** 收藏夹列表。需要先登录（拿 mid），未登录时上层直接显示登录引导。 */
+export const getFavoriteFolders = async (mid: number): Promise<BilibiliFavoriteFolder[]> => {
+    const envelope = await fetchJson<FavFolderPayload>(
+        `${API_BASE}/x/v3/fav/folder/created/list-all?up_mid=${mid}&web_location=333.1387`,
+    );
+    const list = unwrap(envelope).list ?? [];
+    return list.flatMap((row): BilibiliFavoriteFolder[] => {
+        const id = typeof row.id === 'number' ? row.id : 0;
+        if (!id) return [];
+        return [{ id, title: row.title ?? `收藏夹 ${id}`, count: row.media_count ?? 0 }];
+    });
+};
+
+interface FavResourcePayload {
+    medias?: Array<{
+        bvid?: string;
+        title?: string;
+        pic?: string;
+        duration?: number;
+        owner?: { name?: string };
+        cnt_info?: { play?: number };
+    }>;
+}
+
+/** 某个收藏夹里的视频。 */
+export const getFavoriteVideos = async (folderId: number, page = 1): Promise<BilibiliSearchHit[]> => {
+    const envelope = await fetchJson<FavResourcePayload>(
+        `${API_BASE}/x/v3/fav/resource/list?media_id=${folderId}&pn=${page}&ps=20&platform=web`,
+    );
+    const medias = unwrap(envelope).medias ?? [];
+    return medias.flatMap((row): BilibiliSearchHit[] => {
+        const bvid = typeof row.bvid === 'string' ? row.bvid : '';
+        if (!bvid) return [];
+        return [{
+            bvid,
+            title: stripSearchHighlight(typeof row.title === 'string' ? row.title : ''),
+            author: row.owner?.name ?? '',
+            durationSec: typeof row.duration === 'number' ? row.duration : 0,
+            coverUrl: row.pic ? normalizeCoverUrl(row.pic) : '',
+            playCount: typeof row.cnt_info?.play === 'number' ? row.cnt_info.play : 0,
+        }];
+    });
+};
+
 interface NavAccountPayload extends NavPayload {
     isLogin?: boolean;
     vipStatus?: number;

@@ -112,6 +112,7 @@ contextBridge.exposeInMainWorld('electron', {
         openLogin: () => ipcRenderer.invoke('bilibili-auth-login'),
         signOut: () => ipcRenderer.invoke('bilibili-auth-logout'),
         request: (request) => ipcRenderer.invoke('bilibili-request', request),
+        downloadVideo: (request) => ipcRenderer.invoke('bilibili-download-video', request),
     },
     // 本地曲库的目录卡片只存相对路径（A/B）：第一次调用会请用户在磁盘上指出导入根，之后按根名记住，
     // 用系统文件管理器打开目标目录本身（不是父目录）。网页版没有这个 API，见 services/localFolderSystemOpen.ts。

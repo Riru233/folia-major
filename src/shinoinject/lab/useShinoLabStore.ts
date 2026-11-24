@@ -50,7 +50,8 @@ export type ShinoLabState = {
 export const useShinoLabStore = create<ShinoLabState>((set, get) => ({
     videoPlaybackEnabled: isLabVideoPlaybackEnabled(),
     onlineVideoEnabled: isLabOnlineVideoEnabled(),
-    hideLyricStyleDuringVideo: getStoredBoolean(LAB_HIDE_LYRICS_ON_VIDEO_KEY, false),
+    // 视频播放的画面本来就取代歌词那层；默认就隐藏，实验室里仍可关掉恢复歌词。
+    hideLyricStyleDuringVideo: getStoredBoolean(LAB_HIDE_LYRICS_ON_VIDEO_KEY, true),
     bilibiliMvEnabled: getStoredBoolean(LAB_BILIBILI_MV_KEY, false),
     bilibiliAutoMatch: getStoredBoolean(LAB_BILIBILI_AUTO_MATCH_KEY, true),
     bilibiliMvQuality: readStoredQuality(),

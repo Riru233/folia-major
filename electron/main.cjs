@@ -8287,6 +8287,14 @@ ipcMain.handle('bilibili-request', async (event, request) => {
   return bilibiliApi.request(request);
 });
 
+// 在线视频：把带签名的视频直链下载成 base64，交给渲染进程写进 OPFS 当本地视频播。
+ipcMain.handle('bilibili-download-video', async (event, request) => {
+  if (!isTrustedMainWindowContents(event.sender)) {
+    throw new Error('Untrusted renderer attempted to download a bilibili video.');
+  }
+  return bilibiliApi.downloadVideo(request);
+});
+
 // Integrate AI logic locally into Electron
 ipcMain.handle('generate-theme', firstParty('generate-theme', async (event, lyricsText, options = {}) => {
   try {

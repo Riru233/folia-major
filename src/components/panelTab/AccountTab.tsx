@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { LogOut, RefreshCw, Crown, User as UserIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { AudioQualityPreference } from '../../types/onlineMusic';
@@ -18,6 +18,7 @@ import { PanelIconButton } from './shell/PanelIconButton';
 import { PanelRow } from './shell/PanelRow';
 import { shortAccountId } from '../../utils/accountIdDisplay';
 import { PlaybackSignalPathButton } from '../hifi/PlaybackSignalPathButton';
+import { useOnlineVideoStore } from '../../stores/useOnlineVideoStore';
 
 // src/components/panelTab/AccountTab.tsx
 // The panel's account tab: who is signed in on the active platform (or that nobody is, or that the
@@ -66,10 +67,14 @@ const AccountTab: React.FC<AccountTabProps> = ({
 }) => {
     const { t } = useTranslation();
     const reduced = useKitReducedMotion();
-    // 同一行按当前播放类型切换：音频是音质档，视频是画质档。画质先只留本地选中态。
+    // 同一行按当前播放类型切换：音频是音质档，视频是画质档。画质和在线视频播放器共用一份偏好，
+    // 改档会重新解析播放地址，不只是界面上的选中态。
     const song = usePlaybackStore(selectDisplaySong);
     const isVideoPlaying = song?.isVideo === true;
-    const [videoQuality, setVideoQuality] = useState<VideoQualityValue>('720');
+    const videoQuality = String(useOnlineVideoStore(state => state.quality)) as VideoQualityValue;
+    const setVideoQuality = (value: VideoQualityValue) => {
+        useOnlineVideoStore.getState().setQuality(Number(value) as 360 | 720 | 1080);
+    };
     // 当前平台取 controller 快照里回落过的那个，账号是它自己的（不拿别的平台的账号顶上）。
     const { providers, activeProviderId } = useLibraryAccountProviders(accountController);
     const activeSummary = providers.find(provider => provider.providerId === activeProviderId);
@@ -139,7 +144,7 @@ const AccountTab: React.FC<AccountTabProps> = ({
             <GroupLine />
 
             {/* 同一个位置按播放类型切换：音频是音质、视频是画质。都走 Segments 的分段布局，
-                选中块在同一组里滑动；画质档目前只是界面骨架，不写回播放链路。 */}
+                选中块在同一组里滑动；画质档和在线视频播放器共用同一份偏好。 */}
             <PanelRow label={isVideoPlaying ? t('home.videoQuality') : t('account.audioQuality')}>
                 {isVideoPlaying ? (
                     <Segments

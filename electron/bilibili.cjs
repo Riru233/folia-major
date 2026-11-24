@@ -19,7 +19,29 @@ const API_BASE = 'https://api.bilibili.com';
 const LOGIN_URL = 'https://passport.bilibili.com/login';
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 const ALLOWED_HOSTS = new Set(['api.bilibili.com', 'api.bilibili.tv']);
+// 视频 CDN：下载直链用于「在线视频像本地视频那样播」。子域极多，而且同一个视频在不同地区会拿到
+// 不同的 CDN（国内 *.bilivideo.com / *.hdslb.com，海外 *.akamaized.net 之类），所以按「主域名」
+// 认，不逐个枚举子域。仍然只放行这一份白名单，避免下载接口被当成任意 URL 代理。
+const MEDIA_DOMAINS = [
+  'bilivideo.com',
+  'bilivideo.cn',
+  'hdslb.com',
+  'hdslb.org',
+  'bilibili.com',
+  'bilibili.cn',
+  'biliapi.net',
+  'biliapi.com',
+  'akamaized.net',
+  'szbdyd.com',
+  'bdydns.com',
+  'bag-cn.com',
+  'bvcst.com',
+];
+const isAllowedMediaHost = (hostname) => MEDIA_DOMAINS.some(
+  domain => hostname === domain || hostname.endsWith(`.${domain}`),
+);
 const REQUEST_TIMEOUT_MS = 15000;
+const DOWNLOAD_TIMEOUT_MS = 2 * 60 * 1000;
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
 const LOGIN_POLL_MS = 1500;
 
@@ -130,6 +152,46 @@ function createBilibiliApi({ log = console } = {}) {
     }
   };
 
+  /**
+   * 把一个 bilibili 视频直链下载成 base64 交回渲染进程。播放地址带时效签名、渲染进程 fetch 会被
+   * CORS 拒掉，所以走这条带 cookies/Referer 的 session。只在下载这条路上放行视频 CDN，API 代理
+   * 仍然只认 ALLOWED_HOSTS。
+   */
+  const downloadVideo = async (payload) => {
+    const raw = typeof payload?.url === 'string' ? payload.url.trim() : '';
+    // durl 有时给 "//upos-.../x.mp4" 这种协议相对地址，补成 https 再解析。
+    const target = raw.startsWith('//') ? `https:${raw}` : raw;
+    let parsed;
+    try {
+      parsed = new URL(target);
+    } catch {
+      throw new Error('Invalid bilibili media url.');
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    // 老格式 durl 偶尔给 http 直链，统一升级到 https（这些 CDN 都支持），不放行明文。
+    if (parsed.protocol === 'http:' && isAllowedMediaHost(hostname)) parsed.protocol = 'https:';
+    if (parsed.protocol !== 'https:' || !isAllowedMediaHost(hostname)) {
+      throw new Error(`Forbidden bilibili media host: ${hostname} (${parsed.protocol})`);
+    }
+
+    await ensureAnonymousCookies(getSession());
+    const headers = { 'User-Agent': USER_AGENT, Referer: 'https://www.bilibili.com/' };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
+    try {
+      const response = await getSession().fetch(parsed.toString(), { headers, signal: controller.signal });
+      if (!response.ok) throw new Error(`Media download failed (${response.status})`);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      return {
+        base64: buffer.toString('base64'),
+        mimeType: response.headers.get('content-type') || 'video/mp4',
+        bytes: buffer.length,
+      };
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   const openLogin = async () => {
     if (loginTask) return loginTask;
     loginTask = new Promise((resolve) => {
@@ -188,6 +250,7 @@ function createBilibiliApi({ log = console } = {}) {
     openLogin,
     signOut,
     request,
+    downloadVideo,
   };
 }
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { getNavidromeConfig, navidromeApi } from '../services/navidromeService';
-import type { HomeOnlineViewTab, HomeViewTab, LocalSong, SongResult, UnifiedSong } from '../types';
+import type { HomeOnlineViewTab, HomeVideoViewTab, HomeViewTab, LocalSong, SongResult, UnifiedSong } from '../types';
 import type { OmniCollection, OmniSearchKind, OnlineProviderId } from '../types/onlineMusic';
 import {
     applyLocalLibraryEntityDisplay,
@@ -391,6 +391,10 @@ const isHomeOnlineViewTab = (tab: unknown): tab is HomeOnlineViewTab => (
     tab === 'playlist' || tab === 'albums' || tab === 'radio' || tab === 'explore'
 );
 
+const isHomeVideoViewTab = (tab: unknown): tab is HomeVideoViewTab => (
+    tab === 'videoRecommend' || tab === 'videoExplore' || tab === 'videoCategory' || tab === 'videoFavorites'
+);
+
 /**
  * 上次停在哪一页。旧版本（首页还是一排平铺的页签）存的六个值原样有效：它们就是现在的「页」，组由页推出，
  * 不需要改写存下的值。
@@ -400,7 +404,7 @@ const getInitialHomeViewTab = (): HomeViewTab => {
         return 'playlist';
     }
     const savedTab = localStorage.getItem(LAST_HOME_VIEW_TAB_KEY);
-    return isHomeOnlineViewTab(savedTab) || savedTab === 'local' || savedTab === 'navidrome' || savedTab === 'welfare' || savedTab === 'folia'
+    return isHomeOnlineViewTab(savedTab) || isHomeVideoViewTab(savedTab) || savedTab === 'local' || savedTab === 'navidrome' || savedTab === 'welfare' || savedTab === 'folia'
         ? savedTab
         : 'playlist';
 };
