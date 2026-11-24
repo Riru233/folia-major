@@ -5205,6 +5205,7 @@ export default {
     "openFolderLocation": "打开此文件夹",
     "relinkFolderLocation": "重新指定文件夹位置",
     "folderLocationDesktopOnly": "仅桌面版支持打开本地文件夹",
+    "folderLocationWindowsOnly": "仅 Windows 桌面版支持用资源管理器打开本地文件夹",
     "folderLocationMissing": "未找到该文件夹，请在磁盘上选择歌单对应的文件夹本体（不是它的上级目录）",
     "folderLocationFailed": "打开文件夹所在位置失败，请重试。",
     "subPlaylists": "子歌单",

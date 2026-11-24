@@ -5175,6 +5175,7 @@ export default {
     "openFolderLocation": "Mở thư mục này",
     "relinkFolderLocation": "Chọn lại vị trí thư mục trên ổ đĩa",
     "folderLocationDesktopOnly": "Chỉ ứng dụng desktop mới có thể mở thư mục cục bộ",
+    "folderLocationWindowsOnly": "Chỉ Windows mới hỗ trợ mở thư mục cục bộ bằng Explorer",
     "folderLocationMissing": "Không tìm thấy thư mục. Hãy chọn chính thư mục đó trên ổ đĩa, không phải thư mục cha",
     "folderLocationFailed": "Không thể mở vị trí thư mục. Vui lòng thử lại.",
     "subPlaylists": "Danh sách phát con",

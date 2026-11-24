@@ -125,6 +125,7 @@ const {
   resolveImportedFolderRoot,
   resolveLocalFolderDiskPath: resolveSavedLocalFolderDiskPath,
 } = require('./localFolderPaths.cjs');
+const { locateImportedFolderOnDisk } = require('./localFolderLocate.cjs');
 const { registerMprisIpc } = require('./hifi/mpris/mprisIpc.cjs');
 const { sanitizeDualTheme: sanitizeGeneratedDualTheme } = require('../shared/themeSanitizer.cjs');
 const {
@@ -7261,19 +7262,123 @@ const persistLocalFolderRoot = (rootName, rootPath) => {
   store.set(LOCAL_FOLDER_DISK_ROOTS_KEY, Object.fromEntries(Object.entries(fresh)));
 };
 
+// 「打开文件夹所在位置」在 Windows 上必须落到资源管理器本身。shell.openPath 走的是系统对
+// 目录的关联处理：Total Commander / Directory Opus 之类的第三方文件管理器会把它接走，网页版
+// 或某些精简系统上甚至会静默失败；它也只回一个错误字符串，分不清「没打开」和「开到了别处」。
+// 这里直接起 explorer.exe，只把目标目录作为参数交出去，资源管理器就会进入该目录。
+// 其他平台没有 explorer.exe，这个入口明确不提供（返回 unsupported）。
+const MAX_EXPLORER_ARG_LENGTH = 30000;
+
+// 「打开此文件夹」没有绑定过磁盘位置时，可搜索的候选起点。歌单通常在音乐/桌面/下载/文档
+// 或某个数据盘根下；这些目录扫三层就够（`D:\CloudMusic\MyMusic\A`）。
+const localFolderSearchRoots = () => {
+  const roots = [];
+  const push = (value) => {
+    if (typeof value !== 'string' || !value) return;
+    if (roots.some(existing => existing.toLowerCase() === value.toLowerCase())) return;
+    try {
+      // 不存在的盘（光驱、未插卡的读卡器）在这里就被挡掉，不会进搜索队列。
+      if (fs.existsSync(value)) roots.push(value);
+    } catch { /* 权限不足的目录直接跳过 */ }
+  };
+  for (const name of ['music', 'desktop', 'downloads', 'documents']) {
+    try { push(app.getPath(name)); } catch { /* 该平台没有这个已知目录 */ }
+  }
+  try { push(app.getPath('home')); } catch { /* 同上 */ }
+  // 数据盘根：用户把曲库放在 D:\Music、E:\音乐 之类很常见。只试固定的几个盘符，
+  // 不遍历 A/B（软驱、光驱）以免系统弹「请插入磁盘」。
+  for (const drive of [process.env.SystemDrive || 'C:', 'D:', 'E:', 'F:']) {
+    push(`${drive.replace(/\\+$/, '')}\\`);
+  }
+  return roots;
+};
+
+const revealFolderInWindowsExplorer = (target) => new Promise(resolve => {
+  if (process.platform !== 'win32') {
+    resolve({ ok: false, reason: 'unsupported' });
+    return;
+  }
+  let absolute = '';
+  try {
+    // explorer 只认绝对路径与反斜杠；path.resolve 在 Windows 上本来就是 win32 语义，
+    // 显式再走一遍 win32.normalize，避免传进来的路径还带着 `..` 或混合分隔符。
+    absolute = path.win32.normalize(path.resolve(String(target ?? '')));
+  } catch {
+    absolute = '';
+  }
+  // 目标里带引号/换行之类会被命令行解析吃掉；超长路径 explorer 也会静默不响应。
+  if (!absolute || absolute.length > MAX_EXPLORER_ARG_LENGTH || /["\r\n]/.test(absolute)) {
+    resolve({ ok: false, reason: 'invalid' });
+    return;
+  }
+
+  let child = null;
+  let settled = false;
+  const settle = (result) => {
+    if (settled) return;
+    settled = true;
+    resolve(result);
+  };
+
+  // 不用裸 `explorer.exe`：打包后 PATH 里可能有同名程序（或被安装目录抢先），
+  // 那会打开一个完全不相干的窗口。直接指向 Windows 自己的那份。
+  const explorerPath = path.win32.join(process.env.SystemRoot || 'C:\\Windows', 'explorer.exe');
+
+  try {
+    // 这里绝不能带 windowsHide：Windows 会把它翻成 STARTF_USESHOWWINDOW + SW_HIDE，
+    // explorer 处理打开请求时沿用调用者的显示方式，窗口就以隐藏状态创建——看起来就是
+    // 「点了没反应」。detached 同理没有意义（explorer 自己就会脱离），一并去掉。
+    // explorer.exe 是个转发器：成功把请求交给已运行的那份后也常以退出码 1 结束，
+    // 所以只认「进程有没有起来」，不去看退出码。
+    child = spawn(explorerPath, [absolute], { stdio: 'ignore' });
+  } catch (error) {
+    console.warn('[LocalMusic] could not launch Explorer', error?.message || error);
+    settle({ ok: false, reason: 'invalid' });
+    return;
+  }
+
+  child.once('error', async (error) => {
+    console.warn('[LocalMusic] Explorer refused the folder', error?.message || error);
+    // explorer 起不来（被安全软件拦、系统精简过）时退回系统关联，至少把目录打开。
+    let fallbackOk = false;
+    try {
+      fallbackOk = (await shell.openPath(absolute)) === '';
+    } catch { fallbackOk = false; }
+    settle(fallbackOk ? { ok: true } : { ok: false, reason: 'invalid' });
+  });
+  child.once('spawn', () => {
+    // 让资源管理器独立于本应用存活：退出应用时不该把刚打开的窗口一起带走。
+    child.unref();
+    settle({ ok: true });
+  });
+});
+
 ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (event, rootName, relativePath, rebind = false) => {
+  // 这个功能只对 Windows 资源管理器成立：其他平台连目录选择框都不该弹，直接告诉渲染端不支持。
+  if (process.platform !== 'win32') return { ok: false, reason: 'unsupported' };
   const parsed = parseLocalFolderRequest(rootName, relativePath);
   if (!parsed) return { ok: false, reason: 'invalid' };
   // 根名来自渲染端又要进原生对话框标题：先去掉控制字符、限制长度。
   const safeRootLabel = parsed.rootName.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 60) || 'folder';
 
   const roots = readLocalFolderDiskRoots();
-  if (rebind === true || typeof roots[parsed.rootName] !== 'string' || !roots[parsed.rootName]) {
+  if (rebind !== true && typeof roots[parsed.rootName] !== 'string') {
+    // 从没绑定过：先在常见位置找一遍。唯一命中就直接记住，之后点一下就是资源管理器；
+    // 找不到或有同名歧义才弹目录选择框。
+    const found = await locateImportedFolderOnDisk(parsed.rootName, parsed.tail, localFolderSearchRoots());
+    if (found.length === 1) persistLocalFolderRoot(parsed.rootName, found[0]);
+  }
+  const boundRoot = readLocalFolderDiskRoots()[parsed.rootName];
+  if (rebind === true || typeof boundRoot !== 'string' || !boundRoot) {
     // 遥控窗口也能调这个通道：目录选择框挂在调用者自己的窗口上，不认全局 mainWindow。
+    // 自动定位没命中才走到这里，文案跟着界面语言走，别在中文界面弹一句英文。
     const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    const isChineseUi = String(app.getLocale?.() || '').toLowerCase().startsWith('zh');
     const picked = await dialog.showOpenDialog(owner, {
-      title: `Select the imported folder "${safeRootLabel}" itself (not its parent)`,
-      buttonLabel: 'Use this folder',
+      title: isChineseUi
+        ? `请选择导入文件夹「${safeRootLabel}」本身（不是它的上级目录）`
+        : `Select the imported folder "${safeRootLabel}" itself (not its parent)`,
+      buttonLabel: isChineseUi ? '使用此文件夹' : 'Use this folder',
       defaultPath: app.getPath('music'),
       properties: ['openDirectory'],
     });
@@ -7304,13 +7409,12 @@ ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (e
     if (rel.startsWith('..') || path.isAbsolute(rel)) {
       return { ok: false, reason: 'invalid' };
     }
-    // 必须用 openPath 直接打开目标目录。showItemInFolder 打开的是「父目录并选中该项」，
-    // 导入根若位于「下载」下，表现就是跳到「下载」而不是进入指定目录。
-    const error = await shell.openPath(realTarget);
-    if (error) {
-      console.warn('[LocalMusic] could not open folder', error);
+    // 打开的是目标目录本身（不是父目录）：导入根若位于「下载」下，也应该直接进入指定目录。
+    const opened = await revealFolderInWindowsExplorer(realTarget);
+    if (!opened.ok) {
+      console.warn('[LocalMusic] could not open folder', realTarget, opened.reason);
       // 打开失败（资源管理器占用 / 权限）不是映射失效，别让渲染端去重绑目录。
-      return { ok: false, reason: 'invalid' };
+      return { ok: false, reason: opened.reason === 'unsupported' ? 'unsupported' : 'invalid' };
     }
   } catch (error) {
     console.warn('[LocalMusic] could not resolve folder on disk', error?.message || error);

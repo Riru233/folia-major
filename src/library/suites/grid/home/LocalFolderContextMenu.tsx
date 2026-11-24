@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, FolderOpen, Layers, MapPin, Trash2 } from 'lucide-react';
 import type { LocalSong } from '../../../../types';
+import { localFolderRevealSupported } from '../../../../services/localFolderSystemOpen';
 import { useGlass } from '@/shinoinject/useGlass';
 import {
     collectDescendantFolderPaths,
@@ -51,6 +52,8 @@ const LocalFolderContextMenu: React.FC<LocalFolderContextMenuProps> = ({
 }) => {
     const { t } = useTranslation();
     useGlass();
+    // 「打开此文件夹 / 重新指定位置」都靠 Windows 资源管理器，其他平台不装配这两项。
+    const canRevealInExplorer = localFolderRevealSupported();
     // 点子歌单只换菜单的目标，不重新弹一次菜单：下钻整理时位置保持在原来右键的地方。
     const [targetPath, setTargetPath] = useState(() => normalizeLocalFolderPath(folderPath));
     const menuRef = useRef<HTMLDivElement>(null);
@@ -165,30 +168,35 @@ const LocalFolderContextMenu: React.FC<LocalFolderContextMenuProps> = ({
                 <Trash2 size={14} className="shrink-0" />
                 {t('localMusic.deletePlaylistFromLibrary')}
             </button>
-            <button
-                type="button"
-                role="menuitem"
-                className={itemClass}
-                onClick={() => {
-                    onReveal(targetPath);
-                    onClose();
-                }}
-            >
-                <FolderOpen size={14} className="shrink-0" />
-                {t('localMusic.openFolderLocation')}
-            </button>
-            <button
-                type="button"
-                role="menuitem"
-                className={itemClass}
-                onClick={() => {
-                    onRelink(targetPath);
-                    onClose();
-                }}
-            >
-                <MapPin size={14} className="shrink-0" />
-                {t('localMusic.relinkFolderLocation')}
-            </button>
+            {/* 只有 Windows 的资源管理器能被可靠唤起；其他平台干脆不摆这一项，免得点了只报错。 */}
+            {canRevealInExplorer && (
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={itemClass}
+                    onClick={() => {
+                        onReveal(targetPath);
+                        onClose();
+                    }}
+                >
+                    <FolderOpen size={14} className="shrink-0" />
+                    {t('localMusic.openFolderLocation')}
+                </button>
+            )}
+            {canRevealInExplorer && (
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={itemClass}
+                    onClick={() => {
+                        onRelink(targetPath);
+                        onClose();
+                    }}
+                >
+                    <MapPin size={14} className="shrink-0" />
+                    {t('localMusic.relinkFolderLocation')}
+                </button>
+            )}
 
             {childPaths.length > 0 && (
                 <>

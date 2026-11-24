@@ -756,7 +756,8 @@ declare global {
       };
       /**
        * 本地歌单右键「打开此文件夹」。渲染端只有相对路径 `A/B`，主进程按导入根名 `A`
-       * 查用户先前选定的磁盘根目录并打开目标目录本身；没绑定时弹系统目录选择框。`rebind` 让位置失效后重选。
+       * 查用户先前选定的磁盘根目录，再用资源管理器打开目标目录本身；没绑定时弹系统目录选择框。
+       * 只在 Windows 可用，其他平台返回 `unsupported`。`rebind` 让位置失效后重选。
        * 网页版没有这个 API，见 services/localFolderSystemOpen.ts。
        */
       openLocalFolderInSystem?: (
@@ -765,7 +766,7 @@ declare global {
         rebind?: boolean,
       ) => Promise<{
         ok: boolean;
-        reason?: 'cancelled' | 'missing' | 'invalid' | 'desktop-only';
+        reason?: 'cancelled' | 'missing' | 'invalid' | 'desktop-only' | 'unsupported';
         /** 主进程已弹过目录选择框，渲染端不要因为失败立刻再弹一次。 */
         prompted?: boolean;
       }>;

@@ -5206,6 +5206,7 @@ export default {
     "openFolderLocation": "Open this folder",
     "relinkFolderLocation": "Pick this folder on disk again",
     "folderLocationDesktopOnly": "Opening local folders is only available in the desktop app",
+    "folderLocationWindowsOnly": "Opening local folders in Explorer is only available on Windows",
     "folderLocationMissing": "That folder was not found. Select the folder itself on disk, not its parent",
     "folderLocationFailed": "Could not open the folder location. Please try again.",
     "subPlaylists": "Sub-playlists",

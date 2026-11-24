@@ -5205,6 +5205,7 @@ export default {
     "openFolderLocation": "Buka folder ini",
     "relinkFolderLocation": "Pilih ulang lokasi folder di disk",
     "folderLocationDesktopOnly": "Membuka folder lokal hanya tersedia di aplikasi desktop",
+    "folderLocationWindowsOnly": "Membuka folder lokal di Explorer hanya tersedia di Windows",
     "folderLocationMissing": "Folder tidak ditemukan. Pilih foldernya langsung di disk, bukan folder induknya",
     "folderLocationFailed": "Gagal membuka lokasi folder. Silakan coba lagi.",
     "subPlaylists": "Sub-daftar putar",

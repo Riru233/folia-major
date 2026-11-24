@@ -60,9 +60,11 @@ export const useLocalFolderContextMenu = (
         if (result.ok || result.reason === 'cancelled') return;
         const messageKey = result.reason === 'desktop-only'
             ? 'localMusic.folderLocationDesktopOnly'
-            : result.reason === 'missing'
-                ? 'localMusic.folderLocationMissing'
-                : 'localMusic.folderLocationFailed';
+            : result.reason === 'unsupported'
+                ? 'localMusic.folderLocationWindowsOnly'
+                : result.reason === 'missing'
+                    ? 'localMusic.folderLocationMissing'
+                    : 'localMusic.folderLocationFailed';
         setStatusMessage({ type: 'error', text: t(messageKey) });
     }, [t]);
 
