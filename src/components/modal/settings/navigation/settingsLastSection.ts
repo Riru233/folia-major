@@ -25,7 +25,7 @@ export interface SettingsSectionAvailability {
 export const getAvailableSettingsSectionIds = ({ isElectron }: SettingsSectionAvailability): SettingsSectionId[] => (
     SETTINGS_NAV_GROUP_SPECS
         .flatMap(group => group.sections)
-        .filter(section => !section.electronOnly || isElectron)
+        .filter(section => !section.hidden && (!section.electronOnly || isElectron))
         .map(section => section.id)
 );
 
@@ -45,7 +45,8 @@ export const sectionForSettingsSubview = (subview: SettingsSubviewId | null | un
     if (subview === 'modsWindow') {
         return 'mods';
     }
-    const isSection = SETTINGS_NAV_GROUP_SPECS.some(group => group.sections.some(section => section.id === subview));
+    // 隐藏的分区（这一版没有入口的）不算可落地的目标：指定它也回默认页。
+    const isSection = SETTINGS_NAV_GROUP_SPECS.some(group => group.sections.some(section => section.id === subview && !section.hidden));
     return isSection ? (subview as SettingsSectionId) : null;
 };
 

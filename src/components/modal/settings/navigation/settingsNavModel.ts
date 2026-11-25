@@ -49,6 +49,11 @@ interface SectionSpec {
     electronOnly?: boolean;
     /** 只在 Shino 实验室打开「在线视频」时才出现。 */
     onlineVideoOnly?: boolean;
+    /**
+     * 这一版先不露面：侧栏不显示、命令面板不进、上次停留的页面读到也回退到默认页。
+     * 页面本身还注册着（[pages] 里那份不删），所以谁也进不来，但改回来只动这个标记。
+     */
+    hidden?: boolean;
 }
 
 interface GroupSpec {
@@ -100,7 +105,8 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
         sections: [
             // 实验室：还带着「实验」标签的功能。视频播放与 bilibili 的视频背景都在这里，关掉开关
             // 它们带来的设置、背景类型和面板入口就一起消失。
-            { id: 'lab', color: '#38a169', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab' },
+            // 这一版先关掉入口（hidden），功能开关和页面都留着。
+            { id: 'lab', color: '#38a169', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab', hidden: true },
             // 视频分区跟着实验室里的「在线视频」开关走：关掉时连侧栏项一起消失。
             { id: 'video', color: '#d98f3c', icon: Clapperboard, labelKey: 'options.settingsPageVideo', onlineVideoOnly: true },
             // The loader only exists in the desktop main process; on web there is nothing to switch on.
@@ -120,7 +126,8 @@ export const buildSettingsNavGroups = (
             id: group.id,
             label: t(group.labelKey),
             items: group.sections
-                .filter(section => (!section.electronOnly || options.isElectron)
+                .filter(section => !section.hidden
+                    && (!section.electronOnly || options.isElectron)
                     && (!section.onlineVideoOnly || options.onlineVideoEnabled === true))
                 .map(section => ({
                     id: section.id,
