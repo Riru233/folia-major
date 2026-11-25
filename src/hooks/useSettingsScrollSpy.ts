@@ -168,10 +168,10 @@ export const useSettingsScrollSpy = ({ containerRef, anchors, enabled, reducedMo
 
         // Measured against the container rather than read from offsetTop: the subviews differ in
         // whether anything between the section and the column establishes a positioning context.
-        const offset = node.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop + 12;
+        const offset = node.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
 
         container.scrollTo({
-            top: Math.max(0, offset - SCROLL_TOP_PADDING),
+            top: Math.max(0, offset - 100 - SCROLL_TOP_PADDING),
             behavior: reducedMotion ? 'auto' : 'smooth',
         });
     }, [containerRef, reducedMotion, applyActiveId]);
