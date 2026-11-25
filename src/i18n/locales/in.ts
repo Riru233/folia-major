@@ -5000,6 +5000,14 @@ export default {
       "moreDetails": {
         "title": "Peningkatan lainnya",
         "description": "Bilah progres menandai awal reff. Jendela utama bisa diperbesar secara keseluruhan. Dengan ffmpeg lengkap terpasang, kamu bisa mengekspor video berlatar transparan. Hasil pencarian memuat lebih banyak saat digulir sampai bawah."
+      },
+      "dockSeparators": {
+        "title": "Pemisah di bilah pemutar",
+        "description": "Garis tipis kini memisahkan dua slot yang bisa kamu atur dari tombol semat dan kembali ke pemutar, jadi langsung terlihat mana yang kamu pilih dan mana yang memang selalu ada."
+      },
+      "bugFixes": {
+        "title": "Perbaikan",
+        "description": "Memperbaiki tab header Pengaturan yang mendarat tertutup header melayang, kaca cair yang tidak muncul di kartu pustaka, beberapa galat sisa penggabungan, serta sejumlah detail antarmuka."
       }
     },
     "v0_7_29": {

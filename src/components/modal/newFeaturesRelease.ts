@@ -1,4 +1,4 @@
-import { Droplets, LayoutGrid, ListMusic, MessageSquareText, PanelTop, Puzzle, SlidersVertical, Sparkles, Store } from 'lucide-react';
+import { Bug, Droplets, LayoutGrid, ListMusic, MessageSquareText, PanelTop, Puzzle, SeparatorHorizontal, SlidersVertical, Sparkles, Store } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HomeViewTab } from '../../types';
 import shinoBanner from '../../../assets/banners/folia-shino-0.8.0.jpg?url';
@@ -40,11 +40,14 @@ export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
         { id: 'deluxeLayout', icon: LayoutGrid },
         { id: 'settingsRenewal', icon: PanelTop },
         { id: 'liquidGlass', icon: Droplets },
+        // 这一版收尾时追加的两项：播放栏的分隔线，以及这一轮修掉的问题。
+        { id: 'dockSeparators', icon: SeparatorHorizontal },
         { id: 'sourceMods', icon: Puzzle },
         { id: 'modMarket', icon: Store },
         { id: 'foliaPlaylists', icon: ListMusic },
         { id: 'moments', icon: MessageSquareText },
         { id: 'stemMixer', icon: SlidersVertical },
         { id: 'moreDetails', icon: Sparkles },
+        { id: 'bugFixes', icon: Bug },
     ],
 };

@@ -5001,6 +5001,14 @@ export default {
       "moreDetails": {
         "title": "More improvements",
         "description": "The progress bar marks where the chorus starts. The main window can be zoomed as a whole. With a full ffmpeg installed you can export video with a transparent background. Search results load more as you scroll to the end."
+      },
+      "dockSeparators": {
+        "title": "Separators in the player bar",
+        "description": "A hairline now separates your two customisable slots from the fixed pin and back-to-player buttons, so it is clear at a glance which ones you chose and which were always there."
+      },
+      "bugFixes": {
+        "title": "Fixes",
+        "description": "Fixed settings header tabs landing behind the floating header, liquid glass not showing on library cards, several errors left over from merges, and a round of interface details."
       }
     },
     "v0_7_29": {

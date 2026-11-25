@@ -4970,6 +4970,14 @@ export default {
       "moreDetails": {
         "title": "Cải tiến khác",
         "description": "Thanh tiến trình đánh dấu chỗ bắt đầu điệp khúc. Cửa sổ chính có thể phóng to toàn bộ. Khi đã cài ffmpeg bản đầy đủ, bạn có thể xuất video nền trong suốt. Kết quả tìm kiếm tự tải thêm khi cuộn đến cuối."
+      },
+      "dockSeparators": {
+        "title": "Vạch ngăn trong thanh phát",
+        "description": "Một vạch mảnh giờ tách hai ô tùy chỉnh khỏi nút ghim và nút quay lại trang phát, để thấy ngay cái nào bạn tự chọn và cái nào vốn có."
+      },
+      "bugFixes": {
+        "title": "Sửa lỗi",
+        "description": "Đã sửa việc thẻ ở đầu trang Cài đặt cuộn tới bị thanh tiêu đề che, kính lỏng không hiện trên thẻ thư viện, vài lỗi còn sót sau khi gộp nhánh, cùng một loạt chi tiết giao diện."
       }
     },
     "v0_7_29": {
