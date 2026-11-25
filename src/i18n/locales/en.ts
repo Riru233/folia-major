@@ -4962,7 +4962,22 @@ export default {
       }
     },
     "v0_8_0": {
-      "intro": "Welcome to 0.8.0, the Severance Update—a major update. Every music source is now a mod you can switch on and off, and there is a mod market, Folia playlists that mix songs from any source, Moments for writing notes on songs, and a stem mixer.",
+      "intro": "Welcome to 0.8.0, the Severance Update—a major update. The whole interface is new: the home layout is rebuilt into the Deluxe layout, Settings has been redesigned with a blurred header, and liquid glass reaches many more places. Every music source is now a mod you can switch on and off, alongside a mod market, Folia playlists that mix songs from any source, Moments, and a stem mixer.",
+      "banner": {
+        "alt": "Folia Shino 0.8.0 · Severance Update"
+      },
+      "deluxeLayout": {
+        "title": "A new home layout: the Deluxe layout",
+        "description": "Home is regrouped into first-level tabs (online music, online video, local, Folia collections) with the second level folded into the header capsule; the card rails, search bar, player bar and library grid all share one set of margins and layers."
+      },
+      "settingsRenewal": {
+        "title": "Settings, redesigned",
+        "description": "Settings now uses a two-level layout: colourful groups on the left, the section on the right, with the content stretched full height. The header gained a progressive blur, so content fades out underneath it as you scroll while the title and tabs stay on top."
+      },
+      "liquidGlass": {
+        "title": "Liquid glass in more places",
+        "description": "Beyond the player bar, header and sheets, buttons, floating controls, the guide and release notes, status toasts and empty-state actions are liquid glass too: they spring when pressed and catch light as they move, with the glass strength still adjustable."
+      },
       "sourceMods": {
         "title": "Music sources are mods now",
         "description": "All ten built-in sources are now source mods: turn each on or off, see its storage and clear its data in Settings → Sources. On first launch Folia asks which platforms you use. The new LX Music source lets you import a custom source script."

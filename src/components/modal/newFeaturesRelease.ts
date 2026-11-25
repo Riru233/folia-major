@@ -1,7 +1,7 @@
-import { ListMusic, MessageSquareText, Puzzle, SlidersVertical, Sparkles, Store } from 'lucide-react';
+import { Droplets, LayoutGrid, ListMusic, MessageSquareText, PanelTop, Puzzle, SlidersVertical, Sparkles, Store } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HomeViewTab } from '../../types';
-import shinoBanner from '../../../assets/banners/folia-shino-0.7.29s.png?url';
+import shinoBanner from '../../../assets/banners/folia-shino-0.8.0.jpg?url';
 
 // src/components/modal/newFeaturesRelease.ts
 // 当前版本的介绍：卡片 id 和文案 key 对不上会在 test/unit/newFeaturesRelease.test.ts 里报出来。
@@ -34,7 +34,12 @@ type NewFeaturesRelease = {
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
     i18nKey: 'releaseNotes.v0_8_0',
     majorUpdate: { codename: 'Severance' },
+    banner: { imageUrl: shinoBanner, i18nKey: 'releaseNotes.v0_8_0.banner' },
     features: [
+        // 这一版的重点是整套界面：首页布局、设置页、液态玻璃各占一张卡片，排在原有内容前面。
+        { id: 'deluxeLayout', icon: LayoutGrid },
+        { id: 'settingsRenewal', icon: PanelTop },
+        { id: 'liquidGlass', icon: Droplets },
         { id: 'sourceMods', icon: Puzzle },
         { id: 'modMarket', icon: Store },
         { id: 'foliaPlaylists', icon: ListMusic },

@@ -4961,7 +4961,22 @@ export default {
       }
     },
     "v0_8_0": {
-      "intro": "Selamat datang di 0.8.0, Severance Update—sebuah pembaruan besar. Setiap sumber musik kini adalah mod yang bisa dinyalakan dan dimatikan, dan ada pasar mod, playlist Folia yang mencampur lagu dari sumber mana pun, Momen untuk menulis catatan pada lagu, serta mixer stem.",
+      "intro": "Selamat datang di 0.8.0, Severance Update—sebuah pembaruan besar. Seluruh antarmuka diperbarui: beranda disusun ulang dengan tata letak Deluxe, Pengaturan didesain ulang dengan header yang memudar, dan kaca cair hadir di lebih banyak tempat. Setiap sumber musik kini adalah mod yang bisa dinyalakan dan dimatikan, bersama pasar mod, playlist Folia yang mencampur lagu dari sumber mana pun, Momen, serta mixer stem.",
+      "banner": {
+        "alt": "Folia Shino 0.8.0 · Severance Update"
+      },
+      "deluxeLayout": {
+        "title": "Beranda baru, tata letak Deluxe",
+        "description": "Beranda dikelompokkan ulang jadi tab tingkat pertama (musik online, video online, lokal, koleksi Folia), tab tingkat kedua masuk ke kapsul header; rel kartu, kolom pencarian, bilah pemutar, dan kisi pustaka memakai satu set margin dan lapisan."
+      },
+      "settingsRenewal": {
+        "title": "Pengaturan tampil baru",
+        "description": "Pengaturan kini dua tingkat: grup berwarna di kiri, bagian di kanan dengan tinggi penuh. Header mendapat blur bertahap, jadi konten memudar di bawahnya saat digulir sementara judul dan tab tetap di atas."
+      },
+      "liquidGlass": {
+        "title": "Kaca cair di lebih banyak tempat",
+        "description": "Selain bilah pemutar, header dan lapisan mengambang, tombol, kontrol melayang, halaman panduan dan catatan rilis, pesan status, serta tombol pada keadaan kosong juga memakai kaca cair: memantul saat ditekan, menangkap cahaya saat bergerak, dan kekuatannya tetap bisa diatur."
+      },
       "sourceMods": {
         "title": "Sumber musik kini berupa mod",
         "description": "Kesepuluh sumber bawaan kini menjadi mod sumber: nyalakan atau matikan satu per satu, lihat penyimpanannya, dan hapus datanya di Pengaturan → Sumber. Saat pertama dibuka, Folia menanyakan platform yang kamu pakai. Sumber baru LX Music bisa mengimpor skrip sumber kustom."

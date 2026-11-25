@@ -4931,7 +4931,22 @@ export default {
       }
     },
     "v0_8_0": {
-      "intro": "Chào mừng bạn đến với 0.8.0, Severance Update—một bản cập nhật lớn. Mọi nguồn nhạc giờ đều là mod có thể bật tắt, cùng với kho mod, danh sách phát Folia trộn bài từ mọi nguồn, Khoảnh khắc để ghi chú cho bài hát, và bộ trộn stem.",
+      "intro": "Chào mừng bạn đến với 0.8.0, Severance Update—một bản cập nhật lớn. Toàn bộ giao diện được làm mới: trang chủ xếp lại theo bố cục Deluxe, trang Cài đặt được thiết kế lại với thanh tiêu đề mờ dần, và kính lỏng xuất hiện ở nhiều nơi hơn. Mọi nguồn nhạc giờ đều là mod có thể bật tắt, cùng với kho mod, danh sách phát Folia trộn bài từ mọi nguồn, Khoảnh khắc và bộ trộn stem.",
+      "banner": {
+        "alt": "Folia Shino 0.8.0 · Severance Update"
+      },
+      "deluxeLayout": {
+        "title": "Trang chủ mới, bố cục Deluxe",
+        "description": "Trang chủ được chia lại thành các thẻ cấp một (nhạc trực tuyến, video trực tuyến, cục bộ, bộ sưu tập Folia), thẻ cấp hai gom vào viên nang ở đầu trang; dải thẻ, thanh tìm kiếm, thanh phát và lưới thư viện dùng chung một hệ lề và lớp."
+      },
+      "settingsRenewal": {
+        "title": "Cài đặt được làm mới toàn bộ",
+        "description": "Cài đặt chuyển sang bố cục hai tầng: nhóm nhiều màu bên trái, nội dung bên phải kéo hết chiều cao. Thanh tiêu đề có hiệu ứng mờ dần, nội dung phía dưới mờ đi khi cuộn trong khi tiêu đề và thẻ luôn nằm trên cùng."
+      },
+      "liquidGlass": {
+        "title": "Kính lỏng phủ nhiều nơi hơn",
+        "description": "Ngoài thanh phát, thanh tiêu đề và các lớp nổi, nút bấm, thanh điều khiển nổi, trang hướng dẫn và giới thiệu, thông báo trạng thái và nút ở trạng thái trống cũng dùng kính lỏng: nhấn có đàn hồi, di chuyển có ánh sáng, độ mạnh vẫn chỉnh được."
+      },
       "sourceMods": {
         "title": "Nguồn nhạc giờ là mod",
         "description": "Cả mười nguồn tích hợp giờ là mod nguồn: bật hoặc tắt từng nguồn, xem dung lượng và xóa dữ liệu trong Cài đặt → Nguồn. Lần mở đầu tiên, Folia sẽ hỏi bạn dùng những nền tảng nào. Nguồn mới LX Music cho phép nhập tập lệnh nguồn tùy chỉnh."
