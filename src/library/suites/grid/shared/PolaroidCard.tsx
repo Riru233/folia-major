@@ -18,6 +18,7 @@ import {
     type PolaroidCardMode,
 } from './polaroidCardParts';
 import type { GridPlaybackMark } from './useGridStayPlayback';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/library/suites/grid/shared/PolaroidCard.tsx
 // The card the folia hex grids render. Two layouts share one component: the polaroid frame (square
@@ -102,6 +103,11 @@ export const PolaroidCard = React.memo<PolaroidCardProps>(
         sourceHue = 0,
         swappedFromLabel,
     }) => {
+        // 挂玻璃：必须放在最前面，不能放到下面 fullBleedCover 那个提前返回之后——
+        // 两个布局切换（满版封面开关）时 hook 数量会少一个，React 会直接抛
+        // 「Rendered more hooks than during the previous render」。而且早挂一帧，
+        // 卡片首帧就有玻璃，不会先在网格里裸奔一次。
+        useGlass();
         // 播不了的：平台说下架的，或者来源此刻不在（音源停用、卸载，Navidrome 没配置）。后一种仍能从歌单里移除。
         const isUnavailable = mode === 'tracks' && item.rawTrack ? isTrackShownUnplayable(item.rawTrack) : false;
         const isSourceGone = mode === 'tracks' && item.rawTrack ? isTrackSourceUnavailable(item.rawTrack) : false;
@@ -290,20 +296,35 @@ export const PolaroidCard = React.memo<PolaroidCardProps>(
                 </div>
             );
         }
-
+        // 玻璃表面：半透明底 + 上下两条高光 + 一圈 1px 描边，和悬浮播放条、导入文件夹那些按钮同一套。
+        // 三样缺一不可：底色不透明 → 背后的画面根本进不来，backdrop-filter 无从折射，看起来就是块实心卡片；
+        // 没有高光和描边 → 半透明底色看着是磨砂塑料，不像玻璃。
+        const glassSurfaceStyle: React.CSSProperties = {
+            width: dynamicWidth,
+            minHeight: dynamicHeight,
+            height: 'auto',
+            // 显式 rgba，不用 bg-[var(--bg-color)]/60：那个要靠 color-mix 在运行时现算，
+            // --bg-color 还没写进这层元素时整条声明直接失效（背景退化成 transparent），
+            // 卡片就成了全透明的一块，玻璃反而「没有」。
+            backgroundColor: isDaylight ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+            borderTop: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+            borderBottom: isDaylight ? '1px solid #fff6' : '1px solid #fff5',
+            outline: '1px solid rgba(35,35,35,0.3)',
+            // theme-polaroid-card 自带 transition: all：inline 写进去的 backdrop-filter 会被
+            // 当成一次「从 none 过渡到滤镜」的动画，玻璃要 300ms 才浮出来，尺寸变化也会被它拖慢。
+            // 只留该有过渡的颜色项（阴影跟着 hover 走）。
+            transitionProperty: 'border-color, outline-color, box-shadow, opacity',
+        };
         return (
             <div
+                data-glass data-glass-light
                 {...{ [MORPH_FRAME_ATTR]: '' }}
-                className="group/card rounded-xl p-3 flex flex-col items-center border transition-shadow duration-300 shadow-lg hover:shadow-2xl theme-polaroid-card"
-                style={{
-                    width: dynamicWidth,
-                    minHeight: dynamicHeight,
-                    height: 'auto',
-                }}
+                className="group/card rounded-[40px] p-3 flex flex-col items-center border shadow-lg hover:shadow-2xl theme-polaroid-card"
+                style={glassSurfaceStyle}
                 onClick={handleCardClick}
             >
                 {/* Square Polaroid Photo Area */}
-                <div className="w-full aspect-square rounded-lg overflow-hidden bg-zinc-200/60 dark:bg-zinc-800/60 relative shadow-inner flex items-center justify-center shrink-0">
+                <div className="w-full aspect-square rounded-[28.8px] overflow-hidden bg-zinc-200/60 dark:bg-zinc-800/60 relative shadow-inner flex items-center justify-center shrink-0">
                     <PolaroidCardCover item={item} isUnavailable={isUnavailable} />
 
                     {/* Unavailable Mask/Badge */}

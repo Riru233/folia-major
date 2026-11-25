@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Loader2, Cable, X, Clapperboard } from 'lucide-react';
+import { Search, Loader2, Cable, X, Clapperboard, Compass, Disc3, FolderOpen, Hash, Heart, LayoutGrid, ListMusic, Mic2, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../../stores/useSearchNavigationStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -67,6 +67,24 @@ const VIDEO_HEADER_TABS = [
     { key: 'videoCategory', labelKey: 'home.videoCategory' },
     { key: 'videoFavorites', labelKey: 'home.videoFavorites' },
 ] as const;
+
+// 页头胶囊的图标：只有高亮的那一项才显示（宽度 0 → 14 展开），所以未选中的页签看起来仍是一行字。
+// 在线组的小胶囊本来就把图标挂在 action 上（OnlineGridTabs 的 ONLINE_TAB_ICONS），这里只补另外三组。
+// 尺寸统一 13，与在线组一致；图标本身由外层 motion.span 裁切，展开时不会挤着文字跳。
+const HEADER_PILL_ICONS: Record<string, React.ReactNode> = {
+    // 在线视频四页
+    videoRecommend: <Sparkles size={13} />,
+    videoExplore: <Compass size={13} />,
+    videoCategory: <LayoutGrid size={13} />,
+    videoFavorites: <Heart size={13} />,
+    // 本地三个 section（与 LOCAL_HOME_SECTIONS 的 key 对齐）
+    folders: <FolderOpen size={13} />,
+    albums: <Disc3 size={13} />,
+    artists: <Mic2 size={13} />,
+    // Folia 两项（与 FOLIA_HOME_SECTIONS 的 key 对齐）
+    playlists: <ListMusic size={13} />,
+    tags: <Hash size={13} />,
+};
 
 // 摇杆边缘的色散滤镜 id：滤镜定义在本组件的 <svg> 里，用 backdrop-filter: url(#…) 引用。
 const DISPERSION_FILTER_ID = 'grid3d-dispersion';
@@ -462,6 +480,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
             ? VIDEO_HEADER_TABS.map(tab => ({
                 id: tab.key,
                 label: t(tab.labelKey),
+                icon: HEADER_PILL_ICONS[tab.key],
                 active: homeViewTab === tab.key,
                 onClick: () => selectHomeTab(tab.key),
             }))
@@ -469,6 +488,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                 ? LOCAL_HOME_SECTIONS.map(section => ({
                     id: section.key,
                     label: t(section.labelKey) || (section.fallbackLabelKey ? t(section.fallbackLabelKey) : ''),
+                    icon: HEADER_PILL_ICONS[section.key],
                     active: localHomeSectionOfRow(localMusicState.activeRow).key === section.key,
                     onClick: () => setLocalMusicState(prev => ({ ...prev, activeRow: section.row })),
                 }))
@@ -476,6 +496,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     ? FOLIA_HOME_SECTIONS.map(section => ({
                         id: section.key,
                         label: t(section.labelKey),
+                        icon: HEADER_PILL_ICONS[section.key],
                         active: foliaHomeSection === section.key,
                         onClick: () => setFoliaHomeSection(section.key),
                     }))
@@ -1077,6 +1098,28 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                                             }}
                                                             className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full font-medium transition-colors duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 ${isCompact ? 'text-sm' : 'text-xs md:text-sm'} ${tab.active ? activeTabBg : navPillInactiveText}`}
                                                         >
+                                                            {/* 高亮项才显示图标：未选中时宽度收成 0（裁掉），选中时展开并把文字往右推一点。
+                                                                宽度变化会让按钮变宽，useHomeTabThumb 的 ResizeObserver 随即重测，白摇杆跟着一起滑过去，
+                                                                所以图标是「从选中的那一格长出来」，而不是先出现再让摇杆追。 */}
+                                                            {tab.icon && (
+                                                                <motion.span
+                                                                    aria-hidden="true"
+                                                                    className="relative z-20 inline-flex shrink-0 items-center justify-center overflow-hidden"
+                                                                    initial={false}
+                                                                    animate={tab.active
+                                                                        ? { width: 14, marginRight: 5, opacity: 1 }
+                                                                        : { width: 0, marginRight: 0, opacity: 0 }}
+                                                                    transition={reduceMotion
+                                                                        ? { duration: 0 }
+                                                                        : {
+                                                                            width: { type: 'spring', stiffness: 420, damping: 34, mass: 0.7 },
+                                                                            marginRight: { type: 'spring', stiffness: 420, damping: 34, mass: 0.7 },
+                                                                            opacity: { duration: 0.18, ease: 'easeOut' },
+                                                                        }}
+                                                                >
+                                                                    {tab.icon}
+                                                                </motion.span>
+                                                            )}
                                                             <span className="relative z-20">{tab.label}</span>
                                                         </button>
                                                     </span>

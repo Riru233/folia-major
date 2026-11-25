@@ -326,7 +326,7 @@ const SheetFrame: React.FC<SheetFrameProps> = ({
                     {withAside(aside, <>
                     <header className={`flex shrink-0 items-start gap-3 pl-6 pr-4 pt-4 ${body === 'panes' ? 'border-b border-[var(--st-line)] pb-3' : ''}`}>
                         <div className={`st-t-fast min-w-0 flex-1 transition-opacity ${quiet ? 'opacity-0' : ''}`}>
-                            <h2 id={titleId} className={`text-base font-semibold leading-8 ${titleLead ? 'flex items-center gap-2.5' : ''}`}>
+                            <h2 id={titleId} className={`text-base font-normal leading-8 ${titleLead ? 'flex items-center gap-2.5' : ''}`}>
                                 {titleLead}
                                 {titleLead ? <span className="min-w-0 truncate">{title}</span> : title}
                             </h2>

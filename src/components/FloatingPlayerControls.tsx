@@ -1322,6 +1322,13 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                     className="col-start-3 row-start-2 justify-self-start sm:justify-self-auto"
                     onCustomize={onCustomizeSecondary}
                 />
+                {/* 分隔符：两个可自定义槽位与右侧那组「固定 / 返回播放页」之间的竖线。
+                    窄屏是网格布局、按钮各自落位，插一条线会打乱落点，所以从 sm 起才画。 */}
+                <div
+                    aria-hidden="true"
+                    className={`mx-1 hidden h-5 w-px shrink-0 sm:block ${isDaylight ? 'bg-black/10' : 'bg-white/20'}`}
+                />
+
                 {/* 固定按钮：固定后播放条不再收缩。窄屏上它占住标题行最右侧的空位，
                     宽屏上它跟在两个槽位按钮后面。 */}
                 <button

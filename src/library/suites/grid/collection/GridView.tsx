@@ -1262,7 +1262,7 @@ export const GridView: React.FC<GridViewProps> = ({
                         </div>
                         <div
                             aria-hidden="true"
-                            className="absolute inset-0 rounded-xl border shadow-lg theme-polaroid-card flex items-center justify-center"
+                            className="absolute inset-0 rounded-[40px] border shadow-lg theme-polaroid-card flex items-center justify-center bg-[var(--bg-color)]/60"
                             style={{
                                 backfaceVisibility: 'hidden',
                                 transform: 'rotateY(180deg)',
@@ -1653,12 +1653,12 @@ export const GridView: React.FC<GridViewProps> = ({
             {coverUrl && (
                 <div
                     className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0"
-                    style={{ opacity: isDaylight ? 0.18 : 0.12 }}
+                    style={{ opacity: isDaylight ? 0.38 : 0.32 }}
                 >
                     <img
                         src={toHttps(getLowResCoverUrl(coverUrl))}
                         alt=""
-                        className="w-full h-full object-cover scale-110 filter blur-[30px]"
+                        className="w-full h-full object-cover scale-110 filter blur-[5px]"
                     />
                 </div>
             )}
@@ -1831,14 +1831,15 @@ export const GridView: React.FC<GridViewProps> = ({
                             ref={standInCardRef}
                             {...{ [MORPH_FRAME_ATTR]: '' }}
                             {...(fullBleedCover ? { [MORPH_TARGET_ATTR]: '' } : {})}
-                            className={`relative rounded-xl border shadow-lg theme-polaroid-card ${fullBleedCover ? 'overflow-hidden' : 'p-3'}`}
+                            data-glass-light
+                            className={`relative rounded-[40px] border bg-[var(--bg-color)]/60 shadow-lg theme-polaroid-card ${fullBleedCover ? 'overflow-hidden' : 'p-3'}`}
                             style={{ width: layoutConfig.cardWidth, [fullBleedCover ? 'height' : 'minHeight']: layoutConfig.cardHeight }}
                         >
                             <div
                                 {...(fullBleedCover ? {} : { [MORPH_TARGET_ATTR]: '' })}
                                 className={fullBleedCover
                                     ? 'absolute inset-0 bg-zinc-200/60 dark:bg-zinc-800/60'
-                                    : 'relative w-full aspect-square rounded-lg overflow-hidden bg-zinc-200/60 dark:bg-zinc-800/60 shadow-inner'}
+                                    : 'relative w-full aspect-square rounded-[28.8px] overflow-hidden bg-zinc-200/60 dark:bg-zinc-800/60 shadow-inner'}
                             >
                                 {standIn.coverUrl && (
                                     <img src={standIn.coverUrl} alt="" draggable={false} decoding="sync" className="absolute inset-0 h-full w-full object-cover" />
@@ -1895,7 +1896,7 @@ export const GridView: React.FC<GridViewProps> = ({
                                 }}
                         >
                             {/* Cover Image */}
-                            <div className="w-full aspect-square rounded-2xl overflow-hidden shadow-lg mb-4 bg-zinc-800/20 relative shrink-0">
+                            <div className="w-full aspect-square rounded-[28.8px] overflow-hidden shadow-lg mb-4 bg-zinc-800/20 relative shrink-0">
                                 {infoPanelCoverUrl ? (
                                     <img src={getSizedCoverUrl(toHttps(infoPanelCoverUrl), 512)} alt={infoCollection?.name || title} decoding="async" className="w-full h-full object-cover select-none pointer-events-none" />
                                 ) : (
