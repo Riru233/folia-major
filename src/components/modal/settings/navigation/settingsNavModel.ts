@@ -1,4 +1,5 @@
 import { Boxes, Cable, Clapperboard, Contrast, Database, FlaskConical, Gauge, Keyboard, LayoutGrid, Link2, Monitor, MonitorPlay, PictureInPicture2, PlayCircle, SlidersHorizontal, Sparkles, Terminal, TextAlignStart, type LucideIcon } from 'lucide-react';
+import { SHINO_LAB_ENTRY_HIDDEN } from '@/shinoinject/lab/labVideoGate';
 // src/components/modal/settings/navigation/settingsNavModel.ts
 // Single source of truth for the settings categories: their order in the side list, their grouping,
 // icons and names. A category is cut by what the listener is looking at or doing, so each page holds
@@ -105,8 +106,9 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
         sections: [
             // 实验室：还带着「实验」标签的功能。视频播放与 bilibili 的视频背景都在这里，关掉开关
             // 它们带来的设置、背景类型和面板入口就一起消失。
-            // 这一版先关掉入口（hidden），功能开关和页面都留着。
-            { id: 'lab', color: '#38a169', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab', hidden: true },
+            // 这一版整体不露面：入口与里面的实验（在线视频 / 本地视频 / bilibili MV）由
+            // SHINO_LAB_ENTRY_HIDDEN 一处统一按关处理，改回 false 就全部恢复。
+            { id: 'lab', color: '#38a169', icon: FlaskConical, labelKey: 'options.settingsPageShinoLab', hidden: SHINO_LAB_ENTRY_HIDDEN },
             // 视频分区跟着实验室里的「在线视频」开关走：关掉时连侧栏项一起消失。
             { id: 'video', color: '#d98f3c', icon: Clapperboard, labelKey: 'options.settingsPageVideo', onlineVideoOnly: true },
             // The loader only exists in the desktop main process; on web there is nothing to switch on.

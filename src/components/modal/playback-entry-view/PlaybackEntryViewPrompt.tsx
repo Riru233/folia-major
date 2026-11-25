@@ -13,6 +13,7 @@ import { OVERLAY_CALM_TRANSITION, OVERLAY_TRANSITION } from '../../shared/overla
 import { openSettings } from '../../../stores/useSettingsModalStore';
 import { settingsAnchorSubview } from '../../../utils/settingsAnchorModel';
 import type { Theme } from '../../../types';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/modal/playback-entry-view/PlaybackEntryViewPrompt.tsx
 // Asks once, after the release notes are dismissed, how the library should look and which view
@@ -97,7 +98,7 @@ const PromptPanel: React.FC<{ theme?: Theme | null; pages: readonly PromptPage[]
     };
 
     const accentColor = theme?.accentColor || (isDaylight ? '#3b82f6' : '#60a5fa');
-    const bgClass = isDaylight ? 'bg-white border-zinc-200' : 'bg-[#18181b] border-zinc-800';
+    const bgClass = isDaylight ? 'bg-[#fffa] border-zinc-200' : 'bg-[#18181baa] border-zinc-800';
     const textPrimary = isDaylight ? 'text-zinc-900' : 'text-zinc-50';
     const textSecondary = isDaylight ? 'text-zinc-500' : 'text-zinc-400';
     const btnClass = isDaylight
@@ -108,13 +109,14 @@ const PromptPanel: React.FC<{ theme?: Theme | null; pages: readonly PromptPage[]
         : 'bg-white/[0.06] hover:bg-white/10 text-zinc-200';
     const namespace = page === 'sources' ? 'sourcesOnboarding' : page === 'library-suite' ? 'librarySuiteOnboarding' : 'playbackEntryView';
     const motionContext: PageMotionContext = { direction, calm };
-
+    useGlass();
     return (
         <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ type: 'spring', bounce: 0, duration: 0.5 }}
+            data-glass
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"

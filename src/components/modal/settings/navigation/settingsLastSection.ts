@@ -1,5 +1,6 @@
 import type { SettingsSubviewId } from '../../../../stores/useSettingsModalStore';
 import { SETTINGS_NAV_GROUP_SPECS, type SettingsSectionId } from './settingsNavModel';
+import { isLabOnlineVideoEnabled } from '@/shinoinject/lab/labVideoGate';
 
 // src/components/modal/settings/navigation/settingsLastSection.ts
 // Remembers which options-tab section the settings dialog was last on, and decides which section it
@@ -25,7 +26,10 @@ export interface SettingsSectionAvailability {
 export const getAvailableSettingsSectionIds = ({ isElectron }: SettingsSectionAvailability): SettingsSectionId[] => (
     SETTINGS_NAV_GROUP_SPECS
         .flatMap(group => group.sections)
-        .filter(section => !section.hidden && (!section.electronOnly || isElectron))
+        .filter(section => !section.hidden
+            && (!section.electronOnly || isElectron)
+            // 「视频」分区跟着实验室的在线视频开关走：关着时它不是可停的地方。
+            && (!section.onlineVideoOnly || isLabOnlineVideoEnabled()))
         .map(section => section.id)
 );
 
@@ -46,7 +50,10 @@ export const sectionForSettingsSubview = (subview: SettingsSubviewId | null | un
         return 'mods';
     }
     // 隐藏的分区（这一版没有入口的）不算可落地的目标：指定它也回默认页。
-    const isSection = SETTINGS_NAV_GROUP_SPECS.some(group => group.sections.some(section => section.id === subview && !section.hidden));
+    // 「视频」分区另外还跟着实验室的在线视频开关走。
+    const isSection = SETTINGS_NAV_GROUP_SPECS.some(group => group.sections.some(section => section.id === subview
+        && !section.hidden
+        && (!section.onlineVideoOnly || isLabOnlineVideoEnabled())));
     return isSection ? (subview as SettingsSectionId) : null;
 };
 

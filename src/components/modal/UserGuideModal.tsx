@@ -5,6 +5,7 @@ import { useSupportsFinePointer } from '../../hooks/useSupportsFinePointer';
 import { useSettingsModalStore } from '../../stores/useSettingsModalStore';
 import { useThemeSettingsStore } from '../../stores/useThemeSettingsStore';
 import { openCurrentPagePonder } from '../../services/ponder/pagePonderTarget';
+import { useGlass } from '../../shinoinject/useGlass';
 import type { Theme } from '../../types';
 import { PRIMARY_MODIFIER_LABEL } from '../../utils/platform';
 
@@ -17,6 +18,8 @@ export const UserGuideModal: React.FC<{ theme?: Theme | null }> = ({ theme }) =>
     const isDaylight = useThemeSettingsStore(state => state.isDaylight);
     const supportsFinePointer = useSupportsFinePointer();
     const accent = theme?.accentColor || (isDaylight ? '#18181b' : '#f4f4f5');
+    // 卡片和设置窗口一样是液态玻璃：data-glass 的那一层每次 commit 都要重挂一遍。
+    useGlass();
 
     return (
         <AnimatePresence>
@@ -36,9 +39,15 @@ export const UserGuideModal: React.FC<{ theme?: Theme | null }> = ({ theme }) =>
                         initial={{ scale: 0.96, opacity: 0, y: 16 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.96, opacity: 0 }}
-                        className={`w-full max-w-md rounded-[2rem] border p-8 text-center shadow-2xl ${
-                            isDaylight ? 'border-zinc-200 bg-white text-zinc-900' : 'border-zinc-800 bg-[#18181b] text-zinc-50'
+                        data-glass
+                        data-glass-light
+                        data-glass-strength="1"
+                        data-glass-bend="18"
+                        data-glass-blur="16"
+                        className={`w-full max-w-md overflow-hidden rounded-[2rem] border p-8 text-center shadow-2xl backdrop-blur-lg ${
+                            isDaylight ? 'border-zinc-200/70 text-zinc-900' : 'border-zinc-700/60 text-zinc-50'
                         }`}
+                        style={{ backgroundColor: isDaylight ? 'rgba(255,255,255,0.62)' : 'rgba(24,24,27,0.62)' }}
                     >
                         <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-current/5" style={{ color: accent }}>
                             <Lightbulb size={26} aria-hidden="true" />

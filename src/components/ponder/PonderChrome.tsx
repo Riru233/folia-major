@@ -79,7 +79,7 @@ const PonderChrome: React.FC<PonderChromeProps> = ({
 
     return (
         <>
-            <div className="absolute left-6 right-5 top-0 flex h-[60px] items-center justify-between gap-4">
+            <div className="absolute left-6 right-5 top-5 flex h-[60px] items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-2 text-sm text-[color:var(--st-t2)]">
                     <Lightbulb size={16} className="shrink-0" />
                     <span className="shrink-0">{t('ponder.title')}</span>
