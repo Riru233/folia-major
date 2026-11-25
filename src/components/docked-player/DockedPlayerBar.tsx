@@ -426,6 +426,12 @@ const DockedPlayerBar: React.FC<DockedPlayerBarProps> = ({
                                     controlsDisabled={controlsDisabled}
                                     onCustomize={slotCustomization.openSecondaryPicker}
                                 />
+                            {/* 分隔符：两个可自定义槽位与右侧那组「固定 / 返回播放页」之间的竖线。
+                                窄屏是网格布局、按钮各自落位，插一条线会打乱落点，所以从 sm 起才画。 */}
+                            <div
+                                aria-hidden="true"
+                                className={`mx-1 hidden h-5 w-px shrink-0 sm:block ${isDaylight ? 'bg-black/10' : 'bg-white/20'}`}
+                            />
                                 {/* 回歌词画报：和浮动胶囊右侧那颗箭头同一个去处，播放页上不画。 */}
                                 {showReturnToPlayer && onReturnToPlayer && (
                                     <button
