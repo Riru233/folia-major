@@ -85,10 +85,11 @@ const PlayerControlSlotPicker: React.FC<PlayerControlSlotPickerProps> = ({
     // 是歌曲主题色（深色封面取出来的白），而底色按 isDaylight 是白玻璃——浅色模式下就成了白字白底。
     const ink = isDaylight ? '#18181b' : '#f4f4f5';
 
+    // hook 必须在提前返回之前：`typeof document` 的判断一旦翻面，hook 数量就变了。
+    useGlass()
     if (typeof document === 'undefined') {
         return null;
     }
-    useGlass()
     return createPortal(
         <motion.div
             data-glass data-glass-jelly data-glass-light

@@ -40,10 +40,6 @@ export const UserGuideModal: React.FC<{ theme?: Theme | null }> = ({ theme }) =>
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.96, opacity: 0 }}
                         data-glass
-                        data-glass-light
-                        data-glass-strength="1"
-                        data-glass-bend="18"
-                        data-glass-blur="16"
                         className={`w-full max-w-md overflow-hidden rounded-[2rem] border p-8 text-center shadow-2xl backdrop-blur-lg ${
                             isDaylight ? 'border-zinc-200/70 text-zinc-900' : 'border-zinc-700/60 text-zinc-50'
                         }`}
