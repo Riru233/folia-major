@@ -85,6 +85,8 @@
 | 32+ | `src/services/baseThemes.ts` |
 | 32+ | `src/services/navidromeService.ts` |
 | 32+ | `src/services/onlineMusic/failure/onlineFailureCase.ts` |
+| 32+ | `src/services/onlineMusic/songMetadata.ts` |
+| 32+ | `src/shinoinject/useGlass.tsx` |
 | 32+ | `src/stores/motionSignals.ts` |
 | 32+ | `src/stores/storagePrimitives.ts` |
 | 32+ | `src/stores/useCollectionNavigationStore.ts` |
