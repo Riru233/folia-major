@@ -15,7 +15,7 @@ import type { SettingsAnchorId } from '../utils/settingsAnchorModel';
 
 export type SettingsModalInitialTab = 'help' | 'options';
 
-export type SettingsSubviewId = 'appearance' | 'player' | 'home' | 'video' | 'playback' | 'lyrics' | 'sources' | 'general' | 'interaction' | 'integration' | 'ai' | 'storage' | 'desktop' | 'remote' | 'graphics' | 'mods' | 'visualizer' | 'themePark' | 'scene' | 'modsWindow' | 'lyricFilter' | 'globalLyricOffset';
+export type SettingsSubviewId = 'appearance' | 'player' | 'home' | 'video' | 'playback' | 'lyrics' | 'sources' | 'general' | 'interaction' | 'integration' | 'ai' | 'storage' | 'desktop' | 'remote' | 'graphics' | 'mods' | 'visualizer' | 'themePark' | 'scene' | 'modsWindow' | 'lyricFilter' | 'globalLyricOffset' | 'lab';
 
 /** 歌词动画调参台的五页。列成数组是为了让「思索」的设置直达在单测里能核对 section 真实存在。 */
 export const VISUALIZER_SETTINGS_SECTIONS = ['common', 'background', 'visualizer', 'subtitle', 'global'] as const;

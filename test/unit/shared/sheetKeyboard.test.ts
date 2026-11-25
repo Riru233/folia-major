@@ -126,6 +126,11 @@ describe('the slider of the home page', () => {
         onSelect: item => selected.push(String(item.id)),
         isInteractive: true,
         isDaylight: false,
+        // 页签、地图和工具格是首页装配时才有的东西，这一组用例只看 Enter 的归属。
+        tabs: [],
+        mapButtonLabel: 'map',
+        openGridMap: () => {},
+        actions: [],
     });
     const pressEnter = () => act(async () => {
         document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
