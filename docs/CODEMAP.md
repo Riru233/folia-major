@@ -16,9 +16,9 @@
 | components | 1024+ |
 | test/dev | 1024+ |
 | library | 256+ |
+| services | 256+ |
 | 其他 | 256+ |
 | backend/electron | 128+ |
-| services | 128+ |
 | src (其他) | 128+ |
 | utils | 128+ |
 | hooks | 64+ |
@@ -38,6 +38,7 @@
 | 128+ | `src/components/modal/settings/kit/index.ts` |
 | 128+ | `src/services/onlineMusic/omni.ts` |
 | 128+ | `src/stores/usePlaybackStore.ts` |
+| 128+ | `src/stores/useStatusMessageStore.ts` |
 | 128+ | `src/types/ponder.ts` |
 | 128+ | `src/utils/appPlaybackGuards.ts` |
 | 64+ | `src/components/command-palette/types.ts` |
@@ -49,10 +50,10 @@
 | 64+ | `src/mods/types.ts` |
 | 64+ | `src/services/db.ts` |
 | 64+ | `src/services/onlineMusic/providerRegistry.ts` |
+| 64+ | `src/services/onlineMusic/songMetadata.ts` |
 | 64+ | `src/stores/useAppViewStore.ts` |
 | 64+ | `src/stores/useAudioSettingsStore.ts` |
 | 64+ | `src/stores/useOnlineProviderAccountStore.ts` |
-| 64+ | `src/stores/useStatusMessageStore.ts` |
 | 64+ | `src/types/hifi.ts` |
 | 64+ | `src/utils/lyrics/renderHints.ts` |
 | 32+ | `dev/probes/definition.ts` |
@@ -84,8 +85,6 @@
 | 32+ | `src/services/baseThemes.ts` |
 | 32+ | `src/services/navidromeService.ts` |
 | 32+ | `src/services/onlineMusic/failure/onlineFailureCase.ts` |
-| 32+ | `src/services/onlineMusic/songMetadata.ts` |
-| 32+ | `src/shinoinject/useGlass.tsx` |
 | 32+ | `src/stores/motionSignals.ts` |
 | 32+ | `src/stores/storagePrimitives.ts` |
 | 32+ | `src/stores/useCollectionNavigationStore.ts` |

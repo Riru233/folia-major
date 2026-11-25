@@ -38,6 +38,8 @@ interface Grid3DSliderProps {
     emptyMessage?: string;
     isDaylight: boolean;
     hasFloatingPlayer?: boolean;
+    /** 卡与卡之间的空隙（px）；缺省 GRID3D_CARD_GAP。首页 Folia 的标签页签给得更宽（用户定，和歌单区分开）。 */
+    cardGap?: number;
     tabs: DesktopGrid3DAction[];
     /** 二级页签那一组的读屏名（在线组是「在线音源：xx」）。 */
     tabsLabel?: string;
@@ -258,6 +260,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     emptyMessage,
     isDaylight,
     hasFloatingPlayer = false,
+    cardGap = GRID3D_CARD_GAP,
     tabs,
     tabsLabel,
     mapButtonLabel,
@@ -387,11 +390,19 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     const windowStart = Math.min(focusRange.start, previousFocusRange.start, activeViewportRange?.start ?? Number.POSITIVE_INFINITY);
     const windowEnd = Math.max(focusRange.end, previousFocusRange.end, activeViewportRange?.end ?? 0);
     const windowedItems = items.slice(windowStart, windowEnd);
+    const cardPitch = coverSize + cardGap;
     const leadingSpacerWidth = windowStart * cardPitch;
     const remainingItemCount = items.length - windowEnd;
     const trailingSpacerWidth = remainingItemCount > 0
-        ? remainingItemCount * coverSize + Math.max(0, remainingItemCount - 1) * GRID3D_CARD_GAP
+        ? remainingItemCount * coverSize + Math.max(0, remainingItemCount - 1) * cardGap
         : 0;
+
+    // 卡片未缩放时的高度（只跟封面尺寸、卡片样式、内容三行文字有关），按几何键缓存一次。
+    // 拖动时每帧只读缓存、不量 DOM：内容层始终按自然尺寸排版，它的 offsetHeight 就是卡片原高。
+    const cardMeasureRef = useRef<{ key: string; heights: Map<number, number> }>({
+        key: '',
+        heights: new Map(),
+    });
 
     // 卡片未缩放时的高度（只跟封面尺寸、卡片样式、内容三行文字有关），按几何键缓存一次。
     // 拖动时每帧只读缓存、不量 DOM：内容层始终按自然尺寸排版，它的 offsetHeight 就是卡片原高。
@@ -1039,7 +1050,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                     className="relative self-start shrink-0 cursor-pointer pointer-events-auto select-none"
                                     style={{
                                         width: coverSize,
-                                        marginRight: index < items.length - 1 ? GRID3D_CARD_GAP : 0,
+                                        marginRight: index < items.length - 1 ? cardGap : 0,
                                     }}
                                     onClick={() => {
                                         if (!isInteractive || dragDistanceRef.current >= 8) return;

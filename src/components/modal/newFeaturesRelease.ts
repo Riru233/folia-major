@@ -1,4 +1,4 @@
-import { PanelLeft, Smartphone, Waves } from 'lucide-react';
+import { ListMusic, MessageSquareText, Puzzle, SlidersVertical, Sparkles, Store } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HomeViewTab } from '../../types';
 import shinoBanner from '../../../assets/banners/folia-shino-0.7.29s.png?url';
@@ -32,18 +32,14 @@ type NewFeaturesRelease = {
 
 
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
-    i18nKey: 'releaseNotes.v0_7_29_1',
-    displayVersion: '0.7.29S',
-    // 图是这一版的标题图（Shino 0.7.29S · Fluid Update）。它不是某个页签的入口，所以没有 targetTab，
-    // 介绍里只把它画出来、不接跳转。
-    banner: {
-        imageUrl: shinoBanner,
-        i18nKey: 'releaseNotes.v0_7_29_1.banner',
-    },
-    // 0.7.29S 是一次修复更新，介绍上方不显示「重大更新」标签：这一版没有 majorUpdate。
+    i18nKey: 'releaseNotes.v0_8_0',
+    majorUpdate: { codename: 'Severance' },
     features: [
-        { id: 'fluidDefault', icon: Waves },
-        { id: 'railEdges', icon: PanelLeft },
-        { id: 'compactLayout', icon: Smartphone },
+        { id: 'sourceMods', icon: Puzzle },
+        { id: 'modMarket', icon: Store },
+        { id: 'foliaPlaylists', icon: ListMusic },
+        { id: 'moments', icon: MessageSquareText },
+        { id: 'stemMixer', icon: SlidersVertical },
+        { id: 'moreDetails', icon: Sparkles },
     ],
 };

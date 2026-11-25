@@ -1362,11 +1362,6 @@
       "count": 20
     }
   },
-  "sources/kugou/main/kugouApiBridge.cjs": {
-    "@stylistic/indent": {
-      "count": 373
-    }
-  },
   "sources/netease/core/netease.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 22
@@ -1732,7 +1727,7 @@
       "count": 1
     },
     "@typescript-eslint/no-explicit-any": {
-      "count": 21
+      "count": 20
     },
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 6
@@ -1744,13 +1739,13 @@
       "count": 2
     },
     "@typescript-eslint/no-unsafe-assignment": {
-      "count": 62
+      "count": 57
     },
     "@typescript-eslint/no-unsafe-call": {
       "count": 3
     },
     "@typescript-eslint/no-unsafe-member-access": {
-      "count": 86
+      "count": 79
     },
     "@typescript-eslint/only-throw-error": {
       "count": 2
@@ -3102,11 +3097,6 @@
       "count": 2
     }
   },
-  "src/components/command-palette/commands/modsCommands.ts": {
-    "@stylistic/eol-last": {
-      "count": 1
-    }
-  },
   "src/components/command-palette/commands/pickerOptions.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
@@ -3220,11 +3210,6 @@
   "src/components/command-palette/surfaces/lyricSegmentationSurface.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
-    }
-  },
-  "src/components/command-palette/surfaces/modsSurface.ts": {
-    "@stylistic/eol-last": {
-      "count": 1
     }
   },
   "src/components/command-palette/surfaces/queueSurface.ts": {
@@ -9059,19 +9044,6 @@
       "count": 1
     }
   },
-  "src/mods/manager/ModListItem.tsx": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/mods/manager/ModManager.tsx": {
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/mods/manager/ModSurfaceRenderer.tsx": {
     "@typescript-eslint/no-misused-promises": {
       "count": 1
@@ -9084,6 +9056,14 @@
     },
     "@typescript-eslint/no-unnecessary-type-conversion": {
       "count": 1
+    }
+  },
+  "src/mods/market/ModsWorkbench.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
     }
   },
   "src/mods/params/FoliumSecretField.tsx": {
@@ -9252,11 +9232,6 @@
   "src/mods/runtime/visualizer/hostVisualizer.ts": {
     "@typescript-eslint/no-unnecessary-type-assertion": {
       "count": 4
-    }
-  },
-  "src/mods/useModsStore.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
     }
   },
   "src/services/aiText.ts": {
@@ -10418,7 +10393,7 @@
   },
   "src/stores/usePlayerChromeSettingsStore.ts": {
     "dedicatus/restricted-apis": {
-      "count": 5
+      "count": 4
     }
   },
   "src/stores/usePlayingSongLocatorStore.ts": {
@@ -10902,9 +10877,6 @@
     }
   },
   "src/utils/lyrics/chorusEffects.ts": {
-    "@typescript-eslint/consistent-type-imports": {
-      "count": 1
-    },
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1
     }

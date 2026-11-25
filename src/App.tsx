@@ -7,6 +7,7 @@ import SceneHost from './components/scenes/engine/SceneHost';
 import CommandPalette from './components/command-palette/CommandPalette';
 import AddToPlaylistHost from './components/app/AddToPlaylistHost';
 import ScratchpadHost from './components/app/scratchpad/ScratchpadHost';
+import { SongNotePinHost } from './components/song-notes/SongNoteProgress';
 import { useScratchpadPlayback, useScratchpadQueuePort } from './components/app/scratchpad/useScratchpadPlayback';
 import { useCommandPalette } from './components/command-palette/useCommandPalette';
 import { useCommandPaletteContext } from './hooks/useCommandPaletteContext';
@@ -1428,7 +1429,7 @@ export default function App() {
         cachedCoverUrl: displayCoverUrl ?? cachedCoverUrl,
         playerState: displayPlayerState,
         isNowPlayingStageActive,
-        unknownArtistLabel: t('ui.unknownArtist'),
+        unknownArtistLabel: t('player.unknownArtist'),
         mediaSessionPlayRef,
         mediaSessionPauseRef,
         mediaSessionPrevRef,
@@ -2226,7 +2227,7 @@ export default function App() {
         onPopCollectionTo: popCollectionTo,
         onBackCollection: backCollection,
     });
-    const scratchpadPlayback = useScratchpadPlayback(homeModel.surfaceProps, handleQueueAddAndPlay);
+    const scratchpadPlayback = useScratchpadPlayback(homeModel.surfaceProps, handleQueueAddAndPlay, seekMainAudio);
     const scratchpadQueue = useScratchpadQueuePort(playSong, setQueueOrder, shuffleQueue);
     const playerDisplayCatalogIndex = useMemo(() => buildLocalLibraryIndex(
         localLibraryCatalog.entities,
@@ -2967,6 +2968,9 @@ export default function App() {
                 queue={scratchpadQueue}
                 isHandleHidden={currentView === 'player' && isPlayerChromeHidden}
             />
+
+            {/* 胶囊槽位「记下这个时刻」弹出的小框：全局一份，钉在点下的那个按钮上方。 */}
+            <SongNotePinHost />
 
             <CommandPalette
                 activeIndex={commandPalette.activeIndex}

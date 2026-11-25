@@ -16,8 +16,7 @@ export const homeCardKind = (type: string | undefined): BravaisItemKind => {
         case 'album': return 'album';
         case 'artist': return 'artist';
         case 'folder': return 'folder';
-        // 首页「福利」页签的卡片是一首歌（core/home/welfareHome），与曲目行同一个种类。
-        case 'song': return 'track';
+        case 'tag': return 'tag';
         case 'radio':
         case 'daily_recommendations': return 'feed';
         default: return 'playlist';
