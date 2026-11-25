@@ -1,0 +1,55 @@
+/* src/components/modal/settings/kit/pageEdgeBlur.css
+   设置页顶栏的渐进模糊：顶栏自己的一层背景。
+
+   三层遮罩各带一档 backdrop-filter，宽高都撑满顶栏容器（100% / 100%），
+   所以带子的高度就是顶栏的高度，不用再另外算。
+   每层遮罩都是「往下淡」，淡完的位置各不相同：远的先淡完（blur 10px 只留在最上面），
+   近的一直拖到带子底部（blur 0.8px）。叠起来从顶栏往下看就是「很糊 → 略糊 → 清」。
+
+   遮罩颜色一律写 rgba()，不写 #0000 这类四位简写：部分 Chromium 会把它判成无效断点，
+   整条 mask 退化成 none，看着就是「没渲染」。 */
+
+.st-edge-blur {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    /* -1：在顶栏自己的层叠上下文里垫到文字下面（顶栏是 isolate 的，不会跑到别处去）。 */
+    z-index: -1;
+    pointer-events: none;
+}
+
+.st-edge-blur__layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+}
+
+/* 下 */
+.mask-b-from-70-to-100 {
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%);
+    -webkit-backdrop-filter: blur(0.8px);
+    backdrop-filter: blur(0.8px);
+}
+
+/* 中 */
+.mask-b-from-50-to-75 {
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 75%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 75%);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+}
+
+/* 上 */
+.mask-b-from-20-to-55 {
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 20%, rgba(0, 0, 0, 0) 55%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 20%, rgba(0, 0, 0, 0) 55%);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}

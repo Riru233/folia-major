@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect, useMemo, useRef, startTransition } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useLayoutEffect, useMemo, useRef, startTransition } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { MotionValue } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -328,6 +328,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         }
     };
     const contentScrollRef = useRef<HTMLDivElement>(null);
+    // 顶栏浮在正文上面（不再是弹性布局里的一行），所以正文要按顶栏高度留出顶部留白：
+    // 量出来的高度写进 --st-page-head（写在右列上，顶栏和滚动区都继承得到）。
+    const pageHeadRef = useRef<HTMLDivElement>(null);
+    const pageColumnRef = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+        const head = pageHeadRef.current;
+        const scroller = contentScrollRef.current;
+        if (!head || !scroller) return undefined;
+        const host = pageColumnRef.current ?? scroller;
+        const measure = () => host.style.setProperty('--st-page-head', `${head.offsetHeight}px`);
+        measure();
+        if (typeof ResizeObserver === 'undefined') return undefined;
+        const observer = new ResizeObserver(measure);
+        observer.observe(head);
+        return () => observer.disconnect();
+    }, []);
     // Matches the md: split of the window: under it the categories go into the drawer the menu
     // button opens, and only that bar (menu button + search) stays on top.
     const isWideSettingsLayout = useMediaQuery('(min-width: 768px)');
@@ -1303,51 +1319,64 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         />
                     )}
                     {/* 正文区铺一层实底（浅色纯白 / 深色纯黑），页面内容不跟窗口玻璃一起透；玻璃只留给
-                        左侧栏和窗口边缘那圈，所以这层只盖右侧列，不遮侧栏。 */}
+                        左侧栏和窗口边缘那圈，所以这层只盖右侧列，不遮侧栏。
+                        布局是 relative 的：顶栏浮在最上层（z-30），内容层 absolute inset-0 拉满整列高度，
+                        滚动内容从顶栏下面穿过去；顶栏自己那层渐进模糊就是它的背景。 */}
                     <div
-                        className="flex min-h-0 min-w-0 flex-1 flex-col"
+                        ref={pageColumnRef}
+                        className="relative min-h-0 min-w-0 flex-1"
                         style={{ backgroundColor: isDaylight ? '#fff' : '#000' }}
                     >
-                        <PageHeader
-                            title={isSearching
-                                ? t('options.settingsSearchTitle')
-                                : activeTab === 'help' ? t('help.title') : activeSettingsNavItem?.label ?? ''}
-                            contents={settingsAnchors}
-                            activeId={activeAnchorId}
-                            onSelect={landOnGroup}
-                            summary={isSearching
-                                ? (searchHits.length > 0 ? t('options.settingsSearchCount', { n: searchHits.length }) : t('options.settingsSearchEmpty'))
-                                : undefined}
-                            closeLabel={t('ui.close')}
-                            onClose={onClose}
-                            showClose={isWideSettingsLayout}
-                        />
+                        <div ref={pageHeadRef} className="pointer-events-none absolute inset-x-0 top-0 z-30">
+                            {/* 渐进模糊在 PageHeader 的 <header> 里面，是顶栏自己的背景。 */}
+                            <div className="pointer-events-auto relative">
+                                <PageHeader
+                                    title={isSearching
+                                        ? t('options.settingsSearchTitle')
+                                        : activeTab === 'help' ? t('help.title') : activeSettingsNavItem?.label ?? ''}
+                                    contents={settingsAnchors}
+                                    activeId={activeAnchorId}
+                                    onSelect={landOnGroup}
+                                    summary={isSearching
+                                        ? (searchHits.length > 0 ? t('options.settingsSearchCount', { n: searchHits.length }) : t('options.settingsSearchEmpty'))
+                                        : undefined}
+                                    closeLabel={t('ui.close')}
+                                    onClose={onClose}
+                                    showClose={isWideSettingsLayout}
+                                />
+                            </div>
+                        </div>
                         <div
                             ref={contentScrollRef}
-                            className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-12 md:px-8 md:pb-16 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-[var(--st-fill2)] [&::-webkit-scrollbar-thumb]:bg-clip-content [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-3"
+                            className="absolute inset-0 overflow-y-auto [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-[var(--st-fill2)] [&::-webkit-scrollbar-thumb]:bg-clip-content [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-3"
                         >
-                            {isSearching ? (
-                                <SettingsSearchResults hits={searchHits} onSelect={handleSelectSearchHit} />
-                            ) : activeTab === 'help' ? (
-                                <SettingsPageContext.Provider value={pageContext}>
-                                    <div className="st-page-in">
-                                        <HelpPage
-                                            onOpenReleaseNotes={() => setShowReleaseNotes(true)}
-                                            onOpenAiHelp={() => setShowAiHelpPrompt(true)}
-                                            onProjectLabelClick={handleAuthorLabelClick}
-                                        />
-                                    </div>
-                                </SettingsPageContext.Provider>
-                            ) : ActivePage ? (
-                                <SettingsAnchorProvider store={settingsAnchorStore} section={activeSettingsSection}>
+                            <div
+                                className="px-4 pb-12 md:px-8 md:pb-16"
+                                style={{ paddingTop: 'calc(var(--st-page-head, 0px) + 12px)' }}
+                            >
+                                {isSearching ? (
+                                    <SettingsSearchResults hits={searchHits} onSelect={handleSelectSearchHit} />
+                                ) : activeTab === 'help' ? (
                                     <SettingsPageContext.Provider value={pageContext}>
-                                        {/* Keyed by the category, so each page comes in with the kit's motion. */}
-                                        <div key={activeSettingsSection} className="st-page-in">
-                                            <ActivePage />
+                                        <div className="st-page-in">
+                                            <HelpPage
+                                                onOpenReleaseNotes={() => setShowReleaseNotes(true)}
+                                                onOpenAiHelp={() => setShowAiHelpPrompt(true)}
+                                                onProjectLabelClick={handleAuthorLabelClick}
+                                            />
                                         </div>
                                     </SettingsPageContext.Provider>
-                                </SettingsAnchorProvider>
-                            ) : null}
+                                ) : ActivePage ? (
+                                    <SettingsAnchorProvider store={settingsAnchorStore} section={activeSettingsSection}>
+                                        <SettingsPageContext.Provider value={pageContext}>
+                                            {/* Keyed by the category, so each page comes in with the kit's motion. */}
+                                            <div key={activeSettingsSection} className="st-page-in">
+                                                <ActivePage />
+                                            </div>
+                                        </SettingsPageContext.Provider>
+                                    </SettingsAnchorProvider>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
                 </SettingsKitThemeContext.Provider>
