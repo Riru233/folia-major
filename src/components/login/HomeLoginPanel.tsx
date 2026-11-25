@@ -36,7 +36,7 @@ const HomeLoginPanel: React.FC<HomeLoginPanelProps> = ({ account }) => {
             className="flex w-full flex-1 flex-col items-left pl-16 justify-center px-4 gap-5 text-left text-[color:var(--st-t1)]"
             style={{ ...settingsTokens(isDaylight, theme), ...kitMotionTokens(reduced) }}
         >
-            <h2 className="login-rise text-[50px] font-light leading-7 [text-wrap:balance]">
+            <h2 className="login-rise text-[50px] font-light leading-14 [text-wrap:balance]">
                 {ranOut ? t('status.loginExpired') : t('home.guestTitle')}
             </h2>
             <p className="login-rise mt-2 max-w-[516px] whitespace-pre-line text-[20px] leading-7 text-[color:var(--st-t2)]" style={{ animationDelay: '40ms' }}>
