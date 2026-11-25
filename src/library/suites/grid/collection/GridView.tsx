@@ -1854,12 +1854,12 @@ export const GridView: React.FC<GridViewProps> = ({
                                     {...{ [CARD_TITLE_ATTR]: '' }}
                                     className={fullBleedCover
                                         ? 'text-sm tracking-tight leading-snug line-clamp-3 whitespace-normal break-words'
-                                        : 'text-s font-bold tracking-tight opacity-90 max-w-full line-clamp-4 whitespace-normal break-words'}
+                                        : 'text-[22px] font-normal tracking-tight opacity-90 max-w-full line-clamp-4 whitespace-normal break-words'}
                                 >
                                     {standIn.title ?? collectionName ?? title}
                                 </div>
                                 {showLoading && (
-                                    <div className="mt-1 flex items-center gap-2 text-xs font-semibold font-sans opacity-60">
+                                    <div className="mt-1 flex items-center gap-2 text-[22px] font-normal font-sans opacity-60">
                                         <Loader2 className="animate-spin shrink-0" size={14} />
                                         <span className="truncate">{t('playlist.loading')}</span>
                                     </div>

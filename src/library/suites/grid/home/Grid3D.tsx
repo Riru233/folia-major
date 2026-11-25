@@ -819,7 +819,6 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
         color: isDaylight ? '#000' : '#fff',
     };
-
     return (
         <div
             ref={gridRootRef}
@@ -876,11 +875,26 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                         <AnimatePresence>
                                             {scanDetailsExpanded && (
                                                 <motion.div
+                                                    data-glass data-glass-light
                                                     initial={{ opacity: 0, y: -6 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: -6 }}
-                                                    className={`absolute left-0 top-full mt-2 w-72 p-4 rounded-2xl border backdrop-blur-xl shadow-xl ${isDaylight ? 'bg-white/85 border-black/10 text-zinc-800' : 'bg-black/60 border-white/10 text-zinc-100'
+                                                    className={`absolute left-0 top-full mt-2 w-72 p-4 rounded-2xl border-none shadow-xl
                                                     }`}
+                                                    style={{
+                                                        backgroundColor: isDaylight
+                                                            ? 'rgba(215,215,215,0.42)'
+                                                            : 'rgba(40, 40, 40, 0.42)',
+                                                        borderTop: isDaylight
+                                                            ? '1px solid #fff6'
+                                                            : '1px solid #fff5',
+                                                        borderBottom: isDaylight
+                                                            ? '1px solid #fff6'
+                                                            : '1px solid #fff5',
+                                                        outline: '1px solid rgba(35,35,35,0.3)',
+                                                        boxShadow: '0px 8px 16px rgba(40,40,40,0.2)',
+                                                        color: isDaylight ? '#000' : '#fff',
+                                                    }}
                                                 >
                                                     <div className="text-sm font-semibold truncate">
                                                         {t('options.scanningFolder', { folderName: scanProgress.folderName })}
