@@ -314,6 +314,43 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
         axis: 'y',
     });
 
+    // 摇杆的显隐：按下立刻出现，松手不是「啪」地消失，而是原地缩小、淡掉，收完才卸载那一块
+    // （display: none 之后四层渐进模糊与色散滤镜整块不参与合成，空闲时照旧一点 GPU 都不占）。
+    // 收的动画走 motion 的 scale / opacity，位置仍由 style 的 left / top 直接给，两者不打架。
+    const thumbActive = thumbDragging && thumbReady;
+    const [thumbDismissed, setThumbDismissed] = useState(true);
+    React.useEffect(() => {
+        if (thumbActive) setThumbDismissed(false);
+    }, [thumbActive]);
+
+    // 摇杆盒子的尺寸逐帧在变（长按展开、按住放大都是弹簧驱动 width / height），但 Chromium 不会跟着
+    // 逐帧重跑 backdrop-filter: url(#…) 的滤镜链——缓存的那份要等盒子停下来那一帧才刷新，表现就是
+    // 展开的整个过程里色散还是旧的，动画一结束它才「跳」一下。
+    // 这里在盒子变形的那几百毫秒里逐帧把 filter 字符串在两种等价写法之间换一下：字符串一换，滤镜链
+    // 就得重建，色散才会跟着盒子走。blur(0px) 只是让写法不同，观感不变。平时摇杆是 display: none，
+    // 这段一帧都不跑。
+    const dispersionLayerRef = useRef<HTMLDivElement>(null);
+    React.useEffect(() => {
+        if (reduceMotion) return;
+        const layer = dispersionLayerRef.current;
+        if (!layer || !isChromiumRenderer()) return;
+        let frame = 0;
+        let alternate = false;
+        const deadline = performance.now() + 520;
+        const tick = (now: number) => {
+            alternate = !alternate;
+            layer.style.backdropFilter = alternate
+                ? `url(#${NAV_DISPERSION_FILTER_ID})`
+                : `blur(0px) url(#${NAV_DISPERSION_FILTER_ID})`;
+            if (now < deadline) frame = requestAnimationFrame(tick);
+        };
+        frame = requestAnimationFrame(tick);
+        return () => {
+            cancelAnimationFrame(frame);
+            layer.style.backdropFilter = `url(#${NAV_DISPERSION_FILTER_ID})`;
+        };
+    }, [thumbMagnified, thumbDragging, reduceMotion]);
+
     // 高亮跟着摇杆走：放大后的透镜盖住哪几格就亮哪几格，没被盖住的（包括原来选中的那一项）都不亮。
     // 松手后这份集合会钉在落点上，直到页签真的切过去才交还给「选中项」——所以不会先亮回原地。
     // 索引与 thumbItems 同序（页签 → 扩展页签 → 舞台）。
@@ -478,7 +515,7 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                     <motion.div
                         aria-hidden="true"
                         data-testid="grid3d-nav-thumb"
-                        className={`absolute rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow,opacity] duration-200 ease-out outline outline-1 outline-[rgba(35,35,35,0.3)] ${thumbDragging ? 'z-[60] bg-transparent' : 'z-10 bg-[var(--text-accent)]/40 shadow-[0px_8px_16px_rgba(40,40,40,0.2)]'}`}
+                        className={`absolute rounded-full shadow-sm pointer-events-none transition-[background-color,box-shadow] duration-200 ease-out outline outline-1 outline-[rgba(35,35,35,0.3)] ${thumbDragging ? 'z-[60] bg-transparent' : 'z-10 bg-[var(--text-accent)]/40 shadow-[0px_8px_16px_rgba(40,40,40,0.2)]'}`}
                         style={{
                             left: thumbBoxLeft,
                             top: thumbBoxTop,
@@ -490,10 +527,24 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                             // 不按就不画：display: none 让这四层渐进模糊 + 色散滤镜整块不参与合成，
                             // 空闲时一点 GPU 都不占（只写 opacity: 0 的话 backdrop-filter 仍然要算）。
                             // 按下（含纯点击）立刻回到正常显示，液态玻璃就在这一刻出现。
+                            // 松手后先留着这一块把收缩动画走完，收完（onAnimationComplete）才置 none。
                             // 长按展开时照旧显示：摇杆跟着整栏重排重新落位、盒子换成展开后的尺寸，
                             // 所以透镜会跟着栏一起长大，仍压在手指那一格上。
-                            display: thumbDragging && thumbReady ? undefined : 'none',
+                            display: thumbActive || !thumbDismissed ? undefined : 'none',
                             boxShadow: thumbDragging ? '0 0 20px #0006' : '',
+                        }}
+                        animate={{
+                            // 出现是长回原尺寸，消失是缩回选中那一格的中间再淡掉——像透镜收进玻璃里。
+                            scale: thumbActive ? 1 : 0.88,
+                            opacity: thumbActive ? 1 : 0,
+                        }}
+                        transition={reduceMotion ? { duration: 0 } : {
+                            scale: { type: 'spring', stiffness: 420, damping: 34, mass: 0.8 },
+                            opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+                        }}
+                        onAnimationComplete={() => {
+                            // 只收「松手后缩完」这一次；按下时的展开动画结束时什么都不做。
+                            if (!thumbActive) setThumbDismissed(true);
                         }}
                     >
                         {/* 摇杆自身的流体玻璃：参数与页头那颗一字不差。 */}
@@ -509,8 +560,9 @@ export const Grid3DNav: React.FC<Grid3DNavProps> = ({
                             style={{ width: '100%', height: '100%' }}
                         />
 
-                        {/* 色散：只留上下两端那一圈，铺满整块会把文字染出彩边。 */}
+                        {/* 色散：只留上下两端那一圈，铺满整块会把文字染出彩边。ref 用于展开时逐帧刷新滤镜链。 */}
                         <div
+                            ref={dispersionLayerRef}
                             className="rounded-full relative top-[-100%] left-0"
                             style={{
                                 ...frostFadeStyle,

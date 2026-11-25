@@ -44,6 +44,7 @@ import { openSettings } from '../../../../stores/useSettingsModalStore';
 import { useIsBottomLayoutCompact } from '../../../../stores/useBottomDockStore';
 import { cycleIndex, homeGroupOfTab, isOnlineHomeTab, isVideoHomeTab } from '../../../core/home/homeSources';
 import { LOCAL_HOME_SECTIONS, localHomeSectionOfRow } from '../../../core/home/localHomeModel';
+import { FOLIA_HOME_SECTIONS, useFoliaHomeSectionStore } from '../../../core/home/foliaHomeSection';
 import HomeSearchHistory, { HomeSearchHistoryPopover } from './HomeSearchHistory';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
 import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
@@ -75,7 +76,7 @@ const DISPERSION_FILTER_ID = 'grid3d-dispersion';
 const USE_GRID3D_NAV = { on: true }.on;
 
 // 页头那排胶囊（含它自己的摇杆与色散定义）现在复用为「当前一级组的二级页签」：
-// 在线音乐画歌单 / 推荐 / 探索 / 专辑，本地画文件夹 / 专辑 / 艺术家；一级组切换仍走左侧竖栏。
+// 在线音乐画歌单 / 推荐 / 探索 / 专辑，本地画文件夹 / 专辑 / 艺术家，Folia 画歌单 / 标签；一级组切换仍走左侧竖栏。
 const USE_HEADER_PILL = { on: true }.on;
 
 interface Grid3DProps {
@@ -222,6 +223,10 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     const { tab: homeViewTab, setTab: setHomeViewTab, isOnlineTab, online, tabs: homeTabs, groups: homeGroups, noOnlineSources } = homeSources;
     const onlineGroup = homeGroups.find(group => group.key === 'online');
     const videoGroup = homeGroups.find(group => group.key === 'video');
+    // Folia 组的二级页签（歌单 / 标签）挪到页头胶囊后，选择状态由这里读：Folia 页自己也订阅同一份，
+    // 点页头那颗和以前点页内小胶囊等价。
+    const foliaHomeSection = useFoliaHomeSectionStore(state => state.section);
+    const setFoliaHomeSection = useFoliaHomeSectionStore(state => state.setSection);
     const activeProviderId = online.providerId;
     const activeProviderLabel = online.providerLabel;
     const activeUser = online.user;
@@ -447,8 +452,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
     // 一个音源都没启用时没有二级页签可言（页都是空的），只留「去启用音源」那块提示。
     const onlineTabs = noOnlineSources ? [] : buildOnlineGridTabs(onlineGroup, homeViewTab, selectHomeTab);
 
-    // 页头胶囊复用为「当前一级组的二级页签」：在线音乐画四页，本地画三个 section；
-    // 其它组没有二级页签，胶囊不出现。本地的标签与行号和 LocalGrid3DView 共用 core 定义，切的是同一份 activeRow。
+    // 页头胶囊复用为「当前一级组的二级页签」：在线音乐画四页，本地画三个 section，Folia 画歌单 / 标签；
+    // 其它组没有二级页签，胶囊不出现。本地的标签与行号和 LocalGrid3DView 共用 core 定义，切的是同一份 activeRow；
+    // Folia 的两个页签与 FoliaGrid3DView 共用 core/home/foliaHomeSection 的 store。
     const headerPillGroup = homeGroupOfTab(homeViewTab);
     const headerPillTabs: DesktopGrid3DAction[] = headerPillGroup === 'online'
         ? onlineTabs
@@ -466,7 +472,14 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                     active: localHomeSectionOfRow(localMusicState.activeRow).key === section.key,
                     onClick: () => setLocalMusicState(prev => ({ ...prev, activeRow: section.row })),
                 }))
-                : [];
+                : headerPillGroup === 'folia'
+                    ? FOLIA_HOME_SECTIONS.map(section => ({
+                        id: section.key,
+                        label: t(section.labelKey),
+                        active: foliaHomeSection === section.key,
+                        onClick: () => setFoliaHomeSection(section.key),
+                    }))
+                    : [];
     const headerPillActiveKey = headerPillTabs.find(tab => tab.active)?.id
         ?? (headerPillTabs.length > 0 ? headerPillTabs[0].id : '');
 
