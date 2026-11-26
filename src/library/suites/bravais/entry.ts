@@ -47,11 +47,27 @@ export const installBravaisTransitionHook = <Name extends keyof BravaisTransitio
     };
 };
 
-// 资料库的第二套界面，与网格一起对所有用户可选。
-const BravaisStage = React.lazy(() => import('./BravaisStage'));
-const BravaisHome = React.lazy(() => import('./BravaisHome'));
-const BravaisCollection = React.lazy(() => import('./BravaisCollection'));
-const BravaisArtist = React.lazy(() => import('./BravaisArtist'));
+/**
+ * bravais 的启用配置：改 `enabled` 就能在代码里随时开关整套界面（true 开 / false 关）。
+ * 另一条条件是 `VITE_LIBRARY_BRAVAIS=true`，给单测和临时开发验证用，不动代码也能打开；
+ * 两者任一成立即启用。正式构建不带那个变量，所以按 `enabled` 走。
+ *
+ * 现在这一版打开 bravais（在线视频隐藏后仍保留第二套界面）。关掉时 registry 当作没有这套界面：
+ * 设置、命令面板、首启引导都不露出，存过 bravais 的人回落 grid；组件与 stage 一起门控，
+ * 没启用的人连 chunk 都不加载。要再次关掉，把 `enabled` 改 false 即可，
+ * 下面的声明、manifest 与 surfaces 都不用动。
+ */
+const BRAVAIS_SWITCH = {
+    enabled: true,
+    envOverride: import.meta.env.VITE_LIBRARY_BRAVAIS === 'true',
+} as const;
+
+const ENABLE_BRAVAIS = BRAVAIS_SWITCH.enabled || BRAVAIS_SWITCH.envOverride;
+
+const BravaisStage = ENABLE_BRAVAIS ? React.lazy(() => import('./BravaisStage')) : null;
+const BravaisHome = ENABLE_BRAVAIS ? React.lazy(() => import('./BravaisHome')) : null;
+const BravaisCollection = ENABLE_BRAVAIS ? React.lazy(() => import('./BravaisCollection')) : null;
+const BravaisArtist = ENABLE_BRAVAIS ? React.lazy(() => import('./BravaisArtist')) : null;
 
 // 集合页（B7 齐了 grid 的 23 个，入口见设计稿 §10.2）：聚焦卡主按钮（播放 / 入队）、文字链接（专辑 / 歌手）与「⋯」
 // （移出 / 不喜欢、手动匹配、加入歌单）；缝里的播放全部 / 入队、过滤输入位（缝自己的，墙上直接打字）、收藏星标、元数据行的续传、
@@ -222,15 +238,18 @@ const CHROME_ACTIONS: LibrarySuiteManifest['chromeActions'] = [
 const bravais: LibrarySuiteManifest = {
     id: 'bravais',
     labelKey: 'libraryBravais.suiteName',
-    available: true,
-    stage: BravaisStage,
+    // 关掉时连注册都不注册，已选 bravais 的人由 registry 回落到 grid。
+    available: ENABLE_BRAVAIS,
+    ...(BravaisStage ? { stage: BravaisStage } : {}),
     // 进 / 出 Lattice 走翻牌交接（设计稿 §7「进入队列」；stage 里的 useBravaisWallHandoff）。
     stageWallHandoff: true,
-    surfaces: {
-        home: { component: BravaisHome, actions: HOME_ACTIONS },
-        collection: { component: BravaisCollection, actions: COLLECTION_ACTIONS },
-        artist: { component: BravaisArtist, actions: ARTIST_ACTIONS },
-    },
+    surfaces: BravaisHome && BravaisCollection && BravaisArtist && BravaisStage
+        ? {
+            home: { component: BravaisHome, actions: HOME_ACTIONS },
+            collection: { component: BravaisCollection, actions: COLLECTION_ACTIONS },
+            artist: { component: BravaisArtist, actions: ARTIST_ACTIONS },
+        }
+        : {},
     chromeActions: CHROME_ACTIONS,
     // B11（设计稿 §10.8）：换层的翻牌由 stage 观察导航深度驱动（应用内返回、浏览器后退、N1 折回、面包屑跳层都是一次
     // 深度变化，各翻一次），所以不声明 beforeBack，也不声明 Overlay 与 backdrop（「降低动态效果」由 stage 自己解析，

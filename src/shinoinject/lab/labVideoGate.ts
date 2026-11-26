@@ -9,14 +9,21 @@ export const LAB_VIDEO_PLAYBACK_KEY = 'shino_lab_video_playback';
 /** 在线视频（首页分组 + 设置分区）的总开关，默认关闭：打开实验室里的这一项才露出入口。 */
 export const LAB_ONLINE_VIDEO_KEY = 'shino_lab_online_video';
 
+/**
+ * 在线视频这一版整体不露面：实验室里的开关行、首页的在线视频页签、设置里的视频分区都隐藏。
+ * 存过的开关值留着不删，改回 false 就原样恢复；其余实验室功能不受影响。
+ */
+export const SHINO_LAB_ONLINE_VIDEO_HIDDEN = true;
+
 /** 与 store 的默认值一致：从没存过就是关闭（实验室里的实验一律默认关，要用户自己打开）。 */
 export const isLabVideoPlaybackEnabled = (): boolean => {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') return false;
     return getStoredBoolean(LAB_VIDEO_PLAYBACK_KEY, false);
 };
 
-/** 在线视频入口是否打开。默认关闭：实验室里的开关打开后才露出首页分组与设置分区。 */
+/** 在线视频入口是否打开。隐藏期恒为关；默认关闭：实验室里的开关打开后才露出首页分组与设置分区。 */
 export const isLabOnlineVideoEnabled = (): boolean => {
+    if (SHINO_LAB_ONLINE_VIDEO_HIDDEN) return false;
     if (typeof window === 'undefined') return false;
     return getStoredBoolean(LAB_ONLINE_VIDEO_KEY, false);
 };

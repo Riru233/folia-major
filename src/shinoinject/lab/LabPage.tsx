@@ -8,6 +8,7 @@ import { useShinoLabStore, type BilibiliMvQuality } from './useShinoLabStore';
 import { setStatusMessage } from '../../stores/useStatusMessageStore';
 import { ensureVideoLayerFileRestored, useVideoLayerSettingsStore, VIDEO_LAYER_OPACITY_BOUNDS } from '../../stores/useVideoLayerSettingsStore';
 import { buildSearchKeyword, songKeyOf } from './bilibili/mvMatch';
+import { SHINO_LAB_ONLINE_VIDEO_HIDDEN } from './labVideoGate';
 import { Button, Group, Reveal, Row, Segmented, Slider, TextField, Toggle, Value, option, type SettingsGroupDef, type SettingsOptionDef } from '../../components/modal/settings/kit';
 import OffsetStepper from '../../components/shared/OffsetStepper';
 import { useOffsetTuningStore } from './videoBackground/useOffsetTuningStore';
@@ -30,7 +31,8 @@ const BILIBILI: SettingsGroupDef = { id: 'shinoLabBilibili', titleKey: 'options.
 
 const O = {
     videoPlayback: option(VIDEO, 'shinoLabVideoPlayback', 'options.shinoLabVideoPlayback'),
-    onlineVideo: option(VIDEO, 'shinoLabOnlineVideo', 'options.shinoLabOnlineVideo'),
+    // 在线视频这一版不露面：开关行不画，设置搜索也不要搜到一个页面上没有的开关。
+    onlineVideo: option(VIDEO, 'shinoLabOnlineVideo', 'options.shinoLabOnlineVideo', { available: () => !SHINO_LAB_ONLINE_VIDEO_HIDDEN }),
     hideLyrics: option(VIDEO, 'shinoLabHideLyrics', 'options.shinoLabHideLyrics', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
     videoEnabled: option(VIDEO, 'videoLayerEnabled', 'options.videoLayerEnabled', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
     videoFile: option(VIDEO, 'videoLayerLocalFile', 'options.videoLayerLocalFile', { available: () => useShinoLabStore.getState().videoPlaybackEnabled }),
@@ -183,10 +185,12 @@ const LabPage: React.FC = () => {
                 >
                     <Toggle checked={lab.videoPlayback} onChange={lab.setVideoPlayback} />
                 </Row>
-                {/* 在线视频：独立的实验开关，不挂在视频播放下面。打开后首页多一组、设置里多一页。 */}
-                <Row option={O.onlineVideo} note={t('options.shinoLabOnlineVideoDesc')}>
-                    <Toggle checked={lab.onlineVideo} onChange={lab.setOnlineVideo} />
-                </Row>
+                {/* 在线视频：独立的实验开关，不挂在视频播放下面。隐藏期整行不画，改 labVideoGate 的开关即可恢复。 */}
+                {!SHINO_LAB_ONLINE_VIDEO_HIDDEN && (
+                    <Row option={O.onlineVideo} note={t('options.shinoLabOnlineVideoDesc')}>
+                        <Toggle checked={lab.onlineVideo} onChange={lab.setOnlineVideo} />
+                    </Row>
+                )}
                 <Reveal when={lab.videoPlayback}>
                     <Row option={O.hideLyrics} note={t('options.shinoLabHideLyricsDesc')}>
                         <Toggle checked={lab.hideLyrics} onChange={lab.setHideLyrics} />

@@ -4,7 +4,7 @@ import { DEFAULT_VISUALIZER_BACKGROUND_MODE } from '../../types/visualizerModes'
 import { getStoredBoolean, setStoredBoolean } from '../../stores/storagePrimitives';
 import { setStatusMessage } from '../../stores/useStatusMessageStore';
 import { useVisualizerSettingsStore } from '../../stores/useVisualizerSettingsStore';
-import { isLabOnlineVideoEnabled, isLabVideoPlaybackEnabled, LAB_ONLINE_VIDEO_KEY, LAB_VIDEO_PLAYBACK_KEY, notifyLabVideoGateChanged } from './labVideoGate';
+import { isLabOnlineVideoEnabled, isLabVideoPlaybackEnabled, LAB_ONLINE_VIDEO_KEY, LAB_VIDEO_PLAYBACK_KEY, notifyLabVideoGateChanged, SHINO_LAB_ONLINE_VIDEO_HIDDEN } from './labVideoGate';
 
 // src/shinoinject/lab/useShinoLabStore.ts
 // 「Shino 实验室」的两个实验：视频播放（曲目自带的画面、设置里那条视频层），以及把 bilibili 上
@@ -49,7 +49,7 @@ export type ShinoLabState = {
 
 export const useShinoLabStore = create<ShinoLabState>((set, get) => ({
     videoPlaybackEnabled: isLabVideoPlaybackEnabled(),
-    onlineVideoEnabled: isLabOnlineVideoEnabled(),
+    onlineVideoEnabled: SHINO_LAB_ONLINE_VIDEO_HIDDEN ? false : isLabOnlineVideoEnabled(),
     // 视频播放的画面本来就取代歌词那层；默认就隐藏，实验室里仍可关掉恢复歌词。
     hideLyricStyleDuringVideo: getStoredBoolean(LAB_HIDE_LYRICS_ON_VIDEO_KEY, true),
     bilibiliMvEnabled: getStoredBoolean(LAB_BILIBILI_MV_KEY, false),
@@ -57,6 +57,8 @@ export const useShinoLabStore = create<ShinoLabState>((set, get) => ({
     bilibiliAutoMatch: getStoredBoolean(LAB_BILIBILI_AUTO_MATCH_KEY, false),
     bilibiliMvQuality: readStoredQuality(),
     handleToggleOnlineVideo: (enabled) => {
+        // 在线视频隐藏期开关打不开（页面也进不去），状态和 labVideoGate 的读取保持一致。
+        if (enabled && SHINO_LAB_ONLINE_VIDEO_HIDDEN) return;
         setStoredBoolean(LAB_ONLINE_VIDEO_KEY, enabled);
         set({ onlineVideoEnabled: enabled });
         notifyLabVideoGateChanged();

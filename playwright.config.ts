@@ -75,13 +75,14 @@ export default defineConfig({
   // 累积、localStorage 跨用例串。8 个 spec 省下的那点时间不值这个风险。
   webServer: {
     // 应用和组件回归都显式启用开发验证 suite，不依赖开发者的 .env.local。
+    // bravais 现在代码里默认开；这里保留显式变量便于切到关时仍覆盖它（开关见 suites/bravais/entry.ts）。
     // 初始选择钉在 grid：截图基线与现有用例都假设没选过 suite 的人看到网格（开发阶段的初始选择是 bravais）。
     // 构建类别钉成官方（FOLIA_DEV_BUILD_KIND 只在 vite serve 下生效，见 dev/build/buildIdentity.mjs）：
     // 不钉的话 dev server 一律被判成非官方，扫码失败的诊断入口换成「See diagnostics」、不给反馈按钮，
     // 而账户用例断言的是官方构建的入口。仓库 CI 不跑 Playwright，这些用例只在本机跑。
     // 只在 Playwright 自己拉起服务时生效：4173 上已有别的 dev server 会被复用（reuseExistingServer），先停掉它。
     // 首启流程的开发捷径钉成关：startupOnboarding 用例要等它自己弹出来（见 src/dev/devLaunchFlags.ts）。
-    command: 'cross-env VITE_LIBRARY_TUI=true VITE_LIBRARY_INITIAL_SUITE=grid VITE_SKIP_STARTUP_EXPERIENCE=false VITE_NETEASE_API_BASE=http://127.0.0.1:4173/__mock_netease__ FOLIA_DEV_BUILD_KIND=official npm run dev -- --host 127.0.0.1 --port 4173 --strictPort',
+    command: 'cross-env VITE_LIBRARY_TUI=true VITE_LIBRARY_BRAVAIS=true VITE_LIBRARY_INITIAL_SUITE=grid VITE_SKIP_STARTUP_EXPERIENCE=false VITE_NETEASE_API_BASE=http://127.0.0.1:4173/__mock_netease__ FOLIA_DEV_BUILD_KIND=official npm run dev -- --host 127.0.0.1 --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: true,
     timeout: 120_000,

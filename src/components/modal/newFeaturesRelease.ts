@@ -1,7 +1,6 @@
-import { FolderCog, FolderSearch } from 'lucide-react';
+import { Gauge, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HomeViewTab } from '../../types';
-import shinoBanner from '../../../assets/banners/folia-shino-0.8.0.jpg?url';
 
 // src/components/modal/newFeaturesRelease.ts
 // 当前版本的介绍：卡片 id 和文案 key 对不上会在 test/unit/newFeaturesRelease.test.ts 里报出来。
@@ -33,10 +32,9 @@ type NewFeaturesRelease = {
 
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
     i18nKey: 'releaseNotes.v0_8_2',
-    majorUpdate: { codename: 'Severance', servicePack: 2 },
     features: [
-        // 0.8.2 是热修复版：只列这一版修掉的问题，不重复 0.8.0 的新特性。
-        { id: 'localFolderRecovery', icon: FolderSearch },
-        { id: 'localFolderSafety', icon: FolderCog },
+        // 0.8.2 只讲这一版的流畅度、稳定性与 bravais 回归，不重复大版本的新特性。
+        { id: 'fluidity', icon: Gauge },
+        { id: 'bravaisReturn', icon: LayoutGrid },
     ],
 };

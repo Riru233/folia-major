@@ -118,6 +118,20 @@ describe('library suite entries', () => {
         expect(source).toContain('available: ENABLE_TUI,');
     });
 
+    it('keeps bravais behind the in-code switch with an env override', () => {
+        // 开关值本身不写死：改 BRAVAIS_SWITCH.enabled 开/关时这条用例不用跟着改。
+        const source = read(entryOf('bravais'));
+        expect(source).toContain('const BRAVAIS_SWITCH = {');
+        expect(source).toMatch(/enabled:\s*(true|false),/);
+        expect(source).toContain("envOverride: import.meta.env.VITE_LIBRARY_BRAVAIS === 'true',");
+        expect(source).toContain('const ENABLE_BRAVAIS = BRAVAIS_SWITCH.enabled || BRAVAIS_SWITCH.envOverride;');
+        for (const component of ['BravaisStage', 'BravaisHome', 'BravaisCollection', 'BravaisArtist']) {
+            expect(source).toContain(`const ${component} = ENABLE_BRAVAIS ? React.lazy(() => import('./${component}')) : null;`);
+        }
+        expect(source).toContain('available: ENABLE_BRAVAIS,');
+        expect(source).toContain('surfaces: BravaisHome && BravaisCollection && BravaisArtist && BravaisStage');
+    });
+
     it('has no barrel files that would pull a suite in sideways', () => {
         const barrels = readdirSync(path.join(ROOT, 'src/library'), { recursive: true, withFileTypes: true })
             .filter(entry => entry.isFile() && /^index\.tsx?$/.test(entry.name));

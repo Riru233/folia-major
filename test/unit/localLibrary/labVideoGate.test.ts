@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+    isLabOnlineVideoEnabled,
     isLabVideoPlaybackEnabled,
+    LAB_ONLINE_VIDEO_KEY,
     LAB_VIDEO_GATE_CHANGED_EVENT,
     LAB_VIDEO_PLAYBACK_KEY,
     notifyLabVideoGateChanged,
@@ -37,6 +39,19 @@ describe('isLabVideoPlaybackEnabled', () => {
     it('存过 true 时按打开处理', () => {
         stubStorage({ [LAB_VIDEO_PLAYBACK_KEY]: 'true' });
         expect(isLabVideoPlaybackEnabled()).toBe(true);
+    });
+});
+
+describe('isLabOnlineVideoEnabled', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('锁住与 store 共用的 localStorage 键', () => {
+        expect(LAB_ONLINE_VIDEO_KEY).toBe('shino_lab_online_video');
+    });
+
+    it('在线视频隐藏期恒为关，存过 true 也不漏出入口', () => {
+        stubStorage({ [LAB_ONLINE_VIDEO_KEY]: 'true' });
+        expect(isLabOnlineVideoEnabled()).toBe(false);
     });
 });
 

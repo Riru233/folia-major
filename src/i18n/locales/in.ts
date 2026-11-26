@@ -4773,14 +4773,14 @@ export default {
   },
   "releaseNotes": {
     "v0_8_2": {
-      "intro": "0.8.2, Severance Update SP2—perbaikan cepat kedua untuk 0.8.0. Versi ini memperbaiki folder lokal yang diimpor versi lama menjadi tidak bisa dipakai setelah pembaruan Electron: lagu tidak diputar setelah aplikasi dibuka ulang dan impor ulang tidak tersimpan.",
-      "localFolderRecovery": {
-        "title": "Folder lokal bisa dipilih ulang",
-        "description": "Saat dibuka, Folia menampilkan folder lokal yang masih punya lagu tetapi aksesnya sudah tidak berlaku. Pilih ulang folder aslinya satu per satu untuk melanjutkan pemutaran; id folder, playlist, lirik yang cocok, dan catatan tetap tersimpan. Impor ulang root yang hilang juga membuka pemilih folder, dan folder bernama sama akan disambungkan kembali bila semua lagunya cocok."
+      "intro": "0.8.2 berfokus pada pengalaman yang lebih mulus dan stabil, serta mengembalikan bravais.",
+      "fluidity": {
+        "title": "Lebih mulus dan stabil",
+        "description": "Mengurangi patahan dan jeda animasi pada operasi sehari-hari, serta merapikan proses startup dan kerja latar agar aplikasi berjalan lebih andal."
       },
-      "localFolderSafety": {
-        "title": "Pemindaian folder lokal tidak macet lagi",
-        "description": "Akses folder dicoba satu per satu, jadi satu handle rusak tidak lagi menggagalkan penyimpanan seluruh baris lalu tetap melaporkan berhasil. Handle yang tidak dapat dibaca berhenti setelah tiga detik, sehingga pencarian saat putar, pemindaian ulang, pemindaian otomatis, dan perbandingan saat impor tidak berputar tanpa henti."
+      "bravaisReturn": {
+        "title": "bravais kembali",
+        "description": "Antarmuka pustaka kedua dibuka lagi: dinding bravais bisa dipilih dari Pengaturan, palet perintah, dan penyiapan awal."
       }
     },
     "v0_8_1": {

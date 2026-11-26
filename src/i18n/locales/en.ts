@@ -4774,14 +4774,14 @@ export default {
   },
   "releaseNotes": {
     "v0_8_2": {
-      "intro": "0.8.2, Severance Update SP2—the second hotfix for 0.8.0. It fixes local folders imported by earlier versions becoming unusable after the Electron upgrade: songs would not play after a restart and re-importing did not stick.",
-      "localFolderRecovery": {
-        "title": "Local folders can be selected again",
-        "description": "At startup Folia lists local folders that still have songs but whose handles expired. Pick each original folder once to keep playing; folder ids, playlists, matched lyrics and notes are preserved. Re-importing a lost root also opens the picker, and a folder with the same name is rebound when every song matches."
+      "intro": "0.8.2 focuses on a smoother, more stable experience, and brings bravais back.",
+      "fluidity": {
+        "title": "Smoother and more stable",
+        "description": "Reduced stutter and animation breaks for everyday actions, and tightened startup and background work so the app runs more reliably."
       },
-      "localFolderSafety": {
-        "title": "Local folder scans no longer hang or write bad state",
-        "description": "Handle writes are probed one by one, so a single stale handle can no longer fail the whole row and still report success. Reads of unreachable handles time out after three seconds, so playback lookup, rescans, auto-scan and import comparison no longer spin forever."
+      "bravaisReturn": {
+        "title": "bravais is back",
+        "description": "The second library interface is available again: the bravais wall can once more be picked from Settings, the command palette and first-run setup."
       }
     },
     "v0_8_1": {

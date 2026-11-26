@@ -4743,14 +4743,14 @@ export default {
   },
   "releaseNotes": {
     "v0_8_2": {
-      "intro": "0.8.2, Severance Update SP2—bản sửa lỗi nhanh thứ hai cho 0.8.0. Bản này sửa lỗi các thư mục cục bộ do phiên bản cũ nhập bị hỏng sau khi nâng Electron: bài không phát được sau khi mở lại và nhập lại không lưu được.",
-      "localFolderRecovery": {
-        "title": "Chọn lại được thư mục cục bộ",
-        "description": "Khi khởi động, Folia liệt kê các thư mục cục bộ vẫn còn bài nhưng đã mất quyền truy cập; chỉ cần chọn lại đúng thư mục gốc để tiếp tục phát. ID thư mục, danh sách phát, lời bài đã khớp và ghi chú đều được giữ lại. Nhập lại một thư mục gốc bị mất cũng mở trình chọn, và thư mục cùng tên sẽ được nối lại nếu mọi bài đều khớp."
+      "intro": "0.8.2 tập trung vào trải nghiệm mượt mà, ổn định hơn và mang bravais trở lại.",
+      "fluidity": {
+        "title": "Mượt hơn, ổn định hơn",
+        "description": "Giảm giật lag và đứt gãy animation trong thao tác hằng ngày, đồng thời siết lại các khâu khởi động và xử lý nền để ứng dụng chạy ổn định hơn."
       },
-      "localFolderSafety": {
-        "title": "Quét thư mục cục bộ không còn treo hay ghi sai",
-        "description": "Quyền truy cập được thử từng cái một, nên một handle hỏng không làm cả dòng lưu bị lỗi rồi vẫn báo đã lưu. Handle không đọc được hết hạn sau ba giây, giúp phát lại, quét lại, quét tự động và đối chiếu khi nhập không còn quay mãi."
+      "bravaisReturn": {
+        "title": "bravais trở lại",
+        "description": "Giao diện thư viện thứ hai mở lại: bạn có thể chọn bravais trong Cài đặt, bảng lệnh và thiết lập lần đầu."
       }
     },
     "v0_8_1": {
