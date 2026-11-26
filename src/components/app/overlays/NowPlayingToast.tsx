@@ -265,7 +265,7 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
                         animate={{ opacity: 1, x: 0 }}
                         whileTap={onActivate && !isPositioning ? { opacity: 0.85 } : undefined}
                         transition={{ duration: 0.35, ease: 'easeOut' }}
-                        className={`relative flex min-w-[min(240px,calc(100vw-48px))] max-w-[calc(100vw-48px)] items-center gap-3 overflow-hidden rounded-full border p-2 pr-5 text-left backdrop-blur-xl shadow-lg transition-colors ${
+                        className={`relative flex min-w-[min(240px,calc(100vw-48px))] max-w-[calc(100vw-48px)] items-center gap-3 overflow-hidden rounded-full border ml-[70px] p-2 pr-5 text-left backdrop-blur-xl shadow-lg transition-colors ${
                             isDaylight ? 'border-black/10 bg-white/35 text-zinc-900' : 'border-white/10 bg-black/35 text-white'
                         } ${isPositioning ? 'pointer-events-auto cursor-grab select-none active:cursor-grabbing' : onActivate
                             ? `pointer-events-auto cursor-pointer ${isDaylight ? 'hover:bg-white/55' : 'hover:bg-black/55'}`
@@ -342,7 +342,7 @@ const NowPlayingToast: React.FC<NowPlayingToastProps> = ({
                                     isDaylight ? 'text-black/55' : 'text-white/50'
                                 }`}
                             >
-                                {shown.artist || t('ui.unknownArtist')}
+                                {shown.artist || t('player.unknownArtist')}
                             </div>
                         </motion.div>
                     </motion.button>

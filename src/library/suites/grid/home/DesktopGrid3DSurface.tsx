@@ -38,6 +38,8 @@ interface DesktopGrid3DSurfaceProps {
     onFocusedIndexChange: (index: number) => void;
     onSelect: (item: Grid3DSliderItem, index: number) => void;
     tabs?: DesktopGrid3DAction[];
+    /** 二级页签那一组的读屏名。 */
+    tabsLabel?: string;
     actions?: DesktopGrid3DAction[];
     isInteractive?: boolean;
     isLoading?: boolean;
@@ -53,6 +55,8 @@ interface DesktopGrid3DSurfaceProps {
     declaredHomeActions?: LibraryDeclaredActions;
     batchConfig?: GridMapBatchConfig;
     gridMapPonderScope?: 'local-grid-map-page';
+    /** 卡与卡之间的空隙（px），缺省照滑轨自己的。 */
+    cardGap?: number;
     /** 本地首页的控件探针 id，原样交给 Grid3DSlider（本地首页一直传着它，之前在这一层丢了）。 */
     ponderControls?: 'local-grid-controls';
     /** 本地文件夹卡片的右键菜单；滑块与地图两种视图共用同一个回调。 */
@@ -68,6 +72,7 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
     onFocusedIndexChange: onLegacyFocusedIndexChange,
     onSelect,
     tabs = [],
+    tabsLabel,
     actions = [],
     isInteractive = true,
     isLoading = false,
@@ -80,6 +85,7 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
     declaredHomeActions,
     batchConfig,
     gridMapPonderScope,
+    cardGap,
     ponderControls,
     onFolderContextMenu,
 }) => {
@@ -171,7 +177,6 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                 under the search box. The row itself lets clicks through to the grid; only the
                 controls take them. */}
 
-
             <Grid3DSlider
                 key={focusMemoryScope}
                 items={visibleItems}
@@ -183,7 +188,9 @@ export const DesktopGrid3DSurface: React.FC<DesktopGrid3DSurfaceProps> = ({
                 emptyMessage={emptyMessage}
                 isDaylight={isDaylight}
                 hasFloatingPlayer={hasFloatingPlayer}
+                cardGap={cardGap}
                 tabs={tabs}
+                tabsLabel={tabsLabel}
                 mapButtonLabel={mapButtonLabel}
                 openGridMap={openGridMap}
                 actions={actions}

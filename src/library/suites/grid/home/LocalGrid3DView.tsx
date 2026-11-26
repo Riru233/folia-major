@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileUp, FolderOpen, Loader2, Music, ListMusic, User, Disc3, RefreshCw } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FolderOpen, Loader2, Music, RefreshCw } from 'lucide-react';
 import DesktopGrid3DSurface, { DesktopGrid3DAction } from './DesktopGrid3DSurface';
-import { LocalPlaylist, LocalSong, Theme } from '../../../../types';
+import { LocalSong, Theme } from '../../../../types';
 import type { GridViewCollectionDescriptor } from '../../../../components/app/home/gridViewCollectionAdapters';
 import { useDebouncedFocusSync } from '../../../../hooks/useDebouncedFocusSync';
 import type { GridMapBatchConfig } from '../directory/GridMap';
@@ -17,28 +18,21 @@ import { useLibraryHomeLocal, useLocalDirectoryTrees, useLocalHomeBatchConfig } 
 import { useLibraryHomeActions } from '../../../core/home/useLibraryHomeActions';
 import { useLibraryHomeListRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
 import { useGlass } from '@/shinoinject/useGlass';
+import { useReducedMotionFor } from '../../../../hooks/useReducedMotionFor';
+import { HOME_SURFACE_EXIT_SCALE, HOME_SURFACE_HIDDEN_SCALE, HOME_SURFACE_TRANSITION } from './homeSurfaceMotion';
 
 // src/library/suites/grid/home/LocalGrid3DView.tsx
 // Desktop-only local music Grid3D overview that opens GridView instead of legacy carousel details.
 // 分组、section、卡片、导入动作与文件夹树都来自 Library Core 的首页模型（core/home/localHomeModel、
 // core/home/useLibraryHomeLocal、首页动作控制器）；这里只剩网格的展示：图标、焦点记忆、文件选择框。
 
-const SECTION_ICONS: Record<LocalHomeSectionKey, React.ReactNode> = {
-    folders: <FolderOpen size={13} />,
-    albums: <Disc3 size={13} />,
-    artists: <User size={13} />,
-    playlists: <ListMusic size={13} />,
-};
-
 const ACTION_ICONS: Record<string, React.ReactNode> = {
     'import-folder': <FolderOpen size={13} />,
     'refresh-folders': <RefreshCw size={13} />,
-    'import-playlist': <FileUp size={13} />,
 };
 
 interface LocalGrid3DViewProps {
     localSongs: LocalSong[];
-    localPlaylists: LocalPlaylist[];
     /** 宿主的曲库实体快照（与应用其它地方同一份，不再自己另读一份）。 */
     localLibraryCatalog: LibraryLocalCatalogSnapshot;
     activeRow: LocalHomeRow;
@@ -49,9 +43,7 @@ interface LocalGrid3DViewProps {
     setFocusedAlbumIndex: (index: number) => void;
     focusedArtistIndex: number;
     setFocusedArtistIndex: (index: number) => void;
-    focusedPlaylistIndex: number;
-    setFocusedPlaylistIndex: (index: number) => void;
-    /** 首页动作控制器（导入文件夹、刷新、导入歌单文件、打开分组；宿主创建）。 */
+    /** 首页动作控制器（导入文件夹、刷新、打开分组；宿主创建）。 */
     homeActions: LibraryHomeActionsController;
     /** 本地文件夹树（首页宿主持有，见 homeResources.localDirectoryTrees；换 suite 不重读）。 */
     directoryTreesResource: LibraryLocalDirectoryTreesResource;
@@ -72,7 +64,6 @@ interface LocalGrid3DViewProps {
 
 export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
     localSongs,
-    localPlaylists,
     localLibraryCatalog,
     activeRow,
     setActiveRow,
@@ -82,8 +73,6 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
     setFocusedAlbumIndex,
     focusedArtistIndex,
     setFocusedArtistIndex,
-    focusedPlaylistIndex,
-    setFocusedPlaylistIndex,
     homeActions,
     directoryTreesResource,
     directoryKey,
@@ -97,24 +86,22 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
     isActive = true,
 }) => {
     const { t } = useTranslation();
-    const playlistFileInputRef = useRef<HTMLInputElement>(null);
     const directoryTrees = useLocalDirectoryTrees(directoryTreesResource, localSongs);
-    const local = useLibraryHomeLocal({ localSongs, localPlaylists, catalog: localLibraryCatalog, activeRow });
+    const local = useLibraryHomeLocal({ localSongs, catalog: localLibraryCatalog, activeRow });
     const { snapshot: actionState, importBusy } = useLibraryHomeActions(homeActions);
 
     const [localFolderIndex, setLocalFolderIndex] = useDebouncedFocusSync(focusedFolderIndex, setFocusedFolderIndex);
     const [localAlbumIndex, setLocalAlbumIndex] = useDebouncedFocusSync(focusedAlbumIndex, setFocusedAlbumIndex);
     const [localArtistIndex, setLocalArtistIndex] = useDebouncedFocusSync(focusedArtistIndex, setFocusedArtistIndex);
-    const [localPlaylistIndex, setLocalPlaylistIndex] = useDebouncedFocusSync(focusedPlaylistIndex, setFocusedPlaylistIndex);
     const focus: Record<LocalHomeSectionKey, [number, (index: number) => void]> = {
         folders: [localFolderIndex, setLocalFolderIndex],
         albums: [localAlbumIndex, setLocalAlbumIndex],
         artists: [localArtistIndex, setLocalArtistIndex],
-        playlists: [localPlaylistIndex, setLocalPlaylistIndex],
     };
 
     const activeSection = local.activeSection;
     const [activeFocusedIndex, setActiveFocusedIndex] = focus[activeSection.key];
+    const reduceMotion = useReducedMotionFor('uiMicroMotion');
 
     // 批量配置只装配 section 与目录树；动作的规则（路径规则、刷新顺序、pending 与重复提交）在 core 的控制器里。
     // 删除与恢复忽略目录之后重读目录树（core 的 useLocalHomeBatchConfig，TUI 的目录列表用同一个）。
@@ -127,18 +114,9 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
         reloadAllTrees: directoryTrees.reloadAll,
     });
 
-    const tabs: DesktopGrid3DAction[] = local.sections.map(section => ({
-        id: section.key,
-        label: section.label,
-        icon: SECTION_ICONS[section.key],
-        active: activeSection.row === section.row,
-        onClick: () => setActiveRow(section.row),
-    }));
-
     const runAction = (id: string) => {
         if (id === 'import-folder') void homeActions.importFolder();
         else if (id === 'refresh-folders') void homeActions.refreshFolders();
-        else if (id === 'import-playlist') playlistFileInputRef.current?.click();
     };
 
     const localActions = resolveLocalHomeActions(actionState);
@@ -179,7 +157,6 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
             runAction(id);
             return true;
         },
-        importPlaylistFile: async file => (await homeActions.importPlaylistFile(file)).ok,
     });
     useGlass();
     // 本地目录卡片的右键菜单（删歌单 / 打开所在位置 / 下钻子歌单）。只装配在本地首页，
@@ -194,19 +171,18 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
                 <button
                     data-glass data-glass-light data-glass-jelly
                     style={{
-                        background: "linear-gradient(to bottom,#9dafd722,#19309566,#48cbfa77)",
                         borderTop: isDaylight
-                            ? "1px solid #fff6"
-                            : "1px solid #fff5",
+                            ? '1px solid rgba(0,0,0,0.08)'
+                            : '1px solid rgba(255,255,255,0.12)',
                         borderBottom: isDaylight
-                            ? "1px solid #fff6"
-                            : "1px solid #fff5",
-                        outline: "1px solid rgba(35,35,35,0.3)",
-                        color: '#fffa',
+                            ? '1px solid rgba(0,0,0,0.08)'
+                            : '1px solid rgba(255,255,255,0.12)',
+                        outline: '1px solid rgba(35,35,35,0.3)',
+                        color: isDaylight ? '#111' : '#fffa',
                     }}
                     onClick={() => void homeActions.importFolder()}
                     disabled={importBusy}
-                    className="px-6 py-3 rounded-full transition-colors text-sm flex items-center gap-2 bg-white/10 hover:bg-white/20 disabled:bg-gray disabled:cursor-not-allowed"
+                    className={`px-6 py-3 rounded-full transition-colors text-sm flex items-center gap-2 disabled:bg-gray disabled:cursor-not-allowed ${isDaylight ? 'bg-[#fff4] hover:bg-[#fff8]' : 'bg-[#0004] hover:bg-[#0008]'}`}
                 >
                     {importBusy ? <Loader2 size={16} className="animate-spin" /> : <FolderOpen size={16} />}
                     {scanning ? t('options.scanning') : actionState.importingFolder ? t('localMusic.importing') : t('localMusic.importFolder')}
@@ -215,47 +191,54 @@ export const LocalGrid3DView: React.FC<LocalGrid3DViewProps> = ({
         );
     }
 
+    // 切 section 加和一级页签同款的接力缩放：旧层放大到 1.1 淡出、新层从 0.9 长回 1，同一条弹簧、
+    // 中途可打断。用 AnimatePresence 让退场层带着切走那一刻的 props 快照淡出，动画结束再卸载——
+    // 这样它的 GridMap 会话与目录 key 都是当时的旧值，不会拿到新 section 的数据。原本切 section
+    // 就会换 surface 实例（Grid3DSlider 的 key 跟着 focusMemoryScope 变），所以这里并不多一次重挂。
+    // 焦点三个 section 各自记忆（见上面的 focus），切回来仍停在原来的卡片。
     return (
         <>
-            <input
-                ref={playlistFileInputRef}
-                type="file"
-                accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl"
-                className="hidden"
-                onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    event.target.value = '';
-                    if (file) void homeActions.importPlaylistFile(file);
-                }}
-            />
-            <DesktopGrid3DSurface
-                focusMemoryScope={JSON.stringify(['local', activeSection.key])}
-                title={String(activeSection.label)}
-                mapButtonLabel={t('home.allAlbums')}
-                items={activeSection.cards}
-                focusedIndex={activeFocusedIndex}
-                onFocusedIndexChange={setActiveFocusedIndex}
-                onSelect={(_, index) => {
-                    const group = activeSection.groups[index];
-                    if (group) {
-                        homeActions.openLocalGroup(group, collection => onOpenGridView?.(collection));
-                    }
-                }}
-                tabs={tabs}
-                actions={actions}
-                emptyMessage={activeSection.emptyMessage}
-                theme={theme}
-                isDaylight={isDaylight}
-                isInteractive={isInteractive}
-                hasFloatingPlayer={hasFloatingPlayer}
-                playlistVisibilityScope="local"
-                directoryKey={directoryKey}
-                declaredHomeActions={declaredHomeActions}
-                batchConfig={localBatchConfig}
-                ponderControls="local-grid-controls"
-                gridMapPonderScope="local-grid-map-page"
-                onFolderContextMenu={onFolderContextMenu}
-            />
+            <div className="relative h-full w-full overflow-hidden">
+                <AnimatePresence initial={false} mode="popLayout">
+                    <motion.div
+                        key={activeSection.key}
+                        initial={{ scale: HOME_SURFACE_HIDDEN_SCALE, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: HOME_SURFACE_EXIT_SCALE, opacity: 0 }}
+                        transition={reduceMotion ? { duration: 0 } : HOME_SURFACE_TRANSITION}
+                        className="absolute inset-0 flex flex-col"
+                        style={{ transformOrigin: 'center center' }}
+                    >
+                        <DesktopGrid3DSurface
+                            focusMemoryScope={JSON.stringify(['local', activeSection.key])}
+                            title={String(activeSection.label)}
+                            mapButtonLabel={t('home.allAlbums')}
+                            items={activeSection.cards}
+                            focusedIndex={activeFocusedIndex}
+                            onFocusedIndexChange={setActiveFocusedIndex}
+                            onSelect={(_, index) => {
+                                const group = activeSection.groups[index];
+                                if (group) {
+                                    homeActions.openLocalGroup(group, collection => onOpenGridView?.(collection));
+                                }
+                            }}
+                            actions={actions}
+                            emptyMessage={activeSection.emptyMessage}
+                            theme={theme}
+                            isDaylight={isDaylight}
+                            isInteractive={isInteractive}
+                            hasFloatingPlayer={hasFloatingPlayer}
+                            playlistVisibilityScope="local"
+                            directoryKey={directoryKey}
+                            declaredHomeActions={declaredHomeActions}
+                            batchConfig={localBatchConfig}
+                            ponderControls="local-grid-controls"
+                            gridMapPonderScope="local-grid-map-page"
+                            onFolderContextMenu={onFolderContextMenu}
+                        />
+                    </motion.div>
+                </AnimatePresence>
+            </div>
             {menu}
         </>
     );

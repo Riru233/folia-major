@@ -9,6 +9,7 @@ import { hasBlockingWindow } from '../../../../utils/keyboardTargets';
 import { GridViewTabs, gridChromeClassesFor } from './GridViewTabs';
 import { Map as MapIcon } from 'lucide-react';
 import { CARD_TITLE_ATTR, MORPH_FRAME_ATTR } from '../transitions/gridMorphContract';
+import { useCollectionMorphStore } from '../transitions/collectionMorphStore';
 import { LoadingRing } from '@/components/shared/LoadingRing';
 import type { DesktopGrid3DAction } from './DesktopGrid3DSurface';
 
@@ -37,7 +38,11 @@ interface Grid3DSliderProps {
     emptyMessage?: string;
     isDaylight: boolean;
     hasFloatingPlayer?: boolean;
+    /** 卡与卡之间的空隙（px）；缺省 GRID3D_CARD_GAP。首页 Folia 的标签页签给得更宽（用户定，和歌单区分开）。 */
+    cardGap?: number;
     tabs: DesktopGrid3DAction[];
+    /** 二级页签那一组的读屏名（在线组是「在线音源：xx」）。 */
+    tabsLabel?: string;
     mapButtonLabel: string;
     openGridMap: ()=> void;
     ponderControls?: 'local-grid-controls'
@@ -255,7 +260,9 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     emptyMessage,
     isDaylight,
     hasFloatingPlayer = false,
+    cardGap = GRID3D_CARD_GAP,
     tabs,
+    tabsLabel,
     mapButtonLabel,
     openGridMap,
     ponderControls,
@@ -353,7 +360,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     const safeFocusedIndex = clampFocusedIndex(focusedIndex, items.length);
     const itemsSignature = useMemo(() => getGrid3DItemsSignature(items), [items]);
 
-    const cardPitch = coverSize + GRID3D_CARD_GAP;
+    const cardPitch = coverSize + cardGap;
 
     // 渲染窗口按视口自适应：visibleCardCount 是一屏大致能看到的张数，半径取它的一半再留一点缓冲。
     const visibleCardCount = containerSize.width > 0
@@ -386,7 +393,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
     const leadingSpacerWidth = windowStart * cardPitch;
     const remainingItemCount = items.length - windowEnd;
     const trailingSpacerWidth = remainingItemCount > 0
-        ? remainingItemCount * coverSize + Math.max(0, remainingItemCount - 1) * GRID3D_CARD_GAP
+        ? remainingItemCount * coverSize + Math.max(0, remainingItemCount - 1) * cardGap
         : 0;
 
     // 卡片未缩放时的高度（只跟封面尺寸、卡片样式、内容三行文字有关），按几何键缓存一次。
@@ -727,20 +734,42 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
         return () => cancelAnimationFrame(frameId);
     }, [centerIndex, focusedIndex, isLoading, items.length, itemsSignature, reduceMicroMotion, updateCardTransforms]);
 
+    // 集合页正在退场（封面沿飞行动画回原位）时，morph 层把 exit 挂着，飞行结束才收掉。
+    // 这段时间里不能抢着把焦点卡拉回中心：那会先把卡片放回它原来的位置，再被瞬间拽到中间。
+    const morphExitActive = useCollectionMorphStore(state => state.exit !== null);
+
+    const realignFocusedCard = useCallback((behavior: ScrollBehavior) => {
+        const frameId = requestAnimationFrame(() => {
+            centerIndex(clampFocusedIndex(focusedIndex, items.length), behavior);
+            updateCardTransforms();
+        });
+        return () => cancelAnimationFrame(frameId);
+    }, [centerIndex, focusedIndex, items.length, updateCardTransforms]);
+
     // 切回这个页签（被 keep-alive 保持但不活动，现在重新激活）时把焦点卡重新对正：不活动期间可能有一次
     // 没跑完的平滑滚动被打断、或容器尺寸变过，滚动位置会停在半路，而上面那个居中 effect 因为焦点和列表
     // 都没变不会重跑。只在 false → true 这一下动，不干扰活动中的正常滚动。
+    // 从集合页退回来时先等退场飞完（exit 还在）再动，且一律用 smooth 滑过去，不再瞬间跳位。
     const wasInteractiveRef = useRef(isInteractive);
+    const realignPendingRef = useRef(false);
     useEffect(() => {
         const wasInteractive = wasInteractiveRef.current;
         wasInteractiveRef.current = isInteractive;
         if (wasInteractive || !isInteractive || isLoading || items.length === 0) return;
-        const frameId = requestAnimationFrame(() => {
-            centerIndex(clampFocusedIndex(focusedIndex, items.length), 'auto');
-            updateCardTransforms();
-        });
-        return () => cancelAnimationFrame(frameId);
-    }, [centerIndex, focusedIndex, isLoading, isInteractive, items.length, updateCardTransforms]);
+        if (useCollectionMorphStore.getState().exit) {
+            realignPendingRef.current = true;
+            return;
+        }
+        return realignFocusedCard('smooth');
+    }, [isLoading, isInteractive, items.length, realignFocusedCard]);
+
+    // 退场飞行结束（exit 收掉）之后补上这次对正：用户先看到卡片落回原位，再看到整排顺着滑到中心，
+    // 而不是落位的那一帧被拽走。
+    useEffect(() => {
+        if (morphExitActive || !realignPendingRef.current) return;
+        realignPendingRef.current = false;
+        return realignFocusedCard('smooth');
+    }, [morphExitActive, realignFocusedCard]);
 
     const handleScroll = useCallback(() => {
         if (!isInteractive) {
@@ -918,7 +947,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
         <div ref={containerRef} className="w-full flex-1 flex flex-col relative h-full select-none">
             {!isLoading && focusedItem && (
                 <div
-                    className={`relative shrink-0 text-left z-10 px-8 pointer-events-none ml-[30px] overflow-none ${
+                    className={`relative shrink-0 text-left z-10 px-8 pointer-events-none ml-[80px] overflow-none ${
                         hasFloatingPlayer ? 'pt-6 md:pt-8 pb-0 -mb-4 md:-mb-6' : 'pt-5 md:pt-6 pb-4'
                     } ${isDaylight? '[text-shadow:0_0_5px_#fff,0_0_10px_#fff,0_0_20px_#fff]':' [text-shadow:0_0_5px_#000,0_0_10px_#fff,0_0_20px_#000]'}`}
                 >
@@ -940,6 +969,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                         mapLabel={mapButtonLabel}
                                         mapIcon={<MapIcon size={13} />}
                                         ponderId={ponderControls}
+                                        label={tabsLabel}
                                     />
                                 )}
                                 {actions.length > 0 && (
@@ -1012,7 +1042,7 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                     className="relative self-start shrink-0 cursor-pointer pointer-events-auto select-none"
                                     style={{
                                         width: coverSize,
-                                        marginRight: index < items.length - 1 ? GRID3D_CARD_GAP : 0,
+                                        marginRight: index < items.length - 1 ? cardGap : 0,
                                     }}
                                     onClick={() => {
                                         if (!isInteractive || dragDistanceRef.current >= 8) return;
@@ -1095,19 +1125,19 @@ export const Grid3DSlider: React.FC<Grid3DSliderProps> = ({
                                                     )}
                                                 </div>
                                                 <div className="w-full text-left pt-2 min-w-0">
-                                                    <h3 className="text-m truncate max-w-full tracking-tight">
+                                                    <h3 className="text-m truncate max-w-full tracking-tight text-center">
                                                         {displayName}
                                                     </h3>
                                                     {secondaryText && (
                                                         <p
-                                                            className={`text-xs opacity-50 max-w-full mt-1 font-medium ${folderPath ? 'line-clamp-2 break-words' : 'truncate'}`}
+                                                            className={`text-xs opacity-50 max-w-full mt-1 text-center font-medium ${folderPath ? 'line-clamp-2 break-words' : 'truncate'}`}
                                                             title={folderPath || undefined}
                                                         >
                                                             {secondaryText}
                                                         </p>
                                                     )}
                                                     {summaryText && (
-                                                        <p className="text-[10px] leading-snug opacity-45 mt-2 line-clamp-2">
+                                                        <p className="text-[10px] text-center leading-snug opacity-45 mt-2 line-clamp-2">
                                                             {summaryText}
                                                         </p>
                                                     )}

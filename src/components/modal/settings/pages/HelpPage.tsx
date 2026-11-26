@@ -165,7 +165,13 @@ const HelpPage: React.FC<HelpPageProps> = ({ onOpenReleaseNotes, onOpenAiHelp, o
                     </span>
                 </Row>
                 {BUILD_KIND !== 'official' && (
-                    <Row sub notice={t(BUILD_KIND === 'unofficial' ? 'options.unofficialBuildNotice' : 'options.selfHostedBuildNotice')} />
+                    <Row sub notice={BUILD_KIND === 'unofficial' ? (
+                        <>
+                            {t('options.unofficialBuildNotice')}
+                            {/* 尝鲜版的补充说明：比上面那条警告轻一档，作为同一块说明的第二行。 */}
+                            <span className="mt-1 block text-xs leading-[18px] text-[color:var(--st-t2)]">{t('options.previewBuildNotice')}</span>
+                        </>
+                    ) : t('options.selfHostedBuildNotice')} />
                 )}
                 <FoundUpdateRow sub />
                 <ChinaDrivesRow sub quiet />

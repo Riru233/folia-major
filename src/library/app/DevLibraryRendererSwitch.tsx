@@ -8,6 +8,7 @@ import { resolveReducedMotion, useMotionSettingsStore } from '../../stores/useMo
 import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
 import { DOCKED_PLAYER_BAR_HEIGHT_PX } from '../../components/docked-player/DockedPlayerBar';
 import { useIsBottomLayoutCompact } from '../../stores/useBottomDockStore';
+import { useDeviceSimulationStore } from '../../stores/useDeviceSimulationStore';
 
 // src/library/app/DevLibraryRendererSwitch.tsx
 // 开发验证浮层：在各套 UI suite 之间切换当前打开的集合，
@@ -25,12 +26,20 @@ const PLACEMENT_CLASS = {
     home: 'bottom-2 left-2',
 } as const;
 
+/** 设备模拟的两个档位：模拟 PC（桌面档）或移动（紧凑档）。 */
+const DEVICE_CHOICES = [
+    { id: 'pc', labelKey: 'libraryTui.devicePc' },
+    { id: 'mobile', labelKey: 'libraryTui.deviceMobile' },
+] as const;
+
 const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof typeof PLACEMENT_CLASS }> = ({
     sessionKey,
     placement = 'collection',
 }) => {
     const { t } = useTranslation();
     const activeSuite = useActiveLibrarySuiteId();
+    const device = useDeviceSimulationStore(state => state.device);
+    const toggleDevice = useDeviceSimulationStore(state => state.toggleDevice);
     useGlass();
     const reduceMotion = useMotionSettingsStore(state => resolveReducedMotion(state, 'uiMicroMotion'));
     // 底部播放器是停靠栏时它通栏压在最底下，这条浮层就得整体抬到栏上面去，否则两者叠在一起。
@@ -48,7 +57,7 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
             data-glass
             data-testid="dev-library-renderer-switch"
             data-placement={placement}
-            className={`fixed h-[32px] w-max whitespace-nowrap ${isCompact ? 'bottom-[48px] left-2' : PLACEMENT_CLASS[placement]} z-[120] rounded-full border-current/30 px-2 py-1 text-[11px] leading-[22px]`}
+            className={`fixed h-[32px] w-max whitespace-nowrap left-[80px] ${isCompact ? 'bottom-[48px]' : PLACEMENT_CLASS[placement]} z-[120] rounded-full border-current/30 px-2 py-1 text-[11px] leading-[22px]`}
                     style={{
                         backgroundColor: "rgba(40, 40, 40, 0.42)",
                         borderTop:  "1px solid #fff5",
@@ -71,6 +80,26 @@ const DevLibraryRendererSwitch: React.FC<{ sessionKey: string; placement?: keyof
                     className={`mr-1 inline-block rounded-full px-2 py-0.5 align-middle leading-none last:mr-0 ${reduceMotion ? 'transition-none' : 'transition-[background-color,opacity] duration-150'} ${activeSuite === suite.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
                 >
                     {t(suite.labelKey)}
+                </button>
+            ))}
+            {/* 分隔符之后是「设备模拟」：把底部布局强制成 PC / 移动档，用来验收紧凑档，不用真的缩窗口。
+                模拟只改档位判定，不改视口；再点一次当前项就回到跟随窗口（stores/useDeviceSimulationStore）。 */}
+            <span
+                aria-hidden="true"
+                data-testid="dev-device-separator"
+                className="mx-1.5 inline-block h-3 w-px align-middle bg-current opacity-30"
+            />
+            <span className="mr-1 inline-block px-1 align-middle opacity-50">{t('libraryTui.deviceSimulation')}</span>
+            {DEVICE_CHOICES.map(choice => (
+                <button
+                    key={choice.id}
+                    type="button"
+                    data-device={choice.id}
+                    aria-pressed={device === choice.id}
+                    onClick={() => toggleDevice(choice.id)}
+                    className={`mr-1 inline-block rounded-full px-2 py-0.5 align-middle leading-none last:mr-0 ${reduceMotion ? 'transition-none' : 'transition-[background-color,opacity] duration-150'} ${device === choice.id ? 'bg-current/15 font-bold' : 'opacity-60 hover:opacity-100'}`}
+                >
+                    {t(choice.labelKey)}
                 </button>
             ))}
         </div>

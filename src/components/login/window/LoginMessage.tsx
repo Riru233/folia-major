@@ -125,11 +125,11 @@ export const LoginMessage: React.FC<LoginMessageProps> = ({ sceneKey, headline, 
                 </div>
             )}
             <div key={sceneKey} className="login-in min-w-0 flex-1">
-                <h3 className="text-xl font-semibold leading-7 [overflow-wrap:anywhere] [text-wrap:balance]">{headline}</h3>
+                <h3 className="text-xl font-normal leading-7 [overflow-wrap:anywhere] [text-wrap:balance]">{headline}</h3>
                 {note && <p className="mt-1.5 whitespace-pre-line text-[13px] leading-5 text-[color:var(--st-t2)]">{note}</p>}
                 {quote && (
                     <div className="mt-3 flex select-text items-baseline gap-2 rounded-lg bg-[var(--st-fill)] px-2.5 py-2 text-xs leading-[18px] text-[color:var(--st-t2)]">
-                        <b className="shrink-0 font-semibold text-[color:var(--st-t1)]">{quote.who}</b>
+                        <b className="shrink-0 font-normal text-[color:var(--st-t1)]">{quote.who}</b>
                         <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{quote.text}</span>
                         {quote.code && <code className="shrink-0 font-mono text-[color:var(--st-t3)]">{quote.code}</code>}
                     </div>

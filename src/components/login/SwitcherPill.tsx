@@ -160,9 +160,11 @@ const SwitcherPill: React.FC<SwitcherPillProps> = ({
     );
   }, [shownId, signedIn, known, landing]);
   useEffect(() => () => window.clearTimeout(labelTimerRef.current), []);
+  // 玻璃要在所有提前返回之前挂上：写成 `if (!provider) return null` 之后再调用，登录状态一变
+  // （provider 从无到有）hook 数量就变了，React 直接抛「Rendered more hooks」。
+  useGlass();
 
   if (!provider) return null;
-  useGlass();
 
   const isHeader = variant === "header";
   // 页头里的圆钮直径是 HEADER_BUTTON_PX，头像 / 记号留一圈玻璃边；浮层里它们铺满 40 的按钮。

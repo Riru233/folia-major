@@ -9,6 +9,9 @@ import type { SettingsNavGroup, SettingsSectionId } from './settingsNavModel';
 // window opens this same list from its menu button, without the search field - the top bar keeps
 // that one, so the list there starts straight at the categories.
 
+// 「帮助」不在分类清单里，颜色只好在本地给一个：跟「常规」那类的中性灰同一支，不抢分类的色。
+const HELP_ICON_COLOR = '#6b7c93';
+
 type SettingsSideListProps = {
     groups: SettingsNavGroup[];
     /** The category on screen, 'help', or null while search results are shown. */
@@ -35,7 +38,10 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
 }) => {
     const { t } = useTranslation();
 
-    const renderItem = (id: SettingsSectionId | 'help', Icon: LucideIcon, label: string, onSelect: () => void) => {
+    /* 图标不再是一条单色描边：每类一个色相，画在一块实色的彩色小方块上（24px、圆角 7px），
+       图标本身是白的——像一排小徽章，扫读时是「一块块颜色」而不是「一堆线」。色块带一点自上而下的
+       明暗过渡，平涂的小方块在浅色面板上会显得发灰；选中项只换行底色，不去动图标。 */
+    const renderItem = (id: SettingsSectionId | 'help', Icon: LucideIcon, label: string, onSelect: () => void, color: string) => {
         const isActive = activeId === id;
         return (
             <button
@@ -43,9 +49,15 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
                 type="button"
                 aria-current={isActive ? 'page' : undefined}
                 onClick={onSelect}
-                className={`flex h-8 w-full shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 text-left text-[13px] transition-colors ${isActive ? 'bg-[var(--st-fill2)] text-[color:var(--st-t1)]' : 'text-[color:var(--st-t2)] hover:bg-[var(--st-fill)]'}`}
+                className={`flex h-[35px] w-full shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-2 text-left text-[13px] transition-colors ${isActive ? 'bg-[color-mix(in_srgb,var(--text-accent),#000_40%)] text-[#fff]' : 'text-[color:var(--st-t2)] hover:bg-[var(--st-fill)]'}`}
             >
-                <Icon size={16} className={`shrink-0 ${isActive ? '' : 'opacity-70'}`} />
+                <span
+                    aria-hidden="true"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_1px_2px_rgba(0,0,0,0.18)]"
+                    style={{ backgroundColor: color, backgroundImage: `linear-gradient(180deg, ${color}00, ${color}cc)` }}
+                >
+                    <Icon size={15} strokeWidth={2.15} />
+                </span>
                 <span className="truncate">{label}</span>
             </button>
         );
@@ -63,19 +75,22 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
                     className="shrink-0"
                 />
             )}
-            <nav className="mt-1 flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden">
+            {/* 侧栏里不画滚动条：13px 的小字列表旁边挂一条滚动槽会显得很窄，用滚轮/触控板滚就行
+                （键盘聚焦到某一项时浏览器仍会把它滚进视野）。 */}
+            <nav className="mt-[-32px] pt-[32px] flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {groups.map(group => (
                     <div key={group.id} className="flex flex-col gap-px">
                         <div className="block px-2.5 pb-1 pt-3.5 text-xs leading-[18px] text-[color:var(--st-t3)]">
                             {group.label}
                         </div>
-                        {group.items.map(section => renderItem(section.id, section.icon, section.label, () => onSelectSection(section.id)))}
+                        {group.items.map(section => renderItem(section.id, section.icon, section.label, () => onSelectSection(section.id), section.color))}
                     </div>
                 ))}
-                <div className="mt-auto block pt-3">
-                    {renderItem('help', CircleHelp, t('help.title'), onSelectHelp)}
-                </div>
             </nav>
+            {/* 「帮助」不跟着分类列表滚：它钉在侧栏底部，列表再长也只在自己那块里滚。 */}
+            <div className="shrink-0 border-t border-[var(--st-line)] pt-2">
+                {renderItem('help', CircleHelp, t('help.title'), onSelectHelp, HELP_ICON_COLOR)}
+            </div>
         </aside>
     );
 };

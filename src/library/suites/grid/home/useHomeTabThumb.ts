@@ -121,6 +121,9 @@ export const useHomeTabThumb = <K extends string>({
     const trackHeightRef = useRef(0);
     // Live pointer gesture: stays null when idle. `moved` flips true past the tap threshold.
     const gestureRef = useRef<{ pointerId: number; startX: number; moved: boolean } | null>(null);
+    // 拖动中的指针位置（clientX）。宽度弹簧跟着指针所在页签变时，用它把摇杆中心重新钉回指针下，
+    // 不然弹簧改宽而 left 只在 pointermove 时更新，停住不动的那一帧中心会漂。
+    const dragPointerXRef = useRef<number | null>(null);
     // 形变的采样状态：上一次采样的位置/时间、平滑后的横向速度、停止计时器与正在跑的收回动画。
     const stretchSampleRef = useRef<{ x: number; t: number } | null>(null);
     const stretchSpeedRef = useRef(0);
@@ -286,6 +289,26 @@ export const useHomeTabThumb = <K extends string>({
         return Math.min(activeKeyToIndex(itemsRef.current, activeKeyRef.current), Math.max(0, layout.length - 1));
     }, []);
 
+    // 拖动中按指针所在位置取「最近页签」的基准宽度，让摇杆宽度经过哪个页签就像哪个页签。
+    // 中心换算沿用 pointerTarget 的 scale 处理；跳过不可用页签，跟松手吸附用同一套判定。
+    const widthAtClient = useCallback((clientX: number) => {
+        const layout = layoutRef.current;
+        if (layout.length === 0) return thumbWidth.get();
+        const scale = trackScaleRef.current || 1;
+        const localX = (clientX - trackRectLeftRef.current) / scale;
+        const index = nearestTabIndex(localX);
+        return layout[index]?.width ?? thumbWidth.get();
+    }, [nearestTabIndex, thumbWidth]);
+
+    // 宽度弹簧因跟随指针而改变时，把 left 同步到「新宽度下仍让中心对齐指针」的位置。
+    // 拖动中 left 平时由 pointermove 直接 jump，这里补上弹簧自己跑的那几帧。
+    useMotionValueEvent(thumbWidth, 'change', () => {
+        if (!draggingRef.current) return;
+        const clientX = dragPointerXRef.current;
+        if (clientX === null) return;
+        thumbLeft.jump(pointerTargetLeft(clientX));
+    });
+
     const clearStretchIdleTimer = useCallback(() => {
         if (stretchIdleTimerRef.current !== null) {
             clearTimeout(stretchIdleTimerRef.current);
@@ -340,6 +363,7 @@ export const useHomeTabThumb = <K extends string>({
             if (event instanceof PointerEvent && event.pointerId !== gesture.pointerId) return;
             gestureRef.current = null;
             draggingRef.current = false;
+            dragPointerXRef.current = null;
             stretchSampleRef.current = null;
             setDragging(false);
             dragScale.set(1);
@@ -394,6 +418,9 @@ export const useHomeTabThumb = <K extends string>({
         trackRectLeftRef.current = rect?.left ?? 0;
         trackScaleRef.current = track && rect && track.offsetWidth > 0 ? rect.width / track.offsetWidth : 1;
         gestureRef.current = { pointerId: event.pointerId, startX: event.clientX, moved: false };
+        dragPointerXRef.current = event.clientX;
+        // 宽度从落点所在页签起算，之后拖动途中按指针位置实时改目标宽度（弹簧平滑过渡）。
+        thumbWidth.set(widthAtClient(event.clientX));
         thumbLeft.set(pointerTargetLeft(event.clientX));
         dragScale.set(DRAG_SCALE);
         // 系统开了「减少动态效果」就只保留放大、不做速度形变（与 data-glass-jelly 的处理一致）。
@@ -403,7 +430,7 @@ export const useHomeTabThumb = <K extends string>({
         clearStretchIdleTimer();
         stretchSpeedRef.current = 0;
         stretchSampleRef.current = { x: event.clientX, t: event.timeStamp };
-    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, pointerTargetLeft, thumbLeft, trackRef]);
+    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, pointerTargetLeft, thumbLeft, thumbWidth, trackRef, widthAtClient]);
 
     // 越过阈值才算真正拖动：这时才夺指针并阻止默认行为（否则点页签的 click 会被吞掉）。
     const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -414,6 +441,10 @@ export const useHomeTabThumb = <K extends string>({
             event.currentTarget.setPointerCapture(event.pointerId);
             event.preventDefault();
         }
+        dragPointerXRef.current = event.clientX;
+        // 宽度跟着指针所在页签实时变：用 set 而不是 jump，让它像果冻一样补间过去；
+        // 上面的 change 监听会把 left 同步补偿，保证中心仍压在指针正下方。
+        thumbWidth.set(widthAtClient(event.clientX));
         // 跟手用 jump 保持即时响应、不引入弹簧滞后；松手/吸附才交给弹簧。jump 会清掉正在跑的
         // 弹簧，所以松手时 .set 会从当前指针位置重新起弹，不会「飞回来」。
         const target = pointerTarget(event.clientX);
@@ -422,13 +453,14 @@ export const useHomeTabThumb = <K extends string>({
         if (gesture.moved && stretchAllowedRef.current) {
             sampleStretchSpeed(event.clientX, event.timeStamp, isThumbAtEdge(target.left, target.max));
         }
-    }, [pointerTarget, sampleStretchSpeed, thumbLeft]);
+    }, [pointerTarget, sampleStretchSpeed, thumbLeft, thumbWidth, widthAtClient]);
 
     const endDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         const gesture = gestureRef.current;
         if (!gesture || gesture.pointerId !== event.pointerId) return;
         gestureRef.current = null;
         draggingRef.current = false;
+        dragPointerXRef.current = null;
         setDragging(false);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);

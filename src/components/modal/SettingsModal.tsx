@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, startTransition } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useLayoutEffect, useMemo, useRef, startTransition } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { MotionValue } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,8 @@ import VisPlayground from '../visualizer/window/VisPlayground';
 import { useVisualizerTunings } from '../visualizer/useVisualizerTunings';
 import ThemePark from './ThemePark';
 import SceneWindow from '../scenes/settings/SceneWindow';
+// The mods window (installed mods and the market), loaded when it is first opened.
+const ModsWindow = lazy(() => import('../../mods/market/ModsWindow'));
 import LyricFilterSettingsModal from './LyricFilterSettingsModal';
 import type { LyricFilterDraft } from './LyricFilterSettingsModal';
 import GlobalLyricOffsetModal from './settings/GlobalLyricOffsetModal';
@@ -60,6 +62,7 @@ import { selectDesktopSettingsSnapshot, useDesktopSettingsStore } from '../../st
 import { useSettingsModalStore } from '../../stores/useSettingsModalStore';
 import { setNavidromeEnabledState, useLibraryStore } from '../../stores/useLibraryStore';
 import { useGlass } from '@/shinoinject/useGlass';
+import { useShinoLabStore } from '../../shinoinject/lab/useShinoLabStore';
 
 const DEFAULT_OPENAI_TEMPERATURE = '0.7';
 
@@ -70,6 +73,8 @@ interface SettingsModalProps {
     initialVisualizerSection?: VisualizerSettingsSection | null;
     /** A section inside the subview to land on, rather than its top. */
     initialAnchor?: SettingsModalState['initialAnchor'];
+    /** Changes with every openSettings call: the request is applied again even when it names the same subview. */
+    requestSeq?: number;
     theme?: Theme;
     bgMode: ThemeMode;
     onApplyDefaultTheme: () => void;
@@ -132,6 +137,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     initialSubview = null,
     initialVisualizerSection = null,
     initialAnchor = null,
+    requestSeq = 0,
     theme,
     bgMode,
     onApplyDefaultTheme,
@@ -322,6 +328,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         }
     };
     const contentScrollRef = useRef<HTMLDivElement>(null);
+    // 顶栏浮在正文上面（不再是弹性布局里的一行），所以正文要按顶栏高度留出顶部留白：
+    // 量出来的高度写进 --st-page-head（写在右列上，顶栏和滚动区都继承得到）。
+    const pageHeadRef = useRef<HTMLDivElement>(null);
+    const pageColumnRef = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+        const head = pageHeadRef.current;
+        const scroller = contentScrollRef.current;
+        if (!head || !scroller) return undefined;
+        const host = pageColumnRef.current ?? scroller;
+        const measure = () => host.style.setProperty('--st-page-head', `${head.offsetHeight}px`);
+        measure();
+        if (typeof ResizeObserver === 'undefined') return undefined;
+        const observer = new ResizeObserver(measure);
+        observer.observe(head);
+        return () => observer.disconnect();
+    }, []);
     // Matches the md: split of the window: under it the categories go into the drawer the menu
     // button opens, and only that bar (menu button + search) stays on top.
     const isWideSettingsLayout = useMediaQuery('(min-width: 768px)');
@@ -331,6 +353,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const [showVisPlayground, setShowVisPlayground] = useState(false);
     const [showThemePark, setShowThemePark] = useState(false);
     const [showSceneWindow, setShowSceneWindow] = useState(false);
+    const [showModsWindow, setShowModsWindow] = useState(false);
     const [showLyricFilterSettings, setShowLyricFilterSettings] = useState(false);
     const [showGlobalLyricOffset, setShowGlobalLyricOffset] = useState(false);
     const [showAiHelpPrompt, setShowAiHelpPrompt] = useState(false);
@@ -344,6 +367,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         setShowVisPlayground(initialSubview === 'visualizer');
         setShowThemePark(initialSubview === 'themePark');
         setShowSceneWindow(initialSubview === 'scene');
+        setShowModsWindow(initialSubview === 'modsWindow');
         setShowLyricFilterSettings(initialSubview === 'lyricFilter');
         setShowGlobalLyricOffset(initialSubview === 'globalLyricOffset');
 
@@ -358,7 +382,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         } else {
             setActiveSettingsSection(prev => prev || 'appearance');
         }
-    }, [initialSubview, initialTab]);
+        // requestSeq: a repeated request for the same subview is applied again (see useSettingsModalStore).
+    }, [initialSubview, initialTab, requestSeq]);
 
     // A request for one place in the settings: show the page settingsAnchorModel puts it on, then
     // land on it. Each request has its own seq, so naming the same place again lands again.
@@ -873,16 +898,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     // const isDaylight = theme?.name === 'Daylight Default'; // Deprecated, passed as prop
     const overlayBackground = isDaylight ? 'rgba(0,0,0,0.32)' : 'rgba(0,0,0,0.5)';
     const shellTransition = { duration: 0.24, ease: 'easeOut' as const };
-    // The move is one transform rather than y and scale. motion hands opacity and transform to the
-    // browser's compositor but steps y and scale itself on the page's frames, so when the page was
-    // busy while the window opened (opening on the options tab counts the cache, a 125-175 ms task
-    // on a used install), the window faded in standing still and then jumped into place. The rest
-    // value is written out: motion reads a 'none' target as the start with every number set to 0,
-    // which is scale(0).
+    // 压暗与薄雾各自单独一层做透明度：它们不是窗口的祖先，淡入淡出不会把窗口的玻璃一起关掉。
+    const shadeTransition = { duration: 0.24, ease: [0.4, 0, 0.2, 1] as const };
+    // The move is one transform rather than y and scale. motion hands transform to the browser's
+    // compositor, so when the page was busy while the window opened (opening on the options tab
+    // counts the cache, a 125-175 ms task on a used install) it still slides in one piece instead
+    // of fading in standing still and then jumping into place. The rest value is written out:
+    // motion reads a 'none' target as the start with every number set to 0, which is scale(0).
+    // 窗口进场不做 opacity 淡入：祖先 opacity < 1 会成为 backdrop root，窗口里那层流体玻璃
+    // 在淡入整段时间里都只能采样到这个半透明的组，看起来就是「玻璃没了、只剩一块纯色」。
+    // 所以进场只走 transform；收尾的淡出交给外壳（见下），前 100ms 玻璃还是满不透明的。
     const panelMotion = {
-        initial: { opacity: 0, transform: 'translateY(20px) scale(0.98)' },
-        animate: { opacity: 1, transform: 'translateY(0px) scale(1)' },
-        exit: { opacity: 0, transform: 'translateY(16px) scale(0.985)' },
+        initial: { transform: 'translateY(20px) scale(0.98)' },
+        animate: { transform: 'translateY(0px) scale(1)' },
+        exit: { transform: 'translateY(16px) scale(0.985)' },
     };
 
     const handleOverlayMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -909,6 +938,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const isAnySubviewOpen = showVisPlayground
         || showThemePark
         || showSceneWindow
+        || showModsWindow
         || showLyricFilterSettings
         || showGlobalLyricOffset
         || showAiHelpPrompt
@@ -918,7 +948,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     // open sheet takes the key on the document and stops it (shared/Sheet.tsx). A menu or a pick
     // list that is open takes the key before this window hears it as well. The two work windows
     // leave Escape to their owner, so they are what it can find open here.
-    const isWorkWindowOpen = showVisPlayground || showThemePark || showSceneWindow;
+    const isWorkWindowOpen = showVisPlayground || showThemePark || showSceneWindow || showModsWindow;
 
     const closeWorkWindows = () => {
         if (shouldCloseModalOnSubviewBack) {
@@ -928,6 +958,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         setShowVisPlayground(false);
         setShowThemePark(false);
         setShowSceneWindow(false);
+        setShowModsWindow(false);
     };
 
     useEffect(() => {
@@ -1000,9 +1031,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     );
     const canEnableAutoUpdate = Boolean(electronSettings.ENABLE_UPDATE_CHECK && updateStatus?.autoUpdateSupported);
 
+    // 视频分区跟着实验室开关走：关掉时侧栏里连这一项都没有，页面也就不可能被选中。
+    const onlineVideoEnabled = useShinoLabStore(state => state.onlineVideoEnabled);
     const settingsNavGroups = useMemo(
-        () => buildSettingsNavGroups(t, { isElectron }),
-        [t, isElectron],
+        () => buildSettingsNavGroups(t, { isElectron, onlineVideoEnabled }),
+        [t, isElectron, onlineVideoEnabled],
     );
     const activeSettingsNavItem = findSettingsNavItem(settingsNavGroups, activeSettingsSection);
     // A category this build does not list (a desktop-only one on web) has no page to show.
@@ -1057,6 +1090,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         onOpenVisPlayground: () => setShowVisPlayground(true),
         onOpenThemePark: () => setShowThemePark(true),
         onOpenSceneWindow: () => setShowSceneWindow(true),
+        onOpenModsWindow: () => setShowModsWindow(true),
         onToggleTransparentPlayerBackground: resolvedToggleTransparentPlayerBackground,
         viewProps: {
             appearance: {
@@ -1177,27 +1211,82 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     useGlass();
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={shellTransition}
+            /* 这一层刻意不做 opacity 动画：它是窗口与薄雾的祖先，带透明度动画时会成为 backdrop root，
+               窗口那层流体玻璃的 backdrop 就只剩这块纯色遮罩，折射与模糊全看不见（表现为「动画期间
+               玻璃消失，动画结束才出现」）。所以压暗、薄雾、玻璃、内容各自拆成子层去淡，谁也不当谁的
+               祖先；这一层只做「在不在场」，进退场时长由子层的 exit 决定。 */
             data-folia-keyboard-window="true"
             data-ponder-page-scope={activeTab === 'help' ? 'help-page' : 'settings-page'}
             className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 sm:px-5 sm:py-12"
-            style={{ backgroundColor: overlayBackground }}
             onMouseDown={handleOverlayMouseDown}
             onClick={(event) => handleBackdropClose(event, onClose)}
         >
+            {/* 压暗层：单独一层、只做透明度。纯色层的 opacity 由合成器直接跑，整段淡入淡出不会有
+                什么逐帧重绘的活；pointer-events 关掉，点击照旧落到外面这层上（点击判定用的是
+                event.target === currentTarget）。 */}
             <motion.div
-                {...panelMotion}
-                transition={shellTransition}
-                role="dialog"
-                aria-modal="true"
-                aria-label={t('options.settingsWindowName')}
-                className="st-window backdrop-blur-[40px] relative flex h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-[var(--st-win)]/60 text-[color:var(--st-t1)] shadow-[0_36px_90px_rgba(0,0,0,0.5),0_0_0_1px_var(--st-line2)] md:grid md:h-[86vh] md:w-[960px] md:grid-cols-[212px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
-                style={{ ...settingsTokens(isDaylight, theme), ...kitMotionTokens(reducedKitMotion) }}
-                onClick={(event) => event.stopPropagation()}
-            >
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{ backgroundColor: overlayBackground }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={shadeTransition}
+            />
+            {/* 窗口之下、遮罩之上的一层薄雾：整屏 1px 模糊，先把身后的页面轻轻糊掉，窗口再压上去。
+                放在窗口外面（兄弟层，而不是窗口的祖先）才不影响窗口自己的玻璃；自己也只做透明度，
+                淡出时是「模糊渐渐退掉」而不是一瞬间变清晰。 */}
+            <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{ backdropFilter: 'blur(1px)', WebkitBackdropFilter: 'blur(1px)' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={shadeTransition}
+            />
+            {/* 窗口外壳：只负责位移与缩放（transform 不进 backdrop root，玻璃照样能采样到遮罩背后的页面）。
+                玻璃和内容各是一条子层，淡入淡出各做各的——见下面两段注释。 */}
+            <motion.div {...panelMotion} transition={shellTransition} className="relative w-full md:w-[960px]">
+                {/* 窗口的玻璃本体：铺满、压在内容下面。它必须是内容层（下面那个外壳）的兄弟而不是祖先：
+                    带 opacity 动画的元素会成为 backdrop root，一旦包住玻璃，玻璃在整段淡入淡出里就只能
+                    采样到这个半透明的组，看起来是「一块纯色、没有折射」。挂在自己身上就没这问题——
+                    自身 opacity 只是把「已经滤过的结果」整体调透明，滤镜照旧生效（实测 0.5 时仍是糊的，
+                    只是与背后清晰画面各占一半，正好就是淡入淡出的观感）。
+                    边缘折射靠 data-glass 的位移图，bend 20 让折射带只在内侧一圈，窗口有 960px 宽，
+                    不会把中间的正文扯歪；strength 比默认小一点，大面板折射过强会像哈哈镜。 */}
+                <motion.div
+                    aria-hidden="true"
+                    data-glass
+                    data-glass-light
+                    data-glass-strength="1.1"
+                    data-glass-bend="20"
+                    data-glass-blur="8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={shellTransition}
+                    className="pointer-events-none absolute inset-0 rounded-2xl"
+                    style={{ backgroundColor: isDaylight ? 'rgba(255,255,255,0.52)' : 'rgba(22,22,25,0.52)' }}
+                />
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={shellTransition}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={t('options.settingsWindowName')}
+                    className="st-window relative isolate z-10 flex h-[90vh] w-full flex-col overflow-hidden rounded-2xl text-[color:var(--st-t1)] shadow-[0_36px_90px_rgba(0,0,0,0.5)] md:grid md:h-[86vh] md:grid-cols-[232px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
+                    style={{
+                        ...settingsTokens(isDaylight, theme),
+                        ...kitMotionTokens(reducedKitMotion),
+                        borderTop: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
+                        borderBottom: isDaylight ? '1px solid rgba(255,255,255,0.55)' : '1px solid rgba(255,255,255,0.16)',
+                        outline: '1px solid rgba(35,35,35,0.28)',
+                    }}
+                    onClick={(event) => event.stopPropagation()}
+                >
                 <SettingsKitThemeContext.Provider value={kitTheme}>
                     {/* 宽屏：左侧栏（搜索框 + 分类）常在。紧凑档：顶上只有菜单按钮和搜索框，
                         分类收进菜单按钮打开的抽屉里——抽屉就是同一个侧栏，不带搜索框。 */}
@@ -1229,47 +1318,65 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             closeLabel={t('ui.close')}
                         />
                     )}
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col  bg-[var(--bg-color)]">
-                        <PageHeader
-                            title={isSearching
-                                ? t('options.settingsSearchTitle')
-                                : activeTab === 'help' ? t('help.title') : activeSettingsNavItem?.label ?? ''}
-                            contents={settingsAnchors}
-                            activeId={activeAnchorId}
-                            onSelect={landOnGroup}
-                            summary={isSearching
-                                ? (searchHits.length > 0 ? t('options.settingsSearchCount', { n: searchHits.length }) : t('options.settingsSearchEmpty'))
-                                : undefined}
-                            closeLabel={t('ui.close')}
-                            onClose={onClose}
-                            showClose={isWideSettingsLayout}
-                        />
+                    {/* 正文区铺一层实底（浅色纯白 / 深色纯黑），页面内容不跟窗口玻璃一起透；玻璃只留给
+                        左侧栏和窗口边缘那圈，所以这层只盖右侧列，不遮侧栏。
+                        布局是 relative 的：顶栏浮在最上层（z-30），内容层 absolute inset-0 拉满整列高度，
+                        滚动内容从顶栏下面穿过去；顶栏自己那层渐进模糊就是它的背景。 */}
+                    <div
+                        ref={pageColumnRef}
+                        className="relative min-h-0 min-w-0 flex-1"
+                        style={{ backgroundColor: isDaylight ? '#fff' : '#000' }}
+                    >
+                        <div ref={pageHeadRef} className="pointer-events-none absolute inset-x-0 top-0 z-30">
+                            {/* 渐进模糊在 PageHeader 的 <header> 里面，是顶栏自己的背景。 */}
+                            <div className="pointer-events-auto relative">
+                                <PageHeader
+                                    title={isSearching
+                                        ? t('options.settingsSearchTitle')
+                                        : activeTab === 'help' ? t('help.title') : activeSettingsNavItem?.label ?? ''}
+                                    contents={settingsAnchors}
+                                    activeId={activeAnchorId}
+                                    onSelect={landOnGroup}
+                                    summary={isSearching
+                                        ? (searchHits.length > 0 ? t('options.settingsSearchCount', { n: searchHits.length }) : t('options.settingsSearchEmpty'))
+                                        : undefined}
+                                    closeLabel={t('ui.close')}
+                                    onClose={onClose}
+                                    showClose={isWideSettingsLayout}
+                                />
+                            </div>
+                        </div>
                         <div
                             ref={contentScrollRef}
-                            className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-12 md:px-8 md:pb-16 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-[var(--st-fill2)] [&::-webkit-scrollbar-thumb]:bg-clip-content [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-3"
+                            className="absolute inset-0 overflow-y-auto [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-[var(--st-fill2)] [&::-webkit-scrollbar-thumb]:bg-clip-content [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-3"
                         >
-                            {isSearching ? (
-                                <SettingsSearchResults hits={searchHits} onSelect={handleSelectSearchHit} />
-                            ) : activeTab === 'help' ? (
-                                <SettingsPageContext.Provider value={pageContext}>
-                                    <div className="st-page-in">
-                                        <HelpPage
-                                            onOpenReleaseNotes={() => setShowReleaseNotes(true)}
-                                            onOpenAiHelp={() => setShowAiHelpPrompt(true)}
-                                            onProjectLabelClick={handleAuthorLabelClick}
-                                        />
-                                    </div>
-                                </SettingsPageContext.Provider>
-                            ) : ActivePage ? (
-                                <SettingsAnchorProvider store={settingsAnchorStore} section={activeSettingsSection}>
+                            <div
+                                className="px-4 pb-12 md:px-8 md:pb-16"
+                                style={{ paddingTop: 'calc(var(--st-page-head, 0px) + 12px)' }}
+                            >
+                                {isSearching ? (
+                                    <SettingsSearchResults hits={searchHits} onSelect={handleSelectSearchHit} />
+                                ) : activeTab === 'help' ? (
                                     <SettingsPageContext.Provider value={pageContext}>
-                                        {/* Keyed by the category, so each page comes in with the kit's motion. */}
-                                        <div key={activeSettingsSection} className="st-page-in">
-                                            <ActivePage />
+                                        <div className="st-page-in">
+                                            <HelpPage
+                                                onOpenReleaseNotes={() => setShowReleaseNotes(true)}
+                                                onOpenAiHelp={() => setShowAiHelpPrompt(true)}
+                                                onProjectLabelClick={handleAuthorLabelClick}
+                                            />
                                         </div>
                                     </SettingsPageContext.Provider>
-                                </SettingsAnchorProvider>
-                            ) : null}
+                                ) : ActivePage ? (
+                                    <SettingsAnchorProvider store={settingsAnchorStore} section={activeSettingsSection}>
+                                        <SettingsPageContext.Provider value={pageContext}>
+                                            {/* Keyed by the category, so each page comes in with the kit's motion. */}
+                                            <div key={activeSettingsSection} className="st-page-in">
+                                                <ActivePage />
+                                            </div>
+                                        </SettingsPageContext.Provider>
+                                    </SettingsAnchorProvider>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
                 </SettingsKitThemeContext.Provider>
@@ -1294,6 +1401,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         />
                     )}
                 </AnimatePresence>
+                </motion.div>
             </motion.div>
             <AnimatePresence>
                 {showVisPlayground && (
@@ -1441,6 +1549,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         theme={theme}
                         onClose={() => closeSubviewOrModal(() => setShowSceneWindow(false))}
                     />
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {showModsWindow && (
+                    <Suspense fallback={null}>
+                        <ModsWindow
+                            isDaylight={isDaylight}
+                            theme={theme ?? null}
+                            onClose={() => closeSubviewOrModal(() => setShowModsWindow(false))}
+                        />
+                    </Suspense>
                 )}
             </AnimatePresence>
 

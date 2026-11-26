@@ -171,7 +171,7 @@ export const useSettingsScrollSpy = ({ containerRef, anchors, enabled, reducedMo
         const offset = node.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
 
         container.scrollTo({
-            top: Math.max(0, offset - SCROLL_TOP_PADDING),
+            top: Math.max(0, offset - 100 - SCROLL_TOP_PADDING),
             behavior: reducedMotion ? 'auto' : 'smooth',
         });
     }, [containerRef, reducedMotion, applyActiveId]);

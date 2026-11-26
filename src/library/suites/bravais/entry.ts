@@ -47,6 +47,7 @@ export const installBravaisTransitionHook = <Name extends keyof BravaisTransitio
     };
 };
 
+// 资料库的第二套界面，与网格一起对所有用户可选。
 const BravaisStage = React.lazy(() => import('./BravaisStage'));
 const BravaisHome = React.lazy(() => import('./BravaisHome'));
 const BravaisCollection = React.lazy(() => import('./BravaisCollection'));
@@ -81,6 +82,8 @@ const COLLECTION_ACTIONS: readonly LibraryActionId[] = [
     'resync-all-folders',
     'reorder-playlist',
     'export-playlist',
+    'save-to-folia',
+    'refresh-from-origin',
     'edit-entity',
     // 「⋯ 更多」里的「设置封面」：本地文件夹 / 专辑 / 歌单的自定义封面（宿主的封面对话框）。
     'set-cover',
@@ -219,6 +222,7 @@ const CHROME_ACTIONS: LibrarySuiteManifest['chromeActions'] = [
 const bravais: LibrarySuiteManifest = {
     id: 'bravais',
     labelKey: 'libraryBravais.suiteName',
+    available: true,
     stage: BravaisStage,
     // 进 / 出 Lattice 走翻牌交接（设计稿 §7「进入队列」；stage 里的 useBravaisWallHandoff）。
     stageWallHandoff: true,

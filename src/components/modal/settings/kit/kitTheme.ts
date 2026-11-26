@@ -24,9 +24,11 @@ export const SAMPLE_COVERS = ['#6d5a8c', '#3f6f7a', '#a8664b', '#56745a', '#8a4f
 export const settingsTokens = (isDaylight: boolean, theme?: Theme): CSSProperties => {
     const accent = theme?.accentColor || (isDaylight ? '#18181b' : '#f4f4f5');
     return {
-        '--st-win': isDaylight ? '#f3f3f4' : '#1a1a1d',
+        '--st-win': isDaylight ? '#f3f3f4aa' : '#1a1a1daa',
         '--st-side': isDaylight ? '#e9e9eb66' : '#14141666',
-        '--st-card': isDaylight ? '#ffffff' : '#232327',
+        // 卡片留一点透：窗口是流体玻璃，实心卡片会把它整片盖掉。8 成不透明的白/近黑压在上面，
+        // 正文照旧读得清，玻璃的模糊和折射从卡片缝里透出来。
+        '--st-card': isDaylight ? '#ffffffd4' : '#232327d4',
         '--st-menu': isDaylight ? '#ffffffaa' : '#2b2b30aa',
         '--st-raise': isDaylight ? '#ffffff' : '#45454c',
         '--st-knob': isDaylight ? '#ffffff' : '#ececee',

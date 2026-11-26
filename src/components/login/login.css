@@ -77,9 +77,8 @@
 
 /* Waiting: thin rings in the platform's colour leave the tile. */
 .login-rings circle {
-    fill: none;
-    stroke: var(--login-pc);
-    stroke-width: 1.25;
+    fill: color-mix(in srgb, var(--login-pc) 10%, #0000 90%);
+    stroke: none;
     vector-effect: non-scaling-stroke;
     transform-box: fill-box;
     transform-origin: center;

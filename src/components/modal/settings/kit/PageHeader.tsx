@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { Tabs } from './Tabs';
+import { SettingsPageEdgeBlur } from './PageEdgeBlur';
 
 // src/components/modal/settings/kit/PageHeader.tsx
 // The head of a settings page: a row with its title and the close button, and under it the kit's
@@ -32,9 +33,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, contents, activeI
     const hasTabs = summary === undefined && contents.length > 1;
 
     return (
-        <header className="shrink-0">
+        <header className="st-page-head relative isolate z-30 shrink-0">
+            {/* 顶栏自己那层渐进模糊：铺满整个 header 作为它的背景，文字压在它上面。
+                它必须在 header 里、跟着 header 一起浮在正文上层，blur 的才是从下面穿过的正文。 */}
+            <SettingsPageEdgeBlur />
             <div className={`flex items-center justify-between gap-3 pl-4 pr-3 pt-4 md:pl-8 md:pr-4 md:pt-5${hasTabs || summary !== undefined ? '' : ' border-b border-[var(--st-line)] pb-3 md:pb-4'}`}>
-                <h2 className="min-w-0 truncate text-xl font-semibold leading-8 text-[color:var(--st-t1)]">{title}</h2>
+                <h2 className="min-w-0 truncate text-[22px] leading-8 text-[color:var(--text-color)]">{title}</h2>
                 {showClose && (
                     <button
                         type="button"

@@ -72,11 +72,13 @@ export const resolveWindowControlsExtent = ({ hasFullscreenButton, nativeTraffic
 
 // Where the unlock button starts, measured in from its edge: the window buttons, the fixed gap and
 // the extra shift. AppShell and the hover hotspot both have to agree on this.
-export const resolveUnlockButtonInset = ({ hasFullscreenButton, nativeTrafficLights, side }: {
+export const resolveUnlockButtonInset = ({ hasFullscreenButton, nativeTrafficLights, side, zoom = 1 }: {
     hasFullscreenButton: boolean;
     nativeTrafficLights: boolean;
     side: 'left' | 'right';
-}): number => resolveWindowControlsExtent({ hasFullscreenButton, nativeTrafficLights, side })
+    /** The page zoom (界面缩放): the traffic lights' room is fixed in window pixels. */
+    zoom?: number;
+}): number => resolveWindowControlsExtent({ hasFullscreenButton, nativeTrafficLights, side, zoom })
     + CLICK_THROUGH_UNLOCK_BUTTON_GAP
     + CLICK_THROUGH_UNLOCK_BUTTON_SHIFT;
 

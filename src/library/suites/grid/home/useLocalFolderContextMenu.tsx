@@ -60,9 +60,11 @@ export const useLocalFolderContextMenu = (
         if (result.ok || result.reason === 'cancelled') return;
         const messageKey = result.reason === 'desktop-only'
             ? 'localMusic.folderLocationDesktopOnly'
-            : result.reason === 'missing'
-                ? 'localMusic.folderLocationMissing'
-                : 'localMusic.folderLocationFailed';
+            : result.reason === 'unsupported'
+                ? 'localMusic.folderLocationWindowsOnly'
+                : result.reason === 'missing'
+                    ? 'localMusic.folderLocationMissing'
+                    : 'localMusic.folderLocationFailed';
         setStatusMessage({ type: 'error', text: t(messageKey) });
     }, [t]);
 
@@ -95,7 +97,7 @@ export const useLocalFolderContextMenu = (
         const subCount = collectDescendantFolderPaths(allPaths, normalized).length;
         return (
             <div className="space-y-1 text-sm">
-                <p>{t('localMusic.deletePlaylistMessage', { name: normalized, count })}</p>
+                <p>{t('localMusic.deleteFolderCollectionMessage', { name: normalized, count })}</p>
                 {subCount > 0 && <p>{t('localMusic.deletePlaylistSubPlaylists', { count: subCount })}</p>}
                 <p className="opacity-70">{t('localMusic.deletePlaylistNote')}</p>
             </div>

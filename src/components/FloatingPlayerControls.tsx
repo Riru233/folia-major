@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
 import { Play, Pause, Pin, ChevronRight } from 'lucide-react';
 import { MotionValue } from 'framer-motion';
 import ProgressBar from './ProgressBar';
@@ -34,7 +34,7 @@ import { HifiProgressRow } from './hifi/HifiBadge';
 import { useIsHifiRoute } from './hifi/useHifiSignalPath';
 import { selectWallLocate, useBottomDockStore, type DockCapsuleState } from '../stores/useBottomDockStore';
 import { COMPACT_CAPSULE_BASE_BOTTOM_PX } from '../utils/playerBottomBarLayout';
-import { CAPSULE_QUICK_ACTION_LIMIT } from './floating-player/capsuleQuickActionSelection';
+import { CAPSULE_ISLAND_MAX } from '../types/playerControlSlots';
 import {
     COMPACT_CAPSULE_RADIUS_PX,
     CompactCapsuleBorder,
@@ -164,10 +164,10 @@ interface FloatingPlayerControlsProps {
  * 和按钮大小（手指 44、鼠标 32，各带 2px 间隔）算。只在这一行出现时按窗口宽度算一次，不量元素。
  */
 const resolveCompactQuickActionLimit = (touch: boolean): number => {
-    if (typeof window === 'undefined') return CAPSULE_QUICK_ACTION_LIMIT;
+    if (typeof window === 'undefined') return CAPSULE_ISLAND_MAX;
     const inner = Math.min(window.innerWidth - 24, 520) - 16;
     const button = (touch ? 44 : 32) + 2;
-    return Math.max(2, Math.min(CAPSULE_QUICK_ACTION_LIMIT, Math.floor((inner - button - 8) / button)));
+    return Math.max(2, Math.min(CAPSULE_ISLAND_MAX, Math.floor((inner - button - 8) / button)));
 };
 
 
@@ -1121,6 +1121,14 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
 /** 展开视图里进度那一行在网格中的位置；HiFi 路线和 Web 路线共用。 */
 const PROGRESS_ROW_CLASS = 'col-span-3 row-start-3 w-full px-2 sm:col-start-2 sm:col-span-1 sm:row-start-2';
 
+/** 播放键的「陀螺」：鼠标在圆钮里走到边缘时图标歪到的角度 / 挪开的距离。 */
+const PLAY_ICON_TILT_DEG = 15;
+const PLAY_ICON_SHIFT_PX = 1.4;
+/** 隐藏鼠标、图标跟随鼠标的范围：按钮的 1.2 倍，直角矩形（见按钮上的 before 层）。 */
+const PLAY_ICON_HIT_SCALE = 1.2;
+/** 弹簧松弛一点：指针滑动时图标是「荡」过去，不是硬跟。 */
+const PLAY_ICON_GYRO_SPRING = { stiffness: 260, damping: 22, mass: 0.5 };
+
 // 展开视图组件
 interface ExpandedViewProps {
     currentSong: { name: string; } | null;
@@ -1181,6 +1189,50 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
     const pinLabel = t(isPinned ? 'options.playerBarUnpin' : 'options.playerBarPin');
     const returnToPlayerLabel = t('home.backToPlayer');
     const isHifiRoute = useIsHifiRoute();
+
+    // 播放键的陀螺：图标朝指针在圆钮里的方位轻倾一点，指针移出就荡回正中。
+    // 只用鼠标跑——触屏没有 hover，歪着反而像图标没对齐。
+    const playIconTiltX = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconTiltY = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconShiftX = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconShiftY = useSpring(useMotionValue(0), PLAY_ICON_GYRO_SPRING);
+    const playIconGyroStyle = useMemo(
+        () => ({
+            rotateX: playIconTiltX,
+            rotateY: playIconTiltY,
+            x: playIconShiftX,
+            y: playIconShiftY,
+            transformPerspective: 200,
+        }),
+        [playIconShiftX, playIconShiftY, playIconTiltX, playIconTiltY],
+    );
+    const pointPlayIconGyro = useCallback(
+        (event: React.PointerEvent<HTMLButtonElement>) => {
+            if (event.pointerType !== 'mouse') return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            // 归一化按「按钮外扩 10% 的直角矩形」算，和隐藏光标 / 跟随的那块区域对齐：
+            // -1 是左/上边，+1 是右/下边；指针越靠边，图标歪得越多，出了这块区域就夹到边上。
+            const halfWidth = (rect.width * PLAY_ICON_HIT_SCALE) / 2;
+            const halfHeight = (rect.height * PLAY_ICON_HIT_SCALE) / 2;
+            const rawX = (event.clientX - (rect.left + rect.width / 2)) / halfWidth;
+            const rawY = (event.clientY - (rect.top + rect.height / 2)) / halfHeight;
+            const nx = Math.min(1, Math.max(-1, rawX));
+            const ny = Math.min(1, Math.max(-1, rawY));
+            playIconTiltY.set(nx * PLAY_ICON_TILT_DEG);
+            playIconTiltX.set(-ny * PLAY_ICON_TILT_DEG);
+            playIconShiftX.set(nx * PLAY_ICON_SHIFT_PX);
+            playIconShiftY.set(ny * PLAY_ICON_SHIFT_PX);
+        },
+        [playIconShiftX, playIconShiftY, playIconTiltX, playIconTiltY],
+    );
+    const restPlayIconGyro = useCallback(() => {
+        playIconTiltX.set(0);
+        playIconTiltY.set(0);
+        playIconShiftX.set(0);
+        playIconShiftY.set(0);
+    }, [playIconShiftX, playIconShiftY, playIconTiltX, playIconTiltY]);
+
     const progressBar = (
         <ProgressBar
             currentTime={currentTime}
@@ -1229,15 +1281,21 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                     e.stopPropagation();
                     onTogglePlay();
                 }}
+                onPointerMove={pointPlayIconGyro}
+                onPointerLeave={restPlayIconGyro}
+                onPointerCancel={restPlayIconGyro}
+                onBlur={restPlayIconGyro}
                 disabled={!canTogglePlay || controlsDisabled}
-                className={`col-start-2 row-start-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform sm:col-start-1 sm:row-start-1 sm:row-span-2 ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'hover:scale-105'}`}
+                className={`col-start-2 row-start-2 relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform before:absolute before:-inset-[10%] before:content-[''] sm:col-start-1 sm:row-start-1 sm:row-span-2 ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'cursor-none hover:scale-105'}`}
                 style={{ backgroundColor: primaryColor, color: 'var(--bg-color)' }}
             >
-                {playerState === PlayerState.PLAYING ? (
-                    <Pause size={20} fill="currentColor" />
-                ) : (
-                    <Play size={20} fill="currentColor" className="ml-1" />
-                )}
+                <motion.span className="flex items-center justify-center" style={playIconGyroStyle}>
+                    {playerState === PlayerState.PLAYING ? (
+                        <Pause size={20} fill="currentColor" />
+                    ) : (
+                        <Play size={20} fill="currentColor" className="ml-1" />
+                    )}
+                </motion.span>
             </button>
 
             {/* 两个可自定义槽位。默认仍是循环模式 + 歌词时间轴，和改动前一致。 */}
@@ -1264,6 +1322,13 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                     className="col-start-3 row-start-2 justify-self-start sm:justify-self-auto"
                     onCustomize={onCustomizeSecondary}
                 />
+                {/* 分隔符：两个可自定义槽位与右侧那组「固定 / 返回播放页」之间的竖线。
+                    窄屏是网格布局、按钮各自落位，插一条线会打乱落点，所以从 sm 起才画。 */}
+                <div
+                    aria-hidden="true"
+                    className={`mx-1 hidden h-5 w-px shrink-0 sm:block ${isDaylight ? 'bg-black/10' : 'bg-white/20'}`}
+                />
+
                 {/* 固定按钮：固定后播放条不再收缩。窄屏上它占住标题行最右侧的空位，
                     宽屏上它跟在两个槽位按钮后面。 */}
                 <button

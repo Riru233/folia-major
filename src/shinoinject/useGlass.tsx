@@ -1,5 +1,5 @@
 import { useLayoutEffect } from "react";
-import { installGlassJelly, installGlassLight, makeGlass } from "./liquidglass.ts";
+import { installGlassJelly, installGlassLight, installGlassPress, makeGlass } from './liquidglass.ts';
 
 // src/mods/useGlass.tsx
 // React 侧的挂玻璃入口。渲染体里的 querySelectorAll 跑在本次 commit 之前，条件渲染的面板
@@ -7,11 +7,13 @@ import { installGlassJelly, installGlassLight, makeGlass } from "./liquidglass.t
 // 挪进 useLayoutEffect：每次 commit 后、绘制前同步扫一遍，首帧就挂上；makeGlass 幂等，重复扫没有代价。
 // installGlassJelly 幂等：window 级拖拽果冻监听只装一次，带 data-glass-jelly 的玻璃才参与。
 // installGlassLight 同理：window 级拖拽光效监听只装一次，带 data-glass-light 的元素才参与（不依赖 data-glass）。
+// installGlassPress 同理：带 data-glass 的元素按下统一缩到 0.8、松手回弹，只装一次 window 级监听。
 export const useGlass = (selector = "[data-glass]") => {
   useLayoutEffect(() => {
     document.querySelectorAll<HTMLElement>(selector).forEach(makeGlass);
     installGlassJelly();
     installGlassLight();
+        installGlassPress();
   });
 };
 

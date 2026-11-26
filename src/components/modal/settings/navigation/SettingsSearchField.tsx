@@ -37,7 +37,22 @@ export const SettingsSearchField: React.FC<SettingsSearchFieldProps> = ({
     };
 
     return (
-        <div className={`flex h-8 items-center gap-2 rounded-lg border border-transparent bg-[var(--st-fill)] px-2.5 text-[color:var(--st-t3)] transition-colors focus-within:border-[var(--st-line2)] ${className}`}>
+        /* 搜索框是侧栏顶端唯一一块会「浮」起来的东西，给它一层液态玻璃：胶囊形（h-8 → 圆角 16px 吃满
+           高度，圆角才是饱和的半圆），边缘靠 data-glass 的位移图折射侧栏背后的窗口玻璃，再加上
+           data-glass-light 的指针光晕。bend 取 10（小于半高），折射带不会啃到中间的文字；
+           strength/blur 都比窗口那层小，小控件上折射太强会像水珠。里面装着 input，按压缩放会自动跳过。 */
+        <div
+            data-glass
+            data-glass-light
+            data-glass-jelly
+            className={`flex h-8 items-center gap-2 rounded-full border border-transparent bg-[var(--st-fill)] px-3 text-[color:var(--st-t3)] shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] transition-colors focus-within:border-[var(--st-line2)] ${className}`}
+            style={{
+                borderTop: '1px solid #fff6',
+                borderBottom: '1px solid #fff6',
+                outline: '1px solid rgba(35,35,35,0.3)',
+                boxShadow: '0px 8px 16px rgba(40,40,40,0.2)'
+            }}
+        >
             <Search size={14} className="shrink-0" />
             <input
                 type="search"

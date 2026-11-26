@@ -14,7 +14,8 @@ const PICKER_WIDTH_PX = 296;
 const VIEWPORT_MARGIN_PX = 8;
 const ANCHOR_GAP_PX = 12;
 
-export type PlayerControlSlotSide = 'primary' | 'secondary';
+export type { PlayerControlSlotSide } from '../../types/playerControlSlots';
+import type { PlayerControlSlotSide } from '../../types/playerControlSlots';
 
 interface PlayerControlSlotPickerProps {
     /** 打开那一刻量到的槽位按钮位置；胶囊在浮层打开期间保持展开，位置不会再变。 */
@@ -80,10 +81,15 @@ const PlayerControlSlotPicker: React.FC<PlayerControlSlotPickerProps> = ({
     );
     const bottom = viewportHeight - anchorRect.top + ANCHOR_GAP_PX;
 
+    // 墨色自己定，不跟着 --text-primary 走：浮层是 portal 到 body 的，body 那一层拿到的
+    // 是歌曲主题色（深色封面取出来的白），而底色按 isDaylight 是白玻璃——浅色模式下就成了白字白底。
+    const ink = isDaylight ? '#18181b' : '#f4f4f5';
+
+    // hook 必须在提前返回之前：`typeof document` 的判断一旦翻面，hook 数量就变了。
+    useGlass()
     if (typeof document === 'undefined') {
         return null;
     }
-    useGlass()
     return createPortal(
         <motion.div
             data-glass data-glass-jelly data-glass-light

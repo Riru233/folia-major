@@ -8,6 +8,7 @@ import { SettingsKitThemeContext, settingsTokens, useSettingsKitTheme } from '..
 import { KIT_EASE, KIT_MOTION, kitMotionTokens, kitTransition, useKitReducedMotion } from '../modal/settings/kit/motion';
 import { Tooltip } from '../modal/settings/kit';
 import { escapeCloses, tabTarget } from './sheetKeys';
+import { useGlass } from '@/shinoinject/useGlass';
 
 // src/components/shared/Sheet.tsx
 // The frame of every dialog: a title and the close button at the top, the content in the middle,
@@ -271,7 +272,7 @@ const SheetFrame: React.FC<SheetFrameProps> = ({
     const exit = leave === 'through'
         ? { opacity: 0, scale: 1.08, transition: { duration: reduced ? 0 : KIT_MOTION.unfold, ease: KIT_EASE.standard } }
         : { ...away, transition: kitTransition('move', reduced) };
-
+    useGlass();
     return (
         <div
             data-folia-keyboard-window={isPresent ? 'true' : undefined}
@@ -300,6 +301,7 @@ const SheetFrame: React.FC<SheetFrameProps> = ({
             <motion.div
                 ref={panelRef}
                 role="dialog"
+                data-glass
                 aria-modal="true"
                 aria-labelledby={titleId}
                 data-ponder={ponderId}
@@ -307,9 +309,16 @@ const SheetFrame: React.FC<SheetFrameProps> = ({
                 initial={cameFrom}
                 animate={{ opacity: 1, x: 0, y: 0, scale: 1, transition: kitTransition('unfold', reduced) }}
                 exit={exit}
-                className={`st-window relative flex max-h-[min(720px,100%)] max-w-full flex-col overflow-hidden rounded-2xl bg-[var(--st-win)] text-[color:var(--st-t1)] shadow-[var(--sheet-shadow),0_0_0_1px_var(--st-line2)] ${SIZE_CLASS[size]}${underlay ? ' isolate' : ''}`}
+                className={`st-window relative flex max-h-[min(720px,100%)] max-w-full flex-col overflow-hidden rounded-2xl bg-[var(--st-win)] text-[color:var(--st-t1)] ${SIZE_CLASS[size]}${underlay ? ' isolate' : ''}`}
                 // The panel holds focus without a mark of its own.
-                style={{ outline: 'none', ...panelTokens(isDaylight, theme, reduced) }}
+                style={{ 
+                     ...panelTokens(isDaylight, theme, reduced),
+                    borderTop: '1px solid #fff6',
+                    borderBottom: '1px solid #fff6',
+                    outline: '1px solid rgba(35,35,35,0.3)',
+                    boxShadow: '0px 8px 16px rgba(40,40,40,0.2)'
+                     
+                     }}
             >
                 <SettingsKitThemeContext.Provider value={childTheme}>
                     {underlay && <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">{underlay}</div>}
@@ -317,7 +326,7 @@ const SheetFrame: React.FC<SheetFrameProps> = ({
                     {withAside(aside, <>
                     <header className={`flex shrink-0 items-start gap-3 pl-6 pr-4 pt-4 ${body === 'panes' ? 'border-b border-[var(--st-line)] pb-3' : ''}`}>
                         <div className={`st-t-fast min-w-0 flex-1 transition-opacity ${quiet ? 'opacity-0' : ''}`}>
-                            <h2 id={titleId} className={`text-base font-semibold leading-8 ${titleLead ? 'flex items-center gap-2.5' : ''}`}>
+                            <h2 id={titleId} className={`text-base font-normal leading-8 ${titleLead ? 'flex items-center gap-2.5' : ''}`}>
                                 {titleLead}
                                 {titleLead ? <span className="min-w-0 truncate">{title}</span> : title}
                             </h2>

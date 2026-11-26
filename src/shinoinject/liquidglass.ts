@@ -1068,3 +1068,93 @@ export const setLiquidGlassLightEnabled = (enabled: boolean) => {
     lightSync(); // lightEnabled 已置 false，这里只做收摊
   }
 };
+
+/* —— 按压缩放（data-glass 注入）——
+   带 data-glass 的元素按下即缩到 0.9，松手回弹。写的是 CSS 独立属性 scale，不碰 transform：
+   果冻的位移/形变与 framer-motion 的动画都在 transform 上，两边互不覆盖；用 WAAPI 而不是
+   CSS transition，也就不用去改元素本来有的 transition-property（改简写会把颜色过渡一起吃掉）。
+   含可交互后代的大玻璃面板（命令面板、搜索、速记簿…）整块缩一圈像页面在抖，跳过不缩：
+   自身是控件（button / a / role=button…），或者内部没有交互件（纯装饰玻璃），才参与。 */
+
+// 按下后的缩放比与两段时长：按下快、回弹稍慢并带一点过冲，手感才对。
+const PRESS_SCALE = 0.9;
+const PRESS_DOWN_MS = 90;
+const PRESS_UP_MS = 190;
+const PRESS_DOWN_EASE = 'cubic-bezier(0.3, 0.7, 0.4, 1)';
+const PRESS_UP_EASE = 'cubic-bezier(0.22, 1.35, 0.36, 1)';
+// 指针从按下点挪出这个距离就当作拖动（果冻 / 拖拽定位），不再保持缩小。
+const PRESS_CANCEL_SLOP_PX = 8;
+// 「自身就是控件」的判定。
+const PRESS_CONTROL_SELECTOR = 'button, a[href], input, textarea, select, [role="button"], [role="tab"], [contenteditable="true"]';
+// 面板类玻璃里常见的东西：出现任意一个，就说明这块玻璃是容器而不是控件。
+const PRESS_CHILD_CONTROL_SELECTOR = 'button, a[href], input, textarea, select, [role="button"], [role="tab"], [role="slider"], [contenteditable="true"]';
+
+let pressInstalled = false;
+let pressEl: HTMLElement | null = null;
+let pressAnim: Animation | null = null;
+let pressPointerId = -1;
+let pressStartX = 0;
+let pressStartY = 0;
+
+// 松手：先读当前生效值（可能按下动画才走到一半），再取消按下、从这个值弹回 1。
+// 中途松手也不会先跳回 0.9 或 1，是一次连续的回落。
+const pressRelease = () => {
+    const el = pressEl;
+    if (!el) return;
+    pressEl = null;
+    pressPointerId = -1;
+    const down = pressAnim;
+    pressAnim = null;
+    const current = getComputedStyle(el).scale;
+    down?.cancel();
+    if (!el.isConnected) return;
+    const up = el.animate(
+        [{ scale: current === 'none' ? '1' : current }, { scale: '1' }],
+        { duration: PRESS_UP_MS, easing: PRESS_UP_EASE },
+    );
+    up.onfinish = () => up.cancel();
+};
+
+const pressOnPointerDown = (event: PointerEvent) => {
+    if (event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const el = target?.closest<HTMLElement>('[data-glass]') ?? null;
+    if (!el) return;
+    // 点在玻璃里的某个控件上（导航竖栏底板里的按钮、搜索框里的 input）：
+    // 缩的该是那个控件，不是它脚下的玻璃底板，否则整块底板会跟着抖一下。
+    const control = target?.closest<HTMLElement>(PRESS_CONTROL_SELECTOR) ?? null;
+    if (control && control !== el) return;
+    // 面板类玻璃整块不缩：里面装着按钮 / 输入，说明它是容器而不是一个可点的控件。
+    if (!el.matches(PRESS_CONTROL_SELECTOR) && el.querySelector(PRESS_CHILD_CONTROL_SELECTOR)) return;
+    // 连点到另一块玻璃：先把上一块弹回去，别把它按在那儿。
+    if (pressEl && pressEl !== el) pressRelease();
+    else if (pressEl === el) return;
+    pressEl = el;
+    pressPointerId = event.pointerId;
+    pressStartX = event.clientX;
+    pressStartY = event.clientY;
+    pressAnim = el.animate([{ scale: String(PRESS_SCALE) }], {
+        duration: PRESS_DOWN_MS,
+        easing: PRESS_DOWN_EASE,
+        fill: 'forwards',
+    });
+};
+
+const pressOnPointerMove = (event: PointerEvent) => {
+    if (!pressEl || event.pointerId !== pressPointerId) return;
+    if (Math.abs(event.clientX - pressStartX) + Math.abs(event.clientY - pressStartY) > PRESS_CANCEL_SLOP_PX) {
+        pressRelease();
+    }
+};
+
+// 由 useGlass 在 commit 后调一次（幂等）：挂 window 级指针监听。
+export const installGlassPress = () => {
+    if (pressInstalled || typeof window === 'undefined') return;
+    pressInstalled = true;
+    window.addEventListener('pointerdown', pressOnPointerDown, { capture: true });
+    window.addEventListener('pointermove', pressOnPointerMove, { passive: true });
+    window.addEventListener('pointerup', pressRelease, { capture: true });
+    window.addEventListener('pointercancel', pressRelease, { capture: true });
+    window.addEventListener('blur', pressRelease);
+    document.addEventListener('visibilitychange', pressRelease);
+};

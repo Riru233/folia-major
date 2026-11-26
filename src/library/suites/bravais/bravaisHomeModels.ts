@@ -10,7 +10,14 @@ import type { LucideIcon } from 'lucide-react';
 // 都是已翻译的文案与身份稳定的回调，stage 只读、只调。
 
 /** 缝里的二级切换：本地四行（文件夹 / 专辑 / 歌手 / 歌单）、Navidrome 的 section。切换 = 整面翻牌，不换层。 */
-export type BravaisHomeSection = { key: string; label: string; active: boolean };
+export type BravaisHomeSection = {
+    key: string;
+    label: string;
+    active: boolean;
+    /** 这一项此刻不能选（在线组里当前音源没有的那一页）；`title` 说原因。 */
+    disabled?: boolean;
+    title?: string;
+};
 
 /**
  * 直达入口那一列里的动作入口（平台声明的「偏好设置」这类）：样子与直达入口一样、一起量、放不下时一起挪进「⋯」，
@@ -126,7 +133,7 @@ export type BravaisHomeAccount = {
     guest: boolean;
     /** fb3：未登录时的入口按钮文案（「连接在线平台」）。 */
     connectLabel: string;
-    /** 入口按钮的标题（「切换在线音乐平台」）。 */
+    /** 入口按钮的标题（「切换在线媒体库」）。 */
     toggleLabel: string;
     /** 打开共用的登录窗口，从按下去的那个按钮那一边出来（已登录时开在正在用的平台上）。 */
     onOpen: (pressed: Element | null) => void;

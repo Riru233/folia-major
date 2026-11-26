@@ -24,9 +24,9 @@ describe('isLabVideoPlaybackEnabled', () => {
         expect(LAB_VIDEO_PLAYBACK_KEY).toBe('shino_lab_video_playback');
     });
 
-    it('从未设置过时默认打开', () => {
+    it('从未设置过时默认关闭', () => {
         stubStorage({});
-        expect(isLabVideoPlaybackEnabled()).toBe(true);
+        expect(isLabVideoPlaybackEnabled()).toBe(false);
     });
 
     it('关掉实验功能后返回 false', () => {
@@ -34,7 +34,7 @@ describe('isLabVideoPlaybackEnabled', () => {
         expect(isLabVideoPlaybackEnabled()).toBe(false);
     });
 
-    it('打开实验功能后返回 true', () => {
+    it('存过 true 时按打开处理', () => {
         stubStorage({ [LAB_VIDEO_PLAYBACK_KEY]: 'true' });
         expect(isLabVideoPlaybackEnabled()).toBe(true);
     });
@@ -51,8 +51,8 @@ describe('withoutGatedVideoSongs', () => {
     ];
 
     it('开关打开时全部留下，顺序不变', () => {
-        stubStorage({ [LAB_VIDEO_PLAYBACK_KEY]: 'true' });
-        expect(withoutGatedVideoSongs(songs).map(song => song.id)).toEqual(['audio-unknown', 'video', 'audio']);
+        stubStorage({});
+        expect(withoutGatedVideoSongs(songs, true).map(song => song.id)).toEqual(['audio-unknown', 'video', 'audio']);
     });
 
     it('开关关掉时只剔除视频记录', () => {

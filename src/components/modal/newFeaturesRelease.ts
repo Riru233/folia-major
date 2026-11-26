@@ -1,7 +1,7 @@
-import { PanelLeft, Smartphone, Waves } from 'lucide-react';
+import { Bug, Droplets, LayoutGrid, ListMusic, MessageSquareText, PanelTop, Puzzle, SeparatorHorizontal, SlidersVertical, Sparkles, Store } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HomeViewTab } from '../../types';
-import shinoBanner from '../../../assets/banners/folia-shino-0.7.29s.png?url';
+import shinoBanner from '../../../assets/banners/folia-shino-0.8.0.jpg?url';
 
 // src/components/modal/newFeaturesRelease.ts
 // 当前版本的介绍：卡片 id 和文案 key 对不上会在 test/unit/newFeaturesRelease.test.ts 里报出来。
@@ -32,18 +32,22 @@ type NewFeaturesRelease = {
 
 
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
-    i18nKey: 'releaseNotes.v0_7_29_1',
-    displayVersion: '0.7.29S',
-    // 图是这一版的标题图（Shino 0.7.29S · Fluid Update）。它不是某个页签的入口，所以没有 targetTab，
-    // 介绍里只把它画出来、不接跳转。
-    banner: {
-        imageUrl: shinoBanner,
-        i18nKey: 'releaseNotes.v0_7_29_1.banner',
-    },
-    // 0.7.29S 是一次修复更新，介绍上方不显示「重大更新」标签：这一版没有 majorUpdate。
+    i18nKey: 'releaseNotes.v0_8_0',
+    majorUpdate: { codename: 'Severance' },
+    banner: { imageUrl: shinoBanner, i18nKey: 'releaseNotes.v0_8_0.banner' },
     features: [
-        { id: 'fluidDefault', icon: Waves },
-        { id: 'railEdges', icon: PanelLeft },
-        { id: 'compactLayout', icon: Smartphone },
+        // 这一版的重点是整套界面：首页布局、设置页、液态玻璃各占一张卡片，排在原有内容前面。
+        { id: 'deluxeLayout', icon: LayoutGrid },
+        { id: 'settingsRenewal', icon: PanelTop },
+        { id: 'liquidGlass', icon: Droplets },
+        // 这一版收尾时追加的两项：播放栏的分隔线，以及这一轮修掉的问题。
+        { id: 'dockSeparators', icon: SeparatorHorizontal },
+        { id: 'sourceMods', icon: Puzzle },
+        { id: 'modMarket', icon: Store },
+        { id: 'foliaPlaylists', icon: ListMusic },
+        { id: 'moments', icon: MessageSquareText },
+        { id: 'stemMixer', icon: SlidersVertical },
+        { id: 'moreDetails', icon: Sparkles },
+        { id: 'bugFixes', icon: Bug },
     ],
 };

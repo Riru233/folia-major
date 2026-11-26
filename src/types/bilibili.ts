@@ -42,6 +42,8 @@ export interface BilibiliSearchHit {
     durationSec: number;
     coverUrl: string;
     playCount: number;
+    /** 推荐流给的一句理由（「11万点赞」之类）；别的列表没有这一项。 */
+    reason?: string;
 }
 
 /** A song's MV: which BV it is, and the address of its picture (the sound stays the song's own). */

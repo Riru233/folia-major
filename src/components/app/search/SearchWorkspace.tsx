@@ -4,9 +4,10 @@ import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import type { Theme, UnifiedSong } from '../../../types';
-import type { MediaId, OmniCollection } from '../../../types/onlineMusic';
+import type { MediaId } from '../../../types/onlineMusic';
 import {
     getSearchKinds,
+    type SearchCollectionResult,
     type SearchKind,
     type SearchSource,
     useSearchNavigationStore,
@@ -39,7 +40,7 @@ type SearchWorkspaceProps = {
     onOpenArtist: (track: UnifiedSong, artistName: string, artistId?: MediaId, entityId?: string) => void;
     onOpenAlbum: (track: UnifiedSong, albumName: string, albumId?: MediaId, entityId?: string) => void;
     /** 打开搜到的一张专辑或一个歌单。 */
-    onOpenCollection: (collection: OmniCollection) => void;
+    onOpenCollection: (collection: SearchCollectionResult) => void;
     /**
      * 渲染前把结果重新套上当前的展示数据（本地曲目的歌手 / 专辑实体）。store 里的结果是提交那一刻的快照，
      * 本地曲库的实体目录在导入后要晚一拍才加载完，那之前搜到的行没有专辑、歌手链接是灰的；
@@ -122,6 +123,10 @@ const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({
         if (canOpenPlaylistPickerFor(track)) openAddSongsToPlaylist([track]);
     }, []);
     const paperColor = isDaylight ? 'rgba(250,250,250,0.3)' : 'rgba(8,8,10,0.3)';
+    // 纸色从「同一个颜色但全透明」升到 paperColor：淡入靠纸的透明度，不靠这一层的 opacity。
+    const paperClear = isDaylight ? 'rgba(250,250,250,0)' : 'rgba(8,8,10,0)';
+    // 切入是 scale 1.1 → 1，只动 transform：transform 不进 backdrop root，玻璃照旧能采样到背后的页面。
+    const searchShellTransition = { duration: 0.26, ease: [0.2, 0.8, 0.2, 1] as const };
     const countLabel = resultTotal !== null && resultTotal >= resultCount
         ? String(resultTotal)
         : `${resultCount}${hasMore ? '+' : ''}`;
@@ -130,8 +135,10 @@ const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({
     // 只在页面开着时看：启动时本地曲库还没读完，那时的「没有歌」不作数。
     useEffect(() => {
         if (!isSearchOpen) return;
-        const fellBack = useSearchNavigationStore.getState().keepSearchSourceWithin(sources, activeProviderId);
-        if (fellBack && submittedQuery.trim()) onSubmitSearch(activeProviderId);
+        // The current platform, or the first source listed where the current one has no search.
+        const fallback = sources.includes(activeProviderId) ? activeProviderId : (sources[0] ?? activeProviderId);
+        const fellBack = useSearchNavigationStore.getState().keepSearchSourceWithin(sources, fallback);
+        if (fellBack && submittedQuery.trim()) onSubmitSearch(fallback);
     }, [activeProviderId, isSearchOpen, onSubmitSearch, sources, submittedQuery]);
 
     useEffect(() => {
@@ -149,30 +156,48 @@ const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({
     return (
         <AnimatePresence>
             {isSearchOpen && (
-                <motion.section
-                    data-glass data-glass-light data-glass-strength="1" data-glass-bend="80" data-glass-blur="3"
-                    initial={{ opacity: 0, y: 28 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 28 }}
-                    className={`search-workspace fixed inset-0 flex flex-col overflow-hidden px-4 py-5 sm:px-8 sm:py-7 ${
-                        hasCollection ? 'z-[5]' : 'z-50'
-                    }`}
-                    style={{
-                        color: theme.primaryColor,
-                        backgroundColor: paperColor,
-                        borderTop: isDaylight
-                            ? "1px solid #fff6"
-                            : "1px solid #fff5",
-                        borderBottom: isDaylight
-                            ? "1px solid #fff6"
-                            : "1px solid #fff5",
-                        outline: "1px solid rgba(35,35,35,0.3)",
-                        boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
-                        '--search-ink': theme.primaryColor,
-                        '--search-accent': theme.accentColor,
-                        '--search-paper': isDaylight ? '#fafafa' : '#08080a',
-                    } as React.CSSProperties}
+                /* 外壳只负责缩放切入（scale 1.1 → 1）。它不做 opacity 动画：带透明度的元素会成为 backdrop root，
+                   整段过渡里玻璃就只剩一块纯色。玻璃和内容拆成两条子层，各自负责自己的淡入。 */
+                <motion.div
+                    initial={{ scale: 1.1 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 1.06 }}
+                    transition={searchShellTransition}
+                    className={`fixed inset-0 overflow-hidden ${hasCollection ? 'z-[5]' : 'z-50'}`}
                 >
+                    {/* 玻璃层：进场时自己不动透明度（backdrop-filter 全程按 100% 生效），淡入只靠纸色的 alpha；
+                        退场末尾才把整层淡掉，让背后的模糊跟着化开，而不是在卸载那一帧「啪」地变清晰。
+                        它压在内容下面、不接收指针，所以内容怎么淡都牵动不到它的滤镜。 */}
+                    <motion.div
+                        aria-hidden="true"
+                        data-glass data-glass-light data-glass-strength="1" data-glass-bend="80" data-glass-blur="3"
+                        initial={{ opacity: 1, backgroundColor: paperClear }}
+                        animate={{ opacity: 1, backgroundColor: paperColor }}
+                        exit={{ opacity: 0, backgroundColor: paperClear }}
+                        transition={searchShellTransition}
+                        className="pointer-events-none absolute inset-0"
+                    />
+                    <motion.section
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={searchShellTransition}
+                        className="search-workspace relative z-10 flex h-full flex-col overflow-hidden px-4 py-5 sm:px-8 sm:py-7"
+                        style={{
+                            color: theme.primaryColor,
+                            borderTop: isDaylight
+                                ? "1px solid #fff6"
+                                : "1px solid #fff5",
+                            borderBottom: isDaylight
+                                ? "1px solid #fff6"
+                                : "1px solid #fff5",
+                            outline: "1px solid rgba(35,35,35,0.3)",
+                            boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
+                            '--search-ink': theme.primaryColor,
+                            '--search-accent': theme.accentColor,
+                            '--search-paper': isDaylight ? '#fafafa' : '#08080a',
+                        } as React.CSSProperties}
+                    >
                     <SearchComposition
                         kind={searchKind}
                         query={submittedQuery}
@@ -267,10 +292,12 @@ const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({
                                         onOpenArtist={onOpenArtist}
                                         onOpenAlbum={onOpenAlbum}
                                         onOpenCollection={onOpenCollection}
+                                        onReachEnd={hasMore && !isLoadingMore && !searchError ? onLoadMore : undefined}
                                     />
                                 </div>
+                                {/* 靠右放：底部正中是播放进度条，居中会被它压住。滚到底也会自己加载下一页，按钮留作手动的那一下。 */}
                                 {searchError ? (
-                                    <div className="flex shrink-0 items-center justify-center gap-4 py-3 text-sm">
+                                    <div className="flex shrink-0 items-center justify-end gap-4 py-3 text-sm">
                                         <span className="opacity-60">{t('search.error')}</span>
                                         <button
                                             type="button"
@@ -282,7 +309,7 @@ const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({
                                         </button>
                                     </div>
                                 ) : hasMore && (
-                                    <div className="flex shrink-0 justify-center py-3">
+                                    <div className="flex shrink-0 justify-end py-3">
                                         <button
                                             type="button"
                                             disabled={isLoadingMore}
@@ -296,7 +323,8 @@ const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({
                             </div>
                         )}
                     </div>
-                </motion.section>
+                    </motion.section>
+                </motion.div>
             )}
         </AnimatePresence>
     );

@@ -7,7 +7,7 @@ import {
 import type { PonderAnchorSource, PonderRelativeRect, PonderSceneScript, PonderTargetDefinition } from '../../../../types/ponder';
 
 // src/components/ponder/targets/basics/signIn.target.ts
-// 登录在线音乐平台：两个入口，和它们打开的同一个窗口。
+// 切换在线媒体库：两个入口，和它们打开的同一个窗口。
 //
 // 单独成目标的理由：入口有两处而且长得不像（主页中间一颗按钮，右下角一枚头像）；窗口里选中
 // 一行之后右边是什么跟着平台变（二维码、先选方式、去浏览器）；已经登录的平台还多出切换和退出。

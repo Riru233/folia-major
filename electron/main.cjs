@@ -14,7 +14,10 @@ const { resolveStageConnectionFilePath } = require('./stageConnectionFile.cjs');
 const { isCursorInsideUnlockHotspot, createUnlockHoverRequests, resolveUnlockHotspot } = require('./mainWindowClickThrough.cjs');
 const { shouldHideToTrayOnClose, shouldRebuildBeforeMacWallpaper, shouldRebuildAfterMacWallpaper } = require('./nativeTrafficLights.cjs');
 const { createModSystem } = require('./modSystem/modSystem.cjs');
-const { MOD_PROTOCOL_PRIVILEGED_SCHEME } = require('./modSystem/modProtocol.cjs');
+const { resolveNativeFile } = require('./modSystem/nativeFiles.cjs');
+const { COMMUNITY_MODS_SETTING_KEY, migrateCommunityModsSetting } = require('./modSystem/communityMods.cjs');
+const { MOD_PROTOCOL_PRIVILEGED_SCHEME, legacyMediaPrivilegedSchemes } = require('./modSystem/modProtocol.cjs');
+const { BUILTIN_LEGACY_MEDIA_SCHEMES } = require('./modSystem/builtinSources.cjs');
 const { createWindowPlaybackHandoffStore } = require('./windowPlaybackHandoff.cjs');
 const { applyTileMemoryBudget } = require('./tileMemoryBudget.cjs');
 const { BACKGROUND_THROTTLING_SETTING_KEY, createBackgroundThrottling } = require('./backgroundThrottling.cjs');
@@ -68,22 +71,8 @@ const {
   shouldMoveWallpaper,
   describeWallpaperDisplays,
 } = require('./wallpaper/wallpaperDisplay.cjs');
-const { createKugouApiBridge } = require('./kugou/kugouApiBridge.cjs');
 const { createExternalUrlOpener } = require('./externalUrlPolicy.cjs');
 const { createSenderGuardedHandler } = require('./ipcAccessGuard.cjs');
-const { createQishuiApiBridge } = require('./qishui/qishuiApiBridge.cjs');
-const { createFnmusicApiBridge, FN_MUSIC_SCHEME, FN_MUSIC_PRIVILEGED_SCHEME } = require('./fnmusic/fnmusicApiBridge.cjs');
-const { createQishuiMediaPolicy } = require('./qishui/mediaCors.cjs');
-const { createBodianApiBridge } = require('./bodian/bodianApiBridge.cjs');
-const { createBodianMediaPolicy } = require('./bodian/mediaCors.cjs');
-const { createYtmApiBridge } = require('./ytm/ytmApiBridge.cjs');
-const { createCompanionClient } = require('./appleMusic/companionClient.cjs');
-const { createCompanionRequestHandler } = require('./appleMusic/companionIpc.cjs');
-const { createYtmSandbox } = require('./ytm/sandbox.cjs');
-const { YTM_AUDIO_PRIVILEGED_SCHEME, YTM_AUDIO_SCHEME } = require('./ytm/audio.cjs');
-const { createSpotifyApiBridge } = require('./spotify/spotifyApiBridge.cjs');
-const { SPOTIFY_AUDIO_PRIVILEGED_SCHEME, SPOTIFY_AUDIO_SCHEME } = require('./spotify/audio.cjs');
-const { createQqAuthSessionRepository } = require('./qq/qqAuthSessionRepository.cjs');
 const { DEFAULT_DISCORD_APPLICATION_ID, createDiscordPresenceController } = require('./discordPresence.cjs');
 const { createVoiceInputPauseMonitor } = require('./voiceInputPause.cjs');
 const { createWindowSystemMenuGuard } = require('./windowSystemMenu.cjs');
@@ -93,8 +82,10 @@ const { createWindowsThumbar } = require('./windowsThumbar.cjs');
 const { createDisplaySleepBlocker } = require('./displaySleepBlocker.cjs');
 const { createVideoExportFileWriter } = require('./videoExportFileWriter.cjs');
 const { finalizeVideoExportFile } = require('./videoExportMp4.cjs');
+const { createExportFfmpegResolver } = require('./alphaExport/exportFfmpeg.cjs');
+const { registerAlphaExportIpc } = require('./alphaExport/alphaExportIpc.cjs');
 const { createLyricApi } = require('./lyricApi.cjs');
-const { createBilibiliApi, setupBilibiliMediaAccess } = require('./bilibili.cjs');
+const { createBilibiliApi, setupBilibiliMediaAccess, BILIBILI_STREAM_SCHEME } = require('./bilibili.cjs');
 const { createLocalCoverAssetStore, getLocalCoverAssetDirectory } = require('./localCoverAssets.cjs');
 const {
   compareVersions,
@@ -105,7 +96,7 @@ const {
 } = require('./updateChannels.cjs');
 const { discoverUpdateVersion, settleWithin } = require('./updateCheckMirrors.cjs');
 const { createUpdateDownloadPhase } = require('./updateDownloadPhase.cjs');
-const { resolveCacheLimit, selectEvictions } = require('./audioCachePrune.cjs');
+const { createSourcePruneLimit, resolveCacheLimit, selectEvictions, sourceCacheEntries, sourceCacheEntryOf } = require('./audioCachePrune.cjs');
 const { removeAudioCacheFileOfSize } = require('./audioCacheRemove.cjs');
 const { createAnalysisHost } = require('./analysis/host.cjs');
 const { createAcousticsHost } = require('./acoustics/host.cjs');
@@ -134,6 +125,7 @@ const {
   resolveImportedFolderRoot,
   resolveLocalFolderDiskPath: resolveSavedLocalFolderDiskPath,
 } = require('./localFolderPaths.cjs');
+const { locateImportedFolderOnDisk } = require('./localFolderLocate.cjs');
 const { registerMprisIpc } = require('./hifi/mpris/mprisIpc.cjs');
 const { sanitizeDualTheme: sanitizeGeneratedDualTheme } = require('../shared/themeSanitizer.cjs');
 const {
@@ -196,26 +188,39 @@ protocol.registerSchemesAsPrivileged([
       stream: true,
     },
   },
+  // 在线视频的播放地址（bilibili 取流的本机代理）：`stream: true` 让媒体元素按 Range 连续地读。
+  {
+    scheme: BILIBILI_STREAM_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
   MOD_PROTOCOL_PRIVILEGED_SCHEME,
-  YTM_AUDIO_PRIVILEGED_SCHEME,
-  SPOTIFY_AUDIO_PRIVILEGED_SCHEME,
-  FN_MUSIC_PRIVILEGED_SCHEME,
+  // Old media addresses of built-in sources that saved data may still hold (a platform's folia-<id>://): the
+  // mod system answers them from the mod's _media routes (builtinSources.cjs's legacyMediaSchemes).
+  ...legacyMediaPrivilegedSchemes(BUILTIN_LEGACY_MEDIA_SCHEMES),
 ]);
 
-// Trusts only the known KuGou media CDN hostname mismatch while preserving TLS checks elsewhere.
+// Certificate errors are refused, TLS checks kept everywhere, except where a source declares a host.
 app.on('certificate-error', (event, _webContents, requestUrl, error, _certificate, callback) => {
-  let isAllowedKugouMediaRequest = false;
-  try {
-    const parsedUrl = new URL(requestUrl);
-    isAllowedKugouMediaRequest =
-      parsedUrl.protocol === 'https:' &&
-      parsedUrl.hostname === 'fs.youthandroid2.kugou.com' &&
-      error === 'net::ERR_CERT_COMMON_NAME_INVALID';
-  } catch {
-    isAllowedKugouMediaRequest = false;
-  }
+  // Folium 2.0: a running source mod's manifest may name hosts whose certificate name mismatch is accepted
+  // (`sources[].certificateExceptions`, listed in its enable confirmation).
+  const isDeclaredBySourceMod = (() => {
+    try {
+      const parsedUrl = new URL(requestUrl);
+      return parsedUrl.protocol === 'https:'
+        && error === 'net::ERR_CERT_COMMON_NAME_INVALID'
+        && Boolean(modSystem?.allowsCertificateException(parsedUrl.hostname));
+    } catch {
+      return false;
+    }
+  })();
 
-  if (isAllowedKugouMediaRequest) {
+  if (isDeclaredBySourceMod) {
     event.preventDefault();
     callback(true);
     return;
@@ -303,6 +308,15 @@ if (process.platform === 'darwin' && process.arch === 'x64') {
 }
 
 const store = new Store({ projectName: 'Folia' });
+// Read before anything writes the store: an empty one is a fresh profile, which the start prompt asks which
+// sources it uses (Folium 2.0 plan §5.3, modSystem.cjs). An upgraded profile always has something in it.
+const isFreshProfile = store.size === 0;
+// Folium 2.0: the community mods switch, given once to a profile that has none (communityMods.cjs), before
+// anything reads it or the mod system's master switch (on by default from Folium 2.0).
+const communityModsMigrated = migrateCommunityModsSetting(store);
+if (communityModsMigrated !== null) {
+  console.info(`[Mods] community mods switch recorded for this profile: ${communityModsMigrated ? 'on (the mod system was on)' : 'off'}`);
+}
 // Before ready: the GPU process reads its switches when it starts.
 const gpuPreferenceApplied = applyGpuPreference({ app, store });
 const readActiveGpu = createActiveGpuReader(app);
@@ -388,89 +402,6 @@ const hifiMpris = process.platform === 'linux'
   : null;
 // Last resort for every way out, app.exit() included: an mpv left behind would keep playing.
 process.on('exit', () => hifiSession.killSync());
-// KuGou credentials stay inside the main process and are encrypted lazily after Electron is ready.
-// The bridge refuses Linux's plaintext `basic_text` fallback and degrades to an in-memory session.
-const kugouApiBridge = createKugouApiBridge({ store, safeStorage });
-const qishuiMediaPolicy = createQishuiMediaPolicy();
-// 飞牛音乐桥：服务器与凭据由主进程 safeStorage 加密保存（渲染进程只发操作）；播放/封面走
-// 自定义协议（协议 handler 实时转发，无需本地 HTTP 代理、无需启动时恢复）。
-const fnMusicApiBridge = createFnmusicApiBridge({ store, safeStorage });
-const qishuiApiBridge = createQishuiApiBridge({ store, safeStorage, fetch: (url, options) => electronNet.fetch(url, options),
-  onAudioSource: url => qishuiMediaPolicy.register(url),
-});
-const bodianMediaPolicy = createBodianMediaPolicy();
-const bodianApiBridge = createBodianApiBridge({ store, safeStorage,
-  onAudioSource: url => bodianMediaPolicy.register(url),
-  requestFactory: (options, onResponse) => {
-    const request = electronNet.request(options);
-    request.on('response', onResponse);
-    return request;
-  },
-});
-// YouTube Music talks to Google from its own network partition and without a cookie jar: the
-// account is carried by a request header, and stored cookies would tie the guest sessions to it.
-// (The library sends one cookie of its own making, a random visitor id and the time zone, on the
-// request that opens each session; nothing Google sets is kept or sent back.) Sessions exist only
-// after app ready, hence the lazy lookup; like the update check, the partition follows the system
-// proxy.
-const ytmSandbox = createYtmSandbox({ BrowserWindow, session, isAllowed: () => Boolean(mainWindow && !mainWindow.isDestroyed()) });
-let ytmNetwork = null;
-const getYtmNetwork = () => {
-  if (!ytmNetwork) {
-    const ses = session.fromPartition('folia-ytm');
-    ytmNetwork = ses.setProxy({ mode: 'system' }).catch(() => {}).then(() => ses);
-  }
-  return ytmNetwork;
-};
-const ytmApiBridge = createYtmApiBridge({ store, safeStorage,
-  fetch: async (input, init) => (await getYtmNetwork()).fetch(input instanceof URL ? input.href : input, { ...init, credentials: 'omit' }),
-  evaluate: code => ytmSandbox.evaluate(code),
-  language: () => getMainLocaleKey(),
-  // The browser window of the web sign-in runs on this folder; the bridge removes it when a
-  // sign-in ends.
-  signInFolder: () => path.join(app.getPath('userData'), 'ytm-sign-in'),
-});
-// Development and packaged builds both use the system-WebView host; no alternate browser runtime.
-const { resolveNativeExecutable } = require('./appleMusic/nativePaths.cjs');
-const appleMusicClient = createCompanionClient({
-  nativeExecutablePath: resolveNativeExecutable({
-    platform: process.platform, isPackaged: app.isPackaged, resourcesPath: process.resourcesPath,
-    projectRoot: path.join(__dirname, '..'),
-    override: process.env.ELECTRON_DEV === 'true' ? process.env.FOLIA_APPLE_MUSIC_NATIVE : '',
-  }),
-  profilePath: path.join(app.getPath('userData'), 'apple-music-companion'),
-});
-let spotifyNetwork = null;
-const getSpotifyNetwork = () => {
-  if (!spotifyNetwork) {
-    const ses = session.fromPartition('folia-spotify');
-    spotifyNetwork = ses.setProxy({ mode: 'system' }).catch(() => {}).then(() => ses);
-  }
-  return spotifyNetwork;
-};
-const spotifyApiBridge = createSpotifyApiBridge({ store, safeStorage,
-  fetch: async (input, init) => (await getSpotifyNetwork()).fetch(input instanceof URL ? input.href : input, { ...init, credentials: 'omit' }),
-  openExternal: url => shell.openExternal(url),
-  language: () => getMainLocaleKey(),
-  audioDirectory: () => path.join(getConfiguredCacheDirectory(), 'spotify'),
-  onAudioKept: limitBytes => pruneMediaCache(limitBytes),
-  // Soloist (the program the person downloads) keeps its pairing and its cache under the app's data.
-  soloistPaths: {
-    data: () => path.join(app.getPath('userData'), 'soloist', 'data'),
-    cache: () => path.join(app.getPath('userData'), 'soloist', 'cache'),
-  },
-  chooseSoloistFile: async () => {
-    const owner = BrowserWindow.getFocusedWindow();
-    const options = {
-      properties: ['openFile'],
-      defaultPath: app.getPath('downloads'),
-      filters: process.platform === 'win32' ? [{ name: 'Soloist', extensions: ['exe'] }] : [],
-    };
-    const chosen = owner ? await dialog.showOpenDialog(owner, options) : await dialog.showOpenDialog(options);
-    return chosen.canceled ? null : chosen.filePaths[0] ?? null;
-  },
-});
-const qqAuthSessionRepository = createQqAuthSessionRepository({ store, safeStorage });
 // AI API keys are sealed with safeStorage instead of sitting in config.json as plaintext, and never
 // leave the main process: the renderer only sees AI_API_KEYS_CONFIGURED (#586).
 const aiCredentials = createAiCredentialStore({ store, safeStorage });
@@ -2685,6 +2616,9 @@ const backgroundThrottling = createBackgroundThrottling({
 // Chromium's fragmented MP4 leaves the movie duration at the first fragment (#549); patch it
 // from the fragment timeline once recording ends.
 const videoExportFileWriter = createVideoExportFileWriter({ finalizeFile: finalizeVideoExportFile });
+// The ffmpeg of the transparent export (the user's choice in Settings, else a checked search), shared by
+// the host's own export and the mods' api.render.exportVideo.
+const exportFfmpegResolver = createExportFfmpegResolver({ store, appGetAppPath: () => app.getAppPath() });
 let autoUpdater = null;
 // The updater's own check of GitHub is running: its failure is handled where it was started (the
 // mirrors get asked), so the updater's 'error' event leaves the state alone meanwhile.
@@ -2885,7 +2819,10 @@ function getPublicSettings() {
     [LYRIC_API_ENABLED_SETTING_KEY]: readStoredBoolean(LYRIC_API_ENABLED_SETTING_KEY, false),
     [VOICE_INPUT_PAUSE_ENABLED_SETTING_KEY]: readStoredBoolean(VOICE_INPUT_PAUSE_ENABLED_SETTING_KEY, false),
     [PREVENT_DISPLAY_SLEEP_DURING_PLAYBACK_SETTING_KEY]: readStoredBoolean(PREVENT_DISPLAY_SLEEP_DURING_PLAYBACK_SETTING_KEY, false),
-    [MOD_SYSTEM_ENABLED_SETTING_KEY]: readStoredBoolean(MOD_SYSTEM_ENABLED_SETTING_KEY, false),
+    // On by default from Folium 2.0; a profile that switched it off keeps it off.
+    [MOD_SYSTEM_ENABLED_SETTING_KEY]: readStoredBoolean(MOD_SYSTEM_ENABLED_SETTING_KEY, true),
+    // Shown only: it is written through folia-mods:set-community (a native confirmation), never save-settings.
+    [COMMUNITY_MODS_SETTING_KEY]: readStoredBoolean(COMMUNITY_MODS_SETTING_KEY, false),
     [BACKGROUND_THROTTLING_SETTING_KEY]: readStoredBoolean(BACKGROUND_THROTTLING_SETTING_KEY, false),
     [UPDATE_CHANNEL_SETTING_KEY]: getCurrentReleaseChannel().id,
     'enable_player_page_native_blur': NATIVE_BLUR_SUPPORTED && store.get('enable_player_page_native_blur') === true,
@@ -2974,7 +2911,6 @@ const stageApi = createStageApi({
   stageApiTokenSettingKey: STAGE_API_TOKEN_SETTING_KEY,
   stageApiPortSettingKey: STAGE_API_PORT_SETTING_KEY,
   defaultStageApiPort: DEFAULT_STAGE_API_PORT,
-  getNeteasePort: () => neteaseBackend.getPort(),
   // Local tools read the address and token from here instead of asking the user to copy the token.
   connectionFilePath: resolveStageConnectionFilePath({ userDataDir: app.getPath('userData') }),
 });
@@ -2986,9 +2922,12 @@ const lyricApi = createLyricApi({
   port: DEFAULT_LYRIC_API_PORT,
 });
 
-// 实验性「视频」背景：bilibili 的账号与请求（见 electron/bilibili.cjs）。登录用的是它自己那个
-// session 分区，和主窗口的 cookies 分开，退出登录也只清那一份。
-const bilibiliApi = createBilibiliApi();
+// 实验性「视频」背景：bilibili 的账号、请求与视频取流（见 electron/bilibili.cjs）。登录用的是它自己
+// 那个 session 分区，和主窗口的 cookies 分开，退出登录也只清那一份。视频缓存落在 userData 里，
+// 和播放中的流是同一条：攒满一个完整文件就能离线重看。
+const bilibiliApi = createBilibiliApi({
+  streamCacheDir: path.join(app.getPath('userData'), 'bilibili-video-cache'),
+});
 
 const discordPresence = createDiscordPresenceController({
   getApplicationId: () => DEFAULT_DISCORD_APPLICATION_ID,
@@ -3782,7 +3721,7 @@ function isolateFirstPartyWindow(win) {
   });
 }
 
-// 应用自己的页面：开发时同一个源（http://localhost:3000），打包后同一个 index.html（file:，查询参数可以不同）。
+// 应用自己的页面：开发时同一个源（Vite，默认 http://localhost:3000），打包后同一个 index.html（file:，查询参数可以不同）。
 function isSameAppPage(currentUrl, nextUrl) {
   try {
     const current = new URL(currentUrl);
@@ -3881,13 +3820,8 @@ function setupCorsBypassHandlers() {
       const parsedUrl = new URL(originUrl);
       const hostname = parsedUrl.hostname;
       isTargetDomain =
-        hostname === 'qq.com' ||
-        hostname.endsWith('.qq.com') ||
-        hostname === 'y.gtimg.cn' ||
-        hostname === 'kugou.com' ||
-        hostname.endsWith('.kugou.com') ||
-        // Bodian audio and cover CDNs may omit CORS headers needed by Web Audio and canvas/WebGL.
-        bodianMediaPolicy.allows(details) || qishuiMediaPolicy.allows(details);
+        // Folium 2.0: the rules source mods register with api.media.allow (electron/modSystem/mediaRules.cjs).
+        Boolean(modSystem?.mediaRules.allows(details));
     } catch (error) {
       isTargetDomain = false;
     }
@@ -3902,16 +3836,8 @@ function setupCorsBypassHandlers() {
     callback({ cancel: false, responseHeaders });
   });
 
-  ses.webRequest.onBeforeRedirect(details => { bodianMediaPolicy.followRedirect(details); qishuiMediaPolicy.followRedirect(details); });
-
-  ses.webRequest.onErrorOccurred({ urls: ['*://*.kugou.com/*'] }, details => {
-    const requestInfo = getKugouMediaRequestInfo(details);
-    if (!requestInfo) return;
-    if (requestInfo.resourceType === 'media' && details.error === 'net::ERR_FAILED') return;
-    console.warn('[KuGouMedia] request:error', {
-      ...requestInfo,
-      error: details.error,
-    });
+  ses.webRequest.onBeforeRedirect(details => {
+    modSystem?.mediaRules.followRedirect(details);
   });
 }
 
@@ -3930,14 +3856,9 @@ function removeCorsResponseHeaders(responseHeaders) {
 
 function isAllowedLyricProxyHost(hostname) {
   return (
-    hostname === 'qq.com' ||
-    hostname.endsWith('.qq.com') ||
-    hostname === 'y.gtimg.cn' ||
-    hostname === 'kugou.com' ||
-    hostname.endsWith('.kugou.com') ||
-    hostname === 'kgimg.com' ||
-    hostname.endsWith('.kgimg.com') ||
-    hostname === 'api.amll.dev'
+    hostname === 'api.amll.dev' ||
+    // Folium 2.0: `sources[].lyricRelayHosts` of a running source mod (listed in its enable confirmation).
+    Boolean(modSystem?.isLyricRelayHost(hostname))
   );
 }
 
@@ -4907,21 +4828,30 @@ async function removeAudioCacheEntry(name) {
   ]);
 }
 
-/** Every file the media-cache budget counts: original audio, transcodes, and Spotify's encrypted files. */
+/** Every file the media-cache budget counts: original audio, transcodes, and source mods' own. */
 async function listMediaCacheEntries() {
-  const [audioEntries, transcodeEntries, spotifyEntries] = await Promise.all([
+  const [audioEntries, transcodeEntries, sourceEntries] = await Promise.all([
     listAudioCacheEntries(),
     transcodeService.listCacheEntries(),
-    spotifyApiBridge.audioFiles.list(),
+    // What the running source mods keep in caches of their own (api.cache.provideEntries): one budget with the rest.
+    modSystem ? modSystem.sourceCaches.list() : [],
   ]);
   return [
     ...audioEntries.map(entry => ({ ...entry, name: `audio:${entry.name}` })),
     ...transcodeEntries.map(entry => ({ ...entry, name: `transcode:${entry.name}` })),
-    ...spotifyEntries.map(entry => ({ ...entry, name: `spotify:${entry.name}` })),
+    ...sourceCacheEntries(sourceEntries),
   ];
 }
 
-/** Prunes original, transcoded and Spotify audio as one media-cache budget. */
+/*
+ * The media cache limit the main window last named, and a source mod's api.cache.requestPrune(limitBytes?) against it
+ * (audioCachePrune.cjs createSourcePruneLimit: until the window has named one, a request without a limit is left alone).
+ */
+const sourcePruneLimit = createSourcePruneLimit((limitBytes) => pruneMediaCache(limitBytes));
+const noteMediaCacheLimit = sourcePruneLimit.note;
+const pruneMediaCacheForSource = sourcePruneLimit.pruneForSource;
+
+/** Prunes original and transcoded audio and source mods' caches as one media-cache budget. */
 async function pruneMediaCache(limitBytes, protectedTranscodeEntry = null) {
   const resolvedLimit = resolveCacheLimit(limitBytes);
   if (resolvedLimit === Infinity) return;
@@ -4943,7 +4873,10 @@ async function pruneMediaCache(limitBytes, protectedTranscodeEntry = null) {
     for (const name of selectEvictions(entries, effectiveLimit)) {
       if (name.startsWith('audio:')) await removeAudioCacheEntry(name.slice('audio:'.length));
       else if (name.startsWith('transcode:')) await transcodeService.removeCacheEntry(name.slice('transcode:'.length));
-      else if (name.startsWith('spotify:')) await spotifyApiBridge.audioFiles.remove(name.slice('spotify:'.length));
+      else {
+        const sourceEntry = sourceCacheEntryOf(name);
+        if (sourceEntry) await modSystem?.sourceCaches.remove(sourceEntry.modId, sourceEntry.id);
+      }
     }
   } catch (error) {
     console.warn('[AudioCache] Failed to prune media cache directories', error);
@@ -5000,7 +4933,7 @@ async function clearAudioCacheDirectory() {
     await Promise.all([
       fsp.rm(getAudioCacheDirectory(), { recursive: true, force: true }),
       transcodeService.clearCache(),
-      spotifyApiBridge.audioFiles.clear(),
+      modSystem?.sourceCaches.clear(),
     ]);
   } catch (error) {
     console.warn('[AudioCache] Failed to clear cache directory', error);
@@ -5089,60 +5022,26 @@ async function clearCoverCacheDirectory() {
 }
 
 const { createNetworkRecorder } = require('./networkRecorder.cjs');
-const { createNeteaseBackend } = require('./netease/neteaseBackend.cjs');
-const { createQqBackend } = require('./qq/qqBackend.cjs');
 const { registerLoginBackendIpc } = require('./loginBackendIpc.cjs');
 
 // 主线程里内嵌后端的出站连接记录：要在它们发出请求之前开始订阅。工作线程里发出的请求另有一份记录（见 networkRecorder.cjs）。
 const networkRecorder = createNetworkRecorder();
 networkRecorder.start();
 
-function broadcastToWindows(channel, payload) {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed()) {
-      win.webContents.send(channel, payload);
-    }
-  });
-}
-
-// 网易云本地 API 的包不在主线程里加载，在工作线程里加载和运行（原因见 neteaseApiWorker.cjs）。
-// 拉起本身（网络请求）在 app ready 之后由 start() 进行。
-const neteaseBackend = createNeteaseBackend({
-  broadcast: broadcastToWindows,
-  // 和主线程里没人接的 rejection 同一个去处：写一份报告，不打断用户。
-  onUnhandledRejection: (reason) => {
-    crashLog.reportError('unhandledRejection', reason, { announceToUser: false });
-  },
-});
-// 确定由本进程运行应用以后就开线程，让它先加载包，不等 ready：主线程接下来有一百多毫秒在等
-// Electron 自己初始化，线程正好用上。重复启动的实例和壁纸模式的跳板进程不运行应用，不开。
-// 不放到文件开头去开得更早：量过一次（4 个慢核，推迟 jsdom 之前），线程加载完的时刻和现在分不出
-// 先后，首页却晚了约 130 毫秒能用；原因没有查。
-mainProcessStartupPromise.then((startupResult) => {
-  if (startupResult !== 'duplicate' && startupResult !== 'spawned') {
-    neteaseBackend.preload();
-  }
-}, () => {
-  // 启动准备本身失败时，ready 的处理函数里等的是同一个 promise，由那里报出来；这里不再报一遍。
-});
-
-// Runs @yakult-green-tea/qq-music-api in-process. Device identifiers remain in their existing file;
-// account credentials are owned by the API and cross this boundary only through an encrypted
-// main-process repository. The renderer continues to receive only an opaque session token.
-const qqBackend = createQqBackend({
-  broadcast: broadcastToWindows,
-  networkRecorder,
-  getStateFilePath: () => path.join(app.getPath('userData'), 'qq-auth-state', 'qq-device.json'),
-  authSessionRepository: qqAuthSessionRepository,
-});
-
 function isElectronDevRuntime() {
   return process.env.ELECTRON_DEV === 'true' || process.env.NODE_ENV === 'development';
 }
 
+// 开发时页面从哪里来：Vite，默认 3000 端口。同一台机器上并行开第二份 dev 版（另一个工作树）时，
+// 用 FOLIA_DEV_SERVER_PORT 让它连自己的那个 Vite；只换端口，主机始终是 localhost。
+function getDevServerOrigin() {
+  const port = Number(process.env.FOLIA_DEV_SERVER_PORT);
+  return `http://localhost:${Number.isInteger(port) && port > 0 && port < 65536 ? port : 3000}`;
+}
+
 function loadAppEntry(win, query = {}) {
   if (isElectronDevRuntime()) {
-    const url = new URL('http://localhost:3000');
+    const url = new URL(getDevServerOrigin());
     Object.entries(query).forEach(([key, value]) => {
       url.searchParams.set(key, String(value));
     });
@@ -5298,7 +5197,7 @@ async function handleObsBrowserSourceHttpRequest(req, res) {
     }
 
     if (isElectronDevRuntime()) {
-      const devUrl = new URL('http://localhost:3000');
+      const devUrl = new URL(getDevServerOrigin());
       devUrl.searchParams.set('obs', '1');
       devUrl.searchParams.set('token', requestUrl.searchParams.get('token') || '');
       devUrl.searchParams.set('obsPort', String(getConfiguredObsBrowserSourcePort()));
@@ -5455,12 +5354,7 @@ async function rebuildMainWindowWithPlaybackHandoff(reason, stillWanted = () => 
 // the window that did can no longer reach them once it is replaced (its requests are refused).
 function pauseExternalPlayersNobodyFollows(reason) {
   console.log('[Electron] no window takes the playback over; pausing the players outside the window', { reason });
-  appleMusicClient.pauseIfRunning().catch((error) => {
-    console.warn('[Electron] the companion player could not be paused', error);
-  });
-  spotifyApiBridge.pauseSoloist().catch((error) => {
-    console.warn('[Electron] Soloist could not be paused', error);
-  });
+  modSystem?.notePlayersOrphaned(reason);
 }
 
 function clearPendingWindowPlaybackHandoffRequests() {
@@ -6192,6 +6086,7 @@ function createWindow(options = {}) {
 
   mainWindow = win;
   isolateFirstPartyWindow(win);
+  modSystem?.noteMainWindowChanged();
   if (useMacNativeTrafficLights) {
     // 先藏起来，等渲染层按标题栏 reveal 再放出，避免启动时红绿灯常驻在沉浸页面上。
     // 常驻标题栏设置的用户由渲染层随即打开（那个设置只存在渲染层，这里读不到）。
@@ -6259,6 +6154,7 @@ function createWindow(options = {}) {
   win.on('closed', () => {
     if (mainWindow === win) {
       mainWindow = null;
+      modSystem?.noteMainWindowChanged();
       macDockMenu.reset();
       // macOS keeps the app running when its window is closed, so no `before-quit` follows: for
       // the mods' start note, closing the window is the normal way out there (see `before-quit`).
@@ -6288,9 +6184,7 @@ function createWindow(options = {}) {
       if (remoteControlWindow && !remoteControlWindow.isDestroyed()) {
         remoteControlWindow.close();
       }
-      // The hidden YouTube Music sandbox window would otherwise keep the app from quitting.
-      ytmSandbox.destroy();
-      // So would the performance check's window, still running its GPU work.
+      // The performance check's window, still running its GPU work, would otherwise keep the app from quitting.
       perfCheckHost.close();
       refreshTrayMenu();
     }
@@ -6463,7 +6357,7 @@ app.whenReady().then(async () => {
 
   if (process.platform === 'linux' && typeof safeStorage.getSelectedStorageBackend === 'function') {
     const backend = safeStorage.getSelectedStorageBackend();
-    // Without a real backend the KuGou and QQ repositories keep credentials in memory only, so this
+    // Without a real backend the encrypted sign-in stores keep credentials in memory only, so this
     // line is the fastest way to tell a lost-login report apart from an authentication bug.
     if (backend === 'basic_text' || !safeStorage.isEncryptionAvailable()) {
       console.warn('[Electron] No OS credential encryption available; online accounts will not persist', {
@@ -6484,9 +6378,8 @@ app.whenReady().then(async () => {
   setupVideoExportDisplayMediaHandler();
   setupCorsBypassHandlers();
   localCoverAssetStore.registerProtocolHandler(protocol, electronNet);
-  protocol.handle(YTM_AUDIO_SCHEME, request => ytmApiBridge.handleAudioRequest(request));
-  protocol.handle(SPOTIFY_AUDIO_SCHEME, request => spotifyApiBridge.handleAudioRequest(request));
-  protocol.handle(FN_MUSIC_SCHEME, request => fnMusicApiBridge.handleProtocolRequest(request));
+  // 在线视频：媒体元素读 folia-bili:// 时由这里作答，字节从 CDN 边取边给，顺路攒缓存。
+  protocol.handle(BILIBILI_STREAM_SCHEME, request => bilibiliApi.handleStreamRequest(request));
   // Transcode fallback is an optional degradation path; a failure preparing it must never keep
   // the rest of this handler, createWindow() included, from running.
   try {
@@ -6518,11 +6411,6 @@ app.whenReady().then(async () => {
   });
 
   setupAutoUpdater();
-  // Not awaited: this performs network round trips (xeapi key, anonymous token) that used to keep
-  // the window from appearing at all on a slow or blocked route. Status reaches the renderer over
-  // netease-api-status-changed, and get-netease-port reports null until the server is listening.
-  void neteaseBackend.start();
-  await qqBackend.start();
   try {
     await stageApi.startStageServerIfNeeded();
   } catch (error) {
@@ -6545,6 +6433,48 @@ app.whenReady().then(async () => {
       macController.configureDockRecovery();
       void macController.recoverStrandedDock();
     }
+  }
+  // Folium 2.0 (plan §5.2): the mod system exists before the main window, and the source mods (built-in
+  // ones first) start now, before it; ordinary mods start after it, as before (`modSystem.start()` below).
+  try {
+    modSystem = createModSystem({
+      app,
+      BrowserWindow,
+      getMainWindow: () => mainWindow,
+      getLocaleKey: getMainLocaleKey,
+      isFeatureEnabled: () => readStoredBoolean(MOD_SYSTEM_ENABLED_SETTING_KEY, true),
+      // Community mods (communityMods.cjs): read here, written by the mod system after its own confirmation.
+      isCommunityEnabled: () => readStoredBoolean(COMMUNITY_MODS_SETTING_KEY, false),
+      writeCommunityEnabled: (enabled) => store.set(COMMUNITY_MODS_SETTING_KEY, Boolean(enabled)),
+      // The windows that run the app with the preload: each shows the community mods switch by itself.
+      getFirstPartyWindows: () => [mainWindow, remoteControlWindow],
+      hostStore: store,
+      freshProfile: isFreshProfile,
+      diagnostics: loginDiagnostics,
+      reportError: (where, error) => crashLog.reportError(where, error, { announceToUser: false }),
+      requestCachePrune: (limitBytes) => pruneMediaCacheForSource(limitBytes),
+      // api.cache.legacyDir: a built-in source's cache of before, in the media cache folder the listener chose.
+      legacyCacheDir: (name) => path.join(getConfiguredCacheDirectory(), name),
+      openExternal: (url) => openExternalUrl(url),
+      resolveExportFfmpeg: () => exportFfmpegResolver.resolve(),
+      // api.native.path / load: the native files the app ships for a built-in source (electron/modSystem/nativeFiles.cjs).
+      // A file that is not there (a development run that has not built it, a broken install) is as unavailable as one
+      // the system has no build of: the source says so at once instead of starting what cannot start.
+      nativePath: (name) => {
+        const resolved = resolveNativeFile(name, {
+          platform: process.platform, isPackaged: app.isPackaged, resourcesPath: process.resourcesPath,
+          projectRoot: path.join(__dirname, '..'), env: process.env,
+        });
+        if (!resolved) return null;
+        if (fs.existsSync(resolved)) return resolved;
+        console.warn('[Mods] A native file of a built-in source is missing', { name });
+        return null;
+      },
+    });
+    modSystem.registerIpc();
+    modSystem.startSources();
+  } catch (error) {
+    console.error('[Mods] Failed to initialize the mod system', error);
   }
   createWindow();
   focusMainWindow();
@@ -6689,18 +6619,13 @@ app.whenReady().then(async () => {
   voiceInputPauseMonitor.syncState();
 
   try {
-    modSystem = createModSystem({
-      app,
-      BrowserWindow,
-      getMainWindow: () => mainWindow,
-      getLocaleKey: getMainLocaleKey,
-      isFeatureEnabled: () => readStoredBoolean(MOD_SYSTEM_ENABLED_SETTING_KEY, false),
-    });
-    modSystem.registerIpc();
+    if (!modSystem) {
+      throw new Error('the mod system was not made before the window');
+    }
     // Loads the enabled mods. If the last start never got to its end, it asks first whether to
     // start without mods this time, and loads once the answer is in (modSystem.cjs `start`).
     modSystem.start();
-    if (readStoredBoolean(MOD_SYSTEM_ENABLED_SETTING_KEY, false)) {
+    if (readStoredBoolean(MOD_SYSTEM_ENABLED_SETTING_KEY, true)) {
       void modSystem.probeFfmpeg();
     }
   } catch (error) {
@@ -6762,19 +6687,18 @@ app.on('window-all-closed', () => {
   }
 });
 
-// The bridges whose work under way holds a quit, each through its shutdown() (see before-quit).
-const quitHoldingBridges = [ytmApiBridge, spotifyApiBridge];
-// Set while a quit is held for such work (see before-quit).
+// Set while a quit is held for a source mod's work (see before-quit).
 let isQuitHeldForAccounts = false;
 
 app.on('before-quit', (event) => {
-  // Work of a bridge that must not be cut off: a web sign-in under way, whose ended browser leaves
-  // a folder holding a whole sign-in session to remove; a token renewal whose answer is not stored
-  // yet, as the next run may not be able to use the token it replaces. shutdown() answers a promise
-  // while there is such work, settled in 3 seconds at most. The quit is held until all have
-  // settled, and then asked for again; nothing below has run by then. A quit with no such work is
-  // not held, and neither is one that arrives while another is held.
-  const held = quitHoldingBridges.map(bridge => bridge.shutdown()).filter(Boolean);
+  // Work of a source mod that must not be cut off (its api.onBeforeQuit, through modSystem.prepareQuit): a
+  // token renewal whose answer is not stored yet, as the next run may not be able to use the token it
+  // replaces; a web sign-in under way, whose ended browser leaves a folder holding a whole sign-in session
+  // to remove; a program of its own still playing. prepareQuit() answers a promise while there is such work,
+  // settled in a few seconds at most. The quit is held until it has settled, and then asked for again;
+  // nothing below has run by then. A quit with no such work is not held, and neither is one that arrives
+  // while another is held.
+  const held = [modSystem?.prepareQuit()].filter(Boolean);
   if (held.length > 0 && !isQuitHeldForAccounts) {
     isQuitHeldForAccounts = true;
     event.preventDefault();
@@ -6857,7 +6781,6 @@ app.on('before-quit', (event) => {
     }
   }
   void discordPresence.destroy();
-  void qqBackend.stop();
   void lyricApi.stop();
 });
 
@@ -6954,7 +6877,9 @@ ipcMain.handle('save-settings', firstParty('save-settings', (event, key, value) 
   }
   // The HiFi key is the old home of the approved mpv path (now in a file of main's own): nothing
   // reads it any more, and the renderer has no business writing it.
-  if (key === 'DISCORD_RICH_PRESENCE_APPLICATION_ID' || isReservedAiCredentialKey(key) || isReservedHifiSettingKey(key)) {
+  // The community mods switch lets third-party code run: only the mod system writes it, after the user confirmed
+  // in a native dialog (folia-mods:set-community). A page in the window (a mod among them) cannot set it here.
+  if (key === 'DISCORD_RICH_PRESENCE_APPLICATION_ID' || key === COMMUNITY_MODS_SETTING_KEY || isReservedAiCredentialKey(key) || isReservedHifiSettingKey(key)) {
     return getPublicSettings();
   }
   if (isAiCredentialKey(key)) {
@@ -7014,11 +6939,10 @@ ipcMain.handle('save-settings', firstParty('save-settings', (event, key, value) 
     // Turning the switch off deactivates every running mod immediately rather
     // than only hiding the UI; turning it on discovers and activates whatever
     // the user had already confirmed.
-    try {
-      modSystem.loadAll();
-    } catch (error) {
+    // Through reloadChanged: a source mod that stops gets its onBeforeUnload first; ordinary mods restart as before.
+    modSystem.reloadChanged({ differential: false }).catch((error) => {
       console.error('[Mods] Failed to apply the mod system switch', error);
-    }
+    });
   }
 
   if (key === WALLPAPER_MODE_SETTING_KEY) {
@@ -7338,19 +7262,123 @@ const persistLocalFolderRoot = (rootName, rootPath) => {
   store.set(LOCAL_FOLDER_DISK_ROOTS_KEY, Object.fromEntries(Object.entries(fresh)));
 };
 
+// 「打开文件夹所在位置」在 Windows 上必须落到资源管理器本身。shell.openPath 走的是系统对
+// 目录的关联处理：Total Commander / Directory Opus 之类的第三方文件管理器会把它接走，网页版
+// 或某些精简系统上甚至会静默失败；它也只回一个错误字符串，分不清「没打开」和「开到了别处」。
+// 这里直接起 explorer.exe，只把目标目录作为参数交出去，资源管理器就会进入该目录。
+// 其他平台没有 explorer.exe，这个入口明确不提供（返回 unsupported）。
+const MAX_EXPLORER_ARG_LENGTH = 30000;
+
+// 「打开此文件夹」没有绑定过磁盘位置时，可搜索的候选起点。歌单通常在音乐/桌面/下载/文档
+// 或某个数据盘根下；这些目录扫三层就够（`D:\CloudMusic\MyMusic\A`）。
+const localFolderSearchRoots = () => {
+  const roots = [];
+  const push = (value) => {
+    if (typeof value !== 'string' || !value) return;
+    if (roots.some(existing => existing.toLowerCase() === value.toLowerCase())) return;
+    try {
+      // 不存在的盘（光驱、未插卡的读卡器）在这里就被挡掉，不会进搜索队列。
+      if (fs.existsSync(value)) roots.push(value);
+    } catch { /* 权限不足的目录直接跳过 */ }
+  };
+  for (const name of ['music', 'desktop', 'downloads', 'documents']) {
+    try { push(app.getPath(name)); } catch { /* 该平台没有这个已知目录 */ }
+  }
+  try { push(app.getPath('home')); } catch { /* 同上 */ }
+  // 数据盘根：用户把曲库放在 D:\Music、E:\音乐 之类很常见。只试固定的几个盘符，
+  // 不遍历 A/B（软驱、光驱）以免系统弹「请插入磁盘」。
+  for (const drive of [process.env.SystemDrive || 'C:', 'D:', 'E:', 'F:']) {
+    push(`${drive.replace(/\\+$/, '')}\\`);
+  }
+  return roots;
+};
+
+const revealFolderInWindowsExplorer = (target) => new Promise(resolve => {
+  if (process.platform !== 'win32') {
+    resolve({ ok: false, reason: 'unsupported' });
+    return;
+  }
+  let absolute = '';
+  try {
+    // explorer 只认绝对路径与反斜杠；path.resolve 在 Windows 上本来就是 win32 语义，
+    // 显式再走一遍 win32.normalize，避免传进来的路径还带着 `..` 或混合分隔符。
+    absolute = path.win32.normalize(path.resolve(String(target ?? '')));
+  } catch {
+    absolute = '';
+  }
+  // 目标里带引号/换行之类会被命令行解析吃掉；超长路径 explorer 也会静默不响应。
+  if (!absolute || absolute.length > MAX_EXPLORER_ARG_LENGTH || /["\r\n]/.test(absolute)) {
+    resolve({ ok: false, reason: 'invalid' });
+    return;
+  }
+
+  let child = null;
+  let settled = false;
+  const settle = (result) => {
+    if (settled) return;
+    settled = true;
+    resolve(result);
+  };
+
+  // 不用裸 `explorer.exe`：打包后 PATH 里可能有同名程序（或被安装目录抢先），
+  // 那会打开一个完全不相干的窗口。直接指向 Windows 自己的那份。
+  const explorerPath = path.win32.join(process.env.SystemRoot || 'C:\\Windows', 'explorer.exe');
+
+  try {
+    // 这里绝不能带 windowsHide：Windows 会把它翻成 STARTF_USESHOWWINDOW + SW_HIDE，
+    // explorer 处理打开请求时沿用调用者的显示方式，窗口就以隐藏状态创建——看起来就是
+    // 「点了没反应」。detached 同理没有意义（explorer 自己就会脱离），一并去掉。
+    // explorer.exe 是个转发器：成功把请求交给已运行的那份后也常以退出码 1 结束，
+    // 所以只认「进程有没有起来」，不去看退出码。
+    child = spawn(explorerPath, [absolute], { stdio: 'ignore' });
+  } catch (error) {
+    console.warn('[LocalMusic] could not launch Explorer', error?.message || error);
+    settle({ ok: false, reason: 'invalid' });
+    return;
+  }
+
+  child.once('error', async (error) => {
+    console.warn('[LocalMusic] Explorer refused the folder', error?.message || error);
+    // explorer 起不来（被安全软件拦、系统精简过）时退回系统关联，至少把目录打开。
+    let fallbackOk = false;
+    try {
+      fallbackOk = (await shell.openPath(absolute)) === '';
+    } catch { fallbackOk = false; }
+    settle(fallbackOk ? { ok: true } : { ok: false, reason: 'invalid' });
+  });
+  child.once('spawn', () => {
+    // 让资源管理器独立于本应用存活：退出应用时不该把刚打开的窗口一起带走。
+    child.unref();
+    settle({ ok: true });
+  });
+});
+
 ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (event, rootName, relativePath, rebind = false) => {
+  // 这个功能只对 Windows 资源管理器成立：其他平台连目录选择框都不该弹，直接告诉渲染端不支持。
+  if (process.platform !== 'win32') return { ok: false, reason: 'unsupported' };
   const parsed = parseLocalFolderRequest(rootName, relativePath);
   if (!parsed) return { ok: false, reason: 'invalid' };
   // 根名来自渲染端又要进原生对话框标题：先去掉控制字符、限制长度。
   const safeRootLabel = parsed.rootName.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 60) || 'folder';
 
   const roots = readLocalFolderDiskRoots();
-  if (rebind === true || typeof roots[parsed.rootName] !== 'string' || !roots[parsed.rootName]) {
+  if (rebind !== true && typeof roots[parsed.rootName] !== 'string') {
+    // 从没绑定过：先在常见位置找一遍。唯一命中就直接记住，之后点一下就是资源管理器；
+    // 找不到或有同名歧义才弹目录选择框。
+    const found = await locateImportedFolderOnDisk(parsed.rootName, parsed.tail, localFolderSearchRoots());
+    if (found.length === 1) persistLocalFolderRoot(parsed.rootName, found[0]);
+  }
+  const boundRoot = readLocalFolderDiskRoots()[parsed.rootName];
+  if (rebind === true || typeof boundRoot !== 'string' || !boundRoot) {
     // 遥控窗口也能调这个通道：目录选择框挂在调用者自己的窗口上，不认全局 mainWindow。
+    // 自动定位没命中才走到这里，文案跟着界面语言走，别在中文界面弹一句英文。
     const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    const isChineseUi = String(app.getLocale?.() || '').toLowerCase().startsWith('zh');
     const picked = await dialog.showOpenDialog(owner, {
-      title: `Select the imported folder "${safeRootLabel}" itself (not its parent)`,
-      buttonLabel: 'Use this folder',
+      title: isChineseUi
+        ? `请选择导入文件夹「${safeRootLabel}」本身（不是它的上级目录）`
+        : `Select the imported folder "${safeRootLabel}" itself (not its parent)`,
+      buttonLabel: isChineseUi ? '使用此文件夹' : 'Use this folder',
       defaultPath: app.getPath('music'),
       properties: ['openDirectory'],
     });
@@ -7381,13 +7409,12 @@ ipcMain.handle('local-folder-reveal', firstParty('local-folder-reveal', async (e
     if (rel.startsWith('..') || path.isAbsolute(rel)) {
       return { ok: false, reason: 'invalid' };
     }
-    // 必须用 openPath 直接打开目标目录。showItemInFolder 打开的是「父目录并选中该项」，
-    // 导入根若位于「下载」下，表现就是跳到「下载」而不是进入指定目录。
-    const error = await shell.openPath(realTarget);
-    if (error) {
-      console.warn('[LocalMusic] could not open folder', error);
+    // 打开的是目标目录本身（不是父目录）：导入根若位于「下载」下，也应该直接进入指定目录。
+    const opened = await revealFolderInWindowsExplorer(realTarget);
+    if (!opened.ok) {
+      console.warn('[LocalMusic] could not open folder', realTarget, opened.reason);
       // 打开失败（资源管理器占用 / 权限）不是映射失效，别让渲染端去重绑目录。
-      return { ok: false, reason: 'invalid' };
+      return { ok: false, reason: opened.reason === 'unsupported' ? 'unsupported' : 'invalid' };
     }
   } catch (error) {
     console.warn('[LocalMusic] could not resolve folder on disk', error?.message || error);
@@ -7446,7 +7473,14 @@ ipcMain.handle('has-audio-cache', firstParty('has-audio-cache', async (event, ca
 }));
 
 ipcMain.handle('save-audio-cache', firstParty('save-audio-cache', async (event, cacheKey, data, mimeType, limitBytes) => {
+  noteMediaCacheLimit(limitBytes);
   await writeAudioCacheEntry(cacheKey, data, mimeType, limitBytes);
+  return true;
+}));
+
+// The listener's media cache limit, named before a source keeps a file in a cache of its own (see noteMediaCacheLimit).
+ipcMain.handle('set-media-cache-limit', firstParty('set-media-cache-limit', async (event, limitBytes) => {
+  noteMediaCacheLimit(limitBytes);
   return true;
 }));
 
@@ -7518,92 +7552,22 @@ ipcMain.handle('clear-local-cover-assets', firstParty('clear-local-cover-assets'
 }));
 
 // 内嵌后端的端口、状态、重启、诊断快照与主动自检（electron/loginBackendIpc.cjs）。
-registerLoginBackendIpc({
-  ipcMain,
-  app,
-  safeStorage,
-  getDefaultSession: () => session.defaultSession,
-  neteaseBackend,
-  qqBackend,
-  isTrustedSender: isFirstPartyWindowContents,
+// 它交回登录诊断与自检的登记表（{ diagnostics }，Folium 2.0 接缝）：里面是还在宿主里的内嵌后端，音源模组的
+// api.diagnostics 往里登记。
+const loginBackend = registerLoginBackendIpc({
+    ipcMain,
+    app,
+    safeStorage,
+    getDefaultSession: () => session.defaultSession,
+    networkRecorder,
+    isTrustedSender: isFirstPartyWindowContents,
 });
-
-// Both channels reach the embedded KuGou API. `kugou-api-request` forwards the renderer's operation
-// and params verbatim, so it is a write-capable surface rather than a read-only one; the bridge keeps
-// its own operation allowlist, so what this guard adds is the caller surface. Trusted here means the
-// two first-party windows - the main window and the remote-control window, which runs the same app
-// and therefore the same online providers. `bodian-api-request` below gates the same way.
-//
-// Boundary, stated plainly: comparing webContents identity rejects other windows (a popup opened with
-// window.open carries the same preload). It cannot stop script already running inside a trusted
-// window - that is the CSP and preload layer's job, not this check's. isFirstPartyWindowContents is
-// defined next to the other trust checks (after isTrustedRemoteControlContents).
-
-ipcMain.handle('kugou-api-status', createSenderGuardedHandler({
-  channel: 'kugou-api-status',
-  // 只回传可用性、登录状态与错误：拒绝时给一个「没有这个能力」的取值，让调用方走 unavailable 分支。
-  isTrusted: isFirstPartyWindowContents,
-  onUntrusted: () => null,
-  handler: () => kugouApiBridge.getStatus(),
-}));
-ipcMain.handle('kugou-api-request', createSenderGuardedHandler({
-  channel: 'kugou-api-request',
-  isTrusted: isFirstPartyWindowContents,
-  handler: (_event, operation, params) => kugouApiBridge.request(operation, params),
-}));
-ipcMain.handle('qishui-api-request', (event, operation, params) => {
-  if (!isTrustedMainWindowContents(event.sender)) return { ok: false, error: { code: 'unavailable', message: 'Untrusted Qishui request' } };
-  return qishuiApiBridge.request(operation, params);
-});
-
-// 飞牛音乐请求桥：服务器与凭据保存在主进程，渲染进程只发操作；Cookie 认证头、
-// 自签名证书容忍都在主进程桥内完成（用受信窗口守卫）。
-ipcMain.handle('fnmusic-api-request', createSenderGuardedHandler({
-  channel: 'fnmusic-api-request',
-  isTrusted: (event) => isTrustedMainWindowContents(event.sender),
-  handler: (_event, operation, params) => {
-    const handlerByOperation = {
-      login: () => fnMusicApiBridge.login(params),
-      logout: () => fnMusicApiBridge.logout(params),
-      request: () => fnMusicApiBridge.request(params),
-      stream: () => fnMusicApiBridge.stream(params),
-      coverUrl: () => fnMusicApiBridge.coverUrl(params),
-      getStatus: () => {
-        const status = fnMusicApiBridge.getStatus();
-        return { ok: true, data: status };
-      },
-    };
-    const handler = handlerByOperation[operation];
-    if (!handler) return { ok: false, error: { code: 'unsupported', message: `Unknown FnMusic operation: ${operation}` } };
-    return handler();
-  },
-}));
-
-// 状态查询走异步 fnmusic-api-request('getStatus')，不再用 sendSync 同步 IPC（避免渲染主线程
-// 阻塞在 safeStorage 解密上；本地代理已删除，注释里"要同步拿本地代理端口"的前提已不存在）。
-
-ipcMain.handle('bodian-api-request', (event, operation, params) => {
-  if (!isTrustedMainWindowContents(event.sender)) {
-    return { ok: false, error: { code: 'unavailable', message: 'Untrusted Bodian request' } };
-  }
-  return bodianApiBridge.request(operation, params);
-});
-ipcMain.handle('ytm-api-request', (event, operation, params) => {
-  if (!isTrustedMainWindowContents(event.sender)) {
-    return { ok: false, error: { code: 'unavailable', message: 'Untrusted YouTube Music request' } };
-  }
-  return ytmApiBridge.request(operation, params);
-});
-ipcMain.handle('apple-music-request', createCompanionRequestHandler({
-  isTrusted: isTrustedMainWindowContents,
-  client: appleMusicClient,
-}));
-ipcMain.handle('spotify-api-request', (event, operation, params) => {
-  if (!isTrustedMainWindowContents(event.sender)) {
-    return { ok: false, error: { code: 'unavailable', message: 'Untrusted Spotify request' } };
-  }
-  return spotifyApiBridge.request(operation, params);
-});
+// 音源模组的 api.diagnostics：登记进同一张表，快照与自检和登录窗口的两个通道答的一样。
+const loginDiagnostics = {
+    register: (sourceId, backend) => loginBackend.diagnostics.register(sourceId, backend),
+    snapshot: loginBackend.snapshot,
+    selfCheck: loginBackend.selfCheck,
+};
 
 ipcMain.handle('window-minimize', firstParty('window-minimize', () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
@@ -8023,7 +7987,6 @@ ipcMain.handle('global-shortcuts-set', (event, accelerators) => {
 });
 
 app.on('will-quit', () => {
-  appleMusicClient.close();
   stageApi.dispose();
   globalShortcutController?.dispose();
   hifiSession.killSync();
@@ -8065,7 +8028,8 @@ ipcMain.handle('remote-control-toggle', (event) => {
 });
 
 ipcMain.handle('remote-control-close', (event) => {
-  if (!isTrustedRemoteControlContents(event.sender)) {
+  // The remote window closes itself; the main window closes it from Settings → Remote Control.
+  if (!isTrustedRemoteControlContents(event.sender) && !isTrustedMainWindowContents(event.sender)) {
     throw new Error('Untrusted renderer attempted to close the remote control window.');
   }
 
@@ -8383,6 +8347,18 @@ ipcMain.handle('video-export-abort-file', (event, sessionId) => {
   return videoExportFileWriter.abort(sessionId);
 });
 
+registerAlphaExportIpc({
+  ipcMain,
+  dialog,
+  app,
+  resolver: exportFfmpegResolver,
+  getModSystem: () => modSystem,
+  getMainWindow: () => mainWindow,
+  getSenderWindow: (event) => BrowserWindow.fromWebContents(event.sender),
+  isFirstParty: isFirstPartyWindowContents,
+  isMainWindowSender: (event) => isTrustedMainWindowContents(event.sender),
+});
+
 ipcMain.handle('debug-get-rendered-fonts', async (event, selector) => {
   if (!isTrustedMainWindowContents(event.sender)) {
     throw new Error('Untrusted renderer attempted to read rendered font data.');
@@ -8430,6 +8406,15 @@ ipcMain.handle('bilibili-request', async (event, request) => {
     throw new Error('Untrusted renderer attempted to call the bilibili API.');
   }
   return bilibiliApi.request(request);
+});
+
+// 在线视频：把带签名的直链交给主进程，换回一条 folia-bili:// 的本机地址。地址给了播放器就是一条
+// 可以边读边播的流（主进程按 Range 转发 CDN 的字节，并把同一批字节抄进缓存），不再有「先下完再播」。
+ipcMain.handle('bilibili-video-open', async (event, request) => {
+  if (!isTrustedMainWindowContents(event.sender)) {
+    throw new Error('Untrusted renderer attempted to open a bilibili video stream.');
+  }
+  return bilibiliApi.openVideoStream(request);
 });
 
 // Integrate AI logic locally into Electron
