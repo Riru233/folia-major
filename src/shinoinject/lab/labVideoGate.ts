@@ -9,23 +9,14 @@ export const LAB_VIDEO_PLAYBACK_KEY = 'shino_lab_video_playback';
 /** 在线视频（首页分组 + 设置分区）的总开关，默认关闭：打开实验室里的这一项才露出入口。 */
 export const LAB_ONLINE_VIDEO_KEY = 'shino_lab_online_video';
 
-/**
- * 实验室这一版整体不露面（设置侧栏的 lab 项也读它）。
- * true 时实验室里的实验一律按「关」处理：在线视频、视频播放、bilibili 视频背景都不露出入口，
- * 也不会因为用户以前存过 true 就漏出来。已存的开关值保留着，改回 false 就原样恢复。
- */
-export const SHINO_LAB_ENTRY_HIDDEN = true;
-
 /** 与 store 的默认值一致：从没存过就是关闭（实验室里的实验一律默认关，要用户自己打开）。 */
 export const isLabVideoPlaybackEnabled = (): boolean => {
-    if (SHINO_LAB_ENTRY_HIDDEN) return false;
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') return false;
     return getStoredBoolean(LAB_VIDEO_PLAYBACK_KEY, false);
 };
 
 /** 在线视频入口是否打开。默认关闭：实验室里的开关打开后才露出首页分组与设置分区。 */
 export const isLabOnlineVideoEnabled = (): boolean => {
-    if (SHINO_LAB_ENTRY_HIDDEN) return false;
     if (typeof window === 'undefined') return false;
     return getStoredBoolean(LAB_ONLINE_VIDEO_KEY, false);
 };
@@ -52,7 +43,7 @@ export const isGatedVideoRecord = (song: { mediaKind?: 'audio' | 'video' }): boo
 /**
  * 关掉实验后，视频记录不再出现在曲库列表、队列和会话恢复里。
  * 只过滤读出来的结果，记录本身留在库里：重新打开开关就立刻回来，不需要重扫。
- * `videoEnabled` 缺省读当前开关；显式传入只给测试用（实验室入口隐藏时开关恒为关）。
+ * `videoEnabled` 缺省读当前开关；显式传入只给测试用。
  */
 export const withoutGatedVideoSongs = <T extends { mediaKind?: 'audio' | 'video' }>(
     songs: readonly T[],

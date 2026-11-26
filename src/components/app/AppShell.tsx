@@ -265,7 +265,7 @@ const AppShell: React.FC<AppShellProps> = ({
                         // 和自绘按钮靠左时让出的距离用同一个常量，两边不会各写一套。
                         style={nativeTrafficLights ? { paddingLeft: nativeTrafficLightsReservedWidth(uiZoom) } : undefined}
                         >
-                          Folia Shino Preview
+                          Folia Shino Deluxe
                         </motion.div>
                         <TitlebarDragZone active={usesCustomWindowChrome} />
                         {/* 锁离窗口边缘的距离由 resolveUnlockButtonInset 算：右侧时是 right，

@@ -34,10 +34,9 @@ describe('isLabVideoPlaybackEnabled', () => {
         expect(isLabVideoPlaybackEnabled()).toBe(false);
     });
 
-    it('实验室入口隐藏时，即使存过 true 也按关闭处理', () => {
+    it('存过 true 时按打开处理', () => {
         stubStorage({ [LAB_VIDEO_PLAYBACK_KEY]: 'true' });
-        // SHINO_LAB_ENTRY_HIDDEN 为 true 的这一版：实验一律按关，存下的值只等入口恢复后才生效。
-        expect(isLabVideoPlaybackEnabled()).toBe(false);
+        expect(isLabVideoPlaybackEnabled()).toBe(true);
     });
 });
 

@@ -16,7 +16,6 @@ import { DEFAULT_LYRIC_RENDER_QUALITY, LYRIC_RENDER_QUALITY_STORAGE_KEY, normali
 
 import { getStoredString } from './storagePrimitives';
 import { normalizeRandomVisualizerModes } from '../utils/randomVisualizerModes';
-import { SHINO_LAB_ENTRY_HIDDEN } from '../shinoinject/lab/labVideoGate';
 
 export const RANDOM_VISUALIZER_MODES_STORAGE_KEY = 'random_visualizer_modes';
 
@@ -125,9 +124,6 @@ export const readStoredVisualizerBackgroundMode = (): VisualizerBackgroundMode |
     }
 
     const saved = localStorage.getItem('visualizer_background_mode');
-    // 「视频」背景是实验室里的实验：实验室这一版不露面时它不可选，启动时也不要停在上面
-    // （否则画不出画面，只剩一块空背景）。开关打开后照样按存下的值回来。
-    if (SHINO_LAB_ENTRY_HIDDEN && saved === 'video') return null;
     return isBuiltinVisualizerBackgroundMode(saved) ? saved : null;
 };
 
