@@ -32,9 +32,8 @@ type NewFeaturesRelease = {
 
 
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
-    i18nKey: 'releaseNotes.v0_8_0',
-    majorUpdate: { codename: 'Severance' },
-    banner: { imageUrl: shinoBanner, i18nKey: 'releaseNotes.v0_8_0.banner' },
+    i18nKey: 'releaseNotes.v0_8_2',
+    majorUpdate: { codename: 'Severance', servicePack: 2 },
     features: [
         // 这一版的重点是整套界面：首页布局、设置页、液态玻璃各占一张卡片，排在原有内容前面。
         { id: 'deluxeLayout', icon: LayoutGrid },

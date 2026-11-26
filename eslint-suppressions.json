@@ -1712,9 +1712,6 @@
     "@typescript-eslint/no-unnecessary-type-assertion": {
       "count": 1
     },
-    "@typescript-eslint/no-unsafe-argument": {
-      "count": 1
-    },
     "@typescript-eslint/no-unsafe-assignment": {
       "count": 4
     },
@@ -1727,7 +1724,7 @@
       "count": 1
     },
     "@typescript-eslint/no-explicit-any": {
-      "count": 20
+      "count": 19
     },
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 6
@@ -1736,10 +1733,10 @@
       "count": 1
     },
     "@typescript-eslint/no-unsafe-argument": {
-      "count": 2
+      "count": 1
     },
     "@typescript-eslint/no-unsafe-assignment": {
-      "count": 57
+      "count": 55
     },
     "@typescript-eslint/no-unsafe-call": {
       "count": 3
