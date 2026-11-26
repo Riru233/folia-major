@@ -104,3 +104,7 @@ public/nebbia-strokes.json
 
 # 忽略补丁
 patch/
+
+.workbuddy/
+build/
+dist-mods/
