@@ -1,4 +1,4 @@
-import { Bug, Droplets, LayoutGrid, ListMusic, MessageSquareText, PanelTop, Puzzle, SeparatorHorizontal, SlidersVertical, Sparkles, Store } from 'lucide-react';
+import { FolderCog, FolderSearch } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HomeViewTab } from '../../types';
 import shinoBanner from '../../../assets/banners/folia-shino-0.8.0.jpg?url';
@@ -35,18 +35,8 @@ export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
     i18nKey: 'releaseNotes.v0_8_2',
     majorUpdate: { codename: 'Severance', servicePack: 2 },
     features: [
-        // 这一版的重点是整套界面：首页布局、设置页、液态玻璃各占一张卡片，排在原有内容前面。
-        { id: 'deluxeLayout', icon: LayoutGrid },
-        { id: 'settingsRenewal', icon: PanelTop },
-        { id: 'liquidGlass', icon: Droplets },
-        // 这一版收尾时追加的两项：播放栏的分隔线，以及这一轮修掉的问题。
-        { id: 'dockSeparators', icon: SeparatorHorizontal },
-        { id: 'sourceMods', icon: Puzzle },
-        { id: 'modMarket', icon: Store },
-        { id: 'foliaPlaylists', icon: ListMusic },
-        { id: 'moments', icon: MessageSquareText },
-        { id: 'stemMixer', icon: SlidersVertical },
-        { id: 'moreDetails', icon: Sparkles },
-        { id: 'bugFixes', icon: Bug },
+        // 0.8.2 是热修复版：只列这一版修掉的问题，不重复 0.8.0 的新特性。
+        { id: 'localFolderRecovery', icon: FolderSearch },
+        { id: 'localFolderSafety', icon: FolderCog },
     ],
 };
