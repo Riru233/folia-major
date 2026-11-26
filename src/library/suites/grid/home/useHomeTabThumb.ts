@@ -302,11 +302,19 @@ export const useHomeTabThumb = <K extends string>({
 
     // 宽度弹簧因跟随指针而改变时，把 left 同步到「新宽度下仍让中心对齐指针」的位置。
     // 拖动中 left 平时由 pointermove 直接 jump，这里补上弹簧自己跑的那几帧。
+    // 但「按下还没越过拖动阈值」的纯点击不能用 jump：pointerdown 里已经用 set 起了平滑滑行，
+    // 宽度弹簧一变化就 jump 会把那条滑行动画当场打断成瞬移（从一个页签点到另一个页签时摇杆跳过去、
+    // 不平滑）。这时改用 set 把 left 继续 retarget 到同一位置——set 保留速度、不打断动画，
+    // 中心照样对齐指针；只有真正拖动（moved）才需要 jump 的即时跟手。
     useMotionValueEvent(thumbWidth, 'change', () => {
         if (!draggingRef.current) return;
         const clientX = dragPointerXRef.current;
         if (clientX === null) return;
-        thumbLeft.jump(pointerTargetLeft(clientX));
+        if (gestureRef.current?.moved) {
+            thumbLeft.jump(pointerTargetLeft(clientX));
+        } else {
+            thumbLeft.set(pointerTargetLeft(clientX));
+        }
     });
 
     const clearStretchIdleTimer = useCallback(() => {
@@ -445,10 +453,15 @@ export const useHomeTabThumb = <K extends string>({
         // 宽度跟着指针所在页签实时变：用 set 而不是 jump，让它像果冻一样补间过去；
         // 上面的 change 监听会把 left 同步补偿，保证中心仍压在指针正下方。
         thumbWidth.set(widthAtClient(event.clientX));
-        // 跟手用 jump 保持即时响应、不引入弹簧滞后；松手/吸附才交给弹簧。jump 会清掉正在跑的
-        // 弹簧，所以松手时 .set 会从当前指针位置重新起弹，不会「飞回来」。
+        // 真正拖动才跟手 jump（即时响应、不引入弹簧滞后）；越过阈值前的轻微漂移仍算点击，
+        // 用 set 接着 pointerdown 起的滑行，别把摇杆打断成瞬移。jump 会清掉正在跑的弹簧，
+        // 所以松手时 .set 会从当前指针位置重新起弹，不会「飞回来」。
         const target = pointerTarget(event.clientX);
-        thumbLeft.jump(target.left);
+        if (gesture.moved) {
+            thumbLeft.jump(target.left);
+        } else {
+            thumbLeft.set(target.left);
+        }
         // 幅度跟着这一下的横向速度走，方向由「触没触边」定：顶到轨道两端时往上鼓，中间自由跟手时往两边甩。
         if (gesture.moved && stretchAllowedRef.current) {
             sampleStretchSpeed(event.clientX, event.timeStamp, isThumbAtEdge(target.left, target.max));
