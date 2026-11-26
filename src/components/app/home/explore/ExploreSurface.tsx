@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Loader2, RefreshCw } from 'lucide-react';
+import { useGlass } from '@/shinoinject/useGlass';
+import { useThemeSettingsStore } from '../../../../stores/useThemeSettingsStore';
 import type { SongResult } from '../../../../types';
 import type { OmniCollection, OmniProviderId } from '../../../../types/onlineMusic';
 import { exploreScroll, useExploreFeedStore } from '../../../../stores/useExploreFeedStore';
@@ -22,11 +24,9 @@ import { LoadingRing } from '../../../shared/LoadingRing';
 //  - the active provider's recommendation page (useExploreFeedStore, behind it the provider's
 //    `OnlineExploreProvider`). Reaching the end of the list reads the page's further sections.
 // Nothing here knows which provider it is: another one needs its own `OnlineExploreProvider`.
-// The page's own control ("refresh") is not part of the list: it stands over the list's top right
-// corner, where the first heading row leaves it room, and stays there while the list scrolls
-// under it. What passes under the list's top edge then blurs and fades out (ExploreEdgeBlur.tsx),
-// so that a heading row's own buttons are dim where they pass under the control (they are not
-// gone: the fade is whole only at the very edge).
+// The page's own control ("refresh") is not part of the list: it floats over the list's bottom
+// right corner as a large liquid-glass button and stays there while the list scrolls under it.
+// What passes under the list's edges blurs and fades out (ExploreEdgeBlur.tsx).
 // Two things belong to the page as a whole and not to any entry: its light (ExploreLight.tsx),
 // which stands behind the list, and that a picture leans to the pointer over it (exploreTilt.ts).
 
@@ -50,6 +50,9 @@ interface ExploreSurfaceProps {
 
 export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, accountId, scope, onPlaySong, onOpenCollection }) => {
     const { t } = useTranslation();
+    const isDaylight = useThemeSettingsStore(state => state.isDaylight);
+    // The refresh button is liquid glass: wire the page's own glass scan (idempotent, every commit).
+    useGlass();
     const key = `${providerId}:${scope}`;
     const keptKey = useExploreFeedStore(state => state.key);
     const feed = useExploreFeedStore(state => (state.key === key ? state.feed : null));
@@ -70,11 +73,10 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
     // The floating scrollbar points at the list through this id; one page per surface.
     const listId = useId();
     const end = useRef<HTMLDivElement>(null);
-    const pin = useRef<HTMLDivElement>(null);
     useExploreTilt(list);
-    // What follows the scroll without a render: how far the list's top edge fades what passes
-    // under it (nothing while the list stands at its top), and that the control now floats over
-    // the list.
+    // What follows the scroll without a render: how far the list's edges fade what passes under
+    // them (nothing at the very top / bottom). The refresh button floats at a fixed corner, so
+    // it needs no scroll-driven state.
     const follow = useCallback(() => {
         const element = list.current;
         if (!element) return;
@@ -83,7 +85,6 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
         const below = element.scrollHeight - element.clientHeight - top;
         element.style.setProperty('--ex-top-fade', `${Math.min(top, TOP_FADE)}px`);
         element.style.setProperty('--ex-bottom-fade', `${Math.min(Math.max(below, 0), BOTTOM_FADE)}px`);
-        pin.current?.toggleAttribute('data-floating', top > 0);
     }, []);
     // The width of the list's scrollbar, which comes and goes with what the list holds: the
     // control keeps clear of it, in line with the heading rows.
@@ -143,38 +144,50 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
             <button type="button" data-explore-retry-page onClick={readAgain} className={`h-8 px-4 ${EXPLORE_PILL}`}>{t('home.exploreRetry')}</button>
         </div>
     );
-    // The page's own control: read the provider's page anew. The page shown stays while the next
-    // one is read; a read that failed leaves a mark on the control, which then tries again.
+    // The page's own control: read the provider's page anew. It floats as a large liquid-glass
+    // button over the list's bottom right corner. The page shown stays while the next one is read;
+    // a read that failed leaves a mark on the control, which then tries again.
     const hasRefresh = !isLoading && feed.status !== 'error';
     const refreshLabel = t(feed?.refreshFailed ? 'home.exploreRetry' : 'home.exploreRefresh');
     return (
         <div className="relative h-full w-full self-stretch" style={EXPLORE_TOKENS}>
             {hasRefresh && ready && (
-                // Laid out as the list's own content is, so that the control ends where the heading rows end.
-                // Before the list, so that the keyboard reaches it before the list's own buttons, as it did in its row.
                 <motion.div
-                    ref={pin}
                     // It comes with the page it belongs to, as quietly as the page's first heading does.
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3 }}
-                    className="group pointer-events-none absolute inset-x-0 top-2 z-10"
+                    className="pointer-events-none absolute inset-x-0 bottom-8 z-20"
                     style={{ paddingRight: barWidth }}
                 >
                     <div className="mx-auto flex w-full max-w-7xl justify-end px-4 md:px-8">
                         <button
                             type="button"
                             data-explore-refresh
+                            data-glass
+                            data-glass-light
+                            data-glass-jelly
                             disabled={feed.refreshing}
                             title={feed.refreshFailed ? t('home.exploreFailed') : refreshLabel}
                             aria-label={refreshLabel}
                             onClick={readAgain}
-                            // In its heading row it is one of the row's buttons; over the list it is a pane of glass.
-                            className={`pointer-events-auto relative flex h-8 w-8 items-center justify-center duration-300 group-data-[floating]:bg-[var(--ex-tint-strong)] group-data-[floating]:shadow-lg group-data-[floating]:backdrop-blur-md ${EXPLORE_PILL}`}
-                            style={{ transitionProperty: 'color, background-color, box-shadow, backdrop-filter' }}
+                            className="pointer-events-auto relative flex h-10 w-10 items-center justify-center rounded-full"
+                            style={{
+                                backgroundColor: isDaylight
+                                    ? "rgba(215,215,215,0.42)"
+                                    : "rgba(40, 40, 40, 0.42)",
+                                borderTop: isDaylight
+                                    ? "1px solid #fff6"
+                                    : "1px solid #fff5",
+                                borderBottom: isDaylight
+                                    ? "1px solid #fff6"
+                                    : "1px solid #fff5",
+                                outline: "1px solid rgba(35,35,35,0.3)",
+                                boxShadow: "0px 8px 16px rgba(40,40,40,0.2)",
+                            }}
                         >
-                            <RefreshCw size={14} className={feed.refreshing ? 'animate-spin' : ''} />
-                            {feed.refreshFailed && <span data-explore-refresh-failed className="absolute right-0 top-0 h-2 w-2 rounded-full bg-amber-400" />}
+                            <RefreshCw size={16} className={feed.refreshing ? 'animate-spin' : ''} />
+                            {feed.refreshFailed && <span data-explore-refresh-failed className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-amber-400" />}
                         </button>
                     </div>
                 </motion.div>
@@ -199,7 +212,7 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                 }}
             >
                 <ExploreEdgeBlur edge="top" />
-                <div className="mx-auto w-full max-w-7xl pb-12 pt-2 pr-8 pl-[95px]">
+                <div className="mx-auto w-full max-w-7xl pb-12 pt-[120px] pr-8 pl-[95px]">
                     {!ready ? (
                         // Just entered: the ring stands in until the sections are put on the page.
                         <div className="flex justify-center py-24" aria-busy="true"><LoadingRing /></div>
@@ -222,8 +235,6 @@ export const ExploreSurface: React.FC<ExploreSurfaceProps> = ({ providerId, acco
                                 onPlaySong={onPlaySong}
                                 onOpenCollection={onOpenCollection}
                                 onLoadMoreOf={sectionId => void loadMoreOf(sectionId)}
-                                // Room for the control that stands over this corner of the list.
-                                pageControls={hasRefresh ? <span data-explore-controls-room aria-hidden className="h-8 w-8 shrink-0  mt-[188px]" /> : undefined}
                             />
                             {/* Under the sections, the state of the provider's page: what the app keeps itself is shown through all of it. */}
                             {isLoading ? (
