@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "registry": "https://skillhub.360.com",
+  "slug": "super-session-cleanup",
+  "installedVersion": "1.4.0",
+  "installedAt": 1795705679381,
+  "skillId": "clawhub:kd7e55mkf3wz6wgpzncpc5kpks850sj2",
+  "apiSlug": "super-session-cleanup",
+  "publicPath": "chaobs/super-session-cleanup",
+  "installDir": "super-session-cleanup"
+}
