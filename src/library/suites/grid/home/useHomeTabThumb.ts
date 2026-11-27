@@ -85,6 +85,9 @@ export const useHomeTabThumb = <K extends string>({
     const thumbLeft = useSpring(0, THUMB_SPRING);
     const thumbWidth = useSpring(0, THUMB_SPRING);
     const thumbHeight = useSpring(0, THUMB_SPRING);
+    // 整条轨道的内容宽度：大类切换时页签集合变多/变少，外层胶囊容器据此平滑改宽度，
+    // 不再瞬间跳变。与摇杆共用同一组弹簧参数，两者节奏一致。
+    const trackWidth = useSpring(0, THUMB_SPRING);
     // 按住时的基础缩放（1 → DRAG_SCALE）与速度形变强度（0 → 1）分开存，相乘后得到两个轴的比例：
     // 松手时基础缩放回到 1、形变同时收回 0，两段互不干扰。这些都是 MotionValue，拖动期间不触发 React 重渲染。
     const dragScale = useSpring(1, DRAG_SCALE_SPRING);
@@ -166,7 +169,14 @@ export const useHomeTabThumb = <K extends string>({
         layoutRef.current = buttons.map(button => ({ left: button.offsetLeft, width: button.offsetWidth }));
         // 摇杆高度 = 轨道高度：所有页签一样高，宽度按页签量、高度整条轨道一个值。
         trackHeightRef.current = track.offsetHeight;
-    }, [trackRef]);
+        // 轨道的自然内容宽度（页签 right 的最大值）：外层胶囊容器拿它改宽度。用 set 而非 jump，
+        // 大类切换导致页签集合变化时容器宽度平滑过渡；首次定位时 jump，避免从 0 滑入。
+        const contentWidth = layoutRef.current.reduce((right, entry) => Math.max(right, entry.left + entry.width), 0);
+        if (contentWidth > 0) {
+            if (!positionedRef.current || prefersReducedMotion()) trackWidth.jump(contentWidth);
+            else trackWidth.set(contentWidth);
+        }
+    }, [trackRef, trackWidth]);
 
     // Glide onto a tab's measured box; used by every non-drag reposition so motion stays smooth.
     const glideToIndex = useCallback((index: number) => {
@@ -289,32 +299,33 @@ export const useHomeTabThumb = <K extends string>({
         return Math.min(activeKeyToIndex(itemsRef.current, activeKeyRef.current), Math.max(0, layout.length - 1));
     }, []);
 
+    // 指针位置落在哪个页签上——纯点击的「按下即吸附」和拖动时的基准宽度都用它，判定与松手一致。
+    // 中心换算沿用 pointerTarget 的 scale 处理；跳过不可用页签。
+    const indexAtClient = useCallback((clientX: number) => {
+        if (layoutRef.current.length === 0) return 0;
+        const scale = trackScaleRef.current || 1;
+        const localX = (clientX - trackRectLeftRef.current) / scale;
+        return nearestTabIndex(localX);
+    }, [nearestTabIndex]);
+
     // 拖动中按指针所在位置取「最近页签」的基准宽度，让摇杆宽度经过哪个页签就像哪个页签。
-    // 中心换算沿用 pointerTarget 的 scale 处理；跳过不可用页签，跟松手吸附用同一套判定。
     const widthAtClient = useCallback((clientX: number) => {
         const layout = layoutRef.current;
         if (layout.length === 0) return thumbWidth.get();
-        const scale = trackScaleRef.current || 1;
-        const localX = (clientX - trackRectLeftRef.current) / scale;
-        const index = nearestTabIndex(localX);
-        return layout[index]?.width ?? thumbWidth.get();
-    }, [nearestTabIndex, thumbWidth]);
+        return layout[indexAtClient(clientX)]?.width ?? thumbWidth.get();
+    }, [indexAtClient, thumbWidth]);
 
     // 宽度弹簧因跟随指针而改变时，把 left 同步到「新宽度下仍让中心对齐指针」的位置。
-    // 拖动中 left 平时由 pointermove 直接 jump，这里补上弹簧自己跑的那几帧。
-    // 但「按下还没越过拖动阈值」的纯点击不能用 jump：pointerdown 里已经用 set 起了平滑滑行，
-    // 宽度弹簧一变化就 jump 会把那条滑行动画当场打断成瞬移（从一个页签点到另一个页签时摇杆跳过去、
-    // 不平滑）。这时改用 set 把 left 继续 retarget 到同一位置——set 保留速度、不打断动画，
-    // 中心照样对齐指针；只有真正拖动（moved）才需要 jump 的即时跟手。
+    // 只有真正拖动（moved）才需要这个补偿：left 平时由 pointermove 直接 jump，这里补上弹簧自己跑的那几帧。
+    // 纯点击阶段（按下还没越过阈值）不做——此时 left 的目标是「页签中心」，由 pointerdown 里的
+    // glideToIndex 统一负责；如果这里再把它拉回指针落点，就和 glideToIndex 抢目标，摇杆先滑到
+    // 落点、再滑到页签中心，变成两段式移动（点在页签非中心处尤其明显）。
     useMotionValueEvent(thumbWidth, 'change', () => {
         if (!draggingRef.current) return;
+        if (!gestureRef.current?.moved) return;
         const clientX = dragPointerXRef.current;
         if (clientX === null) return;
-        if (gestureRef.current?.moved) {
-            thumbLeft.jump(pointerTargetLeft(clientX));
-        } else {
-            thumbLeft.set(pointerTargetLeft(clientX));
-        }
+        thumbLeft.jump(pointerTargetLeft(clientX));
     });
 
     const clearStretchIdleTimer = useCallback(() => {
@@ -427,9 +438,11 @@ export const useHomeTabThumb = <K extends string>({
         trackScaleRef.current = track && rect && track.offsetWidth > 0 ? rect.width / track.offsetWidth : 1;
         gestureRef.current = { pointerId: event.pointerId, startX: event.clientX, moved: false };
         dragPointerXRef.current = event.clientX;
-        // 宽度从落点所在页签起算，之后拖动途中按指针位置实时改目标宽度（弹簧平滑过渡）。
-        thumbWidth.set(widthAtClient(event.clientX));
-        thumbLeft.set(pointerTargetLeft(event.clientX));
+        // 按下即吸附到「落点所在页签」的完整几何（中心 + 宽度），一条弹簧直达目标页签。
+        // 之前这里只 set 到指针落点，等 pointerup 再 glide 到页签中心，两段式移动看起来一顿一顿；
+        // 直接 glideToIndex 后，纯点击从按下到松手目标始终是同一个页签中心，路径平滑不折返。
+        // 真正拖动时 pointermove 会立刻接管成跟手，不受这个初始吸附影响。
+        glideToIndex(indexAtClient(event.clientX));
         dragScale.set(DRAG_SCALE);
         // 系统开了「减少动态效果」就只保留放大、不做速度形变（与 data-glass-jelly 的处理一致）。
         stretchAllowedRef.current = !prefersReducedMotion();
@@ -438,7 +451,7 @@ export const useHomeTabThumb = <K extends string>({
         clearStretchIdleTimer();
         stretchSpeedRef.current = 0;
         stretchSampleRef.current = { x: event.clientX, t: event.timeStamp };
-    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, pointerTargetLeft, thumbLeft, thumbWidth, trackRef, widthAtClient]);
+    }, [cancelPendingActivation, clearStretchIdleTimer, dragScale, glideToIndex, indexAtClient, trackRef]);
 
     // 越过阈值才算真正拖动：这时才夺指针并阻止默认行为（否则点页签的 click 会被吞掉）。
     const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -450,20 +463,15 @@ export const useHomeTabThumb = <K extends string>({
             event.preventDefault();
         }
         dragPointerXRef.current = event.clientX;
-        // 宽度跟着指针所在页签实时变：用 set 而不是 jump，让它像果冻一样补间过去；
-        // 上面的 change 监听会把 left 同步补偿，保证中心仍压在指针正下方。
+        // 越过阈值前的轻微漂移仍算纯点击：left 保持 pointerdown 设下的「页签中心」目标不动，
+        // 也不改宽度——否则每次微小移动都 retarget 一次，摇杆会在页签中心和指针落点之间来回抖。
+        if (!gesture.moved) return;
+        // 真正拖动才跟手：宽度跟着指针所在页签实时变（set 补间），change 监听把 left 补偿回指针下。
         thumbWidth.set(widthAtClient(event.clientX));
-        // 真正拖动才跟手 jump（即时响应、不引入弹簧滞后）；越过阈值前的轻微漂移仍算点击，
-        // 用 set 接着 pointerdown 起的滑行，别把摇杆打断成瞬移。jump 会清掉正在跑的弹簧，
-        // 所以松手时 .set 会从当前指针位置重新起弹，不会「飞回来」。
         const target = pointerTarget(event.clientX);
-        if (gesture.moved) {
-            thumbLeft.jump(target.left);
-        } else {
-            thumbLeft.set(target.left);
-        }
+        thumbLeft.jump(target.left);
         // 幅度跟着这一下的横向速度走，方向由「触没触边」定：顶到轨道两端时往上鼓，中间自由跟手时往两边甩。
-        if (gesture.moved && stretchAllowedRef.current) {
+        if (stretchAllowedRef.current) {
             sampleStretchSpeed(event.clientX, event.timeStamp, isThumbAtEdge(target.left, target.max));
         }
     }, [pointerTarget, sampleStretchSpeed, thumbLeft, thumbWidth, widthAtClient]);
@@ -508,6 +516,8 @@ export const useHomeTabThumb = <K extends string>({
         thumbBoxTop,
         thumbBoxWidth,
         thumbBoxHeight,
+        // 轨道内容宽度弹簧：给外层胶囊容器设 width，大类切换时平滑伸缩。
+        trackWidth,
         thumbHandlers: {
             onPointerDown: handlePointerDown,
             onPointerMove: handlePointerMove,

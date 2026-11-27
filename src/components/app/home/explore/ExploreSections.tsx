@@ -164,7 +164,7 @@ interface ExploreSectionsProps {
     onOpenCollection: (collection: OmniCollection) => void;
     onLoadMoreOf: (sectionId: string) => void;
     /** What the first heading row ends with: room for the page's own controls, which stand over it. */
-    pageControls: React.ReactNode;
+    pageControls?: React.ReactNode;
 }
 
 export const ExploreSections: React.FC<ExploreSectionsProps> = ({ page, sections, batches, ownSectionIds, isStale, loadingSectionIds, onPlaySong, onOpenCollection, onLoadMoreOf, pageControls }) => {

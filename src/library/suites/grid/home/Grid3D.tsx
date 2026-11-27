@@ -513,6 +513,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
         thumbBoxWidth,
         thumbBoxHeight,
         thumbHandlers,
+        trackWidth,
     } =
         useHomeTabThumb({
             trackRef: pillTrackRef,
@@ -924,13 +925,16 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                 {/* 页头胶囊复用为当前一级组的二级页签（在线四页 / 本地三个 section）；
                             一级组仍由左侧竖栏切换，两边不重复。没有二级页签的组整块不画。 */}
                                 {USE_HEADER_PILL && headerPillTabs.length > 0 && (
-                                    <div
+                                    <motion.div
                                         // 紧凑档里页签胶囊脱离左边那一组、居到整条页头中间（左右两组按钮仍各贴一边）：
                                         // 按自身宽度居中，换页签、加页签时都不会偏。尺寸与桌面档一致（不做 scale-90 的缩小）。
                                         className={`origin-center rounded-full ${isCompact
                                             ? 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
                                             : 'relative scale-90 md:scale-100 mt-[5px] ml-[10px] -inset-1'}`}
-                                        style={{ overflow: 'visible' }}
+                                        // 容器宽度不跟着按钮集合瞬间跳变：改成读 useHomeTabThumb 测出的内容宽度
+                                        // 弹簧，大类切换（在线四页 / 本地三页 / Folia 两页）时平滑伸缩。轨道按钮
+                                        // 仍按自然宽度排布，玻璃背景（-inset-1）跟着容器一起变。
+                                        style={{ overflow: 'visible', width: trackWidth }}
                                     >
                                         {/* 玻璃底色单独做绝对定位层，与摇杆、页签同为兄弟层级：摇杆不再嵌在玻璃元素里，
                                 否则它自己的流体玻璃 backdrop 只能采到父级已经模糊过的背景，被削弱。 */}
@@ -1093,7 +1097,9 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                             ref={pillTrackRef}
                                             {...thumbHandlers}
                                             style={headerFadeStyle}
-                                            className="relative flex items-center gap-0 cursor-grab active:cursor-grabbing touch-none pointer-none"
+                                            // w-max 让轨道恒按内容自然宽度排布：容器宽度是弹簧值，动画期间若比内容窄，
+                                            // 没有 w-max 按钮会被 flex-shrink 压缩、measure 读到缩小值又驱动弹簧，形成坍缩循环。
+                                            className="relative flex w-max items-center gap-0 cursor-grab active:cursor-grabbing touch-none pointer-none"
                                         >
                                             {headerPillTabs.map(tab => {
                                                 const label = typeof tab.label === 'string' ? tab.label : '';
@@ -1141,7 +1147,7 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                             })}
                                             {/* 模组扩展页签与舞台入口只留在左侧竖栏；这一排只放当前组的二级页签。 */}
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 )}
                             </div>
 
