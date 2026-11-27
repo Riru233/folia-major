@@ -121,9 +121,6 @@ export const StatusToast: React.FC<{
         <motion.div
             data-glass
             style={{
-                  backgroundColor: isDaylight
-                    ? "rgba(215,215,215,0.42)"
-                    : "rgba(40, 40, 40, 0.42)",
                   borderTop: isDaylight
                     ? "1px solid #fff6"
                     : "1px solid #fff5",
@@ -139,7 +136,7 @@ export const StatusToast: React.FC<{
             animate={calm ? { opacity: 1, transition: { duration: 0.15 } }
                 : { opacity: 1, x: 0, transition: { duration: 0.28, ease: EASE_OUT } }}
             exit={calm ? { opacity: 0, transition: { duration: 0.15 } } : { opacity: 0, x: 8, transition: { duration: 0.2, ease: EASE_IN } }}
-            className={`status-toast${toast.activity ? ' has-activity' : ''}${isDaylight ? ' is-daylight' : ''}${cancel || action ? ' has-buttons' : ''}${open ? ' is-open' : ''}${calm ? ' is-calm' : ''}${isPresent ? '' : ' is-leaving'}`}
+            className={`status-toast${toast.activity ? ' has-activity' : ''}${cancel || action ? ' has-buttons' : ''}${open ? ' is-open' : ''}${calm ? ' is-calm' : ''}${isPresent ? '' : ' is-leaving'}`}
             role={toast.activity ? 'status' : undefined}
             aria-live={toast.activity ? 'polite' : undefined}
             onPointerEnter={() => rest(true)}
